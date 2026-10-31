@@ -131,7 +131,8 @@ fn tls_step(@builtin(global_invocation_id) id: vec3u) {
     }
     s.phase = (s.phase + 1u) % s.n_phases;
     s.last_change = now;
-    s.next_switch = now + phases[s.first_phase + s.phase].min_dur;
+    let next_phase = phases[s.first_phase + s.phase];
+    s.next_switch = now + select(next_phase.duration, next_phase.min_dur, s.actuated != 0u);
     tls[t] = s;
 }
 
