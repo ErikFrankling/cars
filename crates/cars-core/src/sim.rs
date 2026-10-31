@@ -179,7 +179,8 @@ impl Sim {
         let totals = empty("totals", radix as u64 * 4);
         let seg = empty("seg", p.n_lanes as u64 * SEG_BYTES);
         let items = empty("items", cap * MAX_ITEMS * ITEM_BYTES);
-        let slots = empty("slots", p.n_links as u64 * SLOTS * APPROACH_BYTES);
+        let slots_init = vec![0xffu8; (p.n_links as u64 * SLOTS * APPROACH_BYTES) as usize];
+        let slots = init("slots", &slots_init, storage);
         let link_count = empty("link_count", p.n_links as u64 * 4);
         let ones = vec![0xffu8; p.n_lanes as usize * 4];
         let partial = init("partial", &ones, storage);

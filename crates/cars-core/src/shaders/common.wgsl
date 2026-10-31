@@ -7,6 +7,7 @@ const POS_EPS: f32 = 0.1;        // POSITION_EPS
 const HALT_SPEED: f32 = 0.1;     // SUMO_const_haltingSpeed
 const MAX_ITEMS: u32 = 8u;       // drive items per vehicle
 const SLOTS: u32 = 8u;           // approaching vehicles remembered per link
+const SLOTS_NEAR: u32 = 4u;      // of which reserved for the first vehicles on the source lane
 const CUTOFF: f32 = 40.0;        // approach further away in time than this cannot block anyone
 
 const MODEL_KRAUSS: u32 = 0u;
@@ -266,7 +267,7 @@ struct Approach {
     decel: f32,
     will_pass: u32,
     trip: u32,
-    pad: u32,
+    stamp: u32,
 }
 
 struct LaneSeg {
