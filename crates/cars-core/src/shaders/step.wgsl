@@ -1267,6 +1267,13 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
             atomicAdd(&edge_acc[lanes[e.lane].edge * 4u + 3u], 1u);
             teleport(&e);
             atomicAdd(&C[C_TELEPORTS], 1u);
+            var tele_kind = 13u;
+            if (n == 0u || items[base].link == NONE) {
+                tele_kind = 15u;
+            } else if (!have_priority(link_state(items[base].link))) {
+                tele_kind = 14u;
+            }
+            atomicAdd(&C[tele_kind], 1u);
             cur[i] = e;
             return;
         }
@@ -1425,7 +1432,6 @@ fn collide(@builtin(global_invocation_id) id: vec3u) {
             atomicAdd(&C[10], 1u);
         } else if (a.pos < ty.length + ty.min_gap + 1.0) {
             atomicAdd(&C[11], 1u);
-            if (gap > -0.01) { atomicAdd(&C[13], 1u); } else if (gap > -0.5) { atomicAdd(&C[14], 1u); } else { atomicAdd(&C[15], 1u); }
         } else {
             atomicAdd(&C[12], 1u);
         }

@@ -301,7 +301,7 @@ pub fn run(args: Args) {
     let _ = last_summary_step;
     let wall = t.elapsed().as_secs_f64();
     let c = sim.counters(&gpu);
-    eprintln!("lane changes {}, teleports {}, collisions {} (lane change {}, junction {}, lane start {}, other {}), overflow {}, items full {}; start gaps {} {} {}", c[6], c[4], c[7], c[9], c[10], c[11], c[12], c[5], c[8], c[13], c[14], c[15]);
+    eprintln!("lane changes {}, teleports {}, collisions {} (lane change {}, junction {}, lane start {}, other {}), overflow {}, items full {}; teleports jam {} yield {} wrong lane {}", c[6], c[4], c[7], c[9], c[10], c[11], c[12], c[5], c[8], c[13], c[14], c[15]);
     let out = sim.trip_outputs(&gpu);
     if let Some(path) = &args.trip_csv {
         let mut f = std::io::BufWriter::new(std::fs::File::create(path).expect("trip csv"));
