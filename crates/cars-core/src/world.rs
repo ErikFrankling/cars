@@ -3,6 +3,7 @@
 
 use bytemuck::{Pod, Zeroable};
 
+use crate::actuated::Actuation;
 use crate::demand::{ArrivalPos, CfModel, Demand, DepartLane, DepartPos, DepartSpeed, VType};
 use crate::net::{EdgeFunc, Net};
 use crate::topology::{NONE, Topology};
@@ -243,6 +244,8 @@ pub struct GpuTlsPhase {
     pub min_dur: u32,
     pub max_dur: u32,
     pub state_start: u32,
+    pub loops_start: u32,
+    pub loops_count: u32,
 }
 
 pub const ITEM_BYTES: u64 = 40;
@@ -532,11 +535,13 @@ impl World {
                     min_dur: steps(ph.min_dur),
                     max_dur: steps(ph.max_dur),
                     state_start,
+                    loops_start: 0,
+                    loops_count: 0,
                 });
                 cycle += ph.duration;
             }
             // Position in the cycle at time 0, given the offset.
-            let mut pos = (-t.offset).rem_euclid(cycle.max(1e-3));
+            let mut pos = (cfg.begin_seconds - t.offset).rem_euclid(cycle.max(1e-3));
             let mut phase = 0u32;
             for ph in &t.phases {
                 if pos < ph.duration {
@@ -560,17 +565,19 @@ impl World {
         }
 
         // Lanes.
-        let detector_lanes: Vec<bool> = {
-            let mut d = vec![false; net.lanes.len()];
-            for (id, t) in net.tls.iter().enumerate() {
-                if cfg.use_actuation && t.tl_type == "actuated" {
-                    for &l in &tls_links[id] {
-                        d[topo.links[l as usize].from_lane as usize] = true;
-                    }
+        let mut detector_pos = vec![-1.0f32; net.lanes.len()];
+        let mut actuation: Vec<Option<Actuation>> = Vec::new();
+        for (id, t) in net.tls.iter().enumerate() {
+            if cfg.use_actuation && t.tl_type == "actuated" {
+                let a = crate::actuated::build(net, topo, t, &tls_links[id]);
+                for &(lane, pos) in &a.placements {
+                    detector_pos[lane as usize] = detector_pos[lane as usize].max(pos);
                 }
+                actuation.push(Some(a));
+            } else {
+                actuation.push(None);
             }
-            d
-        };
+        }
         for (li, l) in net.lanes.iter().enumerate() {
             let shape_start = self.shapes.len() as u32;
             if ri == 0 {
@@ -592,11 +599,7 @@ impl World {
                 flags: u32::from(internal),
                 key_base: *key_base as u32,
                 key_scale: 1.0 / KEY_METRES,
-                det_pos: if detector_lanes[li] {
-                    (l.length - (l.speed * 2.0).max(10.0)).max(0.0)
-                } else {
-                    -1.0
-                },
+                det_pos: detector_pos[li],
                 shape_start,
                 pred: if internal {
                     incoming.map(|inc| normal_pred(topo, net, inc) + lane0).unwrap_or(NONE)
@@ -648,6 +651,14 @@ impl World {
         for (ti, t) in self.tls.iter_mut().skip(tls0 as usize).enumerate() {
             t.link_start = self.incoming_links.len() as u32;
             self.incoming_links.extend(tls_links[ti].iter().map(|&l| remap[l as usize]));
+            if let Some(a) = &actuation[ti] {
+                for (p, loops) in a.phase_loops.iter().enumerate() {
+                    let ph = &mut self.phases[t.first_phase as usize + p];
+                    ph.loops_start = self.incoming_links.len() as u32;
+                    ph.loops_count = loops.len() as u32;
+                    self.incoming_links.extend(loops.iter().map(|&l| l + lane0));
+                }
+            }
         }
         for links in &topo.lane_links {
             for &id in links {

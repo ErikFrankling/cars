@@ -106,30 +106,31 @@ fn tls_step(@builtin(global_invocation_id) id: vec3u) {
     if (t >= P.n_tls) { return; }
     var s = tls[t];
     let now = G.step;
-    if (now < s.next_switch) {
-        if (s.actuated == 0u) { return; }
-    }
+    if (now < s.next_switch) { return; }
     let ph = phases[s.first_phase + s.phase];
     if (s.actuated != 0u) {
-        // Gap control: a green phase holds while a vehicle has crossed a detector recently.
+        // gapControl and duration of MSActuatedTrafficLightLogic.
         let elapsed = now - s.last_change;
-        if (elapsed < ph.min_dur) { return; }
-        if (elapsed < ph.max_dur && ph.max_dur > ph.min_dur) {
-            var demand = false;
-            for (var k = 0u; k < s.link_count; k++) {
-                let l = incoming_links[s.link_start + k];
-                let cs = states[ph.state_start + links[l].tl_index];
-                if (have_green(cs)) {
-                    let at = last_detect[links[l].from_lane];
-                    if (at != 0u && now - at < u32(3.0 / P.dt)) { demand = true; break; }
-                }
+        if (elapsed < ph.max_dur) {
+            var gap = 1e9;
+            for (var k = 0u; k < ph.loops_count; k++) {
+                let at = last_detect[incoming_links[ph.loops_start + k]];
+                if (at == 0u) { continue; }
+                let since = now - at;
+                gap = min(gap, select((f32(since) - 1.5) * P.dt, 0.0, since <= 1u));
             }
-            if (demand) { return; }
+            if (gap < 3.0) {
+                let until = ceil(f32(elapsed) * P.dt + max(2.0 - gap, 0.001));
+                let wait = max(u32(ceil(until / P.dt)), elapsed + 1u) - elapsed;
+                s.next_switch = now + min(wait, ph.max_dur - elapsed);
+                tls[t] = s;
+                return;
+            }
         }
     }
     s.phase = (s.phase + 1u) % s.n_phases;
     s.last_change = now;
-    s.next_switch = now + phases[s.first_phase + s.phase].duration;
+    s.next_switch = now + phases[s.first_phase + s.phase].min_dur;
     tls[t] = s;
 }
 

@@ -293,6 +293,8 @@ struct TlsPhase {
     min_dur: u32,
     max_dur: u32,
     state_start: u32,
+    loops_start: u32,
+    loops_count: u32,
 }
 
 // Per-vehicle context, set up at the top of a kernel.
