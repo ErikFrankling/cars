@@ -1,0 +1,7 @@
+simulator,seed,breakdown_s,pre_veh_h,post_veh_h,drop_percent
+SUMO,42,,,,
+cars,42,,,,
+SUMO,43,,,,
+cars,43,,,,
+SUMO,44,,,,
+cars,44,,,,

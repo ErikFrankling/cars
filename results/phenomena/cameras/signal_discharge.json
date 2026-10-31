@@ -1,0 +1,37 @@
+{
+  "captions": [
+    {
+      "from": 0,
+      "to": 30.0,
+      "text": "A red light stores a queue before discharge."
+    },
+    {
+      "from": 30.0,
+      "to": 60.0,
+      "text": "Color shows speed: red vehicles are stopped or slow."
+    },
+    {
+      "from": 60.0,
+      "to": 90,
+      "text": "Compare the paired SUMO and cars measurements in results/phenomena."
+    }
+  ],
+  "keyframes": [
+    {
+      "time": 0,
+      "center": [
+        500.0,
+        -1.6
+      ],
+      "metres_per_pixel": 0.6
+    },
+    {
+      "time": 90,
+      "center": [
+        500.0,
+        -1.6
+      ],
+      "metres_per_pixel": 0.35
+    }
+  ]
+}

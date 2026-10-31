@@ -1,0 +1,27 @@
+{
+  "captions": [
+    {
+      "from": 0,
+      "to": 1800,
+      "text": "Downstream green serves only one fifth of each cycle."
+    }
+  ],
+  "keyframes": [
+    {
+      "time": 0,
+      "center": [
+        500.0,
+        -1.6
+      ],
+      "metres_per_pixel": 0.6
+    },
+    {
+      "time": 1800,
+      "center": [
+        500.0,
+        -1.6
+      ],
+      "metres_per_pixel": 0.35
+    }
+  ]
+}

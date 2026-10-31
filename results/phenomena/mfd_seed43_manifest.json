@@ -1,0 +1,14 @@
+{
+  "scenario": "mfd",
+  "seed": 43,
+  "dt": 0.1,
+  "end": 7200,
+  "ring": false,
+  "note": "Boundary demand rises and falls; recovery is measured, not assumed.",
+  "inputs": {
+    "net.xml": "cc5ef4649bb6720ce09cde5254506f2030228f68e3e663a858c5825f2ba95cbd",
+    "routes.xml": "725c89f00c39671f2c1fdf7b9f67e9c9e41eeec4d13561de6f0cd7ae61aa7dc4"
+  },
+  "sumo_version": "Eclipse SUMO sumo 1.28.0\n Build features: Linux-6.18.57 x86_64 GNU 16.2.0 Release FMI Proj GUI Intl SWIG Eigen GDAL FFmpeg OSG GL2PS\n Copyright (C) 2001-2026 German Aerospace Center (DLR) and others; https://sumo.dlr.de\n\nEclipse SUMO sumo 1.28.0 is part of SUMO.\nThis program and the accompanying materials\nare made available under the terms of the Eclipse Public License v2.0\nwhich accompanies this distribution, and is available at\nhttp://www.eclipse.org/legal/epl-v20.html\nThis program may also be made available under the following Secondary\nLicenses when the conditions for such availability set forth in the Eclipse\nPublic License 2.0 are satisfied: GNU General Public License, version 2\nor later which is available at\nhttps://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html\nSPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later\n",
+  "git_commit": "5ba19e98a95c679e231beaa82230e18be032d853"
+}
