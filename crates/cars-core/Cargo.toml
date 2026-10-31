@@ -14,3 +14,4 @@ quick-xml.workspace = true
 flate2.workspace = true
 log.workspace = true
 rustc-hash.workspace = true
+rayon.workspace = true

@@ -173,6 +173,7 @@ dependencies = [
  "log",
  "pollster",
  "quick-xml",
+ "rayon",
  "rustc-hash 2.1.3",
  "serde",
  "serde_json",

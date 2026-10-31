@@ -63,6 +63,7 @@ pub struct Lane {
     pub index: u32,
     pub speed: f32,
     pub length: f32,
+    pub width: f32,
     pub allow: u32,
     pub shape: Vec<[f32; 2]>,
 }
@@ -79,6 +80,8 @@ pub struct Conn {
     pub link_index: i32,
     pub dir: u8,
     pub state: u8,
+    pub keep_clear: bool,
+    pub visibility: f32,
 }
 
 #[derive(Clone, Debug)]
@@ -277,6 +280,7 @@ impl Net {
             index: attr(e, "index").and_then(|v| v.parse().ok()).unwrap_or(0),
             speed: attr_f32(e, "speed").unwrap_or(13.89),
             length: attr_f32(e, "length").unwrap_or(0.1),
+            width: attr_f32(e, "width").unwrap_or(3.2),
             allow,
             shape: attr(e, "shape").map(|s| parse_shape(&s)).unwrap_or_default(),
         });
@@ -341,6 +345,8 @@ impl Net {
             link_index: c.link_index,
             dir: c.dir,
             state: c.state,
+            keep_clear: c.keep_clear,
+            visibility: c.visibility,
         });
     }
 
@@ -379,6 +385,8 @@ struct PendingConn {
     link_index: i32,
     dir: u8,
     state: u8,
+    keep_clear: bool,
+    visibility: f32,
 }
 
 impl PendingConn {
@@ -393,6 +401,8 @@ impl PendingConn {
             link_index: attr(e, "linkIndex").and_then(|v| v.parse().ok()).unwrap_or(-1),
             dir: attr(e, "dir").and_then(|d| d.bytes().next()).unwrap_or(b's'),
             state: attr(e, "state").and_then(|d| d.bytes().next()).unwrap_or(b'M'),
+            keep_clear: attr(e, "keepClear").is_none_or(|k| k != "0" && k != "false"),
+            visibility: attr_f32(e, "visibility").unwrap_or(4.5),
         })
     }
 }
