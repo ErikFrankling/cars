@@ -1,6 +1,9 @@
 // LC2013 discrete motivations. Omitted: sublane/continuous maneuvers, opposite driving,
 // pedestrians, stops/arrival-lane constraints, roundabout bonus and TraCI. Negotiation
 // uses bounded next-step speed advice rather than SUMO's sequential message exchange.
+// Also approximate: downstream occupation/tie scoring, blocker-length reservations,
+// accelerating cooperation, right-overtaking restrictions and fixed-point hysteresis.
+// Internal-lane changing is disabled. Best-lane scratch supports at most 64 lanes.
 // Reservations conservatively retain departures and may reject distant hash collisions.
 
 @compute @workgroup_size(64)
@@ -314,7 +317,7 @@ fn lc_decide(@builtin(global_invocation_id) id: vec3u) {
     let reach = ty.min_gap + max(0.0, secure_gap(e.speed, 0.0, ty.apparent)) / max(EPS, ty.lc_assertive);
     let first = u32(max(0.0, floor((e.pos - ty.length) / 8.0)));
     let count = min(64u, u32(ceil((e.pos + reach) / 8.0)) - first + 1u);
-    let rank = (i + G.step) % max(1u, G.n_active);
+    let rank = (e.trip + G.step) % max(1u, P.n_trips);
     let priority = select(0x80000000u, 0u, chosen_urgent) | rank;
     lc_plan[i] = LcPlan(chosen, first, count, priority);
     for (var k = 0u; k < count; k++) { atomicMin(&claims[dest * 64u + (first + k) % 64u], priority); }
@@ -327,8 +330,8 @@ fn lc_commit(@builtin(global_invocation_id) id: vec3u) {
     let p = lc_plan[i];
     if (p.side == 0) { return; }
     let dest = u32(i32(cur[i].lane) + p.side);
-    for (var k = 0u; k < p.pad0; k++) {
-        if (atomicLoad(&claims[dest * 64u + (p.flags + k) % 64u]) != p.pad1) { return; }
+    for (var k = 0u; k < p.count; k++) {
+        if (atomicLoad(&claims[dest * 64u + (p.first + k) % 64u]) != p.priority) { return; }
     }
     cur[i].lane = dest;
     cur[i].flags |= F_LANE_CHANGED | F_BEST_DIRTY;

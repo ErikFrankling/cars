@@ -56,9 +56,9 @@ struct Queue {
 
 struct LcPlan {
     side: i32,    // 0 none, -1 right, +1 left
-    flags: u32,
-    pad0: u32,
-    pad1: u32,
+    first: u32,   // first reservation cell
+    count: u32,
+    priority: u32,
 }
 
 fn is_internal(l: u32) -> bool { return (lanes[l].flags & LANE_INTERNAL) != 0u; }
