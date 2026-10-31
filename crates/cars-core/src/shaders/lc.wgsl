@@ -155,6 +155,7 @@ struct LcNeighbors {
     leader_vtype: u32,
     leader_own: u32,
     leader_sf: f32,
+    leader_cacc: bool,
 }
 
 fn lc_consider_follower(r: ptr<function, LcNeighbors>, k: u32, fp: f32, egoback: f32) {
@@ -195,6 +196,7 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
                 let ot = types[o.vtype];
                 r.leader = k; r.gap = o.pos - ot.length - pos - ty.min_gap;
                 r.speed = o.speed; r.decel = ot.apparent; r.acc = o.acc; r.leader_trip = o.trip;
+                r.leader_cacc = ot.model == MODEL_CACC;
                 r.leader_wait = o.wait; r.leader_len = ot.length; r.leader_vtype = o.vtype; r.leader_own = o.lc_own; r.leader_sf = o.sf;
                 break;
             }
@@ -220,7 +222,8 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
             if (o.pos >= pos) {
                 if (g < r.gap) {
                     r.leader = k; r.gap = g; r.speed = o.speed; r.decel = ot.apparent; r.acc = o.acc;
-                    r.leader_trip = o.trip; r.leader_wait = o.wait; r.leader_len = ot.length; r.leader_vtype = o.vtype; r.leader_own = o.lc_own; r.leader_sf = o.sf;
+                    r.leader_trip = o.trip; r.leader_cacc = ot.model == MODEL_CACC;
+                r.leader_wait = o.wait; r.leader_len = ot.length; r.leader_vtype = o.vtype; r.leader_own = o.lc_own; r.leader_sf = o.sf;
                 }
             } else {
                 lc_consider_follower(&r, k, o.pos, egoback);
@@ -257,6 +260,7 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
     if (p != NONE) {
         let g = unpack_back(p) - pos - ty.min_gap;
         if (unpack_back(p) >= pos - 0.1 && g < r.gap) {
+            r.leader_cacc = unpack_cacc(p);
             r.gap = g; r.speed = unpack_speed(p); r.leader = NONE; r.leader_trip = NONE; r.acc = 0.0; r.decel = ty.apparent;
         }
     }
@@ -280,6 +284,7 @@ fn lc_leader_ahead(r: ptr<function, LcNeighbors>, l: u32, pos: f32, route_i: u32
             (*r).gap = seen + unpack_back(packed) - ty.min_gap;
             (*r).speed = unpack_speed(packed);
             (*r).decel = ty.apparent;
+            (*r).leader_cacc = unpack_cacc(packed);
             return;
         }
         seen += lanes[ahead].length;
@@ -666,7 +671,7 @@ fn check_blocked(e: Veh, n: LcNeighbors) -> u32 {
         if (n.gap < 0.0) {
             blocked |= LCA_BLOCK_LEADER;
         } else {
-            let need = secure_gap_lc(e.speed, n.speed, n.decel, e.acc, safety, false);
+            let need = secure_gap_lc(e.speed, n.speed, n.decel, e.acc, safety, n.leader_cacc);
             if (n.gap < need * safety) { blocked |= LCA_BLOCK_LEADER; }
         }
     }
