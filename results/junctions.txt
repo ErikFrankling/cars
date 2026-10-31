@@ -1,0 +1,161 @@
+--- actuated_light k: worst loss error 84%  dir /tmp/nix-shell.YYNY4r/junc-actuated_light-s817iwwu
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew   75   63.3     3.0     5.5   75   62.9     1.9     4.1
+sn   25   62.8     2.9     5.0   25   59.8     0.7     0.8
+we   75   63.3     3.0     5.5   75   62.9     1.9     4.1
+--- actuated_light i: worst loss error 38%  dir /tmp/nix-shell.YYNY4r/junc-actuated_light-qmjy5p73
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew   75   64.2     0.3     5.6   75   67.6     0.6     7.7
+sn   25   62.8     0.7     4.5   25   66.5     0.6     5.1
+we   75   64.1     0.2     6.6   75   65.3     0.4     7.2
+--- actuated_heavy k: worst loss error 9%  dir /tmp/nix-shell.YYNY4r/junc-actuated_heavy-qkhxvlwv
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew  250   62.2     3.0     4.4  250   63.6     3.4     4.8
+ns  150   83.1    22.1    25.5  150   83.9    21.9    25.3
+sn  150   83.1    22.1    25.5  150   83.9    21.9    25.3
+we  250   64.8     5.0     7.0  250   66.0     5.2     7.2
+wn   25  322.0   249.3   263.5   25  300.0   226.3   240.6
+--- actuated_heavy i: worst loss error 74%  dir /tmp/nix-shell.YYNY4r/junc-actuated_heavy-_glon025
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew  250   68.7     3.1    10.7  250   69.7     3.0    10.6
+ns  150   81.7    12.1    23.3  150   84.1    12.9    24.5
+sn  150   82.5    12.9    24.8  150   83.0    12.2    24.0
+we  250   85.1    12.0    26.4  250   73.1     4.2    13.8
+wn   25  175.8    74.0   116.7   25   89.6    12.3    29.8
+--- tls_permissive_left k: worst loss error 3%  dir /tmp/nix-shell.YYNY4r/junc-tls_permissive_left-gq5rwz6h
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+en   38   75.6    13.7    17.6   38   76.3    13.7    17.4
+ew  100   76.0    14.7    18.3  100   76.7    14.7    17.8
+ns   75   74.1    14.0    16.2   75   75.1    14.0    16.2
+we  125   75.2    14.8    17.4  125   76.2    14.8    17.4
+--- tls_permissive_left i: worst loss error 7%  dir /tmp/nix-shell.YYNY4r/junc-tls_permissive_left-_jfb5vgr
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+en   38   81.5    12.2    23.6   38   83.4    13.4    25.3
+ew  100   82.0    11.4    23.9  100   82.7    11.2    23.4
+ns   75   75.7     8.9    17.6   75   77.1     8.5    17.0
+we  125   80.6    10.0    22.5  125   83.3    11.1    23.3
+--- tls_left_2lane k: worst loss error 6%  dir /tmp/nix-shell.YYNY4r/junc-tls_left_2lane-1s184ucr
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+es   50  498.9   414.9   440.4   50  474.7   390.1   415.2
+ew  225   79.8    18.6    22.1  225   80.1    17.9    21.4
+sn  100   72.6    12.5    14.8  100   73.4    12.5    14.7
+we  225   79.8    18.6    22.1  225   80.1    17.9    21.4
+wn   50  498.9   414.9   440.4   50  474.7   390.1   415.2
+--- tls_left_2lane i: worst loss error 4%  dir /tmp/nix-shell.YYNY4r/junc-tls_left_2lane-2iiaoiqu
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+es   50  606.8   423.7   548.8   50  602.1   424.1   543.2
+ew  225  125.6    41.4    67.5  225  124.5    39.4    64.7
+sn  100   74.3     8.8    16.8  100   76.6     8.9    17.0
+we  225  123.5    39.5    65.0  225  125.1    40.2    66.0
+wn   50  610.8   427.7   552.0   50  602.3   420.7   543.1
+--- prio_major_left k: worst loss error 13%  dir /tmp/nix-shell.YYNY4r/junc-prio_major_left-u169td_b
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew  125   58.0     0.0     0.0  125   59.0     0.0     0.0
+we  125   58.4     0.1     0.4  125   59.2     0.0     0.2
+wn   38   61.3     0.6     2.6   38   61.9     0.3     2.2
+--- prio_major_left i: worst loss error 2%  dir /tmp/nix-shell.YYNY4r/junc-prio_major_left-sc8bhhpv
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew  125   60.5     0.0     2.5  125   61.4     0.0     2.5
+we  125   64.0     0.5     6.3  125   66.2     0.2     6.4
+wn   38   69.6     1.6    11.1   38   72.4     1.0    11.0
+--- prio_minor_cross k: worst loss error 1%  dir /tmp/nix-shell.YYNY4r/junc-prio_minor_cross-uo194upj
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew  125   58.0     0.0     0.0  125   59.0     0.0     0.0
+se   25  355.7   252.6   297.8   25  354.8   252.8   296.0
+sn   50  345.9   243.6   288.1   50  344.5   243.7   286.0
+sw   25  362.6   258.2   304.2   25  361.7   258.2   302.2
+we  125   58.0     0.0     0.0  125   59.0     0.0     0.0
+--- prio_minor_cross i: worst loss error 20%  dir /tmp/nix-shell.YYNY4r/junc-prio_minor_cross-zzjndmjh
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew  125   59.7     0.0     2.0  125   62.9     0.0     2.6
+se   25  394.7   209.9   336.3   25  407.3   234.8   348.5
+sn   50  394.3   209.7   335.7   50  408.3   235.5   348.7
+sw   25  406.7   218.8   346.6   25  422.4   245.3   361.1
+we  125   60.5     0.0     2.6  125   61.1     0.0     2.3
+--- prio_heavy k: worst loss error 0%  dir /tmp/nix-shell.YYNY4r/junc-prio_heavy-lcsoz99f
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew  225   58.1     0.0     0.1  225   59.1     0.0     0.1
+ns  125  371.9   286.0   314.5  125  372.9   286.0   314.5
+sn  125  371.9   286.0   314.5  125  372.9   286.0   314.5
+we  225   58.1     0.0     0.1  225   59.1     0.0     0.1
+--- prio_heavy i: worst loss error 22%  dir /tmp/nix-shell.YYNY4r/junc-prio_heavy-ivc7vv1l
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew  225   63.2     0.0     5.2  225   65.2     0.0     5.8
+ns  125  427.0   257.4   369.5  125  437.3   269.2   379.1
+sn  125  427.2   256.7   369.8  125  438.1   270.2   378.2
+we  225   65.3     0.0     6.4  225   64.5     0.0     5.0
+--- rbl k: worst loss error 91%  dir /tmp/nix-shell.YYNY4r/junc-rbl-blxx8yo3
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew   75  147.0    70.6    89.2   75  115.6    44.8    56.9
+ns   75  139.3    63.9    81.5   75  102.0    35.2    43.3
+sn   75   95.2    29.2    37.5   75  130.5    58.1    71.8
+we   75   93.3    27.5    35.6   75   80.5    15.9    21.8
+--- rbl i: worst loss error 161%  dir /tmp/nix-shell.YYNY4r/junc-rbl-jwls04uq
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew   75  240.6   110.0   182.6   75  237.5   105.0   177.4
+ns   75  210.8    93.7   153.9   75  165.6    65.8   106.9
+sn   75  104.8    23.3    46.7   75  181.1    74.2   121.7
+we   75  197.2    82.7   138.8   75  225.2    98.5   165.4
+--- rbl_heavy k: worst loss error 15%  dir /tmp/nix-shell.YYNY4r/junc-rbl_heavy-ayln7ggp
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew  117  424.7   290.1   366.9  120  377.5   254.6   318.8
+ns  116  462.7   327.9   404.9  140  402.6   265.0   343.9
+sn  116  456.8   319.4   399.0  136  396.0   261.7   337.3
+we  105  417.1   277.3   359.3  125  386.1   260.4   327.4
+--- rbl_heavy i: worst loss error 36%  dir /tmp/nix-shell.YYNY4r/junc-rbl_heavy-nsrxefny
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew   97  530.3   271.4   471.8   69  580.4   328.9   520.5
+ns   85  551.9   297.1   494.5  125  413.0   175.2   353.9
+sn  106  428.2   189.3   370.2  118  434.2   197.2   375.3
+we  123  419.1   165.4   361.1   82  552.5   305.1   492.4
+--- allway k: worst loss error 15%  dir /tmp/nix-shell.YYNY4r/junc-allway-9pn3gdrg
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew  100   66.6     3.6     8.9  100   66.3     3.0     7.6
+sn  100   65.1     3.0     7.1  100   66.1     3.0     7.2
+we  100   63.4     2.0     5.6  100   65.2     2.4     6.4
+--- allway i: worst loss error 8%  dir /tmp/nix-shell.YYNY4r/junc-allway-riulow82
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+ew  100   71.2     1.2    13.4  100   73.5     1.5    14.5
+sn  100   71.6     1.3    14.0  100   72.7     1.4    13.9
+we  100   70.4     1.0    12.1  100   73.2     1.2    12.6
+--- stop_minor k: worst loss error 0%  dir /tmp/nix-shell.YYNY4r/junc-stop_minor-44o682ao
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+sn   75   64.7     3.7     7.0   75   65.7     3.7     7.0
+we  125   58.0     0.0     0.0  125   59.0     0.0     0.0
+--- stop_minor i: worst loss error 33%  dir /tmp/nix-shell.YYNY4r/junc-stop_minor-w_w5oasi
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+sn   75   91.0    11.9    33.4   75   80.9     6.7    22.3
+we  125   60.5     0.0     2.6  125   63.2     0.0     3.0
+--- zipper k: worst loss error 100%  dir /tmp/nix-shell.YYNY4r/junc-zipper-xq1wzhqh
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+sn   75  216.0   124.3   158.1   75   59.3     0.0     0.5
+we  125  248.2   134.6   190.3  125   59.0     0.0     0.0
+--- zipper i: worst loss error 13%  dir /tmp/nix-shell.YYNY4r/junc-zipper-93ahi79p
+    n_s  dur_s  wait_s  loss_s  n_g  dur_g  wait_g  loss_g
+r                                                         
+sn   75   58.6     0.0     1.0   75   59.9     0.0     1.2
+we  125   60.5     0.0     2.6  125   63.2     0.0     3.0
+{'actuated_light/k': 0.84, 'actuated_light/i': 0.38, 'actuated_heavy/k': 0.09, 'actuated_heavy/i': 0.74, 'tls_permissive_left/k': 0.03, 'tls_permissive_left/i': 0.07, 'tls_left_2lane/k': 0.06, 'tls_left_2lane/i': 0.04, 'prio_major_left/k': 0.13, 'prio_major_left/i': 0.02, 'prio_minor_cross/k': 0.01, 'prio_minor_cross/i': 0.2, 'prio_heavy/k': 0.0, 'prio_heavy/i': 0.22, 'rbl/k': 0.91, 'rbl/i': 1.61, 'rbl_heavy/k': 0.15, 'rbl_heavy/i': 0.36, 'allway/k': 0.15, 'allway/i': 0.08, 'stop_minor/k': 0.0, 'stop_minor/i': 0.33, 'zipper/k': 1.0, 'zipper/i': 0.13}

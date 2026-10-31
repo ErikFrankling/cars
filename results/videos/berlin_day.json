@@ -2,5 +2,5 @@
  "captions":[{"from":0,"to":14000,"text":"Night. A few hundred cars on 21,000 km of lanes"},
  {"from":18000,"to":27000,"text":"Morning rush. 2.25 million trips a day, every car simulated on the GPU"},
  {"from":27000,"to":52000,"text":"The ring motorway and radial roads carry the city"},
- {"from":52000,"to":70000,"text":"Evening peak, 38,000 cars at once"},
+ {"from":52000,"to":70000,"text":"Evening peak, about 40,000 cars at once"},
  {"from":70000,"to":86400,"text":"This day took about two and a half minutes to compute"}]}

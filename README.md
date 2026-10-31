@@ -26,7 +26,7 @@ Throughput levels off around 54 million vehicle updates per second with 830,000 
 
 - Bologna human traffic is too fast: mean speed 5.8 m/s against 5.5, travel time about 8% low. A few priority junctions queue less than in SUMO. With IDM drivers, delays at minor links and right-before-left junctions are off by 20 to 160% in isolated tests, while Krauss matches.
 - I-80 with ACC and CACC has time loss errors of 10 to 26%, speed within 3%.
-- Evening Berlin: 37,700 teleports over the day, against 2,332 published for BeST, most of them between 18:00 and 22:00. There is no SUMO evening baseline here, because a SUMO day takes many hours. The morning matches: 231 SUMO, 174 cars. The evening excess centres on one on-ramp whose queue is bistable; SUMO also falls into it in some runs.
+- Evening Berlin: 37,700 teleports over the day, against 2,332 published for BeST, most of them between 18:00 and 22:00. There is no SUMO evening baseline here, because a SUMO day takes many hours. The morning matches: 231 SUMO, 190 cars by 10:00. The evening excess centres on one on-ramp whose queue is bistable; SUMO also falls into it in some runs.
 - Runs are not bit reproducible. GPU atomics race between runs, so a chaotic scenario differs from run to run, as SUMO does between seeds.
 - Buses, stops, pedestrians, sublanes and opposite driving are not implemented.
 - Real detector comparison: at 103 Berlin sites both simulators sit around 16% GEH<5, with volumes near half of measured. This says more about the BeST demand and the site matching than about either simulator.
