@@ -6,19 +6,19 @@ Headline values below are seed 42; seed 43 and 44 results have separate summarie
 
 | Scenario | SUMO demonstrated; evidence | cars demonstrated; evidence |
 |---|---|---|
-| phantom_jam | Yes; stopped 53.3%, SD 2.73 m/s, wave -7.2 km/h | Yes; stopped 51.0%, SD 2.77 m/s, wave -7.2 km/h |
-| one_av | Yes; SD human 2.73, smooth 0.0005 m/s | Yes; SD human 2.77, smooth 0.0232 m/s |
+| phantom_jam | Yes; stopped 53.3%, SD 2.73 m/s, wave -7.2 km/h | Yes; stopped 51.0%, SD 2.76 m/s, wave -7.2 km/h |
+| one_av | Yes; SD human 2.73, smooth 0.0005 m/s | Yes; SD human 2.76, smooth 0.0232 m/s |
 | brake_wave | Yes; 15 stopped trajectories, median minimum 3.45 m/s | Yes; 15 stopped trajectories, median minimum 3.53 m/s |
-| capacity_drop | Yes; queue at 900 s; pre 3920, discharge 1758 veh/h; min speed 2.07 m/s (drop 55.2%) | Yes; queue at 930 s; pre 4000, discharge 2820 veh/h; min speed 3.01 m/s (drop 29.5%) |
+| capacity_drop | Yes; queue at 900 s; pre 3920, discharge 1758 veh/h; min speed 2.07 m/s (drop 55.2%) | Yes; queue at 930 s; pre 4040, discharge 2916 veh/h; min speed 4.70 m/s (drop 27.8%) |
 | freeway_fd | Yes; peak 2757 veh/h at 30 veh/km; dense 352 veh/h, 0.81 m/s | Yes; peak 2737 veh/h at 30 veh/km; dense 325 veh/h, 0.75 m/s |
 | signal_discharge | Yes; headway 1.20 s, saturation 3000 veh/h | Yes; headway 1.20 s, saturation 3000 veh/h |
 | onramp_merge | Yes; ramp 19.93 to 0.00 m/s; mainline 33.27 to 27.85 m/s | Yes; ramp 19.87 to 0.00 m/s; mainline 33.21 to 27.78 m/s |
 | spillback | Yes; blocked proxy 1680 s, peak link 13.0 veh, side exits 27 | Yes; blocked proxy 1680 s, peak link 13.0 veh, side exits 27 |
-| gridlock | Yes; late speed off/on 0.00/0.02 m/s; arrivals 153/309 | Yes; late speed off/on 0.00/0.00 m/s; arrivals 144/305 |
+| gridlock | Yes; late speed off/on 0.00/0.02 m/s; arrivals 153/309 | Yes; late speed off/on 0.00/0.02 m/s; arrivals 144/322 |
 | mfd | Yes; peak 224 veh, final/peak 0.20, mean speed 6.36 m/s | Yes; peak 219 veh, final/peak 0.20, mean speed 6.19 m/s |
 | thesis_ring | Yes; mean speed 12.379 m/s, peak 219 veh | Yes; mean speed 12.364 m/s, peak 200 veh |
-| bologna_rush | Yes; mean speed 5.067 m/s, peak 1060 veh | Yes; mean speed 5.501 m/s, peak 854 veh |
-| i80_day | Yes; mean speed 24.625 m/s, peak 2121 veh | Yes; mean speed 25.126 m/s, peak 2046 veh |
+| bologna_rush | Yes; mean speed 5.067 m/s, peak 1060 veh | Yes; mean speed 5.471 m/s, peak 867 veh |
+| i80_day | Yes; mean speed 24.625 m/s, peak 2121 veh | Yes; mean speed 25.111 m/s, peak 2047 veh |
 
 Figures:
 
@@ -58,24 +58,21 @@ No simulator core files were modified. Raw trajectories and logs remain in `runs
 
 Simulator issues and reproducible diagnostics:
 
-- Tight initial placement: the 2 km ring requests 260 vehicles, but cars inserts only 22 by 600 s, with no arrivals or teleports; SUMO supports the full dense population. At 240, cars admits all 240. The 260 case is excluded from the FD curves. Reproduce inside the dev shell: `python -c 'import sys; sys.path.insert(0,"scripts"); from phenomena_suite import execute,density; execute("freeway_fd",42,"_n260",density(260))'`. No core fix was attempted.
 
 Nonzero simulator counters are retained as diagnostics; this pass does not establish their root cause. Reproduce any row with `python scripts/phenomena.py SCENARIO --measure --seed SEED` inside the dev shell.
 
 | Run | Overflow counter | Collisions | Teleports |
 |---|---:|---:|---:|
-| bologna_rush | 2244478 | 0 | 0 |
-| bologna_rush_seed43 | 2258202 | 0 | 0 |
-| bologna_rush_seed44 | 2273246 | 0 | 0 |
-| gridlock | 14535 | 0 | 0 |
-| gridlock_clear | 69494 | 0 | 0 |
-| gridlock_clear_seed43 | 43984 | 0 | 0 |
-| gridlock_clear_seed44 | 55247 | 0 | 0 |
-| gridlock_seed43 | 17470 | 0 | 0 |
-| gridlock_seed44 | 17677 | 0 | 0 |
-| i80_day | 0 | 5 | 0 |
-| i80_day_seed43 | 0 | 2 | 0 |
-| i80_day_seed44 | 0 | 2 | 0 |
+| bologna_rush | 2255565 | 0 | 0 |
+| bologna_rush_seed43 | 2239595 | 0 | 0 |
+| bologna_rush_seed44 | 2294405 | 0 | 0 |
+| gridlock | 11698 | 0 | 0 |
+| gridlock_clear | 57701 | 0 | 0 |
+| gridlock_clear_seed43 | 43986 | 0 | 0 |
+| gridlock_clear_seed44 | 46166 | 0 | 0 |
+| gridlock_seed43 | 14566 | 0 | 0 |
+| gridlock_seed44 | 17705 | 0 | 0 |
+| i80_day | 0 | 4 | 0 |
 | mfd | 154790 | 0 | 0 |
 | mfd_seed43 | 155090 | 0 | 0 |
 | mfd_seed44 | 155183 | 0 | 0 |

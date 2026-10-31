@@ -2,13 +2,15 @@
   "scenario": "spillback",
   "variant": "",
   "seed": 42,
-  "end": 1800,
-  "ring": false,
-  "note": "Downstream red fills the 100 m link. The shared approach also traps drivers seeking the side exit.",
+  "dt": 0.1,
+  "git_commit": "bb11b2dd71eacab5a241859a3be6e10c2b55436b",
+  "binary_sha256": "d1723d178308e7b85359e87f8fc5d93592813d35b658942648c14aa63f49c594",
   "inputs": {
     "signals.xml": "0df0531e0bb6ae163ee9850802e9e4a258ec62907afed2d24167c4b03a711559",
-    "net.xml": "061fb1c183c60490583d954ed62fe6af4536cd8ca6a67a76fd05b100d0db584f",
+    "net.xml": "115f400025d04619d96e4bba7e0cda6d6bc773b752ecf691079410cc3d8a4aaf",
     "routes.xml": "b0d89f9f7b87833f1347d6a92c6944330117302f8f47020635b65732baf74c1d"
   },
-  "binary_sha256": "e700938df3f463bc12e33d42c074e4502e80f3eb8fcddba409eafa43614b3fb7"
+  "end": 1800,
+  "ring": false,
+  "note": "Downstream red fills the 100 m link. The shared approach also traps drivers seeking the side exit."
 }

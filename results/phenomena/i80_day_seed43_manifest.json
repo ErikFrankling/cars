@@ -2,12 +2,14 @@
   "scenario": "i80_day",
   "variant": "",
   "seed": 43,
-  "end": 18000,
-  "ring": false,
-  "note": "I-80 thesis human baseline; demand increases then recedes.",
+  "dt": 0.1,
+  "git_commit": "bb11b2dd71eacab5a241859a3be6e10c2b55436b",
+  "binary_sha256": "d1723d178308e7b85359e87f8fc5d93592813d35b658942648c14aa63f49c594",
   "inputs": {
     "net.xml": "ed6c89504b16009a3547dcb8cf578a49f0f605898d240224a4ed31384c287196",
     "routes.xml": "031d74ea904e883e90623e3c22e5cd3ee2d97549d5f2e0ae0e4bfe0af3e56f38"
   },
-  "binary_sha256": "e700938df3f463bc12e33d42c074e4502e80f3eb8fcddba409eafa43614b3fb7"
+  "end": 18000,
+  "ring": false,
+  "note": "I-80 thesis human baseline; demand increases then recedes."
 }

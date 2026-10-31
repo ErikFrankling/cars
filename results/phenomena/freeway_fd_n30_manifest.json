@@ -2,13 +2,15 @@
   "scenario": "freeway_fd",
   "variant": "_n30",
   "seed": 42,
-  "end": 600,
-  "ring": false,
-  "note": "Closed 2 km ring at 15 vehicles/km; fixed density, no insertion bottleneck.",
-  "density_count": 30,
+  "dt": 0.1,
+  "git_commit": "bb11b2dd71eacab5a241859a3be6e10c2b55436b",
+  "binary_sha256": "d1723d178308e7b85359e87f8fc5d93592813d35b658942648c14aa63f49c594",
   "inputs": {
     "net.xml": "b1790985ea8d0f646dd1e396d57117c640b95fb1689d4282b7b2da603b6d3b38",
     "routes.xml": "53a24598bf9da2df1aedae81738b823b3e543fe6b502fdd210baa5c932732411"
   },
-  "binary_sha256": "e700938df3f463bc12e33d42c074e4502e80f3eb8fcddba409eafa43614b3fb7"
+  "end": 600,
+  "ring": false,
+  "note": "Closed 2 km ring at 15 vehicles/km; fixed density, no insertion bottleneck.",
+  "density_count": 30
 }

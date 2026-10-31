@@ -2,12 +2,14 @@
   "scenario": "phantom_jam",
   "variant": "",
   "seed": 44,
-  "end": 1800,
-  "ring": true,
-  "note": "22 IDM drivers, 330 m ring; 3 m initial perturbation grows into stop-and-go waves.",
+  "dt": 0.1,
+  "git_commit": "bb11b2dd71eacab5a241859a3be6e10c2b55436b",
+  "binary_sha256": "d1723d178308e7b85359e87f8fc5d93592813d35b658942648c14aa63f49c594",
   "inputs": {
-    "net.xml": "42b457f17278829c3c4b0ba761ac84e20c6c91c8d5e5fc2c343b7cbdeb2e2586",
+    "net.xml": "40a42ea515282ce352b6adb32b8345c1d364e29778e46ff51907bf858feeec24",
     "routes.xml": "4caf92de63be63a6a11ce2f06085d4a98151c51b29926672fe6e15059d14d4de"
   },
-  "binary_sha256": "e700938df3f463bc12e33d42c074e4502e80f3eb8fcddba409eafa43614b3fb7"
+  "end": 1800,
+  "ring": true,
+  "note": "22 IDM drivers, 330 m ring; 3 m initial perturbation grows into stop-and-go waves."
 }

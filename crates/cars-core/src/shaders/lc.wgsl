@@ -1091,9 +1091,9 @@ fn lc_evaluate(i: u32) {
     ego_flags = e.flags;
     ego_acc = e.acc;
     mode_done = true;
-    // prepareStep: only a strategic or cooperative wish survives to the next step.
+    // prepareStep: only a strategic wish survives to the next step.
     lc_own = 0u;
-    if ((e.lc_own & (LCA_STRATEGIC | LCA_COOPERATIVE)) != 0u) { lc_own = e.lc_own & LCA_WANTS; }
+    if ((e.lc_own & LCA_STRATEGIC) != 0u) { lc_own = e.lc_own & LCA_WANTS; }
     lc_own |= atomicExchange(&adv_flags[e.trip], 0u);
     lc_left_space = 0.0;
     lc_blocker = 0.0;
@@ -1140,10 +1140,8 @@ fn lc_evaluate(i: u32) {
     var state = lc_own & (LCA_AM_LEADER | LCA_AM_FOLLOWER | LCA_M_LEFT | LCA_M_RIGHT);
     if (chosen < 0) { state |= state_r; }
     else if (chosen > 0) { state |= state_l; }
-    else if ((state_r & LCA_URGENT) != 0u && (state_l & LCA_URGENT) == 0u) { state |= state_r; }
-    else if ((state_l & LCA_URGENT) != 0u && (state_r & LCA_URGENT) == 0u) { state |= state_l; }
-    else if ((state_r & LCA_WANTS) != 0u) { state |= state_r; }
-    else { state |= state_l; }
+    else if ((state_r & LCA_URGENT) != 0u && (state_l & LCA_URGENT) != 0u) { state |= state_r; }
+    else { state |= state_r | state_l; }
     cur[i].look_v = lc_look;
     cur[i].lc_right = lc_pr;
     cur[i].lc_left = lc_pl;

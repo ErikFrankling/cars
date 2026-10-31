@@ -2,13 +2,15 @@
   "scenario": "bologna_rush",
   "variant": "",
   "seed": 42,
-  "end": 5400,
-  "ring": false,
-  "note": "Bologna thesis human baseline during rush demand.",
+  "dt": 0.1,
+  "git_commit": "bb11b2dd71eacab5a241859a3be6e10c2b55436b",
+  "binary_sha256": "d1723d178308e7b85359e87f8fc5d93592813d35b658942648c14aa63f49c594",
   "inputs": {
     "signals.xml": "9d3bcbf4b98c71d3c667a93f00626bf9f3cec9fac2df74089116eb0abd85ffc6",
     "net.xml": "9f75c393e1f45d2e7acdc29e5b70f7e4028a0434140abcc41e73ac512c09402d",
     "routes.xml": "e54593753651fb65ee9e4b2c5eab4f857421735581f87abb8406df06bb17eda9"
   },
-  "binary_sha256": "e700938df3f463bc12e33d42c074e4502e80f3eb8fcddba409eafa43614b3fb7"
+  "end": 5400,
+  "ring": false,
+  "note": "Bologna thesis human baseline during rush demand."
 }

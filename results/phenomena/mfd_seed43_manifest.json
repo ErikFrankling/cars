@@ -2,12 +2,14 @@
   "scenario": "mfd",
   "variant": "",
   "seed": 43,
-  "end": 7200,
-  "ring": false,
-  "note": "Boundary demand rises and falls; recovery is measured, not assumed.",
+  "dt": 0.1,
+  "git_commit": "bb11b2dd71eacab5a241859a3be6e10c2b55436b",
+  "binary_sha256": "d1723d178308e7b85359e87f8fc5d93592813d35b658942648c14aa63f49c594",
   "inputs": {
-    "net.xml": "f27f9bf4596e5d689236cd27f41d91bfcec3bf86f76645133bd2f1150edc6b3c",
+    "net.xml": "db5628adf03dc6cf2cdb4f4fc4916045c13fdebcf7d8af64a189c81ba5f3e334",
     "routes.xml": "725c89f00c39671f2c1fdf7b9f67e9c9e41eeec4d13561de6f0cd7ae61aa7dc4"
   },
-  "binary_sha256": "e700938df3f463bc12e33d42c074e4502e80f3eb8fcddba409eafa43614b3fb7"
+  "end": 7200,
+  "ring": false,
+  "note": "Boundary demand rises and falls; recovery is measured, not assumed."
 }
