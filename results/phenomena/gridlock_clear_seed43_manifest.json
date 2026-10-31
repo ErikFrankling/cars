@@ -1,0 +1,15 @@
+{
+  "scenario": "gridlock",
+  "variant": "_clear",
+  "seed": 43,
+  "dt": 0.1,
+  "git_commit": "4f874b8b599e6bc0991f48ac05399e1c7cea4fec",
+  "binary_sha256": "e700938df3f463bc12e33d42c074e4502e80f3eb8fcddba409eafa43614b3fb7",
+  "inputs": {
+    "net.xml": "ba44cfaf5026b69977af97e374e2afb88180be1548387d6cbeeeb76c9ff97ebe",
+    "routes.xml": "244914aa3a917b16093ab361da5b6ef421a1c5f6b4c9b7092eb25707fb7a59ae"
+  },
+  "end": 900,
+  "ring": false,
+  "note": "Boundary demand rises and falls; recovery is measured, not assumed."
+}

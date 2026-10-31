@@ -1,16 +1,15 @@
 {
   "scenario": "onramp_merge",
+  "variant": "",
   "seed": 42,
   "dt": 0.1,
+  "git_commit": "4f874b8b599e6bc0991f48ac05399e1c7cea4fec",
+  "binary_sha256": "e700938df3f463bc12e33d42c074e4502e80f3eb8fcddba409eafa43614b3fb7",
+  "inputs": {
+    "net.xml": "601fc7153dced17c332d395e4582033bacf5f0c4e264c382d6f42411d700731e",
+    "routes.xml": "9c23c497f27e1be173264dd4ac7477fca1b6f21a766ec9086d24ac33d35e65d7"
+  },
   "end": 1800,
   "ring": false,
-  "note": "Ramp inflow meets rising mainline demand.",
-  "inputs": {
-    "edges.xml": "4011d020a59a04d48412fcab2ce3c998b1f51dce903caab0366bdf0f7404d572",
-    "net.xml": "7d09b2c8929dc4930d22ef447f23ed3abca9a02f7bfc1cfd2589bd33c4fdda8f",
-    "routes.xml": "d8e70bc181ea0a7b28d1b24bb77dd980013fd7e0d1231a1425b1480b18ad701b",
-    "nodes.xml": "ec714ed7b3160eba672a3afc0f75b41b4dab835bc3588e287b805f7a0b6718c8"
-  },
-  "sumo_version": "Eclipse SUMO sumo 1.28.0\n Build features: Linux-6.18.57 x86_64 GNU 16.2.0 Release FMI Proj GUI Intl SWIG Eigen GDAL FFmpeg OSG GL2PS\n Copyright (C) 2001-2026 German Aerospace Center (DLR) and others; https://sumo.dlr.de\n\nEclipse SUMO sumo 1.28.0 is part of SUMO.\nThis program and the accompanying materials\nare made available under the terms of the Eclipse Public License v2.0\nwhich accompanies this distribution, and is available at\nhttp://www.eclipse.org/legal/epl-v20.html\nThis program may also be made available under the following Secondary\nLicenses when the conditions for such availability set forth in the Eclipse\nPublic License 2.0 are satisfied: GNU General Public License, version 2\nor later which is available at\nhttps://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html\nSPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later\n",
-  "git_commit": "9bbe1bba701dcb2881ee90686fc92929ad381892"
+  "note": "Ramp inflow meets rising mainline demand."
 }

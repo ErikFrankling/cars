@@ -1,0 +1,13 @@
+{
+  "scenario": "thesis_ring",
+  "variant": "",
+  "seed": 43,
+  "end": 4000,
+  "ring": true,
+  "note": "Thesis ring human baseline; sweep additionally measures its scripted disturbance.",
+  "inputs": {
+    "net.xml": "cacb98211cd4d1ac1a3b2d30d235f91b96b6fd6486e48d1305b609c6a1438719",
+    "routes.xml": "235c7a094d66aa4a94e5759f8ca0f87ee6adb3f55322893611ffd0b6a75bbb24"
+  },
+  "binary_sha256": "e700938df3f463bc12e33d42c074e4502e80f3eb8fcddba409eafa43614b3fb7"
+}

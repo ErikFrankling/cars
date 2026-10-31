@@ -2,8 +2,28 @@
   "captions": [
     {
       "from": 0,
-      "to": 3600,
-      "text": "Boundary demand rises and falls; recovery is measured, not assumed."
+      "to": 300,
+      "text": "Turning traffic loads the short grid links; keep-clear is disabled."
+    },
+    {
+      "from": 300,
+      "to": 600,
+      "text": "Vehicles enter occupied junctions and block crossing routes."
+    },
+    {
+      "from": 600,
+      "to": 900,
+      "text": "Demand falls; cyclic queues remain trapped. Teleporting is disabled."
+    }
+  ],
+  "keyframes": [
+    {
+      "time": 0,
+      "center": [
+        150.0,
+        150.0
+      ],
+      "metres_per_pixel": 0.33688888888888896
     }
   ]
 }

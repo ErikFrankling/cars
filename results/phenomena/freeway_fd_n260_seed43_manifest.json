@@ -1,0 +1,10 @@
+{
+  "scenario": "freeway_fd",
+  "variant": "_n260",
+  "seed": 43,
+  "end": 600,
+  "ring": false,
+  "note": "Closed 2 km ring at 130 vehicles/km; fixed density, no insertion bottleneck.",
+  "density_count": 260,
+  "population_validated": false
+}

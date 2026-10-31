@@ -1,9 +1,19 @@
 {
   "captions": [
     {
-      "from": 0,
-      "to": 1800,
+      "from": 600,
+      "to": 700.0,
       "text": "22 IDM drivers, 330 m ring; 3 m initial perturbation grows into stop-and-go waves."
+    },
+    {
+      "from": 700.0,
+      "to": 800.0,
+      "text": "Color shows speed: red vehicles are stopped or slow."
+    },
+    {
+      "from": 800.0,
+      "to": 900,
+      "text": "Follow slow red vehicles as traffic evolves."
     }
   ]
 }

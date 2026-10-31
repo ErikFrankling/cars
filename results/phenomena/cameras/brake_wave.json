@@ -2,26 +2,44 @@
   "captions": [
     {
       "from": 0,
-      "to": 1800,
-      "text": "Persistent short slow section; not a temporary brake pulse."
+      "to": 10,
+      "text": "Dense platoon approaches on green."
+    },
+    {
+      "from": 10,
+      "to": 35,
+      "text": "Twenty seconds of red: braking travels backward."
+    },
+    {
+      "from": 35,
+      "to": 90,
+      "text": "Green returns; the queue releases and the pulse dissipates."
     }
   ],
   "keyframes": [
     {
       "time": 0,
       "center": [
-        2450.0,
+        1150,
         -1.6
       ],
-      "metres_per_pixel": 0.6
+      "metres_per_pixel": 0.18
     },
     {
-      "time": 1800,
+      "time": 30,
       "center": [
-        2450.0,
+        1100,
         -1.6
       ],
-      "metres_per_pixel": 0.35
+      "metres_per_pixel": 0.16
+    },
+    {
+      "time": 90,
+      "center": [
+        1200,
+        -1.6
+      ],
+      "metres_per_pixel": 0.18
     }
   ]
 }

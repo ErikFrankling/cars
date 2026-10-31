@@ -1,17 +1,18 @@
 {
   "scenario": "signal_discharge",
+  "variant": "",
   "seed": 44,
   "dt": 0.1,
-  "end": 1800,
+  "git_commit": "4f874b8b599e6bc0991f48ac05399e1c7cea4fec",
+  "binary_sha256": "e700938df3f463bc12e33d42c074e4502e80f3eb8fcddba409eafa43614b3fb7",
+  "inputs": {
+    "signals.xml": "4e126cdaca7562dbc45fcafd363257abcb2604f0741febc0c42140c80d8f19a6",
+    "net.xml": "48a7630977b4f452a8e939b3bd9da745ad0bc05ec077b1438b5758fd2b956f6e",
+    "routes.xml": "92ff75a0917e9a859dec7fad8b3ef97942ef7391984c1f61fdbe920632921eda"
+  },
+  "end": 180,
   "ring": false,
   "note": "A red light stores a queue before discharge.",
-  "inputs": {
-    "edges.xml": "d26697fb16b663c60e9f4e7d2d7776ef52f5c265b68a171a11876a773215d44c",
-    "signals.xml": "4e126cdaca7562dbc45fcafd363257abcb2604f0741febc0c42140c80d8f19a6",
-    "net.xml": "8b41f161075146777f5f58731b0270d2dbe136536f6488a5988378dbb6634951",
-    "routes.xml": "92ff75a0917e9a859dec7fad8b3ef97942ef7391984c1f61fdbe920632921eda",
-    "nodes.xml": "86dc1194986f612375d29810b64453c92fd3ff1420a5826acb88a9fd100238f4"
-  },
-  "sumo_version": "Eclipse SUMO sumo 1.28.0\n Build features: Linux-6.18.57 x86_64 GNU 16.2.0 Release FMI Proj GUI Intl SWIG Eigen GDAL FFmpeg OSG GL2PS\n Copyright (C) 2001-2026 German Aerospace Center (DLR) and others; https://sumo.dlr.de\n\nEclipse SUMO sumo 1.28.0 is part of SUMO.\nThis program and the accompanying materials\nare made available under the terms of the Eclipse Public License v2.0\nwhich accompanies this distribution, and is available at\nhttp://www.eclipse.org/legal/epl-v20.html\nThis program may also be made available under the following Secondary\nLicenses when the conditions for such availability set forth in the Eclipse\nPublic License 2.0 are satisfied: GNU General Public License, version 2\nor later which is available at\nhttps://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html\nSPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later\n",
-  "git_commit": "5ba19e98a95c679e231beaa82230e18be032d853"
+  "fcd": true,
+  "fcd_period": 0.1
 }

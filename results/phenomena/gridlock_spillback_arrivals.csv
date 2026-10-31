@@ -1,0 +1,7 @@
+scenario,simulator,arrivals,late_arrivals
+gridlock,SUMO,153,0
+gridlock,cars,144,0
+gridlock_clear,SUMO,309,13
+gridlock_clear,cars,305,0
+spillback,SUMO,93,32
+spillback,cars,93,32

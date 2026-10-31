@@ -2,36 +2,44 @@
   "captions": [
     {
       "from": 0,
-      "to": 30.0,
-      "text": "A red light stores a queue before discharge."
+      "to": 30,
+      "text": "Red holds the initial forty-car queue."
     },
     {
-      "from": 30.0,
-      "to": 60.0,
-      "text": "Color shows speed: red vehicles are stopped or slow."
+      "from": 30,
+      "to": 60,
+      "text": "Green: the front accelerates, then successive drivers release at a steady headway."
     },
     {
-      "from": 60.0,
+      "from": 60,
       "to": 90,
-      "text": "Compare the paired SUMO and cars measurements in results/phenomena."
+      "text": "Red returns before the tail has fully discharged."
     }
   ],
   "keyframes": [
     {
       "time": 0,
       "center": [
-        500.0,
+        350,
         -1.6
       ],
-      "metres_per_pixel": 0.6
+      "metres_per_pixel": 0.22
+    },
+    {
+      "time": 45,
+      "center": [
+        450,
+        -1.6
+      ],
+      "metres_per_pixel": 0.2
     },
     {
       "time": 90,
       "center": [
-        500.0,
+        500,
         -1.6
       ],
-      "metres_per_pixel": 0.35
+      "metres_per_pixel": 0.22
     }
   ]
 }

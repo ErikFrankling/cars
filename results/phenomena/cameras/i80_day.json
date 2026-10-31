@@ -1,0 +1,29 @@
+{
+  "captions": [
+    {
+      "from": 10800,
+      "to": 10900.0,
+      "text": "I-80 thesis human baseline; demand increases then recedes."
+    },
+    {
+      "from": 10900.0,
+      "to": 11000.0,
+      "text": "Color shows speed: red vehicles are stopped or slow."
+    },
+    {
+      "from": 11000.0,
+      "to": 11100,
+      "text": "Follow slow red vehicles as traffic evolves."
+    }
+  ],
+  "keyframes": [
+    {
+      "time": 10800,
+      "center": [
+        -10180,
+        -14
+      ],
+      "metres_per_pixel": 0.12
+    }
+  ]
+}

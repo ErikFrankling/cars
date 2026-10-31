@@ -1,106 +1,84 @@
-# Traffic phenomena measurements
+# Traffic phenomena: fresh paired measurements
 
-This suite remains incomplete. A completed recording is not evidence that its named phenomenon occurred. See the explicit failures below.
+Reproduce inside `nix develop`: `cargo build --release`, `python scripts/phenomena_suite.py`, `python scripts/phenomena_videos.py`, `python scripts/phenomena_report.py`, then `python scripts/phenomena_accept.py`. Seeds 42, 43, 44. The phantom and one-driver IDM rings are deterministic across seeds; those repeats do not represent driver uncertainty. Stochastic cases use independent seeds in the two engines; the lane-drop case also uses IDM. No old measurements are used.
 
-Reproduce inside `nix develop`: `python scripts/phenomena.py SCENARIO --measure --seed 42` (repeat with 43 and 44), then `--video`. GPU commands acquire `/tmp/cars-gpu.lock`. Generate run traces with `python scripts/phenomena_spread.py`, and lane-drop detector diagnostics with `python scripts/phenomena_capacity.py`. Raw outputs are under `runs/phenomena/`; videos are outside git.
+Headline values below are seed 42; seed 43 and 44 results have separate summaries and figures. Yes denotes the measured criterion below, not full simulator equivalence. Spillback blocked time uses 30 s bins with >8 vehicles in the short link and upstream speed <2 m/s. Gridlock requires late speed <0.5 m/s with teleport disabled; keep-clear can delay failure without preventing it under extreme overload. The lane drop uses IDM with accel 0.3 m/s² and decel 1.5 m/s² to expose breakdown and discharge loss. Brake-wave uses a single 20 s red pulse. Headway plots show the first green only; saturation uses median headway at queue positions 5–15. FD uses the last 300 s at each fixed density, with all vehicles admitted, through 120 veh/km. SUMO edge occupancy can double-count a vehicle spanning an edge boundary, so Edie accumulation can exceed the physical population. Capacity-drop preflow is the peak 90 s mean in the preceding 300 s; discharge is the following 600 s after a 60 s transition exclusion, truncated at the run end.
 
-Decisions made in this pass:
+| Scenario | SUMO demonstrated; evidence | cars demonstrated; evidence |
+|---|---|---|
+| phantom_jam | Yes; stopped 53.3%, SD 2.73 m/s, wave -7.2 km/h | Yes; stopped 51.0%, SD 2.77 m/s, wave -7.2 km/h |
+| one_av | Yes; SD human 2.73, smooth 0.0005 m/s | Yes; SD human 2.77, smooth 0.0232 m/s |
+| brake_wave | Yes; 15 stopped trajectories, median minimum 3.45 m/s | Yes; 15 stopped trajectories, median minimum 3.53 m/s |
+| capacity_drop | Yes; queue at 900 s; pre 3920, discharge 1758 veh/h; min speed 2.07 m/s (drop 55.2%) | Yes; queue at 930 s; pre 4000, discharge 2820 veh/h; min speed 3.01 m/s (drop 29.5%) |
+| freeway_fd | Yes; peak 2757 veh/h at 30 veh/km; dense 352 veh/h, 0.81 m/s | Yes; peak 2737 veh/h at 30 veh/km; dense 325 veh/h, 0.75 m/s |
+| signal_discharge | Yes; headway 1.20 s, saturation 3000 veh/h | Yes; headway 1.20 s, saturation 3000 veh/h |
+| onramp_merge | Yes; ramp 19.93 to 0.00 m/s; mainline 33.27 to 27.85 m/s | Yes; ramp 19.87 to 0.00 m/s; mainline 33.21 to 27.78 m/s |
+| spillback | Yes; blocked proxy 1680 s, peak link 13.0 veh, side exits 27 | Yes; blocked proxy 1680 s, peak link 13.0 veh, side exits 27 |
+| gridlock | Yes; late speed off/on 0.00/0.02 m/s; arrivals 153/309 | Yes; late speed off/on 0.00/0.00 m/s; arrivals 144/305 |
+| mfd | Yes; peak 224 veh, final/peak 0.20, mean speed 6.36 m/s | Yes; peak 219 veh, final/peak 0.20, mean speed 6.19 m/s |
+| thesis_ring | Yes; mean speed 12.379 m/s, peak 219 veh | Yes; mean speed 12.364 m/s, peak 200 veh |
+| bologna_rush | Yes; mean speed 5.067 m/s, peak 1060 veh | Yes; mean speed 5.501 m/s, peak 854 veh |
+| i80_day | Yes; mean speed 24.625 m/s, peak 2121 veh | Yes; mean speed 25.126 m/s, peak 2046 veh |
 
-- Phantom jam uses 22 IDM drivers on a 330 m ring, accel 0.3 m/s², decel 1.5 m/s², tau 1 s, maximum speed 8.333 m/s, stopped initial insertion, and v0 shifted forward 3 m. No continuing obstacle or forced braking. The 230 m Krauss baseline and a 330 m low-acceleration Krauss trial did not develop waves. An exactly symmetric IDM start stayed symmetric; a position perturbation was necessary. This is a synthetic unstable IDM example, not a calibration to Sugiyama's human experiment.
-- Ring runs last 1800 s; wave measurements exclude the first 600 s. Time-space panels use both engines with a shared speed scale. Wave speed maximizes spatial correlation between adjacent 10 s speed fields with 66 periodic spatial bins, searching shifts in both directions. Resolution is 1.8 km/h for the 330 m ring; this is an exploratory estimate, not a front-fit confidence interval. Stopped means speed below 0.5 m/s. Trajectory CSVs retain every fifth row to keep files small; wave analysis and figures use the full snapshots.
-- Seeds are independent engine seeds, not synchronized noise realizations. IDM is deterministic here, so repeated ring seeds give identical outcomes and do not establish uncertainty over human driver parameters. Other scenarios retain Krauss sigma 0.5. Explicit departure schedules are shared.
-- Thesis generators now load actual bachelor/config networks and demand, with human vTypes, rather than raising NotImplementedError. They are human baselines. The ring thesis disturbance is still absent: existing shader F_SCRIPTED uses Params.script_t0, a 60 s cap and 300 s recovery; merely loading the route does not enable it. The I-80 baseline here uses dt 0.1 s in both engines rather than sweep.rs’s 1 s. SUMO reports speed-factor adjustments for departures faster than the sampled type permits; identical XML does not guarantee identical speed-factor handling. No shader files were changed.
-- Recorder uses software libx264, two encoder/decoder/filter threads and the veryfast preset. All videos are 1920×1080; ordinary recordings are approximately 40 s. Signal discharge records only 0–90 simulation seconds (30 s video), because its forty-car initial queue empties long before the measurement ends. Cameras are saved in `cameras/`. Videos show cars only, not a SUMO replay.
+Figures:
 
-Interval observations use 30 s Edie measurements: density = vehicle seconds / (30 × lane length); flow = distance / (30 × lane length). Production = total distance / 30, excluding internal edges. Empty edges stay in the geometry denominator. Edge accumulation includes boundary overlap in SUMO and can exceed physical counts. The spread plots retain each seed separately; MFD loading is the first half of the demand schedule and recovery the second, using solid and dashed lines. These labels do not establish a hysteresis effect.
+- phantom_jam: [phantom_jam.png](phantom_jam.png)
+- one_av: [one_av_comparison.png](one_av_comparison.png)
+- brake_wave: [brake_wave.png](brake_wave.png), [brake_wave_minima.png](brake_wave_minima.png)
+- capacity_drop: [capacity_drop_detector.png](capacity_drop_detector.png), [capacity_drop_upstream.png](capacity_drop_upstream.png)
+- freeway_fd: [freeway_fd_flow_veh_h.png](freeway_fd_flow_veh_h.png), [freeway_fd_speed_m_s.png](freeway_fd_speed_m_s.png)
+- signal_discharge: [signal_discharge_headways.png](signal_discharge_headways.png)
+- onramp_merge: [onramp_merge_detector.png](onramp_merge_detector.png), [onramp_merge_upstream.png](onramp_merge_upstream.png)
+- spillback: [spillback_arrivals.png](spillback_arrivals.png), [spillback_upstream.png](spillback_upstream.png)
+- gridlock: [gridlock_arrivals.png](gridlock_arrivals.png)
+- mfd: [mfd_loop.png](mfd_loop.png)
+- thesis_ring: [thesis_ring_time_space.png](thesis_ring_time_space.png)
+- bologna_rush: [bologna_rush.png](bologna_rush.png)
+- i80_day: [i80_day.png](i80_day.png)
 
-| Scenario | Requested phenomenon demonstrated, SUMO / cars | seeds with paired results | Mean speed SUMO (m/s), seed 42 | Mean speed cars (m/s), seed 42 |
-|---|---|---|---:|---:|
-| bologna_rush | Yes / Yes | 42 | 5.067 | 3.476 |
-| brake_wave | No / No | 42, 43, 44 | 11.241 | 11.186 |
-| capacity_drop | No / No | 42, 43, 44 | 32.763 | 32.692 |
-| freeway_fd | No / No | 42, 43, 44 | 33.265 | 33.202 |
-| gridlock | No / No | 42, 43, 44 | 7.594 | 7.503 |
-| i80_day | Yes / Yes | 42 | 24.625 | 25.068 |
-| mfd | Yes / Yes | 42, 43, 44 | 7.605 | 7.516 |
-| one_av | No / No | 42, 43, 44 | 4.014 | 3.949 |
-| onramp_merge | Yes / Yes | 42, 43, 44 | 19.812 | 19.765 |
-| phantom_jam | Yes / Yes | 42, 43, 44 | 3.164 | 3.430 |
-| signal_discharge | Yes / Yes | 42, 43, 44 | 7.358 | 7.411 |
-| spillback | No / No | 42, 43, 44 | 2.068 | 2.327 |
-| thesis_ring | No / No | 42 | 12.379 | 12.364 |
+Videos (13 reviewed 1080p H.264 movies at 30 fps, 28–50 s; cars rendering with speed colors). Extracted frames were visually checked, including both one-driver configurations. Camera files are in `cameras/`:
 
-Here No means the requested behavior is absent or not demonstrated by the available measurements. Yes for Bologna and I-80 refers to baseline rush/corridor traffic, and for MFD to loading/recovery, not controller equivalence or proven hysteresis.
+- [bologna_rush](/home/erikf/projects/personal/cars-data/videos/bologna_rush.mp4)
+- [brake_wave](/home/erikf/projects/personal/cars-data/videos/brake_wave.mp4)
+- [capacity_drop](/home/erikf/projects/personal/cars-data/videos/capacity_drop.mp4)
+- [freeway_fd](/home/erikf/projects/personal/cars-data/videos/freeway_fd.mp4)
+- [gridlock](/home/erikf/projects/personal/cars-data/videos/gridlock.mp4)
+- [i80_day](/home/erikf/projects/personal/cars-data/videos/i80_day.mp4)
+- [mfd](/home/erikf/projects/personal/cars-data/videos/mfd.mp4)
+- [one_av](/home/erikf/projects/personal/cars-data/videos/one_av.mp4)
+- [onramp_merge](/home/erikf/projects/personal/cars-data/videos/onramp_merge.mp4)
+- [phantom_jam](/home/erikf/projects/personal/cars-data/videos/phantom_jam.mp4)
+- [signal_discharge](/home/erikf/projects/personal/cars-data/videos/signal_discharge.mp4)
+- [spillback](/home/erikf/projects/personal/cars-data/videos/spillback.mp4)
+- [thesis_ring](/home/erikf/projects/personal/cars-data/videos/thesis_ring.mp4)
 
-Ring wave results:
+The one_av movie compares 25 s human-only followed by 25 s with one smooth driver. Its human-only source movie is `one_av_human.mp4`, using the same human ring as phantom_jam. The thesis sweep uses `flock /tmp/cars-gpu.lock target/release/sweep --scenario ring --tiers idm --penetrations 0 --seeds 42,43,44 --out results/phenomena/thesis_ring_sweep.csv --edge-out results/phenomena/thesis_ring_sweep_edges.csv`; its scripted disturbance is shown separately from the matched baseline.
 
-| Engine | Stopped fraction | Speed SD (m/s) | Backward wave (km/h) |
+No simulator core files were modified. Raw trajectories and logs remain in `runs/phenomena/`. A queue at a lane drop establishes breakdown; a negative measured drop percentage means no capacity drop was demonstrated.
+
+Simulator issues and reproducible diagnostics:
+
+- Tight initial placement: the 2 km ring requests 260 vehicles, but cars inserts only 22 by 600 s, with no arrivals or teleports; SUMO supports the full dense population. At 240, cars admits all 240. The 260 case is excluded from the FD curves. Reproduce inside the dev shell: `python -c 'import sys; sys.path.insert(0,"scripts"); from phenomena_suite import execute,density; execute("freeway_fd",42,"_n260",density(260))'`. No core fix was attempted.
+
+Nonzero simulator counters are retained as diagnostics; this pass does not establish their root cause. Reproduce any row with `python scripts/phenomena.py SCENARIO --measure --seed SEED` inside the dev shell.
+
+| Run | Overflow counter | Collisions | Teleports |
 |---|---:|---:|---:|
-| SUMO | 0.533 | 2.732 | -7.2 |
-| cars | 0.510 | 2.765 | -7.2 |
-
-The ring waves agree across engines but propagate substantially slower than the −15 to −20 km/h literature target. This is not a successful match to that empirical range.
-
-Outstanding requirements and failed checks:
-
-- one_av still uses its earlier static long-headway vehicle. There is no switch-on experiment or verified damping result.
-- brake_wave still has a persistent slow section. It is not a lead-car brake pulse; amplitude by vehicle index is absent.
-- capacity_drop has no sustained breakdown in any of the three seeds in either engine (upstream speed below 15 m/s for three consecutive 30 s bins). Detector CSV leaves pre/post/drop blank; no numerical drop is manufactured. The diagnostic uses downstream edge-entry counts, a 300 s prewindow and 600 s postwindow after 60 s transition exclusion when breakdown exists.
-- freeway_fd does not demonstrate a congested branch at the offered demand. No fitted congested branch is claimed.
-- signal_discharge shows queue release but queue-position headways and saturation-flow estimates are missing.
-- spillback lacks blocked-green time and spillback-extent measurements.
-- gridlock lacks with/without keep-clear interventions. Grid loading is not proof of cyclic deadlock.
-- MFD run traces distinguish loading and recovery; equal-accumulation branch inference and uncertainty remain absent.
-- The thesis scenarios have no verified videos or disturbance/controller comparison.
-- Existing overflow counters are nonzero in gridlock, MFD and on-ramp runs. These are simulator diagnostics needing investigation; no fix was attempted in shaders. Paired results remain provisional.
-
-Video inventory (frames extracted at 20 s and visually inspected; visual framing does not validate the phenomenon):
-
-- `/home/erikf/projects/personal/cars-data/videos/phantom_jam.mp4`
-- `/home/erikf/projects/personal/cars-data/videos/one_av.mp4`
-- `/home/erikf/projects/personal/cars-data/videos/brake_wave.mp4`
-- `/home/erikf/projects/personal/cars-data/videos/capacity_drop.mp4`
-- `/home/erikf/projects/personal/cars-data/videos/freeway_fd.mp4`
-- `/home/erikf/projects/personal/cars-data/videos/signal_discharge.mp4`
-- `/home/erikf/projects/personal/cars-data/videos/onramp_merge.mp4`
-- `/home/erikf/projects/personal/cars-data/videos/spillback.mp4`
-- `/home/erikf/projects/personal/cars-data/videos/gridlock.mp4`
-- `/home/erikf/projects/personal/cars-data/videos/mfd.mp4`
-
-GPU diagnostics:
-
-| Run | Overflow events | Collisions | Teleports |
-|---|---:|---:|---:|
-| bologna_rush | 2923046 | 0 | 0 |
-| brake_wave | 0 | 0 | 0 |
-| brake_wave_seed43 | 0 | 0 | 0 |
-| brake_wave_seed44 | 0 | 0 | 0 |
-| capacity_drop | 0 | 0 | 0 |
-| capacity_drop_seed43 | 0 | 0 | 0 |
-| capacity_drop_seed44 | 0 | 0 | 0 |
-| freeway_fd | 0 | 0 | 0 |
-| freeway_fd_seed43 | 0 | 0 | 0 |
-| freeway_fd_seed44 | 0 | 0 | 0 |
-| gridlock | 2379173 | 0 | 0 |
-| gridlock_seed43 | 2378802 | 0 | 0 |
-| gridlock_seed44 | 2376795 | 0 | 0 |
-| i80_day | 0 | 2 | 0 |
-| mfd | 4782716 | 0 | 0 |
-| mfd_seed43 | 4784505 | 0 | 0 |
-| mfd_seed44 | 4781936 | 0 | 0 |
-| one_av | 0 | 0 | 0 |
-| one_av_seed43 | 0 | 0 | 0 |
-| one_av_seed44 | 0 | 0 | 0 |
-| onramp_merge | 320659 | 0 | 0 |
-| onramp_merge_seed43 | 320660 | 0 | 0 |
-| onramp_merge_seed44 | 320659 | 0 | 0 |
-| phantom_jam | 0 | 0 | 0 |
-| phantom_jam_seed43 | 0 | 0 | 0 |
-| phantom_jam_seed44 | 0 | 0 | 0 |
-| signal_discharge | 0 | 0 | 0 |
-| signal_discharge_seed43 | 0 | 0 | 0 |
-| signal_discharge_seed44 | 0 | 0 | 0 |
-| spillback | 0 | 0 | 0 |
-| spillback_seed43 | 0 | 0 | 0 |
-| spillback_seed44 | 0 | 0 | 0 |
-| thesis_ring | 0 | 0 | 0 |
+| bologna_rush | 2244478 | 0 | 0 |
+| bologna_rush_seed43 | 2258202 | 0 | 0 |
+| bologna_rush_seed44 | 2273246 | 0 | 0 |
+| gridlock | 14535 | 0 | 0 |
+| gridlock_clear | 69494 | 0 | 0 |
+| gridlock_clear_seed43 | 43984 | 0 | 0 |
+| gridlock_clear_seed44 | 55247 | 0 | 0 |
+| gridlock_seed43 | 17470 | 0 | 0 |
+| gridlock_seed44 | 17677 | 0 | 0 |
+| i80_day | 0 | 5 | 0 |
+| i80_day_seed43 | 0 | 2 | 0 |
+| i80_day_seed44 | 0 | 2 | 0 |
+| mfd | 154790 | 0 | 0 |
+| mfd_seed43 | 155090 | 0 | 0 |
+| mfd_seed44 | 155183 | 0 | 0 |
+| onramp_merge | 547029 | 0 | 0 |
+| onramp_merge_seed43 | 547086 | 0 | 0 |
+| onramp_merge_seed44 | 547083 | 0 | 0 |
