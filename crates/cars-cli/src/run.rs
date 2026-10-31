@@ -39,6 +39,9 @@ pub struct Args {
     fcd: Option<PathBuf>,
     #[arg(long)]
     trip_csv: Option<PathBuf>,
+    /// Seconds between trajectory snapshots (simulation still advances at dt).
+    #[arg(long, default_value_t = 0.1)]
+    fcd_interval: f32,
     /// Per interval: time, running, halting, mean speed, inserted, arrived.
     #[arg(long)]
     summary_csv: Option<PathBuf>,
@@ -134,8 +137,12 @@ pub fn run(args: Args) {
     while done < steps {
         let debugging = (args.debug_lane.is_some() || args.debug_collisions) && done + 1 >= debug_start && done < debug_end;
         if fcd.is_some() || args.check_overlaps || debugging {
-            sim.run_batch(&gpu, 1);
-            done += 1;
+            let stride = if args.check_overlaps || debugging { 1 } else {
+                (args.fcd_interval / args.dt).round().max(1.0) as u64
+            };
+            let advance = stride.min(steps - done).min(interval - done % interval);
+            sim.run(&gpu, advance);
+            done += advance;
             let now = args.begin + done as f32 * args.dt;
             if (args.debug_lane.is_some() || args.debug_collisions) && now < args.debug_from && fcd.is_none() {
                 continue;
@@ -215,7 +222,7 @@ pub fn run(args: Args) {
                     if v.flags & 1 != 0 || v.lane == world.params.dummy_lane {
                         continue;
                     }
-                    writeln!(f, "{:.2},{},{},{:.4},{:.4},{:.4},{:.1},{},{},{}", args.begin + (done - 1) as f32 * args.dt, demand.ids[demand.trips[world.trip_source[v.trip as usize] as usize].id as usize], net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc, v.wait, v.lc_own, v.n_items, v.best_off).unwrap();
+                    writeln!(f, "{:.2},{},{},{:.4},{:.4},{:.4},{:.1},{},{},{}", args.begin + done as f32 * args.dt, demand.ids[demand.trips[world.trip_source[v.trip as usize] as usize].id as usize], net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc, v.wait, v.lc_own, v.n_items, v.best_off).unwrap();
                 }
             }
         } else {

@@ -1,0 +1,16 @@
+{
+  "scenario": "brake_wave",
+  "seed": 42,
+  "dt": 0.1,
+  "end": 1800,
+  "ring": false,
+  "note": "Persistent short slow section; not a temporary brake pulse.",
+  "inputs": {
+    "edges.xml": "83004dbc950b9da8873f2216b74eedd7ceab9e86a9064d1c91ea33db01f11687",
+    "net.xml": "ddf564674ccfc76dc09dff169bf58f73291841c1e82fe47a0b3d3d29da109774",
+    "routes.xml": "fe0f46487431b38ec896e9922c55942914f025d02f558f7f4b110981277356bc",
+    "nodes.xml": "04ffff2dab2f6c37ced89539db25c3a757600ca8b7c46256399a39114651ef6f"
+  },
+  "sumo_version": "Eclipse SUMO sumo 1.28.0\n Build features: Linux-6.18.57 x86_64 GNU 16.2.0 Release FMI Proj GUI Intl SWIG Eigen GDAL FFmpeg OSG GL2PS\n Copyright (C) 2001-2026 German Aerospace Center (DLR) and others; https://sumo.dlr.de\n\nEclipse SUMO sumo 1.28.0 is part of SUMO.\nThis program and the accompanying materials\nare made available under the terms of the Eclipse Public License v2.0\nwhich accompanies this distribution, and is available at\nhttp://www.eclipse.org/legal/epl-v20.html\nThis program may also be made available under the following Secondary\nLicenses when the conditions for such availability set forth in the Eclipse\nPublic License 2.0 are satisfied: GNU General Public License, version 2\nor later which is available at\nhttps://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html\nSPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later\n",
+  "git_commit": "acacd797e8596d14313f8b2b5457feccf6ffd425"
+}
