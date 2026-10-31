@@ -25,6 +25,7 @@ const F_GLOSA_ACTIVE: u32 = 64u;
 const F_ON_JUNCTION: u32 = 128u;
 const F_HAVE_STOPPED: u32 = 256u; // has stopped for its stop sign
 const F_WILL_PASS: u32 = 512u;     // requested its next link in the last step
+const F_SCRIPTED: u32 = 1024u;     // gets the speed cap disturbance from Params.script_t0
 
 // Link flags.
 const L_CONT: u32 = 1u;
@@ -62,6 +63,10 @@ struct Params {
     n_samples: u32,
     tls_yellow_min_decel: f32,
     time_to_impatience: f32,
+    ignore_blocker: f32,
+    script_t0: f32,
+    pad0: f32,
+    pad1: f32,
 }
 
 struct Globals {
@@ -209,7 +214,7 @@ struct Trip {
     sf: f32,
     rng: u32,
     replica: u32,
-    pad0: u32,
+    script: u32,
     pad1: u32,
     pad2: u32,
 }

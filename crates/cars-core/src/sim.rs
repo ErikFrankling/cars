@@ -73,6 +73,7 @@ struct Pipelines {
     lc_best: Option<wgpu::ComputePipeline>,
     lc_decide: wgpu::ComputePipeline,
     lc_commit: Option<wgpu::ComputePipeline>,
+    glosa: Option<wgpu::ComputePipeline>,
     insert: wgpu::ComputePipeline,
     sample_stats: wgpu::ComputePipeline,
     next_sample: wgpu::ComputePipeline,
@@ -387,6 +388,7 @@ impl Sim {
             lc_best: has("lc_best").then(|| m("lc_best")),
             lc_decide: m("lc_decide"),
             lc_commit: has("lc_commit").then(|| m("lc_commit")),
+            glosa: world.vtypes.iter().any(|t| t.glosa_range > 0.0).then(|| m("glosa")),
             insert: m("insert"),
             sample_stats: m("sample_stats"),
             next_sample: m("next_sample"),
@@ -483,6 +485,10 @@ impl Sim {
         c.dispatch_workgroups(params.n_lanes.div_ceil(64), 1, 1);
         c.set_pipeline(&p.exec);
         c.dispatch_workgroups_indirect(ind, 24);
+        if let Some(gl) = &p.glosa {
+            c.set_pipeline(gl);
+            c.dispatch_workgroups_indirect(ind, 24);
+        }
         if let Some(best) = &p.lc_best {
             c.set_pipeline(best);
             c.dispatch_workgroups_indirect(ind, 24);

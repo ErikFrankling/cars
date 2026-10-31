@@ -370,6 +370,7 @@ fn check_link_leader(link_i: u32, lane: u32, seen: f32, ego_lane: u32, ego_entry
             for (var idx = s.first; idx < s.end; idx++) {
                 if (idx == pl_i) { continue; }
                 let f = cur[idx];
+                if (f.wait >= P.ignore_blocker) { continue; }
                 let ft = types[f.vtype];
                 let back = f.pos - ft.length;
                 let back_dist = foe_dist - back;
@@ -431,6 +432,17 @@ fn check_link_leader(link_i: u32, lane: u32, seen: f32, ego_lane: u32, ego_entry
     pl_v_wait = min(pl_v_wait, pl_v);
 }
 
+// The thesis ring disturbance: cap one vehicle for 60 s, then let it recover over 300 s.
+fn apply_script(flags: u32, cap: f32) {
+    if ((flags & F_SCRIPTED) == 0u || P.script_t0 <= 0.0 || cap <= 0.0) { return; }
+    let t = f32(G.step) * P.dt;
+    if (t < P.script_t0) { return; }
+    let orig = ty.max_speed;
+    var m = cap;
+    if (t >= P.script_t0 + 60.0) { m = cap + (orig - cap) * min(1.0, (t - P.script_t0 - 60.0) / 300.0); }
+    ty.max_speed = m;
+}
+
 fn route_has_next(route_i: u32, route_end: u32) -> bool { return route_i + 1u < route_end; }
 
 // The link out of `lane` that continues the route. Among several, prefer one whose target lane can
@@ -489,6 +501,10 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     ego_flags = ego.flags;
     ego_acc = ego.acc;
     mode_done = false;
+    if ((ego.flags & F_SCRIPTED) != 0u && P.script_t0 > 0.0 && f32(G.step) * dt >= P.script_t0 && ego.v_next == 0.0) {
+        cur[i].v_next = min(ty.max_speed, max(5.0, ego.speed - 5.0));
+    }
+    apply_script(ego.flags, cur[i].v_next);
     pl_i = i;
     pl_base = i * MAX_ITEMS;
     pl_n = 0u;
@@ -811,6 +827,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     var e = cur[i];
     ty = types[e.vtype];
     dt = P.dt;
+    apply_script(e.flags, e.v_next);
     let base = i * MAX_ITEMS;
     let n = e.n_items;
     let speed = e.speed;
@@ -1029,6 +1046,162 @@ fn teleport(e: ptr<function, Veh>) {
     (*e).flags |= F_BEST_DIRTY;
 }
 
+// ---------------------------------------------------------------- GLOSA, MSDevice_GLOSA
+
+fn glosa_earliest(dist: f32, vmax: f32, v: f32) -> f32 {
+    let a = ty.accel;
+    let ph = v / a;
+    let tc = -ph + sqrt(ph * ph + 2.0 * dist / a);
+    let at = min((vmax - v) / a, tc);
+    let rem = dist - (v * at + a * at * at / 2.0);
+    return at + rem / vmax;
+}
+
+fn phase_char(first: u32, p: u32, idx: u32) -> u32 { return states[phases[first + p].state_start + idx]; }
+
+@compute @workgroup_size(64)
+fn glosa(@builtin(global_invocation_id) id: vec3u) {
+    let i = id.x;
+    if (i >= G.n_active) { return; }
+    let vt = cur[i].vtype;
+    if (types[vt].glosa_range <= 0.0) { return; }
+    var e = cur[i];
+    if ((e.flags & F_REMOVED) != 0u) { return; }
+    ty = types[vt];
+    dt = P.dt;
+    let orig = trips[e.trip].sf;
+    var lane = e.lane;
+    var r = e.route_i;
+    var seen = lanes[lane].length - e.pos;
+    var link = pick_link(lane, r, e.route_end);
+    var found = NONE;
+    for (var hops = 0u; hops < 12u && link != NONE; hops++) {
+        if (!is_internal(lane) && links[link].tl != NONE) {
+            found = link;
+            break;
+        }
+        if (seen > ty.glosa_range + 200.0) { break; }
+        if ((links[link].flags & L_HAS_VIA) == 0u) { r += 1u; }
+        lane = links[link].next_lane;
+        seen += lanes[lane].length;
+        link = pick_link(lane, r, e.route_end);
+    }
+    var flags = e.flags;
+    var sf = e.sf;
+    if (found == NONE) {
+        if ((flags & F_GLOSA_ACTIVE) != 0u) {
+            sf = orig;
+            flags &= ~F_GLOSA_ACTIVE;
+        }
+    } else if (seen <= ty.glosa_range) {
+        let k = links[found];
+        let ts = tls[k.tl];
+        let state = link_state(found);
+        var green = have_green(state);
+        var stop = have_red(state) || have_yellow(state);
+        let n = ts.n_phases;
+        let limit = lanes[e.lane].speed;
+        let vmax = min(limit * sf, ty.max_speed);
+        let v = e.speed;
+        let tjunc = glosa_earliest(seen, vmax, v);
+        // getTimeToSwitch
+        var count_old = 0u;
+        var next_switch = f32(ts.next_switch - min(ts.next_switch, G.step)) * dt;
+        for (var c = 1u; c < n; c++) {
+            let p = (ts.phase + c) % n;
+            let ls = phase_char(ts.first_phase, p, k.tl_index);
+            let is_g = have_green(ls);
+            if ((stop && is_g) || (green && !is_g)) {
+                count_old = ts.phase + c;
+                break;
+            }
+            next_switch += f32(phases[ts.first_phase + p].duration) * dt;
+        }
+        var offset = 0.0;
+        for (var w = 1u; w < 11u; w++) {
+            if (green) {
+                if ((flags & F_GLOSA_ACTIVE) != 0u && orig > sf) {
+                    sf = orig;
+                    flags &= ~F_GLOSA_ACTIVE;
+                }
+                if (tjunc > next_switch) {
+                    let max_factor = 1.1;
+                    if (max_factor > orig) {
+                        let v2 = min(limit * sf, ty.max_speed) / sf * max_factor;
+                        if (glosa_earliest(seen, v2, v) <= next_switch) {
+                            sf = max_factor;
+                            flags |= F_GLOSA_ACTIVE;
+                            break;
+                        }
+                    }
+                } else {
+                    break;
+                }
+            } else if (stop) {
+                // adaptSpeed
+                let w_v = limit * orig;
+                let t_s = next_switch;
+                let a = ty.accel;
+                let s = seen;
+                let root_c = a * a * t_s * t_s - 2.0 * a * w_v * t_s + 2.0 * a * s;
+                var v_const = 0.0;
+                if (root_c >= 0.0) { v_const = sqrt(root_c) - a * t_s + w_v; }
+                var d = ty.decel;
+                if (v < v_const) { d = a; }
+                let root = a * d * ((2.0 * d * (s - w_v * t_s)) - ((v - w_v) * (v - w_v)) + (a * ((d * t_s * t_s) + 2.0 * (s - t_s * v))));
+                if (root < 0.0) { break; }
+                let x = ((a * (v - d * t_s)) + d * w_v + sqrt(root)) / (d + a);
+                var y = (v - x) / d;
+                if (v < x) { y = (x - v) / d; }
+                if (s < (w_v * w_v - x * x) / 2.0 / a) {
+                    sf = orig;
+                    flags &= ~F_GLOSA_ACTIVE;
+                } else if (!(x >= 5.0 && x <= w_v && y < t_s)) {
+                    if (x < 5.0) { break; }
+                } else {
+                    let vt2 = max(x, min_next_speed(v));
+                    sf = vt2 / limit;
+                    flags |= F_GLOSA_ACTIVE;
+                    break;
+                }
+            }
+            // getTimeToNextSwitch
+            var extra = 0.0;
+            let cur_p = count_old;
+            for (var c = 0u; c < n; c++) {
+                let p = (cur_p + c) % n;
+                let ls = phase_char(ts.first_phase, p, k.tl_index);
+                let is_g = have_green(ls);
+                if (green && is_g) { count_old = p; break; }
+                if (stop && !is_g) { count_old = p; break; }
+                extra += f32(phases[ts.first_phase + p].duration) * dt;
+            }
+            green = !green;
+            stop = !stop;
+            next_switch += extra;
+            if (next_switch > 80.0) {
+                next_switch += offset;
+                offset = 6.0;
+                next_switch -= offset;
+            } else if (next_switch > 60.0) {
+                next_switch += offset;
+                offset = 4.0;
+                next_switch -= offset;
+            } else if (next_switch > 40.0) {
+                next_switch += offset;
+                offset = 3.0;
+                next_switch -= offset;
+            } else if (next_switch > 20.0) {
+                next_switch += offset;
+                offset = 2.0;
+                next_switch -= offset;
+            }
+        }
+    }
+    if (sf != e.sf) { cur[i].sf = sf; }
+    if (flags != e.flags) { cur[i].flags = flags; }
+}
+
 // ---------------------------------------------------------------- insertion
 
 // The rear-most thing on a lane right now: back position, speed.
@@ -1228,6 +1401,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     e.route_end = t.route_end;
     e.arrival = t.arrival;
     e.flags = F_BEST_DIRTY;
+    if (t.script != 0u) { e.flags |= F_SCRIPTED; }
     e.entry_step = NONE;
     e.prev_lane = NONE;
     e.prev2_lane = NONE;

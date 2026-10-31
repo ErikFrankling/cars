@@ -26,6 +26,9 @@ pub struct GpuParams {
     pub n_samples: u32,
     pub tls_yellow_min_decel: f32,
     pub time_to_impatience: f32,
+    pub ignore_blocker: f32,
+    pub script_t0: f32,
+    pub pad: [f32; 2],
 }
 
 #[repr(C)]
@@ -255,6 +258,10 @@ pub struct SimConfig {
     pub tls_yellow_min_decel: f32,
     pub block: u32,
     pub use_actuation: bool,
+    /// SUMO's ignore-junction-blocker: stuck vehicles on a junction stop counting after this long.
+    pub ignore_blocker: f32,
+    /// When the ring disturbance starts, in seconds. 0 turns it off.
+    pub script_t0: f32,
 }
 
 impl Default for SimConfig {
@@ -270,6 +277,8 @@ impl Default for SimConfig {
             tls_yellow_min_decel: 3.0,
             block: 256,
             use_actuation: true,
+            ignore_blocker: 1e9,
+            script_t0: 0.0,
         }
     }
 }
@@ -424,6 +433,9 @@ impl World {
             n_samples: n_steps / sample_steps + 2,
             tls_yellow_min_decel: cfg.tls_yellow_min_decel,
             time_to_impatience: cfg.time_to_impatience,
+            ignore_blocker: cfg.ignore_blocker,
+            script_t0: cfg.script_t0,
+            pad: [0.0; 2],
         };
         w
     }
