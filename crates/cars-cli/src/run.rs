@@ -148,7 +148,7 @@ pub fn run(args: Args) {
                 }
             }
             if args.check_overlaps {
-                let mut active: Vec<_> = vs.iter().filter(|v| v.flags & 1 == 0).collect();
+                let mut active: Vec<_> = vs.iter().filter(|v| v.flags & 1 == 0 && v.lane != world.params.dummy_lane).collect();
                 active.sort_by(|a, b| a.lane.cmp(&b.lane).then(a.pos.total_cmp(&b.pos)));
                 for pair in active.windows(2) {
                     let (a, b) = (pair[0], pair[1]);
@@ -160,7 +160,7 @@ pub fn run(args: Args) {
             }
             if let Some(f) = fcd.as_mut() {
                 for v in vs.iter() {
-                    if v.flags & 1 != 0 {
+                    if v.flags & 1 != 0 || v.lane == world.params.dummy_lane {
                         continue;
                     }
                     writeln!(f, "{:.2},{},{},{:.4},{:.4},{:.4},{:.1},{},{},{}", args.begin + (done - 1) as f32 * args.dt, demand.ids[demand.trips[v.trip as usize].id as usize], net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc, v.wait, v.lc_own, v.n_items, v.best_off).unwrap();

@@ -968,7 +968,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     ty = types[e.vtype];
     dt = P.dt;
     if (e.lane == P.dummy_lane) {
-        teleporting_step(&e);
+        teleporting_step(&e, i);
         cur[i] = e;
         return;
     }
@@ -1188,7 +1188,19 @@ fn finish_trip(e: ptr<function, Veh>, ap: f32) {
     atomicAdd(&C[C_ARRIVED], 1u);
 }
 
-fn teleporting_step(e: ptr<function, Veh>) {
+// Would whatever comes up behind `pos` on this lane cope with a vehicle appearing there at speed v?
+fn follower_allows(lane: u32, pos: f32, ego: u32, v: f32) -> bool {
+    let n = lc_neighbors(lane, pos, ego, pos - ty.length);
+    if (n.follower == NONE) { return true; }
+    if (n.f_gap < 0.0) { return false; }
+    let save = ty;
+    ty = types[n.f_vtype];
+    let need = secure_gap(n.f_speed, v, save.apparent);
+    ty = save;
+    return n.f_gap >= need;
+}
+
+fn teleporting_step(e: ptr<function, Veh>, index: u32) {
     let ed = edges[routes[(*e).route_i]];
     var best = NONE;
     var best_load = 0xffffffffu;
@@ -1221,10 +1233,10 @@ fn teleporting_step(e: ptr<function, Veh>) {
         }
         let pos = min(ty.length + POS_EPS, la.length);
         let gap = back - pos - ty.min_gap;
-        if (gap > 0.0) {
-            let vmax = min(la.speed * (*e).sf, ty.max_speed);
-            var v = vmax;
-            if (back < 1e8) { v = min(vmax, safe_follow(gap, vmax, lv, lb, true)); }
+        let vmax = min(la.speed * (*e).sf, ty.max_speed);
+        var v = vmax;
+        if (back < 1e8) { v = min(vmax, safe_follow(gap, vmax, lv, lb, true)); }
+        if (gap > 0.0 && follower_allows(best, pos, index, v)) {
             (*e).lane = best;
             (*e).pos = pos;
             (*e).speed = max(v, 0.0);
@@ -1255,6 +1267,10 @@ fn collide(@builtin(global_invocation_id) id: vec3u) {
     let a = cur[i];
     let b = cur[i + 1u];
     if (a.lane != b.lane || a.lane == P.dummy_lane || ((a.flags | b.flags) & F_REMOVED) != 0u) { return; }
+    // Neighbours in the array are only neighbours on the road if neither has moved to this lane
+    // since the sort. Those get checked after the next one.
+    let sg = seg[a.lane];
+    if (sg.stamp != G.step || i < sg.first || i + 1u >= sg.end) { return; }
     ty = types[a.vtype];
     dt = P.dt;
     let gap = b.pos - types[b.vtype].length - a.pos - ty.collision_factor * ty.min_gap;
@@ -1541,7 +1557,6 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     var lead_back = 1e9;
     var lead_v = 0.0;
     var lead_b = ty.apparent;
-    var foll = NONE;
     let p = atomicLoad(&tail[lane]);
     if (lane_occupied(lane) || p != NONE) {
         let s = seg[lane];
@@ -1559,8 +1574,6 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
                     lead_v = o.speed;
                     lead_b = ot.apparent;
                 }
-            } else {
-                foll = k;
             }
             if (back > pos + 500.0) { break; }
         }
@@ -1582,18 +1595,8 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
             if (patch_speed) { speed = vsafe; } else { return false; }
         }
     }
-    if (foll != NONE) {
-        let o = cur[foll];
-        let ot = types[o.vtype];
-        let fg = pos - ty.length - o.pos - ot.min_gap;
-        if (fg < 0.0) { return false; }
-        // The follower must be able to keep following us.
-        let save = ty;
-        ty = ot;
-        let need = secure_gap(o.speed, speed, save.apparent);
-        ty = save;
-        if (fg < need) { return false; }
-    }
+    // Whoever comes up behind must be able to keep following us, even from the lane before.
+    if (!follower_allows(lane, pos, 0xfffffffeu, speed)) { return false; }
     // Keep enough distance to stop at the lane end when the next link is closed for us.
     let seen = la.length - pos;
     if (t.route_end > t.route_start + 1u) {
