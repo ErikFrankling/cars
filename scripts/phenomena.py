@@ -17,6 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 THESIS = Path('/home/erikf/projects/personal/thesis-src/bachelor')
+SEED = 42
 OUT = ROOT / 'results/phenomena'
 VIDEOS = Path('/home/erikf/projects/personal/cars-data/videos')
 SCENARIOS = {}
@@ -71,7 +72,16 @@ def ring(d, circumference, count, end=600, one=False):
 
 @scenario
 def phantom_jam(d):
-    return ring(d, 230, 22)
+    cfg=ring(d, 330, 22, 1800)
+    root=ET.parse(d/'routes.xml')
+    human=root.getroot().find('vType')
+    human.set('accel','0.3')
+    human.set('carFollowModel','IDM')
+    human.set('decel','1.5')
+    root.getroot().find('vehicle').set('departPos','3')
+    root.write(d/'routes.xml')
+    cfg['note']='22 IDM drivers, 330 m ring; 3 m initial perturbation grows into stop-and-go waves.'
+    return cfg
 
 
 @scenario
@@ -193,19 +203,39 @@ def gridlock(d): return grid(d,3600)
 def mfd(d): return grid(d,7200)
 
 
+def thesis_inputs(d, net, routes, end, note, additional=()):
+    base=THESIS/'config'
+    shutil.copy(base/net,d/'net.xml')
+    root=ET.parse(base/routes).getroot()
+    types=ET.parse(base/'vtypes.xml').getroot()
+    for v in root.findall('vehicle'):
+        v.set('type','human')
+    for t in types.findall('vType'):
+        root.insert(0,t)
+    ET.ElementTree(root).write(d/'routes.xml')
+    if additional:
+        shutil.copy(base/additional[0],d/'signals.xml')
+    return dict(end=end,ring=False,note=note)
+
+
 @scenario
 def thesis_ring(d):
-    raise NotImplementedError('Requires paired TraCI disturbance and cars script_t0 recording support; no undisturbed substitute is reported.')
+    return thesis_inputs(d,'networks/ring.net.xml','demand/ring.rou.xml',4000,
+                        'Thesis ring human baseline; scripted disturbance is not enabled.')
 
 
 @scenario
 def bologna_rush(d):
-    raise NotImplementedError('Requires thesis human/AV demand materialisation and camera verification.')
+    return thesis_inputs(d,'scenarios/bologna/joined_buslanes.net.xml',
+                        'scenarios/bologna/bologna_cars.rou.xml',5400,
+                        'Bologna thesis human baseline during rush demand.',
+                        ['scenarios/bologna/joined_tls.add.xml'])
 
 
 @scenario
 def i80_day(d):
-    raise NotImplementedError('Requires thesis demand materialisation and a verified corridor camera.')
+    return thesis_inputs(d,'networks/i80_vsl.net.xml','demand/i80_vsl.rou.xml',18000,
+                        'I-80 thesis human baseline; demand increases then recedes.')
 
 
 def geometry(d):
@@ -217,11 +247,11 @@ def measure(d,cfg,name):
     lengths=geometry(d)
     additional = [d/'edge.add.xml'] + ([d/'signals.xml'] if (d/'signals.xml').exists() else [])
     write(d,'edge.add.xml','<additional><edgeData id="edges" freq="30" file="sumo_edges.xml" excludeEmpty="false"/></additional>')
-    common=['--net-file',d/'net.xml','--route-files',d/'routes.xml','--step-length','0.1','--end',cfg['end'],'--seed','42','--time-to-teleport','-1','--no-step-log','true']
+    common=['--net-file',d/'net.xml','--route-files',d/'routes.xml','--step-length','0.1','--end',cfg['end'],'--seed',str(SEED),'--time-to-teleport','-1','--no-step-log','true']
     
     if cfg.get('ring'): common += ['--fcd-output', d/'sumo_fcd.xml', '--device.fcd.period', '1']
     command(['flock','/tmp/cars-sumo.lock','sumo',*common,'--additional-files',','.join(map(str,additional)),'--tripinfo-output',d/'sumo_trips.xml'],d/'sumo.log')
-    cars=[ROOT/'target/release/cars','run','--net',d/'net.xml','--routes',d/'routes.xml','--dt','.1','--end',cfg['end'],'--seed','42','--time-to-teleport','0','--edge-csv',d/'cars_edges.csv','--edge-interval','30','--trip-csv',d/'cars_trips.csv','--summary-csv',d/'cars_summary.csv']
+    cars=[ROOT/'target/release/cars','run','--net',d/'net.xml','--routes',d/'routes.xml','--dt','.1','--end',cfg['end'],'--seed',str(SEED),'--time-to-teleport','0','--edge-csv',d/'cars_edges.csv','--edge-interval','30','--trip-csv',d/'cars_trips.csv','--summary-csv',d/'cars_summary.csv']
     if cfg.get('ring'): cars += ['--fcd',d/'cars_fcd.csv','--fcd-interval','1']
     if (d/'signals.xml').exists(): cars+=['--additional',d/'signals.xml']
     command(['flock','/tmp/cars-gpu.lock',*cars],d/'cars.log')
@@ -238,11 +268,12 @@ def measure(d,cfg,name):
             if r['edge'] in lengths: rows.append(['cars',float(r['begin']),r['edge'],float(r['samples']),float(r['distance']),float(r['entered'])])
     OUT.mkdir(parents=True,exist_ok=True)
     with open(OUT/f'{name}_edges.csv','w') as f:
-        w=csv.writer(f);w.writerow(['simulator','begin_s','edge','vehicle_seconds','distance_m','entered']);w.writerows(rows)
+        w=csv.writer(f,lineterminator="\n");w.writerow(['simulator','begin_s','edge','vehicle_seconds','distance_m','entered']);w.writerows(rows)
     import pandas as pd
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
+    plt.rcParams['axes.prop_cycle'] = matplotlib.cycler(color=['#eb6834','#2a78d6'])
     data=pd.DataFrame(rows,columns=['simulator','time','edge','samples','distance','entered'])
     data['length']=data.edge.map(lengths)
     data['density']=data.samples/30/data.length*1000
@@ -265,13 +296,13 @@ def measure(d,cfg,name):
     if name=='freeway_fd': axs[1,0].axhline(2400,color='black',ls='--',label='Ideal reference 2400');axs[1,0].legend()
     fig.suptitle(name+' | one seed; no equivalence claim');fig.tight_layout();fig.savefig(OUT/f'{name}.png',dpi=140);plt.close(fig)
     with open(OUT/f'{name}_summary.csv','w') as f:
-        w=csv.writer(f);w.writerow(['simulator','space_mean_speed_m_s','peak_accumulation_veh','peak_production_veh_m_s']);w.writerows(summary)
+        w=csv.writer(f,lineterminator="\n");w.writerow(['simulator','space_mean_speed_m_s','peak_accumulation_veh','peak_production_veh_m_s']);w.writerows(summary)
     if cfg.get("ring"): trajectories(d,name)
-    diagnostics = re.search(r'lane changes (\d+), teleports (\d+), collisions (\d+), overflow (\d+), items full (\d+)', (d/'cars.log').read_text())
+    diagnostics = re.search(r'lane changes (\d+), teleports (\d+), collisions (\d+)(?: \([^)]*\))?, overflow (\d+), items full (\d+)', (d/'cars.log').read_text())
     if diagnostics:
         with open(OUT/f'{name}_diagnostics.csv','w') as f:
-            w=csv.writer(f);w.writerow(['lane_changes','teleports','collisions','overflow_counter','items_full']);w.writerow(diagnostics.groups())
-    readme()
+            w=csv.writer(f,lineterminator="\n");w.writerow(['lane_changes','teleports','collisions','overflow_counter','items_full']);w.writerow(diagnostics.groups())
+
 
 
 def trajectories(d,name):
@@ -294,68 +325,78 @@ def trajectories(d,name):
             edge=v['lane'].rsplit('_',1)[0]
             if edge in offsets: rows.append(['cars',float(v['time']),v['trip'],offsets[edge]+float(v['pos']),float(v['speed'])])
     data=pd.DataFrame(rows,columns=['simulator','time_s','vehicle','position_m','speed_m_s'])
-    data.to_csv(OUT/f'{name}_trajectories.csv',index=False,float_format='%.3f')
+    metrics=[]
+    for sim,g in data.groupby('simulator'):
+        g=g[g.time_s>=600]
+        if g.empty: continue
+        field=g.assign(t=(g.time_s//10).astype(int),x=(g.position_m/offset*66).astype(int)%66).pivot_table(index='t',columns='x',values='speed_m_s',aggfunc='mean').reindex(columns=range(66))
+        field=field.interpolate(axis=1,limit_direction='both').to_numpy()
+        scores=[]
+        shifts=range(-15,16)
+        for shift in shifts:
+            a=field[:-1].ravel();b=np.roll(field[1:],-shift,axis=1).ravel()
+            mask=np.isfinite(a)&np.isfinite(b)
+            scores.append(np.corrcoef(a[mask],b[mask])[0,1] if mask.sum()>10 else float('nan'))
+        shift=list(shifts)[int(np.nanargmax(scores))]
+        metrics.append([sim,float((g.speed_m_s<.5).mean()),float(g.speed_m_s.std()),shift*offset/66/10*3.6,max(scores)])
+    with open(OUT/f'{name}_waves.csv','w') as f:
+        w=csv.writer(f,lineterminator='\n');w.writerow(['simulator','stopped_fraction','speed_sd_m_s','wave_km_h','correlation']);w.writerows(metrics)
+    data.iloc[::5].to_csv(OUT/f'{name}_trajectories.csv',index=False,float_format='%.3f')
     fig,axs=plt.subplots(2,2,figsize=(13,8),sharex=True)
     for col,(sim,g) in enumerate(data.groupby('simulator',sort=False)):
         for _,v in g.groupby('vehicle'):
             pos=v.position_m.to_numpy();unwrap=np.unwrap(pos*2*np.pi/offset)*offset/(2*np.pi)
-            axs[0,col].plot(v.time_s,unwrap,lw=.4)
+            axs[0,col].plot(v.time_s,unwrap,lw=.4,color={'SUMO':'#eb6834','cars':'#2a78d6'}[sim])
         sc=axs[1,col].scatter(g.time_s,g.position_m,c=g.speed_m_s,s=2,vmin=0,vmax=8.33,cmap='RdYlGn')
         axs[0,col].set(title=sim,ylabel='Unwrapped position (m)')
         axs[1,col].set(xlabel='Time (s)',ylabel='Ring position (m)')
         fig.colorbar(sc,ax=axs[1,col],label='Speed (m/s)')
-    fig.suptitle(name+' | equal initial spacing, stopped start | no forced disturbance')
+    fig.suptitle(name+' | stopped start | initial position perturbation only')
     fig.tight_layout();fig.savefig(OUT/f'{name}.png',dpi=140);plt.close(fig)
     # Common axes retain an explicit SUMO/cars overlay for the comparison.
     fig,ax=plt.subplots(figsize=(9,4))
     for sim,g in data.groupby('simulator'):
         v=g.groupby('time_s').speed_m_s.agg(['mean','std'])
-        ax.plot(v.index,v['std'],label=sim)
+        ax.plot(v.index,v['std'],label=sim,color={'SUMO':'#eb6834','cars':'#2a78d6'}[sim],lw=1)
     ax.set(xlabel='Time (s)',ylabel='Across-vehicle speed SD (m/s)',title='Wave amplitude (one seed)');ax.legend();fig.tight_layout();fig.savefig(OUT/f'{name}_variance.png',dpi=140);plt.close(fig)
 
 
-def readme():
-    text='# Traffic phenomena measurements\n\nOne seed (42), dt 0.1 s, Krauss sigma 0.5, speedDev 0. Same explicit departures and vTypes in both engines. Teleportation disabled. No confidence intervals or equivalence claim.\n\nFlow = distance / (30 s × lane length); density = vehicle seconds / (30 s × lane length). Production includes external edges only. Speed is distance / vehicle seconds. Empty edges remain in network denominators. These are interval Edie measurements, not stop-line detector discharge.\n\n| Scenario | Metric | Literature | SUMO | cars | cars − SUMO |\n|---|---|---|---:|---:|---:|\n'
-    for p in sorted(OUT.glob('*_summary.csv')):
-        with open(p) as f: rows={r['simulator']:r for r in csv.DictReader(f)}
-        for key in ['space_mean_speed_m_s','peak_accumulation_veh','peak_production_veh_m_s']:
-            a,b=float(rows['SUMO'][key]),float(rows['cars'][key])
-            text+=f'| {p.stem.removesuffix("_summary")} | {key} | No transferable value | {a:.3f} | {b:.3f} | {b-a:+.3f} |\n'
-    text+='\nImportant: SUMO edge sampledSeconds can include vehicles overlapping edge boundaries; edge-based accumulation is a proxy and can exceed the physical count. Ring trajectory CSVs count front positions explicitly. Do not interpret the difference as lost vehicles without checking insertion and arrival logs.\n\nPublished anchors and experiment specifications: [research report](../../research/validation-and-phenomena.md). Freeway ideal reference is 2400 pc/h/lane; signal ideal reference is 1900 pc/h/lane; backward waves commonly −10 to −20 km/h. None is substituted for a measurement.\n\nCurrent limitations: videos show cars only, explicitly labelled; no SUMO trajectory replay. Ring wave fits, pre/post capacity drop, queue-position headways, blocked-green time, and MFD branch uncertainty are not yet implemented. one_av uses a static longer headway from time zero, not feedback control or a before/after switch. brake_wave uses a persistent bottleneck, not a pulse. Grid clearing is an outcome, not guaranteed. Thesis scenarios fail explicitly rather than silently substituting a different experiment.\n'
-    text+='\nGPU diagnostics (nonzero overflow requires investigation; results are provisional):\n\n| Scenario | Overflow counter | Collisions | Teleports |\n|---|---:|---:|---:|\n'
-    for p in sorted(OUT.glob('*_diagnostics.csv')):
-        with open(p) as f: r=next(csv.DictReader(f))
-        text+=f'| {p.stem.removesuffix("_diagnostics")} | {r["overflow_counter"]} | {r["collisions"]} | {r["teleports"]} |\n'
-    text+='\nVideo status: phantom_jam.mp4 completed at 1920×1080, 30 fps, 40 seconds; inspected frame shows visible cars and readable captions, but no clear jam. one_av recording failed because lag-guard killed ffmpeg during desktop memory/disk pressure; further local recordings stopped. No completed side-by-side SUMO videos.\n'
-    (OUT/'README.md').write_text(text)
-
-
 def video(d,cfg,name):
+    cfg=dict(cfg)
+    if name=='signal_discharge': cfg['end']=90
     VIDEOS.mkdir(parents=True,exist_ok=True)
-    camera={'captions':[{'from':0,'to':cfg['end'],'text':cfg['note']}]}
-    if not cfg.get('ring') and name not in ('gridlock','mfd'):
+    camera={'captions':[{'from':0,'to':cfg['end']/3,'text':cfg['note']},{'from':cfg['end']/3,'to':cfg['end']*2/3,'text':'Color shows speed: red vehicles are stopped or slow.'},{'from':cfg['end']*2/3,'to':cfg['end'],'text':'Follow slow red vehicles as traffic evolves.'}]}
+    if not cfg.get('ring') and name not in ('gridlock','mfd','bologna_rush','i80_day','thesis_ring'):
         net=ET.parse(d/'net.xml').getroot()
         lane=next(e.find('lane') for e in net.findall('edge') if e.get('id')=='e0')
         point=list(map(float,lane.get('shape').split()[-1].split(',')))
         camera['keyframes']=[{'time':0,'center':point,'metres_per_pixel':.6},{'time':cfg['end'],'center':point,'metres_per_pixel':.35}]
+    camera_dir=OUT/'cameras'; camera_dir.mkdir(parents=True,exist_ok=True)
+    write(camera_dir,name+'.json',json.dumps(camera,indent=2))
     write(d,'camera.json',json.dumps(camera))
-    cmd=[ROOT/'target/release/cars','record','--net',d/'net.xml','--routes',d/'routes.xml','--dt','.1','--end',cfg['end'],'--seed','42','--steps-per-frame',max(1,math.ceil(cfg['end']/.1/1200)),'--fps','30','--width','1920','--height','1080','--camera',d/'camera.json','--color','speed','--title',name.replace('_',' ').title(),'--subtitle','cars GPU simulation | identical inputs measured against SUMO','--out',VIDEOS/f'{name}.mp4']
-    if cfg.get('ring') or name in ('gridlock','mfd'): cmd+=['--fit']
+    cmd=[ROOT/'target/release/cars','record','--net',d/'net.xml','--routes',d/'routes.xml','--dt','.1','--end',cfg['end'],'--seed',str(SEED),'--steps-per-frame',max(1,math.ceil(cfg['end']/.1/1200)),'--fps','30','--width','1920','--height','1080','--camera',d/'camera.json','--color','speed','--title',name.replace('_',' ').title(),'--subtitle','cars GPU simulation | identical inputs measured against SUMO','--out',VIDEOS/f'{name}.mp4']
+    if cfg.get('ring') or name in ('gridlock','mfd','bologna_rush','i80_day','thesis_ring'): cmd+=['--fit']
     if (d/'signals.xml').exists(): cmd+=['--additional',d/'signals.xml']
     command(['flock','/tmp/cars-gpu.lock',*cmd],d/'record.log')
-    command(['ffmpeg','-y','-ss','20','-i',VIDEOS/f'{name}.mp4','-frames:v','1',d/'inspection.png'],d/'inspection.log')
+    command(['ffmpeg','-y','-threads','2','-ss','20','-i',VIDEOS/f'{name}.mp4','-frames:v','1','-threads','2',d/'inspection.png'],d/'inspection.log')
 
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('name',choices=SCENARIOS)
     p.add_argument('--measure',action='store_true');p.add_argument('--video',action='store_true')
-    a=p.parse_args();d=ROOT/'runs/phenomena'/a.name;d.mkdir(parents=True,exist_ok=True)
+    p.add_argument('--seed',type=int,default=42)
+    a=p.parse_args()
+    global SEED
+    SEED=a.seed
+    d=ROOT/'runs/phenomena'/(a.name if SEED==42 else f'{a.name}_seed{SEED}');d.mkdir(parents=True,exist_ok=True)
     cfg=SCENARIOS[a.name](d)
-    manifest=dict(scenario=a.name,seed=42,dt=.1,**cfg,inputs={x.name:hashlib.sha256(x.read_bytes()).hexdigest() for x in d.glob('*.xml')},sumo_version=subprocess.check_output(['sumo','--version'],text=True),git_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip())
+    manifest=dict(scenario=a.name,seed=SEED,dt=.1,**cfg,inputs={x.name:hashlib.sha256(x.read_bytes()).hexdigest() for x in d.glob('*.xml')},sumo_version=subprocess.check_output(['sumo','--version'],text=True),git_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip())
     write(d,'manifest.json',json.dumps(manifest,indent=2))
-    OUT.mkdir(parents=True,exist_ok=True);shutil.copy(d/'manifest.json',OUT/f'{a.name}_manifest.json')
-    if a.measure: measure(d,cfg,a.name)
+    OUT.mkdir(parents=True,exist_ok=True);shutil.copy(d/'manifest.json',OUT/(f'{a.name}_manifest.json' if SEED==42 else f'{a.name}_seed{SEED}_manifest.json'))
+    if a.measure:
+        name=a.name if SEED==42 else f'{a.name}_seed{SEED}'
+        measure(d,cfg,name)
     if a.video: video(d,cfg,a.name)
     size=sum(x.stat().st_size for x in (ROOT/'runs').rglob('*') if x.is_file())
     if size>3e9: raise RuntimeError('runs/ exceeds 3 GB; remove raw outputs before continuing')

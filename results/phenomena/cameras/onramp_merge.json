@@ -1,0 +1,27 @@
+{
+  "captions": [
+    {
+      "from": 0,
+      "to": 1800,
+      "text": "Ramp inflow meets rising mainline demand."
+    }
+  ],
+  "keyframes": [
+    {
+      "time": 0,
+      "center": [
+        2490.5,
+        395.2
+      ],
+      "metres_per_pixel": 0.6
+    },
+    {
+      "time": 1800,
+      "center": [
+        2490.5,
+        395.2
+      ],
+      "metres_per_pixel": 0.35
+    }
+  ]
+}

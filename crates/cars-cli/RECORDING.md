@@ -45,7 +45,7 @@ on GPU. Replica 0 is rendered. Renderer memory is linear in geometry and capacit
 
 Output dimensions must be even and at most 1920 on either axis. GPU submissions
 use `Sim::run`'s short adaptive batches; rendering is a separate submission.
-CPU libx264 uses three threads, CRF 20, medium preset, yuv420p; hardware encoders
+CPU libx264 uses two threads, CRF 20, veryfast preset, yuv420p; hardware encoders
 are never used. The `.ass` sidecar is retained for editing. The silent intermediate
 is deleted after a successful libass burn-in and retained on failure.
 

@@ -206,6 +206,7 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
     let scale = a.height as f32 / 1080.0;
     for (name, size, bold, align, margin) in [
         ("Title", 38, -1, 7, 40),
+        ("Subtitle", 24, 0, 7, 90),
         ("Caption", 24, 0, 1, 82),
         ("HUD", 22, 0, 1, 40),
     ] {
@@ -225,10 +226,11 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
     let frames = (end - first).div_ceil(a.steps_per_frame as u64);
     let duration = frames as f64 / a.fps as f64;
     event(&mut subtitles, 0.0, duration, "Title", &a.title)?;
+    event(&mut subtitles, 0.0, duration, "Subtitle", &a.subtitle)?;
     let mut ff = Encoder(
         Command::new("ffmpeg")
             .args([
-                "-y", "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgba", "-s",
+                "-y", "-v", "error", "-threads", "2", "-filter_threads", "2", "-f", "rawvideo", "-pix_fmt", "rgba", "-s",
             ])
             .arg(format!("{}x{}", a.width, a.height))
             .args([
@@ -243,9 +245,9 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
                 "-crf",
                 "20",
                 "-preset",
-                "medium",
+                "veryfast",
                 "-threads",
-                "3",
+                "2",
             ])
             .arg(&intermediate)
             .stdin(Stdio::piped())
@@ -321,7 +323,7 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
     let output = std::env::current_dir()?.join(&a.out);
     let status = Command::new("ffmpeg")
         .current_dir(&temp)
-        .args(["-y", "-v", "error", "-i"])
+        .args(["-y", "-v", "error", "-threads", "2", "-filter_threads", "2", "-i"])
         .arg(input)
         .args([
             "-vf",
@@ -333,9 +335,9 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
             "-crf",
             "20",
             "-preset",
-            "medium",
+            "veryfast",
             "-threads",
-            "3",
+            "2",
             "-movflags",
             "+faststart",
         ])
