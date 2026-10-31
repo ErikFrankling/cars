@@ -61,6 +61,15 @@ pub struct Args {
     debug_from: f32,
     #[arg(long, default_value_t = 1e9)]
     debug_to: f32,
+    /// Ignore signal actuation and run every program at its fixed durations.
+    #[arg(long)]
+    static_tls: bool,
+    /// Classify why stuck lane heads are stuck at these simulated times.
+    #[arg(long, value_delimiter = ',')]
+    diagnose_at: Vec<f32>,
+    /// Time every kernel for one step at these simulated times.
+    #[arg(long, value_delimiter = ',')]
+    profile_at: Vec<f32>,
 }
 
 pub fn run(args: Args) {
@@ -81,6 +90,7 @@ pub fn run(args: Args) {
         time_to_teleport: args.time_to_teleport,
         ignore_blocker: args.ignore_junction_blocker,
         capacity: args.capacity,
+        use_actuation: !args.static_tls,
         ..Default::default()
     };
     let t = Instant::now();
@@ -107,7 +117,7 @@ pub fn run(args: Args) {
     }
     let mut edges_out = args.edge_csv.as_ref().map(|p| std::io::BufWriter::new(std::fs::File::create(p).expect("edges")));
     if let Some(f) = edges_out.as_mut() {
-        writeln!(f, "begin,edge,samples,distance,entered").unwrap();
+        writeln!(f, "begin,edge,samples,distance,entered,teleports").unwrap();
     }
     let interval = (args.edge_interval / args.dt).round() as u64;
     let mut edge_log = EdgeLog::new(&world, interval, false);
@@ -144,6 +154,20 @@ pub fn run(args: Args) {
                             format!("{}->{} flags {:#x} tl {} state {} foes {} confs {}", net.lanes[l.from_lane as usize].id, net.lanes[l.next_lane as usize].id, l.flags, l.tl as i32, l.state as u8 as char, l.foe_count, l.conf_count)
                         };
                         println!("   item {j}: {desc} pass {:.2} wait {:.2} req {} arr {:.2} arrv {:.2} dist {:.1} leave {:.2}", it[1], it[2], it[3].to_bits(), it[4], it[5], it[7], it[8]);
+                        if link != u32::MAX && j == 0 {
+                            let l = world.links[link as usize];
+                            let on = |lane: u32| -> String {
+                                vs.iter().filter(|o| o.lane == lane && o.flags & 1 == 0).map(|o| format!("{:.1}/{:.1}w{:.0}", o.pos, o.speed, o.wait)).collect::<Vec<_>>().join(" ")
+                            };
+                            println!("      next lane {} [{}], to lane {} [{}]", net.lanes[l.next_lane as usize].id, on(l.next_lane), net.lanes[l.to_lane as usize].id, on(l.to_lane));
+                            for c in 0..l.conf_count {
+                                let cf = world.conflicts[(l.conf_start + c) as usize];
+                                let txt = on(cf.foe_lane);
+                                if !txt.is_empty() {
+                                    println!("      conflict {} flags {} behind {:.1} foe_behind {:.1} w {:.1} fw {:.1} foe len {:.1}: {}", net.lanes[cf.foe_lane as usize].id, cf.flags, cf.len_behind, cf.foe_len_behind, cf.width, cf.foe_width, net.lanes[cf.foe_lane as usize].length, txt);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -168,7 +192,33 @@ pub fn run(args: Args) {
             }
         } else {
             let next = ((done / interval) + 1) * interval;
-            let chunk = (next - done).min(steps - done).min((60.0 / args.dt).ceil() as u64);
+            let mut chunk = (next - done).min(steps - done).min((60.0 / args.dt).ceil() as u64);
+            let t_next = args.begin + (done + chunk) as f32 * args.dt;
+            if let Some(&at) = args.diagnose_at.iter().find(|&&at| at > args.begin + done as f32 * args.dt && at <= t_next) {
+                chunk = ((at - args.begin) / args.dt) as u64 - done;
+                done += sim.run(&gpu, chunk);
+                diagnose(&sim, &gpu, &net, &world, at);
+                continue;
+            }
+            if let Some(&at) = args.profile_at.iter().find(|&&at| {
+                let s = ((at - args.begin) / args.dt) as u64;
+                s > done && s <= done + chunk
+            }) {
+                let s = ((at - args.begin) / args.dt) as u64;
+                if s > done + 1 {
+                    chunk = s - done - 1;
+                } else {
+                    let g = sim.globals(&gpu);
+                    let times = sim.profile_step(&gpu);
+                    let total: f64 = times.iter().map(|t| t.1).sum();
+                    println!("profile at t={at} with {} vehicles: {total:.3} ms", g.n_active);
+                    for (name, ms) in times {
+                        println!("  {name:12} {ms:8.3} ms");
+                    }
+                    done += 1;
+                    continue;
+                }
+            }
             let g0 = sim.globals(&gpu);
             done += sim.run(&gpu, chunk);
             let g = sim.globals(&gpu);
@@ -193,8 +243,8 @@ pub fn run(args: Args) {
             if let Some(f) = edges_out.as_mut() {
                 let acc = sim.take_edge_acc(&gpu);
                 for (e, a) in acc.iter().enumerate() {
-                    if a[0] > 0 || a[2] > 0 {
-                        writeln!(f, "{},{},{},{},{}", begin, net.edges[e].id, a[0] as f32 * world.params.sample_steps as f32 * args.dt, a[1] as f32 / 8.0, a[2]).unwrap();
+                    if a[0] > 0 || a[2] > 0 || a[3] > 0 {
+                        writeln!(f, "{},{},{},{},{},{}", begin, net.edges[e].id, a[0] as f32 * world.params.sample_steps as f32 * args.dt, a[1] as f32 / 8.0, a[2], a[3]).unwrap();
                     }
                 }
             } else {
@@ -219,9 +269,72 @@ pub fn run(args: Args) {
             ).unwrap();
         }
     }
+    eprintln!("time: encode {:.2}s, gpu submit+wait {:.2}s, total {wall:.2}s", sim.encode_ms / 1000.0, sim.gpu_ms / 1000.0);
     let m = &replica_metrics(&gpu, &sim, &world, &[String::new()], &edge_log)[0];
     println!(
         "wall {wall:.2}s, {:.1} M updates/s, speed {:.2}, running {:.1}, trips done {}, duration {:.2}, wait {:.2}, loss {:.2}, flow {:.1}, density {:.2}",
         vehicle_updates as f64 / wall / 1e6, m.speed, m.running, m.completed, m.travel_time, m.waiting_time, m.time_loss, m.edge_flow, m.density
     );
+}
+
+/// Why are the heads of stuck lanes stuck?
+fn diagnose(sim: &Sim, gpu: &Gpu, net: &Net, world: &World, at: f32) {
+    use std::collections::HashMap;
+    let vs = sim.vehicles(gpu);
+    let items: Vec<[f32; 10]> = sim.read(gpu, &sim.buffers.items, vs.len() as u64 * 8);
+    let tls: Vec<cars_core::world::GpuTlsState> = sim.read(gpu, &sim.buffers.tls, world.tls.len() as u64);
+    let mut heads: HashMap<u32, usize> = HashMap::new();
+    for (i, v) in vs.iter().enumerate() {
+        if v.flags & 1 != 0 || v.lane == world.params.dummy_lane {
+            continue;
+        }
+        let e = heads.entry(v.lane).or_insert(i);
+        if vs[*e].pos < v.pos {
+            *e = i;
+        }
+    }
+    let mut counts: HashMap<String, (u32, f32)> = HashMap::new();
+    let mut worst: Vec<(f32, String)> = Vec::new();
+    let mut n_stuck = 0;
+    for (&lane, &i) in &heads {
+        let v = &vs[i];
+        if v.wait < 30.0 {
+            continue;
+        }
+        n_stuck += 1;
+        let internal = world.lanes[lane as usize].flags & 1 != 0;
+        let mut kind = String::new();
+        let it = items[i * 8];
+        let link = it[0].to_bits();
+        if link == u32::MAX {
+            let dist = it[7];
+            let wants = v.lc_own & 3;
+            kind = format!("no link ahead (dist<10:{} wants_lc:{} blocked:{})", dist < 10.0, wants != 0, v.lc_own & 0x180 != 0);
+        } else {
+            let l = &world.links[link as usize];
+            let mut st = l.state as u8 as char;
+            if l.tl != u32::MAX {
+                let ts = &tls[l.tl as usize];
+                st = world.states[(world.phases[(ts.first_phase + ts.phase) as usize].state_start + l.tl_index) as usize] as u8 as char;
+            }
+            kind = format!("{} state {st} request {} far {}", if l.flags & 16 != 0 { "exit/2nd link" } else { "entry link" }, it[3].to_bits(), it[7] > 15.0);
+        }
+        if internal {
+            kind = format!("[on junction] {kind}");
+        }
+        let c = counts.entry(kind.clone()).or_insert((0, 0.0));
+        c.0 += 1;
+        c.1 += v.wait;
+        worst.push((v.wait, format!("{} pos {:.0}/{:.0} wait {:.0} own {:#x} {kind}", net.lanes[lane as usize].id, v.pos, world.lanes[lane as usize].length, v.wait, v.lc_own)));
+    }
+    let mut c: Vec<_> = counts.into_iter().collect();
+    c.sort_by_key(|x| std::cmp::Reverse(x.1.0));
+    println!("diagnose t={at}: {} active, {} lane heads waiting over 30 s", vs.len(), n_stuck);
+    for (k, (n, w)) in c.iter().take(25) {
+        println!("  {n:6}  mean wait {:6.1}  {k}", w / *n as f32);
+    }
+    worst.sort_by(|a, b| b.0.total_cmp(&a.0));
+    for (_, w) in worst.iter().take(12) {
+        println!("    {w}");
+    }
 }

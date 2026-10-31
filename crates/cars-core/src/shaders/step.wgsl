@@ -1069,6 +1069,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
 
     // Detector crossing for actuated signals.
     let det = lanes[e.lane].det_pos;
+    if (det >= 0.0 && e.pos >= det && e.pos - ty.length < det) { last_detect[e.lane] = G.step; }
     if (det >= 0.0 && old_pos < det && e.pos >= det) { last_detect[e.lane] = G.step; }
 
     // Cross onto the following lanes.
@@ -1125,6 +1126,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     if (P.teleport_steps != 0u && e.wait > f32(P.teleport_steps) * dt) {
         let s0 = seg[first_lane];
         if (first_lane == e.lane && i + 1u == s0.end) {
+            atomicAdd(&edge_acc[lanes[e.lane].edge * 4u + 3u], 1u);
             teleport(&e);
             atomicAdd(&C[C_TELEPORTS], 1u);
             cur[i] = e;

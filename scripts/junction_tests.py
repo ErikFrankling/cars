@@ -25,6 +25,10 @@ def run(cmd):
 
 
 def cross(d, jt, lanes=1, major=True, arm=400, speed=13.89):
+    tls_type = []
+    if jt == "actuated":
+        jt = "traffic_light"
+        tls_type = ["--tls.default-type", "actuated"]
     nodes = f'<nodes><node id="c" x="0" y="0" type="{jt}"/><node id="w" x="{-arm}" y="0"/><node id="e" x="{arm}" y="0"/><node id="s" x="0" y="{-arm}"/><node id="n" x="0" y="{arm}"/></nodes>'
     edges = "<edges>"
     for a, b, pr in [("w", "c", 2), ("c", "e", 2), ("e", "c", 2), ("c", "w", 2), ("s", "c", 1), ("c", "n", 1), ("n", "c", 1), ("c", "s", 1)]:
@@ -34,7 +38,7 @@ def cross(d, jt, lanes=1, major=True, arm=400, speed=13.89):
     edges += "</edges>"
     (d / "n.nod.xml").write_text(nodes)
     (d / "n.edg.xml").write_text(edges)
-    run(["netconvert", "-n", d / "n.nod.xml", "-e", d / "n.edg.xml", "-o", d / "net.xml", "--no-turnarounds"])
+    run(["netconvert", "-n", d / "n.nod.xml", "-e", d / "n.edg.xml", "-o", d / "net.xml", "--no-turnarounds"] + tls_type)
 
 
 def flows(d, spec, vt, end=900):
@@ -46,6 +50,8 @@ def flows(d, spec, vt, end=900):
 
 
 CASES = {
+    "actuated_light": ("actuated", 1, [("we", "wc ce", 300), ("sn", "sc cn", 100), ("ew", "ec cw", 300)]),
+    "actuated_heavy": ("actuated", 2, [("we", "wc ce", 1000), ("sn", "sc cn", 600), ("ew", "ec cw", 1000), ("ns", "nc cs", 600), ("wn", "wc cn", 100)]),
     "tls_permissive_left": ("traffic_light", 1, [("we", "wc ce", 500), ("en", "ec cn", 150), ("ew", "ec cw", 400), ("ns", "nc cs", 300)]),
     "tls_left_2lane": ("traffic_light", 2, [("we", "wc ce", 900), ("wn", "wc cn", 200), ("ew", "ec cw", 900), ("es", "ec cs", 200), ("sn", "sc cn", 400)]),
     "prio_major_left": ("priority", 1, [("we", "wc ce", 500), ("wn", "wc cn", 150), ("ew", "ec cw", 500)]),

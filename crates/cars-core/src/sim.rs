@@ -41,6 +41,9 @@ pub struct Sim {
     /// Largest number of steps one submission may hold, adjusted to keep submissions short.
     pub steps_per_submit: u32,
     pub target_submit_ms: f64,
+    /// Time spent recording commands on the CPU, and waiting for the GPU.
+    pub encode_ms: f64,
+    pub gpu_ms: f64,
 }
 
 pub struct Buffers {
@@ -438,6 +441,8 @@ impl Sim {
             radix,
             steps_per_submit: 1,
             target_submit_ms: 15.0,
+            encode_ms: 0.0,
+            gpu_ms: 0.0,
         })
     }
 
@@ -544,9 +549,14 @@ impl Sim {
                 self.step += 1;
             }
         }
-        gpu.queue.submit([enc.finish()]);
+        let cmd = enc.finish();
+        self.encode_ms += t.elapsed().as_secs_f64() * 1000.0;
+        let t2 = Instant::now();
+        gpu.queue.submit([cmd]);
         gpu.wait();
-        t.elapsed().as_secs_f64() * 1000.0
+        let gpu_ms = t2.elapsed().as_secs_f64() * 1000.0;
+        self.gpu_ms += gpu_ms;
+        gpu_ms
     }
 
     /// Run up to `limit` steps, keeping each GPU submission short so the desktop stays smooth.
@@ -622,6 +632,163 @@ impl Sim {
         enc.clear_buffer(&self.buffers.edge_acc, 0, None);
         gpu.queue.submit([enc.finish()]);
         out
+    }
+
+    /// Run one step with a GPU timer around every kernel. Returns (kernel, milliseconds).
+    pub fn profile_step(&mut self, gpu: &Gpu) -> Vec<(String, f64)> {
+        let period = gpu.queue.get_timestamp_period() as f64 * 1e-6;
+        let device = &gpu.device;
+        let cap = 96u32;
+        let set = device.create_query_set(&wgpu::QuerySetDescriptor {
+            label: Some("profile"),
+            ty: wgpu::QueryType::Timestamp,
+            count: cap,
+        });
+        let resolve = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("resolve"),
+            size: cap as u64 * 8,
+            usage: wgpu::BufferUsages::QUERY_RESOLVE | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+        let mut enc = device.create_command_encoder(&Default::default());
+        let mut names: Vec<String> = Vec::new();
+        let p = &self.pipelines;
+        let params = self.world_params;
+        let group = &self.main_groups[(self.step % 2) as usize];
+        let ind = &self.buffers.indirect;
+        let mut pass = |name: &str, f: &mut dyn FnMut(&mut wgpu::ComputePass<'_>)| {
+            let q = names.len() as u32 * 2;
+            names.push(name.to_string());
+            let mut c = enc.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: None,
+                timestamp_writes: Some(wgpu::ComputePassTimestampWrites {
+                    query_set: &set,
+                    beginning_of_pass_write_index: Some(q),
+                    end_of_pass_write_index: Some(q + 1),
+                }),
+            });
+            f(&mut c);
+        };
+        pass("begin", &mut |c| {
+            c.set_pipeline(&p.begin);
+            c.set_bind_group(0, &self.control_group, &[]);
+            c.dispatch_workgroups(1, 1, 1);
+        });
+        if params.n_tls > 0 {
+            pass("tls", &mut |c| {
+                c.set_bind_group(0, group, &[]);
+                c.set_pipeline(&p.tls);
+                c.dispatch_workgroups(params.n_tls.div_ceil(16), 1, 1);
+            });
+        }
+        pass("keys", &mut |c| {
+            c.set_bind_group(0, group, &[]);
+            c.set_pipeline(&p.keys);
+            c.set_bind_group(1, &self.keys_group, &[]);
+            c.dispatch_workgroups_indirect(ind, 0);
+        });
+        pass("sort", &mut |c| {
+            for g in &self.sort_groups {
+                c.set_bind_group(0, &g[0], &[]);
+                c.set_pipeline(&p.count);
+                c.dispatch_workgroups_indirect(ind, 12);
+                c.set_pipeline(&p.prefix);
+                c.dispatch_workgroups(self.radix.div_ceil(64), 1, 1);
+                c.set_pipeline(&p.starts);
+                c.dispatch_workgroups(1, 1, 1);
+                c.set_pipeline(&p.scatter);
+                c.dispatch_workgroups_indirect(ind, 12);
+            }
+        });
+        pass("gather", &mut |c| {
+            c.set_bind_group(0, group, &[]);
+            c.set_pipeline(&p.gather);
+            c.set_bind_group(1, &self.gather_group, &[]);
+            c.dispatch_workgroups_indirect(ind, 0);
+            c.set_pipeline(&p.after_gather);
+            c.set_bind_group(0, &self.control_group, &[]);
+            c.dispatch_workgroups(1, 1, 1);
+        });
+        pass("seg", &mut |c| {
+            c.set_bind_group(0, group, &[]);
+            c.set_pipeline(&p.build_seg);
+            c.dispatch_workgroups_indirect(ind, 24);
+        });
+        pass("clear_links", &mut |c| {
+            c.set_bind_group(0, group, &[]);
+            c.set_pipeline(&p.clear_links);
+            c.dispatch_workgroups(params.n_links.div_ceil(64), 1, 1);
+        });
+        pass("plan", &mut |c| {
+            c.set_bind_group(0, group, &[]);
+            c.set_pipeline(&p.plan);
+            c.dispatch_workgroups_indirect(ind, 24);
+        });
+        pass("approach", &mut |c| {
+            c.set_bind_group(0, group, &[]);
+            c.set_pipeline(&p.approach);
+            c.dispatch_workgroups_indirect(ind, 24);
+        });
+        pass("clear_lanes", &mut |c| {
+            c.set_bind_group(0, group, &[]);
+            c.set_pipeline(&p.clear_lanes);
+            c.dispatch_workgroups(params.n_lanes.div_ceil(64), 1, 1);
+        });
+        pass("exec", &mut |c| {
+            c.set_bind_group(0, group, &[]);
+            c.set_pipeline(&p.exec);
+            c.dispatch_workgroups_indirect(ind, 24);
+        });
+        if let Some(best) = &p.lc_best {
+            pass("lc_best", &mut |c| {
+                c.set_bind_group(0, group, &[]);
+                c.set_pipeline(best);
+                c.dispatch_workgroups_indirect(ind, 24);
+            });
+        }
+        pass("lc_decide", &mut |c| {
+            c.set_bind_group(0, group, &[]);
+            c.set_pipeline(&p.lc_decide);
+            c.dispatch_workgroups_indirect(ind, 24);
+            if let Some(h) = &p.lc_helpers {
+                c.set_pipeline(h);
+                c.dispatch_workgroups_indirect(ind, 24);
+            }
+        });
+        pass("lc_commit", &mut |c| {
+            c.set_bind_group(0, group, &[]);
+            if let Some(h) = &p.lc_commit {
+                c.set_pipeline(h);
+                c.dispatch_workgroups_indirect(ind, 24);
+            }
+            if let Some(h) = &p.lc_release {
+                c.set_pipeline(h);
+                c.dispatch_workgroups_indirect(ind, 24);
+            }
+        });
+        pass("collide", &mut |c| {
+            c.set_bind_group(0, group, &[]);
+            c.set_pipeline(&p.collide);
+            c.dispatch_workgroups_indirect(ind, 24);
+        });
+        if params.n_queues > 0 {
+            pass("insert", &mut |c| {
+                c.set_bind_group(0, group, &[]);
+                c.set_pipeline(&p.insert);
+                c.dispatch_workgroups(params.n_queues.div_ceil(16), 1, 1);
+            });
+        }
+        let n = names.len() as u32 * 2;
+        enc.resolve_query_set(&set, 0..n, &resolve, 0);
+        gpu.queue.submit([enc.finish()]);
+        gpu.wait();
+        self.step += 1;
+        let t: Vec<u64> = self.read(gpu, &resolve, n as u64);
+        names
+            .into_iter()
+            .enumerate()
+            .map(|(i, name)| (name, t[i * 2 + 1].wrapping_sub(t[i * 2]) as f64 * period))
+            .collect()
     }
 
     pub fn passes(&self) -> u32 {
