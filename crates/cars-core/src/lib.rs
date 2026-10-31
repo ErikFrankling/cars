@@ -1,6 +1,7 @@
 //! A microscopic traffic simulator that runs on the GPU.
 
 pub mod actuated;
+pub mod bestlanes;
 pub mod demand;
 pub mod gpu;
 pub mod metrics;

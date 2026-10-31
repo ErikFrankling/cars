@@ -704,10 +704,12 @@ fn lane_free_scan(@builtin(global_invocation_id) id: vec3u) {
     f.space = lanes[lane].length;
     var lengths = 0.0;
     var stopped = false;
+    var speed_sum = 0.0;
     if ((cur[i].flags & F_HAVE_TO_WAIT) != 0u) { f.flags = FREE_LAST_WAITS; }
     for (var k = i; k < end; k++) {
         let vt = types[cur[k].vtype];
         let speed = cur[k].speed;
+        speed_sum += speed;
         if (!stopped && speed < HALT_SPEED && !roundabout) {
             stopped = true;
             f.flags |= FREE_STOPPED;
@@ -717,6 +719,7 @@ fn lane_free_scan(@builtin(global_invocation_id) id: vec3u) {
     }
     if (!stopped) { f.space -= lengths; }
     f.brutto = lengths;
+    f.mean_speed = speed_sum / f32(max(end - i, 1u));
     lane_free[lane] = f;
 }
 
@@ -1649,7 +1652,33 @@ fn choose_lane(ed: Edge, t: Trip, rng: ptr<private, u32>) -> u32 {
         }
         return NONE;
     }
-    // free, allowed, best: the emptiest lane, limited to lanes reaching the next edge unless free.
+    if (mode <= -5) {
+        // MSEdge::getFreeLane and getProbableLane over the best lanes: the largest gap to the last vehicle.
+        let depart = min(ty.length + POS_EPS, ed.length);
+        var largest = 0.0;
+        var by_gap = NONE;
+        var emptiest = NONE;
+        var least = 1e30;
+        for (var l = 0u; l < ed.lane_count; l++) {
+            if (((t.best_mask >> l) & 1u) == 0u) { continue; }
+            let c = ed.first_lane + l;
+            let occupancy = brutto_on(c);
+            if (occupancy < least) {
+                least = occupancy;
+                emptiest = c;
+            }
+            var last = ed.length;
+            let packed = atomicLoad(&tail[c]);
+            if (packed != NONE) { last = unpack_back(packed) + ty.length; }
+            if (last - depart > largest) {
+                largest = last - depart;
+                by_gap = c;
+            }
+        }
+        if (by_gap != NONE) { return by_gap; }
+        return emptiest;
+    }
+    // free, allowed: the emptiest lane, limited to lanes reaching the next edge unless free.
     var best = NONE;
     var best_load = 0xffffffffu;
     for (var round = 0u; round < 2u; round++) {
@@ -1707,6 +1736,12 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
         case 3u: { speed = vmax; patch_speed = true; }
         case 4u: { speed = vmax; }
         case 5u: { speed = min(la.speed, ty.max_speed); }
+        case 6u: {
+            // MSLane::getDepartSpeed with DepartSpeedDefinition::AVG.
+            speed = vmax;
+            if (lane_occupied(lane)) { speed = min(vmax, lane_free[lane].mean_speed); }
+            patch_speed = !lane_occupied(lane) && atomicLoad(&tail[lane]) == NONE;
+        }
         default: {}
     }
 
@@ -1754,23 +1789,49 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     }
     // Whoever comes up behind must be able to keep following us, even from the lane before.
     if (!follower_allows(lane, pos, 0xfffffffeu, speed)) { return false; }
-    // Keep enough distance to stop at the lane end when the next link is closed for us.
-    let seen = la.length - pos;
-    if (t.route_end > t.route_start + 1u) {
-        let want = routes[t.route_start + 1u];
-        for (var k = 0u; k < la.links_count; k++) {
-            let c = la.links_start + k;
-            if (links[c].to_edge == want) {
-                let st = link_state(c);
-                if (have_red(st) || have_yellow(st)) {
-                    let vstop = safe_stop(seen - POS_EPS, ty.decel, speed, ty.tau, false);
-                    if (vstop < speed) {
-                        if (patch_speed) { speed = vstop; } else { return false; }
-                    }
+    // What lies within braking distance along the route, as in MSLane::isInsertionSuccess.
+    var seen = la.length - pos;
+    var at = lane;
+    var route_at = t.route_start;
+    for (var hop = 0u; hop < 8u; hop++) {
+        let dist = brake_gap(speed, ty.decel, ty.tau) + ty.min_gap;
+        if (seen >= dist) { break; }
+        let k = pick_link(at, route_at, t.route_end);
+        if (k == NONE) {
+            if (is_internal(at) || route_at + 1u < t.route_end) {
+                let vs = safe_stop(seen, ty.decel, speed, ty.tau, false);
+                if (vs < speed) {
+                    if (patch_speed) { speed = vs; } else { return false; }
                 }
-                break;
+            }
+            break;
+        }
+        let st = link_state(k);
+        if (have_red(st) || have_yellow(st) || !have_priority(st) || st == CH_Z) {
+            let vs = safe_stop(seen, ty.decel, speed, ty.tau, false);
+            if (vs < speed) {
+                if (patch_speed) { speed = vs; } else { return false; }
+            }
+            if (seen >= ty.min_gap) { break; }
+        }
+        let next = links[k].next_lane;
+        let packed = atomicLoad(&tail[next]);
+        if (packed != NONE) {
+            let g = seen + unpack_back(packed) - ty.min_gap;
+            if (g < 0.0) { return false; }
+            let vs = safe_follow(g, speed, unpack_speed(packed), ty.apparent, true);
+            if (vs < speed) {
+                if (patch_speed) { speed = vs; } else { return false; }
             }
         }
+        let next_vmax = min(lanes[next].speed * t.sf, ty.max_speed);
+        let vf = free_speed(speed, seen, next_vmax, vmax);
+        if (vf < speed) {
+            if (patch_speed) { speed = vf; } else { return false; }
+        }
+        if ((links[k].flags & L_HAS_VIA) == 0u) { route_at += 1u; }
+        seen += lanes[next].length;
+        at = next;
     }
 
     let idx = G.n_active + atomicAdd(&C[C_NEW], 1u);

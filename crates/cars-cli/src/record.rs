@@ -49,6 +49,15 @@ pub struct Args {
     subtitle: String,
     #[arg(long,default_value="speed",value_parser=["speed","type","wait"])]
     color: String,
+    /// Where the simulation starts; the part before --begin runs without rendering.
+    #[arg(long, default_value_t = 0.0)]
+    sim_begin: f32,
+    #[arg(long, default_value_t = -1.0)]
+    time_to_teleport: f32,
+    #[arg(long, default_value_t = -1.0)]
+    ignore_junction_blocker: f32,
+    #[arg(long)]
+    capacity: Option<u32>,
 }
 #[derive(Deserialize, Default)]
 struct Script {
@@ -161,8 +170,12 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
         &demand,
         &SimConfig {
             dt: a.dt,
+            begin_seconds: a.sim_begin,
             end_seconds: a.end,
             seed: a.seed,
+            time_to_teleport: if a.time_to_teleport >= 0.0 { a.time_to_teleport } else { SimConfig::default().time_to_teleport },
+            ignore_blocker: if a.ignore_junction_blocker >= 0.0 { a.ignore_junction_blocker } else { SimConfig::default().ignore_blocker },
+            capacity: a.capacity.unwrap_or(0),
             ..Default::default()
         },
         &[],
@@ -173,8 +186,8 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
     }))?;
     let mut sim = Sim::new(&gpu, &world)?;
     let renderer = Renderer::new(&gpu, &world, &net, a.width, a.height);
-    let first = (a.begin / a.dt).ceil() as u64;
-    let end = (a.end / a.dt).ceil() as u64;
+    let first = ((a.begin - a.sim_begin) / a.dt).ceil() as u64;
+    let end = ((a.end - a.sim_begin) / a.dt).ceil() as u64;
     sim.run(&gpu, first);
     if let Some(p) = a.out.parent().filter(|p| !p.as_os_str().is_empty()) {
         std::fs::create_dir_all(p)?;
@@ -247,7 +260,7 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
     };
     for frame in 0..frames {
         sim.run(&gpu, (end - sim.step).min(a.steps_per_frame as u64));
-        let time = sim.step.saturating_sub(1) as f32 * a.dt;
+        let time = a.sim_begin + sim.step.saturating_sub(1) as f32 * a.dt;
         let mut camera = fit;
         if !a.fit && !script.keyframes.is_empty() {
             let ks = &script.keyframes;

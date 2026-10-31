@@ -232,7 +232,7 @@ struct Trip {
     rng: u32,
     replica: u32,
     script: u32,
-    pad1: u32,
+    best_mask: u32,
     pad2: u32,
 }
 
@@ -251,7 +251,7 @@ struct LaneFree {
     space: f32,
     brutto: f32,
     flags: u32,
-    pad: u32,
+    mean_speed: f32,
 }
 
 struct Item {

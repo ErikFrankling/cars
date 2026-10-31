@@ -763,6 +763,7 @@ impl World {
         let _ = route0;
         let mut rng_state = rep.seed.wrapping_mul(0x2545F4914F6CDD1D) ^ (ri as u64 + 1);
         let mut by_edge: Vec<Vec<u32>> = vec![Vec::new(); net.edges.len()];
+        let mut masks: std::collections::HashMap<(u32, u32), u32> = std::collections::HashMap::new();
         for (ti, t) in demand.trips.iter().enumerate() {
             if t.depart < cfg.begin_seconds as f64 {
                 continue;
@@ -776,7 +777,8 @@ impl World {
                 DepartLane::Random => (-2, 0),
                 DepartLane::Free => (-3, 0),
                 DepartLane::Allowed => (-4, 0),
-                DepartLane::Best | DepartLane::BestProb => (-5, 0),
+                DepartLane::Best => (-5, 0),
+                DepartLane::BestProb => (-6, 0),
             };
             let (depart_pos, depart_pos_mode) = match t.depart_pos {
                 DepartPos::Base => (0.0, 0),
@@ -791,6 +793,7 @@ impl World {
                 DepartSpeed::Max => (0.0, 3),
                 DepartSpeed::Desired => (0.0, 4),
                 DepartSpeed::SpeedLimit => (0.0, 5),
+                DepartSpeed::Avg => (0.0, 6),
             };
             let arrival = match t.arrival_pos {
                 ArrivalPos::Max => 1e9,
@@ -803,6 +806,12 @@ impl World {
                 }
             };
             let sf = speed_factor(vt, &mut rng_state);
+            let mask = match t.depart_lane {
+                DepartLane::Best | DepartLane::BestProb => {
+                    *masks.entry((t.route, vtype_id)).or_insert_with(|| crate::bestlanes::depart_mask(net, topo, route, vt))
+                }
+                _ => 0,
+            };
             let id = self.trips.len() as u32;
             self.trip_source.push(ti as u32);
             let start = route_at[t.route as usize];
@@ -820,7 +829,7 @@ impl World {
                 sf,
                 rng: splitmix(&mut rng_state) as u32,
                 replica: ri,
-                pad: [0; 3],
+                pad: [0, mask, 0],
             });
             by_edge[route[0] as usize].push(id);
         }

@@ -200,6 +200,7 @@ pub enum DepartPos {
 }
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DepartSpeed {
+    Avg,
     Zero,
     Value(f32),
     Random,
@@ -743,7 +744,7 @@ fn departures(a: &Attrs, flow: bool, rng: &mut Rng) -> Result<Vec<f64>, String> 
     Ok(times)
 }
 fn procedures(a: &Attrs) -> Result<Trip, String> {
-    let lane = match get(a, "departLane", "first") {
+    let lane = match get(a, "departLane", "best_prob") {
         "first" => DepartLane::First,
         "random" => DepartLane::Random,
         "free" => DepartLane::Free,
@@ -760,7 +761,8 @@ fn procedures(a: &Attrs) -> Result<Trip, String> {
         "last" => DepartPos::Last,
         v => DepartPos::Value(v.parse().map_err(|_| "invalid departPos")?),
     };
-    let speed = match get(a, "departSpeed", "0") {
+    let speed = match get(a, "departSpeed", "avg") {
+        "avg" => DepartSpeed::Avg,
         "0" => DepartSpeed::Zero,
         "random" => DepartSpeed::Random,
         "max" => DepartSpeed::Max,
