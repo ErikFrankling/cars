@@ -863,9 +863,10 @@ fn lc_patch_speed(wanted: f32, e: Veh, vmax: f32) -> f32 {
     }
     let adv = atomicExchange(&advice[e.trip], NONE);
     if (adv != NONE) {
+        // Stored rounded down, so compare with the rounding in mind.
         let v = f32(adv) / 1024.0;
-        if (v >= mn && v <= mx) {
-            nv = min(v, nv);
+        if (v >= mn - 0.002 && v <= mx) {
+            nv = min(max(v, mn), nv);
             got = true;
         }
     }

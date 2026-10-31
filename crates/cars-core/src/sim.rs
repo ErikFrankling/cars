@@ -73,6 +73,7 @@ struct Pipelines {
     exec: wgpu::ComputePipeline,
     lc_best: Option<wgpu::ComputePipeline>,
     lc_decide: wgpu::ComputePipeline,
+    lc_helpers: Option<wgpu::ComputePipeline>,
     lc_commit: Option<wgpu::ComputePipeline>,
     lc_release: Option<wgpu::ComputePipeline>,
     glosa: Option<wgpu::ComputePipeline>,
@@ -393,6 +394,7 @@ impl Sim {
             exec: m("exec"),
             lc_best: has("lc_best").then(|| m("lc_best")),
             lc_decide: m("lc_decide"),
+            lc_helpers: has("lc_decide_helpers").then(|| m("lc_decide_helpers")),
             lc_commit: has("lc_commit").then(|| m("lc_commit")),
             lc_release: has("lc_release").then(|| m("lc_release")),
             glosa: world.vtypes.iter().any(|t| t.glosa_range > 0.0).then(|| m("glosa")),
@@ -503,6 +505,10 @@ impl Sim {
         }
         c.set_pipeline(&p.lc_decide);
         c.dispatch_workgroups_indirect(ind, 24);
+        if let Some(helpers) = &p.lc_helpers {
+            c.set_pipeline(helpers);
+            c.dispatch_workgroups_indirect(ind, 24);
+        }
         if let Some(commit) = &p.lc_commit {
             c.set_pipeline(commit);
             c.dispatch_workgroups_indirect(ind, 24);

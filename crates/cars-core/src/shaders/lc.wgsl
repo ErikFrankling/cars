@@ -675,9 +675,22 @@ fn check_blocked(e: Veh, n: LcNeighbors) -> u32 {
 
 @compute @workgroup_size(64)
 fn lc_decide(@builtin(global_invocation_id) id: vec3u) {
+    if (id.x >= G.n_active) { return; }
+    lc_plan[id.x].side = 0;
+    lc_evaluate(id.x);
+}
+
+// SUMO's sweep lets a vehicle react to a neighbour's request in the same step. This second look,
+// only for vehicles that were just asked to help, gives the same order of events.
+@compute @workgroup_size(64)
+fn lc_decide_helpers(@builtin(global_invocation_id) id: vec3u) {
     let i = id.x;
-    if (i >= G.n_active) { return; }
-    lc_plan[i].side = 0;
+    if (i >= G.n_active || lc_plan[i].side != 0) { return; }
+    if (atomicLoad(&adv_flags[cur[i].trip]) == 0u) { return; }
+    lc_evaluate(i);
+}
+
+fn lc_evaluate(i: u32) {
     let e = cur[i];
     if ((e.flags & F_REMOVED) != 0u || is_internal(e.lane)) { return; }
     let ed = edges[lanes[e.lane].edge];
