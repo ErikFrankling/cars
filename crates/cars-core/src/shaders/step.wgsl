@@ -1076,7 +1076,9 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     let i = id.x;
     if (i >= G.n_active) { return; }
     var e = cur[i];
-    e.flags &= ~(F_LANE_CHANGED | F_HAVE_TO_WAIT);
+    e.flags &= ~(4096u | F_HAVE_TO_WAIT);
+    if ((e.flags & F_LANE_CHANGED) != 0u) { e.flags |= 4096u; }
+    e.flags &= ~F_LANE_CHANGED;
     ty = types[e.vtype];
     dt = P.dt;
     if (e.lane == P.dummy_lane) {
@@ -1414,6 +1416,16 @@ fn collide(@builtin(global_invocation_id) id: vec3u) {
         teleport(&e);
         cur[i] = e;
         atomicAdd(&C[C_COLLISIONS], 1u);
+        if (((a.flags | b.flags) & (F_LANE_CHANGED | 4096u)) != 0u) {
+            atomicAdd(&C[9], 1u);
+        } else if (is_internal(a.lane)) {
+            atomicAdd(&C[10], 1u);
+        } else if (a.pos < ty.length + ty.min_gap + 1.0) {
+            atomicAdd(&C[11], 1u);
+            if (gap > -0.01) { atomicAdd(&C[13], 1u); } else if (gap > -0.5) { atomicAdd(&C[14], 1u); } else { atomicAdd(&C[15], 1u); }
+        } else {
+            atomicAdd(&C[12], 1u);
+        }
     }
 }
 

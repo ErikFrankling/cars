@@ -233,8 +233,16 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
         for (var j = 0u; j < la.in_count; j++) {
             var src = links[incoming_links[la.in_start + j]].from_lane;
             var offset = 0.0;
-            for (var level = 0u; level < 2u; level++) {
+            for (var level = 0u; level < 3u; level++) {
                 let sl = lanes[src];
+                // Whoever crossed onto this lane in this step is still sorted under the lane before.
+                let moved = atomicLoad(&entrant[src]);
+                if (moved != NONE) {
+                    let k = moved & 0x3fffffu;
+                    if (k != ego && cur[k].lane == src && (cur[k].flags & F_REMOVED) == 0u) {
+                        lc_consider_follower(&r, k, cur[k].pos - sl.length - offset, egoback);
+                    }
+                }
                 if (lane_occupied(src)) {
                     let sg = seg[src];
                     var k = sg.end;

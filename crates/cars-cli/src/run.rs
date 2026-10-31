@@ -61,6 +61,9 @@ pub struct Args {
     debug_from: f32,
     #[arg(long, default_value_t = 1e9)]
     debug_to: f32,
+    /// Print each collision within the debug window: both vehicles before and after.
+    #[arg(long)]
+    debug_collisions: bool,
     /// Ignore signal actuation and run every program at its fixed durations.
     #[arg(long)]
     static_tls: bool,
@@ -123,21 +126,35 @@ pub fn run(args: Args) {
     let mut edge_log = EdgeLog::new(&world, interval, false);
     let mut done = 0u64;
     let mut last_print = Instant::now();
+    let mut collision_prev: Vec<cars_core::world::GpuVeh> = Vec::new();
     let mut vehicle_updates = 0u64;
     let mut last_summary_step = 0u64;
     while done < steps {
-        if fcd.is_some() || args.check_overlaps || args.debug_lane.is_some() {
+        if fcd.is_some() || args.check_overlaps || args.debug_lane.is_some() || args.debug_collisions {
             sim.run_batch(&gpu, 1);
             done += 1;
             let now = args.begin + done as f32 * args.dt;
-            if let Some(name) = &args.debug_lane
-                && now < args.debug_from
-                && fcd.is_none()
-            {
-                let _ = name;
+            if (args.debug_lane.is_some() || args.debug_collisions) && now < args.debug_from && fcd.is_none() {
                 continue;
             }
             let vs = sim.vehicles(&gpu);
+            if args.debug_collisions && now <= args.debug_to {
+                let dummy = world.params.dummy_lane;
+                let now_lane: std::collections::HashMap<u32, &cars_core::world::GpuVeh> = vs.iter().map(|v| (v.trip, v)).collect();
+                for p in &collision_prev {
+                    let gone = now_lane.get(&p.trip).is_some_and(|v| v.lane == dummy) && p.lane != dummy;
+                    if !gone || p.wait > 100.0 {
+                        continue;
+                    }
+                    let lane = &net.lanes[p.lane as usize].id;
+                    println!("t={now} collider trip {} on {} pos {:.2}/{:.1} v {:.2} prev {} n_items {}", p.trip, lane, p.pos, world.lanes[p.lane as usize].length, p.speed, if p.prev_lane == u32::MAX { "-".to_string() } else { net.lanes[p.prev_lane as usize].id.clone() }, p.n_items);
+                    for o in collision_prev.iter().filter(|o| o.trip != p.trip && (o.lane == p.lane || now_lane.get(&o.trip).is_some_and(|n| n.lane == p.lane)) ) {
+                        let n = now_lane.get(&o.trip);
+                        println!("   other {} before {} {:.2} v {:.2}; after {} {:.2} v {:.2}", o.trip, net.lanes[o.lane as usize].id, o.pos, o.speed, n.map_or("-".to_string(), |x| net.lanes[x.lane as usize].id.clone()), n.map_or(0.0, |x| x.pos), n.map_or(0.0, |x| x.speed));
+                    }
+                }
+                collision_prev = vs.clone();
+            }
             if let Some(name) = &args.debug_lane
                 && now >= args.debug_from
                 && now <= args.debug_to
@@ -263,7 +280,7 @@ pub fn run(args: Args) {
     let _ = last_summary_step;
     let wall = t.elapsed().as_secs_f64();
     let c = sim.counters(&gpu);
-    eprintln!("lane changes {}, teleports {}, collisions {}, overflow {}, items full {}", c[6], c[4], c[7], c[5], c[8]);
+    eprintln!("lane changes {}, teleports {}, collisions {} (lane change {}, junction {}, lane start {}, other {}), overflow {}, items full {}; start gaps {} {} {}", c[6], c[4], c[7], c[9], c[10], c[11], c[12], c[5], c[8], c[13], c[14], c[15]);
     let out = sim.trip_outputs(&gpu);
     if let Some(path) = &args.trip_csv {
         let mut f = std::io::BufWriter::new(std::fs::File::create(path).expect("trip csv"));
