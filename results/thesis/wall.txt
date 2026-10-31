@@ -7,3 +7,6 @@ scenario glosa_two_signal
 done in 70.5s: arrived 6003720 teleports 966 collisions 938149 overflow 0
 wall_seconds=70.47 steps=18000 replicas=252 peak_vehicles=418576 54.3 M updates/s
 scenario i80_vsl
+done in 201.6s: arrived 3159605 teleports 1046 collisions 2774 overflow 688451677
+wall_seconds=201.55 steps=54000 replicas=315 peak_vehicles=295832 49.6 M updates/s
+scenario bologna
