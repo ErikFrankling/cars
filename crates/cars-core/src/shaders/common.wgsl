@@ -520,6 +520,58 @@ fn stop_speed(v: f32, gap: f32, decel: f32, relax: bool, lane_vmax: f32) -> f32 
     return min(safe_stop(gap, decel, v, dt, relax), max_next_speed(v));
 }
 
+// CF::insertionFollowSpeed
+fn insertion_follow(speed: f32, gap: f32, vp: f32, bp: f32, vmax: f32, leader_cacc: bool) -> f32 {
+    switch ty.model {
+        case MODEL_IDM: {
+            var v = speed;
+            for (var i = 0u; i < 32u; i++) {
+                if (gap >= idm_secure_gap(v, vp)) { return v; }
+                let v2 = idm_v(gap, v, vp, vmax, true);
+                let v3 = idm_v(gap, v2, vp, vmax, true);
+                if (v2 - v3 < dt) { return v2; }
+                v = v2;
+            }
+            return v;
+        }
+        case MODEL_ACC: {
+            var res = speed;
+            for (var i = 0u; i < 50u; i++) {
+                let a = (follow_speed(res, gap, vp, bp, false, vmax, vmax) - res) / dt;
+                res += 0.1 * a;
+                if (abs(a) < 0.1) { break; }
+            }
+            return res;
+        }
+        case MODEL_CACC: {
+            var res = speed;
+            var damping = 0.8;
+            for (var i = 0u; i < 50u; i++) {
+                let a = min(cacc_v(gap, res, vp, speed, leader_cacc, true), safe_follow(gap, res, vp, bp, true)) - res;
+                res += damping * a;
+                damping *= 0.9;
+                if (abs(a) < 0.1) { break; }
+            }
+            return res;
+        }
+        default: { return safe_follow(gap, speed, vp, bp, true); }
+    }
+}
+
+// CF::insertionStopSpeed
+fn insertion_stop(speed: f32, gap: f32, vmax: f32) -> f32 {
+    var v = speed;
+    var r = stop_speed(v, gap, ty.decel, false, vmax);
+    if (ty.model == MODEL_IDM) {
+        for (var i = 1u; i < 10u; i++) {
+            if (r - v >= -ty.decel * dt) { break; }
+            v = r;
+            r = stop_speed(v, gap, ty.decel, false, vmax);
+        }
+    }
+    return r;
+}
+
 fn free_speed_euler(dist: f32, vt: f32, on_insertion: bool) -> f32 {
     let v = vt * dt;
     if (dist < v) { return vt; }

@@ -1181,7 +1181,12 @@ fn lc_commit(@builtin(global_invocation_id) id: vec3u) {
     cur[i].lc_right = 0.0;
     cur[i].lc_left = 0.0;
     cur[i].lc_keep = 0.0;
-    cur[i].lc_own &= ~(LCA_STRATEGIC | LCA_COOPERATIVE | LCA_WANTS);
+    // MSLCM_LC2013::changed
+    cur[i].lc_own = 0u;
+    cur[i].look_v = 0.0;
+    cur[i].blocker = 0.0;
+    atomicStore(&advice[cur[i].trip], NONE);
+    atomicStore(&adv_flags[cur[i].trip], 0u);
     atomicMin(&tail[dest], pack_back(cur[i].pos - types[cur[i].vtype].length, cur[i].speed, 0u));
     atomicAdd(&C[C_LANE_CHANGES], 1u);
 }

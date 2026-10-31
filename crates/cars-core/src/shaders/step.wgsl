@@ -1404,7 +1404,7 @@ fn teleporting_step(e: ptr<function, Veh>, index: u32) {
         let gap = back - pos - ty.min_gap;
         let vmax = min(la.speed * (*e).sf, ty.max_speed);
         var v = vmax;
-        if (back < 1e8) { v = min(vmax, safe_follow(gap, vmax, lv, lb, true)); }
+        if (back < 1e8) { v = min(vmax, insertion_follow(vmax, gap, lv, lb, vmax, ty.model == MODEL_CACC)); }
         if (gap > 0.0 && follower_allows(best, pos, index, v)) {
             (*e).lane = best;
             (*e).pos = pos;
@@ -1710,7 +1710,7 @@ fn choose_lane(ed: Edge, t: Trip, rng: ptr<private, u32>) -> u32 {
                 let vmax = min(lanes[c].speed * t.sf, ty.max_speed);
                 let pos = min(ty.length + POS_EPS, ed.length);
                 let gap = unpack_back(packed) - pos - ty.min_gap;
-                let safe = min(vmax, safe_follow(gap, vmax, unpack_speed(packed), ty.apparent, true));
+                let safe = min(vmax, insertion_follow(vmax, gap, unpack_speed(packed), ty.apparent, vmax, ty.model == MODEL_CACC));
                 load += u32(max(0.0, vmax - safe) * 1000.0) * 1024u;
             }
             if (load < best_load) {
@@ -1728,6 +1728,7 @@ var<private> ins_rng: u32;
 fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     ty = types[t.vtype];
     dt = P.dt;
+    mode_done = true;
     ins_rng = t.rng;
     let ed = edges[queues[q].edge];
     let lane = choose_lane(ed, t, &ins_rng);
@@ -1767,6 +1768,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     var lead_back = 1e9;
     var lead_v = 0.0;
     var lead_b = ty.apparent;
+    var lead_cacc = ty.model == MODEL_CACC;
     let p = atomicLoad(&tail[lane]);
     if (lane_occupied(lane) || p != NONE) {
         let s = seg[lane];
@@ -1783,6 +1785,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
                     lead_back = back;
                     lead_v = o.speed;
                     lead_b = ot.apparent;
+                    lead_cacc = ot.model == MODEL_CACC;
                 }
             }
             if (back > pos + 500.0) { break; }
@@ -1800,7 +1803,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     if (lead_back < 1e8) {
         if (gap < 0.0) { return false; }
         // The speed we may start with behind the leader, as SUMO's insertionFollowSpeed.
-        let vsafe = safe_follow(gap, speed, lead_v, lead_b, true);
+        let vsafe = insertion_follow(speed, gap, lead_v, lead_b, vmax, lead_cacc);
         if (vsafe < speed) {
             if (patch_speed) { speed = vsafe; } else { return false; }
         }
@@ -1817,7 +1820,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
         let k = pick_link(at, route_at, t.route_end);
         if (k == NONE) {
             if (is_internal(at) || route_at + 1u < t.route_end) {
-                let vs = safe_stop(seen, ty.decel, speed, ty.tau, false);
+                let vs = insertion_stop(speed, seen, vmax);
                 if (vs < speed) {
                     if (patch_speed) { speed = vs; } else { return false; }
                 }
@@ -1826,7 +1829,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
         }
         let st = link_state(k);
         if (have_red(st) || have_yellow(st) || !have_priority(st) || st == CH_Z) {
-            let vs = safe_stop(seen, ty.decel, speed, ty.tau, false);
+            let vs = insertion_stop(speed, seen, vmax);
             if (vs < speed) {
                 if (patch_speed) { speed = vs; } else { return false; }
             }
@@ -1837,7 +1840,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
         if (packed != NONE) {
             let g = seen + unpack_back(packed) - ty.min_gap;
             if (g < 0.0) { return false; }
-            let vs = safe_follow(g, speed, unpack_speed(packed), ty.apparent, true);
+            let vs = insertion_follow(speed, g, unpack_speed(packed), ty.apparent, vmax, ty.model == MODEL_CACC);
             if (vs < speed) {
                 if (patch_speed) { speed = vs; } else { return false; }
             }
@@ -1877,7 +1880,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     e.depart_step = G.step;
     e.replica = t.replica;
     e.route_len = -pos;
-    e.look_v = speed;
+    e.look_v = 0.0;
     e.best_cur = 1e9;
     e.best_left = 0.0;
     e.best_right = 0.0;
