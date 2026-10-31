@@ -78,15 +78,7 @@ pub fn build(net: &Net, topo: &Topology, t: &TlsLogic, links: &[u32]) -> Actuati
                 if inc.len() != 1 || topo.links[topo.links[inc[0] as usize].entry as usize].tl.is_some() {
                     break;
                 }
-                let mut before = inc[0];
-                while net.is_internal_lane(topo.links[before as usize].from_lane) {
-                    let Some(&b) = topo.incoming[topo.links[before as usize].from_lane as usize].first() else { break };
-                    before = b;
-                }
-                at = topo.links[before as usize].from_lane;
-                if net.is_internal_lane(at) {
-                    break;
-                }
+                at = topo.links[inc[0] as usize].from_lane;
                 pos += net.lanes[at as usize].length;
             }
             placement.insert(lane, at);
