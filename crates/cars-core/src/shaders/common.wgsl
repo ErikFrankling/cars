@@ -416,13 +416,15 @@ fn acc_gap_control(gap: f32, v: f32, vp: f32, verr: f32, headway: f32) -> f32 {
 
 fn acc_v(gap: f32, v: f32, vp: f32, des: f32, headway: f32) -> f32 {
     let verr = v - des;
+    let set_mode = !mode_done;
+    mode_done = true;
     var a: f32;
     if (gap > 120.0) {
         a = -0.4 * verr;
-        if (!mode_done) { ego_flags &= ~F_ACC_GAP; mode_done = true; }
+        if (set_mode) { ego_flags &= ~F_ACC_GAP; }
     } else if (gap < 100.0) {
         a = acc_gap_control(gap, v, vp, verr, headway);
-        if (!mode_done) { ego_flags |= F_ACC_GAP; mode_done = true; }
+        if (set_mode) { ego_flags |= F_ACC_GAP; }
     } else if ((ego_flags & F_ACC_GAP) == 0u) {
         a = -0.4 * verr;
     } else {
