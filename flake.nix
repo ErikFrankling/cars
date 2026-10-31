@@ -46,6 +46,7 @@
             scipy
             matplotlib
             lxml
+            pyproj
           ]
         );
       in
