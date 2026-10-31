@@ -205,7 +205,7 @@ pub fn run(args: Args) {
     let _ = last_summary_step;
     let wall = t.elapsed().as_secs_f64();
     let c = sim.counters(&gpu);
-    eprintln!("lane changes {}, teleports {}, overflow {}, items full {}", c[6], c[4], c[5], c[8]);
+    eprintln!("lane changes {}, teleports {}, collisions {}, overflow {}, items full {}", c[6], c[4], c[7], c[5], c[8]);
     let out = sim.trip_outputs(&gpu);
     if let Some(path) = &args.trip_csv {
         let mut f = std::io::BufWriter::new(std::fs::File::create(path).expect("trip csv"));

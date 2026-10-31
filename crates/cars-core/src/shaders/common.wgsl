@@ -67,7 +67,7 @@ struct Params {
     time_to_impatience: f32,
     ignore_blocker: f32,
     script_t0: f32,
-    pad0: f32,
+    dummy_lane: u32,
     pad1: f32,
 }
 
@@ -207,7 +207,7 @@ struct VType {
     lc_assertive: f32,
     lc_look_left: f32,
     lc_speed_gain_right: f32,
-    pad0: f32,
+    collision_factor: f32,
     pad1: f32,
     pad2: f32,
 }

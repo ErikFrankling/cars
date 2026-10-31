@@ -522,6 +522,10 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     let i = id.x;
     if (i >= G.n_active) { return; }
     let ego = cur[i];
+    if (ego.lane == P.dummy_lane) {
+        cur[i].n_items = 0u;
+        return;
+    }
     ty = types[ego.vtype];
     dt = P.dt;
     ego_flags = ego.flags;
@@ -963,6 +967,11 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     e.flags &= ~F_LANE_CHANGED;
     ty = types[e.vtype];
     dt = P.dt;
+    if (e.lane == P.dummy_lane) {
+        teleporting_step(&e);
+        cur[i] = e;
+        return;
+    }
     apply_script(e.flags, e.v_next);
     let base = i * MAX_ITEMS;
     let n = e.n_items;
@@ -1106,17 +1115,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         if (ap < 0.0) { ap += llen; }
         ap = min(ap, llen);
         if (e.pos > ap - POS_EPS) {
-            var out: TripOut;
-            out.depart_step = e.depart_step;
-            out.arrive_step = G.step + 1u;
-            out.wait = e.tot_wait;
-            out.time_loss = e.time_loss;
-            out.route_len = e.route_len + ap;
-            out.wait_count = e.wait_count;
-            out.flags = 1u;
-            trip_out[e.trip] = out;
-            e.flags |= F_REMOVED;
-            atomicAdd(&C[C_ARRIVED], 1u);
+            finish_trip(&e, ap);
             cur[i] = e;
             return;
         }
@@ -1127,6 +1126,9 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         let s0 = seg[first_lane];
         if (first_lane == e.lane && i + 1u == s0.end) {
             teleport(&e);
+            atomicAdd(&C[C_TELEPORTS], 1u);
+            cur[i] = e;
+            return;
         }
     }
 
@@ -1154,37 +1156,114 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     cur[i] = e;
 }
 
-// MSVehicleTransfer: lift the vehicle off the road and put it down further along its route.
+// MSVehicleTransfer: lift the vehicle off the road. It waits on the dummy lane, and moves along
+// its route virtually until there is room to put it back.
 fn teleport(e: ptr<function, Veh>) {
-    atomicAdd(&C[C_TELEPORTS], 1u);
-    (*e).wait = 0.0;
     if ((*e).route_i + 1u >= (*e).route_end) {
-        (*e).flags |= F_REMOVED;
+        finish_trip(e, lanes[(*e).lane].length);
         return;
     }
     (*e).route_i += 1u;
-    let ed = edges[routes[(*e).route_i]];
-    // Least occupied lane of the next edge that continues the route.
-    var best_lane = ed.first_lane;
-    var best_n = 0xffffffffu;
-    for (var l = 0u; l < ed.lane_count; l++) {
-        let cand = ed.first_lane + l;
-        if ((lanes[cand].allow & ty.vclass) == 0u) { continue; }
-        var count = 0u;
-        if (lane_occupied(cand)) { count = seg[cand].end - seg[cand].first; }
-        if (count < best_n) {
-            best_n = count;
-            best_lane = cand;
-        }
-    }
-    (*e).lane = best_lane;
-    (*e).pos = min(ty.length, lanes[best_lane].length);
+    (*e).lane = P.dummy_lane;
+    (*e).pos = 0.0;
     (*e).speed = 0.0;
     (*e).acc = 0.0;
+    (*e).wait = 0.0;
     (*e).prev_lane = NONE;
     (*e).prev2_lane = NONE;
     (*e).entry_step = NONE;
-    (*e).flags |= F_BEST_DIRTY;
+}
+
+fn finish_trip(e: ptr<function, Veh>, ap: f32) {
+    var out: TripOut;
+    out.depart_step = (*e).depart_step;
+    out.arrive_step = G.step + 1u;
+    out.wait = (*e).tot_wait;
+    out.time_loss = (*e).time_loss;
+    out.route_len = (*e).route_len + ap;
+    out.wait_count = (*e).wait_count;
+    out.flags = 1u;
+    trip_out[(*e).trip] = out;
+    (*e).flags |= F_REMOVED;
+    atomicAdd(&C[C_ARRIVED], 1u);
+}
+
+fn teleporting_step(e: ptr<function, Veh>) {
+    let ed = edges[routes[(*e).route_i]];
+    var best = NONE;
+    var best_load = 0xffffffffu;
+    for (var l = 0u; l < ed.lane_count; l++) {
+        let c = ed.first_lane + l;
+        if (!lane_is_good(c, (*e).route_i, (*e).route_end)) { continue; }
+        let load = lane_load(c);
+        if (load < best_load) {
+            best_load = load;
+            best = c;
+        }
+    }
+    if (best != NONE) {
+        let la = lanes[best];
+        var back = 1e9;
+        var lv = 0.0;
+        var lb = ty.apparent;
+        if (lane_occupied(best)) {
+            let t = cur[seg[best].first];
+            if (t.lane == best) {
+                back = t.pos - types[t.vtype].length;
+                lv = t.speed;
+                lb = types[t.vtype].apparent;
+            }
+        }
+        let p = atomicLoad(&tail[best]);
+        if (p != NONE && unpack_back(p) < back) {
+            back = unpack_back(p);
+            lv = unpack_speed(p);
+        }
+        let pos = min(ty.length + POS_EPS, la.length);
+        let gap = back - pos - ty.min_gap;
+        if (gap > 0.0) {
+            let vmax = min(la.speed * (*e).sf, ty.max_speed);
+            var v = vmax;
+            if (back < 1e8) { v = min(vmax, safe_follow(gap, vmax, lv, lb, true)); }
+            (*e).lane = best;
+            (*e).pos = pos;
+            (*e).speed = max(v, 0.0);
+            (*e).wait = 0.0;
+            (*e).flags |= F_BEST_DIRTY;
+            atomicMin(&tail[best], pack_back(pos - ty.length, (*e).speed, is_cacc(ty)));
+            return;
+        }
+    }
+    (*e).wait += dt;
+    (*e).tot_wait += 0.0;
+    if ((*e).wait * max(1.0, lanes[ed.first_lane].speed) >= ed.length) {
+        (*e).wait = 0.0;
+        (*e).route_len += ed.length;
+        if ((*e).route_i + 1u >= (*e).route_end) {
+            finish_trip(e, 0.0);
+        } else {
+            (*e).route_i += 1u;
+        }
+    }
+}
+
+// MSLane::detectCollisions with the default action, teleport: the follower that got too close goes.
+@compute @workgroup_size(64)
+fn collide(@builtin(global_invocation_id) id: vec3u) {
+    let i = id.x;
+    if (i + 1u >= G.n_active) { return; }
+    let a = cur[i];
+    let b = cur[i + 1u];
+    if (a.lane != b.lane || a.lane == P.dummy_lane || ((a.flags | b.flags) & F_REMOVED) != 0u) { return; }
+    ty = types[a.vtype];
+    dt = P.dt;
+    let gap = b.pos - types[b.vtype].length - a.pos - ty.collision_factor * ty.min_gap;
+    if (gap < -EPS) {
+        var e = a;
+        teleport(&e);
+        cur[i] = e;
+        atomicAdd(&C[C_COLLISIONS], 1u);
+    }
 }
 
 // ---------------------------------------------------------------- GLOSA, MSDevice_GLOSA

@@ -204,7 +204,7 @@ fn main() {
     }
     let wall = t.elapsed().as_secs_f64();
     let c = sim.counters(&gpu);
-    eprintln!("done in {wall:.1}s: arrived {} teleports {} overflow {}", c[2], c[4], c[5]);
+    eprintln!("done in {wall:.1}s: arrived {} teleports {} collisions {} overflow {}", c[2], c[4], c[7], c[5]);
     let metrics = replica_metrics(&gpu, &sim, &world, &labels, &edges);
     let mut f = std::io::BufWriter::new(std::fs::File::create(&args.out).expect("out"));
     writeln!(f, "scenario,tier,penetration,seed,completed,travel_time,waiting_time,time_loss,speed,running,edge_flow,density").unwrap();

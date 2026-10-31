@@ -77,6 +77,7 @@ struct Pipelines {
     lc_commit: Option<wgpu::ComputePipeline>,
     lc_release: Option<wgpu::ComputePipeline>,
     glosa: Option<wgpu::ComputePipeline>,
+    collide: wgpu::ComputePipeline,
     insert: wgpu::ComputePipeline,
     sample_stats: wgpu::ComputePipeline,
     next_sample: wgpu::ComputePipeline,
@@ -398,6 +399,7 @@ impl Sim {
             lc_commit: has("lc_commit").then(|| m("lc_commit")),
             lc_release: has("lc_release").then(|| m("lc_release")),
             glosa: world.vtypes.iter().any(|t| t.glosa_range > 0.0).then(|| m("glosa")),
+            collide: m("collide"),
             insert: m("insert"),
             sample_stats: m("sample_stats"),
             next_sample: m("next_sample"),
@@ -517,6 +519,8 @@ impl Sim {
             c.set_pipeline(release);
             c.dispatch_workgroups_indirect(ind, 24);
         }
+        c.set_pipeline(&p.collide);
+        c.dispatch_workgroups_indirect(ind, 24);
         if params.n_queues > 0 {
             c.set_pipeline(&p.insert);
             c.dispatch_workgroups(params.n_queues.div_ceil(16), 1, 1);

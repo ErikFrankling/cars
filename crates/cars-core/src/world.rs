@@ -28,7 +28,8 @@ pub struct GpuParams {
     pub time_to_impatience: f32,
     pub ignore_blocker: f32,
     pub script_t0: f32,
-    pub pad: [f32; 2],
+    pub dummy_lane: u32,
+    pub pad: f32,
 }
 
 #[repr(C)]
@@ -400,7 +401,14 @@ fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
         lc_assertive: t.lc_assertive,
         lc_look_left: t.lc_lookahead_left,
         lc_speed_gain_right: t.lc_speed_gain_right,
-        pad: [0.0; 3],
+        pad: [
+            t.params.get("collisionMinGapFactor").and_then(|v| v.parse().ok()).unwrap_or(match t.model {
+                CfModel::Krauss | CfModel::Eidm => 1.0,
+                CfModel::Idm | CfModel::Acc | CfModel::Cacc => 0.1,
+            }),
+            0.0,
+            0.0,
+        ],
     }
 }
 
@@ -422,6 +430,20 @@ impl World {
         for (ri, rep) in reps.iter().enumerate() {
             w.append_replica(net, &topo, demand, cfg, rep, ri as u32, &mut key_base);
         }
+        // Teleporting vehicles wait on one extra lane that nothing connects to.
+        w.lanes.push(GpuLane {
+            length: 1.0,
+            speed: 13.89,
+            edge: 0,
+            flags: 1,
+            key_base: key_base as u32,
+            key_scale: 0.0,
+            det_pos: -1.0,
+            pred: NONE,
+            entry_link: NONE,
+            ..Default::default()
+        });
+        key_base += 1;
         w.total_cells = key_base;
         let key_bits = 64 - (key_base + 2).leading_zeros();
         assert!(key_bits < 32, "too many sort cells: {key_base}");
@@ -448,7 +470,8 @@ impl World {
             time_to_impatience: cfg.time_to_impatience,
             ignore_blocker: cfg.ignore_blocker,
             script_t0: cfg.script_t0,
-            pad: [0.0; 2],
+            dummy_lane: w.lanes.len() as u32 - 1,
+            pad: 0.0,
         };
         w
     }
