@@ -17,6 +17,19 @@ use std::{
 pub struct Args {
     #[arg(long)]
     net: PathBuf,
+    #[arg(long)]
+    junction: Option<String>,
+    #[arg(long)]
+    follow: Option<String>,
+    #[arg(long, default_value_t = 0.12)]
+    metres_per_pixel: f32,
+    #[arg(long)]
+    realtime: bool,
+    /// Save a single PNG at --begin without video encoding.
+    #[arg(long)]
+    shot: bool,
+    #[arg(long,value_delimiter=',',value_parser=["all","leader","braking","speed","state","foes","events"])]
+    overlay: Vec<String>,
     #[arg(long,num_args=1..,value_delimiter=',')]
     routes: Vec<PathBuf>,
     #[arg(long, value_delimiter = ',')]
@@ -116,7 +129,19 @@ impl Drop for Encoder {
         let _ = self.0.wait();
     }
 }
-pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(mut a: Args) -> Result<(), Box<dyn std::error::Error>> {
+    if a.realtime {
+        a.steps_per_frame = 1;
+    }
+    if a.shot {
+        a.end = a.begin + a.dt;
+    }
+    if !a.metres_per_pixel.is_finite() || a.metres_per_pixel <= 0.0 {
+        return Err("positive metres-per-pixel required".into());
+    }
+    if !a.sim_begin.is_finite() || a.sim_begin < 0. || a.sim_begin > a.begin {
+        return Err("sim-begin must be <= begin".into());
+    }
     if !a.dt.is_finite()
         || a.dt <= 0.0
         || !a.begin.is_finite()
@@ -164,7 +189,31 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
     for p in &a.additional {
         net.load_additional(p)?;
     }
+    let junction_camera = if let Some(id) = &a.junction {
+        let j = net
+            .junction_index
+            .get(id)
+            .map(|&i| &net.junctions[i as usize])
+            .ok_or("unknown junction id")?;
+        Some(Camera {
+            center: [j.x, j.y],
+            metres_per_pixel: a.metres_per_pixel,
+        })
+    } else {
+        None
+    };
     let demand = Demand::load(&net, &a.routes, &a.additional, a.seed, Some(a.end as f64))?;
+    let follow_trip = if let Some(id) = &a.follow {
+        Some(
+            demand
+                .trips
+                .iter()
+                .position(|t| &demand.ids[t.id as usize] == id)
+                .ok_or("unknown follow trip")? as u32,
+        )
+    } else {
+        None
+    };
     let world = World::build(
         &net,
         &demand,
@@ -191,6 +240,90 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
     sim.run(&gpu, first);
     if let Some(p) = a.out.parent().filter(|p| !p.as_os_str().is_empty()) {
         std::fs::create_dir_all(p)?;
+    }
+    let camera_for = |sim: &Sim, fallback: Camera| {
+        if let Some(trip) = follow_trip {
+            if let Some(v) = sim
+                .vehicles(&gpu)
+                .iter()
+                .find(|v| v.trip == trip && v.flags & 1 == 0 && (v.lane as usize) < net.lanes.len())
+            {
+                let l = &net.lanes[v.lane as usize];
+                let shape = &l.shape;
+                let total: f32 = shape
+                    .windows(2)
+                    .map(|p| ((p[1][0] - p[0][0]).powi(2) + (p[1][1] - p[0][1]).powi(2)).sqrt())
+                    .sum();
+                let mut d = (v.pos / l.length).clamp(0., 1.) * total;
+                for p in shape.windows(2) {
+                    let len = ((p[1][0] - p[0][0]).powi(2) + (p[1][1] - p[0][1]).powi(2)).sqrt();
+                    if d <= len {
+                        let u = d / len.max(0.001);
+                        return Camera {
+                            center: [
+                                p[0][0] + u * (p[1][0] - p[0][0]),
+                                p[0][1] + u * (p[1][1] - p[0][1]),
+                            ],
+                            metres_per_pixel: a.metres_per_pixel,
+                        };
+                    }
+                    d -= len;
+                }
+            }
+        }
+        fallback
+    };
+    let mut overlay = crate::overlay::Overlay::default();
+    if a.shot {
+        sim.run(&gpu, 1);
+        let fallback = junction_camera
+            .or_else(|| {
+                script.keyframes.first().map(|k| Camera {
+                    center: k.center,
+                    metres_per_pixel: k.metres_per_pixel,
+                })
+            })
+            .unwrap_or(Camera::fit(world.bounds, a.width, a.height));
+        let cam = camera_for(&sim, fallback);
+        let (mut pixels, _, _) = renderer.frame(&gpu, &sim, cam, 0);
+        if !a.overlay.is_empty() {
+            overlay.draw(
+                &mut pixels,
+                a.width,
+                a.height,
+                cam,
+                &net,
+                &world,
+                &sim.vehicles(&gpu),
+                a.begin,
+                &a.overlay,
+            );
+        }
+        let mut child = Command::new("ffmpeg")
+            .args([
+                "-y",
+                "-v",
+                "error",
+                "-threads",
+                "1",
+                "-filter_threads",
+                "1",
+                "-f",
+                "rawvideo",
+                "-pix_fmt",
+                "rgba",
+                "-s",
+            ])
+            .arg(format!("{}x{}", a.width, a.height))
+            .args(["-i", "-", "-frames:v", "1", "-threads", "1"])
+            .arg(&a.out)
+            .stdin(Stdio::piped())
+            .spawn()?;
+        child.stdin.take().ok_or("png stdin")?.write_all(&pixels)?;
+        if !child.wait()?.success() {
+            return Err("PNG writer failed".into());
+        }
+        return Ok(());
     }
     let intermediate = a.out.with_extension("silent.mp4");
     let ass = a.out.with_extension("ass");
@@ -223,14 +356,29 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
         subtitles,
         "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"
     )?;
-    let frames = (end - first).div_ceil(a.steps_per_frame as u64);
+    let frames = if a.realtime {
+        ((a.end - a.begin) * a.fps as f32).ceil() as u64
+    } else {
+        (end - first).div_ceil(a.steps_per_frame as u64)
+    };
     let duration = frames as f64 / a.fps as f64;
     event(&mut subtitles, 0.0, duration, "Title", &a.title)?;
     event(&mut subtitles, 0.0, duration, "Subtitle", &a.subtitle)?;
     let mut ff = Encoder(
         Command::new("ffmpeg")
             .args([
-                "-y", "-v", "error", "-threads", "2", "-filter_threads", "2", "-f", "rawvideo", "-pix_fmt", "rgba", "-s",
+                "-y",
+                "-v",
+                "error",
+                "-threads",
+                "2",
+                "-filter_threads",
+                "2",
+                "-f",
+                "rawvideo",
+                "-pix_fmt",
+                "rgba",
+                "-s",
             ])
             .arg(format!("{}x{}", a.width, a.height))
             .args([
@@ -261,7 +409,12 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
         _ => 0,
     };
     for frame in 0..frames {
-        sim.run(&gpu, (end - sim.step).min(a.steps_per_frame as u64));
+        let target = if a.realtime {
+            first + ((frame as f32 / a.fps as f32 / a.dt).floor() as u64) + 1
+        } else {
+            sim.step + a.steps_per_frame as u64
+        };
+        sim.run(&gpu, target.min(end).saturating_sub(sim.step));
         let time = a.sim_begin + sim.step.saturating_sub(1) as f32 * a.dt;
         let mut camera = fit;
         if !a.fit && !script.keyframes.is_empty() {
@@ -281,7 +434,21 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
                     * (right.metres_per_pixel / left.metres_per_pixel).powf(u),
             };
         }
-        let (pixels, count, speed) = renderer.frame(&gpu, &sim, camera, mode);
+        camera = camera_for(&sim, junction_camera.unwrap_or(camera));
+        let (mut pixels, count, speed) = renderer.frame(&gpu, &sim, camera, mode);
+        if !a.overlay.is_empty() {
+            overlay.draw(
+                &mut pixels,
+                a.width,
+                a.height,
+                camera,
+                &net,
+                &world,
+                &sim.vehicles(&gpu),
+                time,
+                &a.overlay,
+            );
+        }
         pipe.write_all(&pixels)?;
         let start = frame as f64 / a.fps as f64;
         let stop = (frame + 1) as f64 / a.fps as f64;
@@ -323,7 +490,16 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
     let output = std::env::current_dir()?.join(&a.out);
     let status = Command::new("ffmpeg")
         .current_dir(&temp)
-        .args(["-y", "-v", "error", "-threads", "2", "-filter_threads", "2", "-i"])
+        .args([
+            "-y",
+            "-v",
+            "error",
+            "-threads",
+            "2",
+            "-filter_threads",
+            "2",
+            "-i",
+        ])
         .arg(input)
         .args([
             "-vf",

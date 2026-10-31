@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+mod overlay;
 mod record;
 mod run;
 #[derive(Parser)]

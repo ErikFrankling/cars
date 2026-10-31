@@ -18,6 +18,10 @@ impl Camera {
     }
 }
 pub struct Renderer {
+    render_links: wgpu::Buffer,
+    render_routes: wgpu::Buffer,
+    history: wgpu::Buffer,
+    dt: f32,
     signals: wgpu::Buffer,
     phases: wgpu::Buffer,
     states: wgpu::Buffer,
@@ -60,6 +64,26 @@ impl Renderer {
         let mut points = Vec::<[f32; 4]>::new();
         let mut ranges = Vec::<[u32; 4]>::new();
         let mut roads = Vec::<[f32; 6]>::new();
+        let mut marks = Vec::<[f32; 6]>::new();
+        let quad = |out: &mut Vec<[f32; 6]>, a: [f32; 2], b: [f32; 2], width: f32, tint: f32| {
+            let d = ((b[0] - a[0]).powi(2) + (b[1] - a[1]).powi(2))
+                .sqrt()
+                .max(0.001);
+            let n = [-(b[1] - a[1]) / d, (b[0] - a[0]) / d];
+            for (p, k) in [(a, -1.), (b, -1.), (a, 1.), (a, 1.), (b, -1.), (b, 1.)] {
+                out.push([p[0], p[1], n[0] * k, n[1] * k, width, tint]);
+            }
+        };
+        for j in &net.junctions {
+            if j.shape.len() < 3 {
+                continue;
+            }
+            for pair in j.shape[1..].windows(2) {
+                for p in [j.shape[0], pair[0], pair[1]] {
+                    roads.push([p[0], p[1], 0., 0., 0., 1.]);
+                }
+            }
+        }
         for (i, &(start, count)) in w.shape_range.iter().enumerate() {
             let shape = &w.shapes[start as usize..(start + count) as usize];
             let base = points.len() as u32;
@@ -75,12 +99,13 @@ impl Renderer {
             ranges.push([base, count, distance.to_bits(), 0]);
             let lane = &w.lanes[i];
             let tint = if lane.flags & 1 != 0 {
-                0.35
+                0.0
             } else if lane.speed > 25.0 {
                 1.5
             } else {
                 1.0
             };
+            let mut along = 0.0;
             for pair in shape.windows(2) {
                 let a = pair[0];
                 let b = pair[1];
@@ -89,6 +114,49 @@ impl Renderer {
                     continue;
                 }
                 let n = [-(b[1] - a[1]) / d, (b[0] - a[0]) / d];
+                if lane.flags & 1 == 0 {
+                    let nl = &net.lanes[i];
+                    let edge = &net.edges[nl.edge as usize];
+                    for side in [-1., 1.] {
+                        let outer = side < 0. && nl.index == 0
+                            || side > 0. && nl.index + 1 == edge.lane_count;
+                        let offset = nl.width * 0.5 * side;
+                        let mut t = 0.0;
+                        while t < d {
+                            let solid = outer || along + t > distance - 25.;
+                            let phase = (along + t) % 9.;
+                            let len = if solid {
+                                d - t
+                            } else {
+                                (d - t)
+                                    .min(if phase < 3. { 3. - phase } else { 9. - phase })
+                                    .max(0.001)
+                            };
+                            if outer || along + t > distance - 25. || (along + t) % 9. < 3. {
+                                let x = [
+                                    a[0] + (b[0] - a[0]) * t / d + n[0] * offset,
+                                    a[1] + (b[1] - a[1]) * t / d + n[1] * offset,
+                                ];
+                                let y = [
+                                    x[0] + (b[0] - a[0]) * len / d,
+                                    x[1] + (b[1] - a[1]) * len / d,
+                                ];
+                                quad(&mut marks, x, y, if outer { 0.18 } else { 0.12 }, -1.);
+                                if outer {
+                                    quad(
+                                        &mut marks,
+                                        [x[0] + n[0] * side * 0.35, x[1] + n[1] * side * 0.35],
+                                        [y[0] + n[0] * side * 0.35, y[1] + n[1] * side * 0.35],
+                                        0.3,
+                                        -4.,
+                                    );
+                                }
+                            }
+                            t += len;
+                        }
+                    }
+                }
+                along += d;
                 for (p, sign) in [
                     (a, -1.0),
                     (b, -1.0),
@@ -108,12 +176,111 @@ impl Renderer {
                 }
             }
         }
+        let minor_lanes: std::collections::HashSet<u32> = net
+            .conns
+            .iter()
+            .filter(|c| c.state == b'm' || c.state == b's')
+            .filter_map(|c| net.lane_of(c.from_edge,c.from_lane))
+            .collect();
+        for (i, l) in net.lanes.iter().enumerate() {
+            if net.is_internal_lane(i as u32) || l.shape.len() < 2 {
+                continue;
+            }
+            let edge = &net.edges[l.edge as usize];
+            if let Some(&ji) = net.junction_index.get(&edge.to) {
+                let j = &net.junctions[ji as usize];
+                if j.requests.is_empty() {
+                    continue;
+                }
+                let b = l.shape[l.shape.len() - 1];
+                let a = l.shape[l.shape.len() - 2];
+                let d = ((b[0] - a[0]).powi(2) + (b[1] - a[1]).powi(2))
+                    .sqrt()
+                    .max(0.001);
+                let n = [-(b[1] - a[1]) / d, (b[0] - a[0]) / d];
+                if !j.jtype.starts_with("traffic_light") {
+                    let minor = minor_lanes.contains(&(i as u32));
+                    let x = [b[0] - (b[0] - a[0]) / d * 5., b[1] - (b[1] - a[1]) / d * 5.];
+                    if minor || j.jtype == "allway_stop" {
+                        let rear = [x[0] - (b[0] - a[0]) / d * 2., x[1] - (b[1] - a[1]) / d * 2.];
+                        for p in [
+                            x,
+                            [rear[0] + n[0], rear[1] + n[1]],
+                            [rear[0] - n[0], rear[1] - n[1]],
+                        ] {
+                            marks.push([p[0], p[1], 0., 0., 0., -1.]);
+                        }
+                    } else {
+                        quad(
+                            &mut marks,
+                            [x[0] - n[0] * 0.6, x[1] - n[1] * 0.6],
+                            [x[0] + n[0] * 0.6, x[1] + n[1] * 0.6],
+                            1.2,
+                            -2.,
+                        );
+                    }
+                }
+                quad(
+                    &mut marks,
+                    [b[0] - n[0] * l.width * 0.45, b[1] - n[1] * l.width * 0.45],
+                    [b[0] + n[0] * l.width * 0.45, b[1] + n[1] * l.width * 0.45],
+                    0.35,
+                    -1.,
+                );
+            }
+        }
+        roads.extend(marks);
+        let mut slots = std::collections::HashMap::<u32, u32>::new();
         let signal_data: Vec<[u32; 4]> = w
             .links
             .iter()
             .filter(|l| l.tl != u32::MAX && (l.from_lane as usize) < w.shape_range.len())
-            .map(|l| [l.from_lane, l.tl, l.tl_index, 0])
+            .map(|l| {
+                let slot = slots.entry(l.from_lane).or_default();
+                let row = [l.from_lane, l.tl, l.tl_index, *slot];
+                *slot += 1;
+                row
+            })
             .collect();
+        let turns: std::collections::HashMap<(u32, u32), u32> = net
+            .conns
+            .iter()
+            .map(|c| {
+                (
+                    (net.lane_of(c.from_edge,c.from_lane).unwrap_or(u32::MAX), c.to_edge),
+                    match c.dir {
+                        b'l' | b'L' => 2,
+                        b'r' | b'R' => 4,
+                        _ => 0,
+                    },
+                )
+            })
+            .collect();
+        let link_data: Vec<[u32; 4]> = w
+            .links
+            .iter()
+            .map(|l| {
+                [
+                    l.to_edge,
+                    *turns.get(&(l.from_lane, l.to_edge)).unwrap_or(&0),
+                    0,
+                    0,
+                ]
+            })
+            .collect();
+        let render_links = buffer(
+            g,
+            "render link turns",
+            bytemuck::cast_slice(&link_data),
+            storage,
+        );
+        let render_routes = buffer(g, "render routes", bytemuck::cast_slice(&w.routes), storage);
+        let history = g.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("render history by trip"),
+            size: (w.trips.len().max(1) * 32) as u64,
+            usage: storage,
+            mapped_at_creation: false,
+        });
         let signals = buffer(g, "signals", bytemuck::cast_slice(&signal_data), storage);
         let phases = buffer(g, "signal phases", bytemuck::cast_slice(&w.phases), storage);
         let states = buffer(g, "signal colors", bytemuck::cast_slice(&w.states), storage);
@@ -171,8 +338,7 @@ impl Renderer {
                 cache: None,
             });
         let attrs = wgpu::vertex_attr_array![0=>Float32x2,1=>Float32x2,2=>Float32,3=>Float32];
-        let car_attrs =
-            wgpu::vertex_attr_array![0=>Float32x2,1=>Float32x2,2=>Float32,3=>Float32,4=>Float32];
+        let car_attrs = wgpu::vertex_attr_array![0=>Float32x2,1=>Float32x2,2=>Float32,3=>Float32,4=>Float32,5=>Float32];
         let make = |entry: &str, frag: &str, stride, step, attributes: &[wgpu::VertexAttribute]| {
             g.device
                 .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -310,6 +476,10 @@ impl Renderer {
             mapped_at_creation: false,
         });
         Self {
+            render_links,
+            render_routes,
+            history,
+            dt: w.params.dt,
             signals,
             phases,
             states,
@@ -347,7 +517,7 @@ impl Renderer {
             cam.metres_per_pixel.to_bits(),
             mode,
             self.capacity,
-            0,
+            (sim.step as f32 * self.dt).to_bits(),
         ];
         g.queue
             .write_buffer(&self.camera, 0, bytemuck::cast_slice(&uniform));
@@ -365,6 +535,9 @@ impl Renderer {
             &sim.buffers.tls,
             &self.phases,
             &self.states,
+            &self.history,
+            &self.render_links,
+            &self.render_routes,
         ];
         let entries: Vec<_> = buffers
             .iter()
