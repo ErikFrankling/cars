@@ -29,6 +29,12 @@ pub struct Args {
     end: f32,
     #[arg(long, default_value_t = 0)]
     seed: u64,
+    #[arg(long, default_value_t = 0)]
+    capacity: u32,
+    #[arg(long, default_value_t = 300.0)]
+    time_to_teleport: f32,
+    #[arg(long, default_value_t = 1e9)]
+    ignore_junction_blocker: f32,
     #[arg(long, default_value_t = 1)]
     steps_per_frame: u32,
     #[arg(long, default_value_t = 30)]
@@ -52,12 +58,6 @@ pub struct Args {
     /// Where the simulation starts; the part before --begin runs without rendering.
     #[arg(long, default_value_t = 0.0)]
     sim_begin: f32,
-    #[arg(long, default_value_t = -1.0)]
-    time_to_teleport: f32,
-    #[arg(long, default_value_t = -1.0)]
-    ignore_junction_blocker: f32,
-    #[arg(long)]
-    capacity: Option<u32>,
 }
 #[derive(Deserialize, Default)]
 struct Script {
@@ -173,9 +173,9 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
             begin_seconds: a.sim_begin,
             end_seconds: a.end,
             seed: a.seed,
-            time_to_teleport: if a.time_to_teleport >= 0.0 { a.time_to_teleport } else { SimConfig::default().time_to_teleport },
-            ignore_blocker: if a.ignore_junction_blocker >= 0.0 { a.ignore_junction_blocker } else { SimConfig::default().ignore_blocker },
-            capacity: a.capacity.unwrap_or(0),
+            capacity: a.capacity,
+            time_to_teleport: a.time_to_teleport,
+            ignore_blocker: a.ignore_junction_blocker,
             ..Default::default()
         },
         &[],

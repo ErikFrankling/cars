@@ -51,3 +51,7 @@ is deleted after a successful libass burn-in and retained on failure.
 
 Validated on RX 7900 XT with ring and Bologna captures at 1280x720. Large-city
 300k-vehicle performance has not been benchmarked. Run only one GPU job at a time.
+
+For large demand files, `--capacity` bounds the active vehicle buffers (default 0
+allocates for every trip). `--time-to-teleport` and `--ignore-junction-blocker`
+accept the same settings as `cars run`, so recordings can use matching dynamics.
