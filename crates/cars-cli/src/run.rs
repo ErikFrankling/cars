@@ -64,6 +64,9 @@ pub struct Args {
     debug_from: f32,
     #[arg(long, default_value_t = 1e9)]
     debug_to: f32,
+    /// Log the phases of this signal over the debug window, as SUMO's tlsStates.
+    #[arg(long)]
+    debug_tls: Option<String>,
     /// Print each collision within the debug window: both vehicles before and after.
     #[arg(long)]
     debug_collisions: bool,
@@ -135,7 +138,7 @@ pub fn run(args: Args) {
     let debug_start = ((args.debug_from - args.begin).max(0.0) / args.dt).ceil() as u64;
     let debug_end = ((args.debug_to - args.begin).max(0.0) / args.dt).floor() as u64;
     while done < steps {
-        let debugging = (args.debug_lane.is_some() || args.debug_collisions) && done + 1 >= debug_start && done < debug_end;
+        let debugging = (args.debug_lane.is_some() || args.debug_collisions || args.debug_tls.is_some()) && done + 1 >= debug_start && done < debug_end;
         if fcd.is_some() || args.check_overlaps || debugging {
             let stride = if args.check_overlaps || debugging { 1 } else {
                 (args.fcd_interval / args.dt).round().max(1.0) as u64
@@ -148,6 +151,11 @@ pub fn run(args: Args) {
                 continue;
             }
             let vs = sim.vehicles(&gpu);
+            if let Some(id) = &args.debug_tls {
+                let ti = net.tls_index[id] as usize;
+                let tls: Vec<cars_core::world::GpuTlsState> = sim.read(&gpu, &sim.buffers.tls, world.tls.len() as u64);
+                println!("<tlsState time=\"{now:.2}\" phase=\"{}\"/>", tls[ti].phase);
+            }
             if args.debug_collisions && now <= args.debug_to {
                 let dummy = world.params.dummy_lane;
                 let now_lane: std::collections::HashMap<u32, &cars_core::world::GpuVeh> = vs.iter().map(|v| (v.trip, v)).collect();
@@ -233,7 +241,7 @@ pub fn run(args: Args) {
             }
         } else {
             let next = ((done / interval) + 1) * interval;
-            let until_debug = if (args.debug_lane.is_some() || args.debug_collisions) && done + 1 < debug_start {
+            let until_debug = if (args.debug_lane.is_some() || args.debug_collisions || args.debug_tls.is_some()) && done + 1 < debug_start {
                 debug_start - done - 1
             } else {
                 u64::MAX
