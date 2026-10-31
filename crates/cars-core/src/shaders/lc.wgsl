@@ -634,6 +634,19 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
     return ret | blocked;
 }
 
+// MSLCM_LC2013::slowDownForBlocked, seen from the blocked side: the vehicle behind us on the lane
+// we want treats us as its leader, which opens the gap we need.
+fn hold_follower_for_blocked(e: Veh, n: LcNeighbors) {
+    if (n.follower == NONE || n.f_gap <= POS_EPS) { return; }
+    let self_ty = ty;
+    ty = types[n.f_vtype];
+    if (n.f_speed < ty.decel) {
+        let limit = lanes[e.lane].speed;
+        lc_advice(n.f_trip, follow_speed(n.f_speed, n.f_gap - POS_EPS, e.speed, self_ty.decel, false, limit, limit));
+    }
+    ty = self_ty;
+}
+
 // MSLaneChanger::checkChange: the gaps a change into `dest` would have to respect.
 fn check_blocked(e: Veh, n: LcNeighbors) -> u32 {
     var blocked = 0u;
@@ -705,6 +718,7 @@ fn lc_decide(@builtin(global_invocation_id) id: vec3u) {
             let b = check_blocked(e, n);
             state_r = wants_change(-1, e, own, n, b, dest);
             if ((state_r & LCA_RIGHT) != 0u && (state_r & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) == 0u) { chosen = -1; }
+            else if ((state_r & LCA_RIGHT) != 0u && (state_r & LCA_URGENT) != 0u) { hold_follower_for_blocked(e, n); }
         }
     }
     if (chosen == 0 && index + 1 < i32(ed.lane_count)) {
@@ -715,6 +729,7 @@ fn lc_decide(@builtin(global_invocation_id) id: vec3u) {
             let b = check_blocked(e, n);
             state_l = wants_change(1, e, own, n, b, dest);
             if ((state_l & LCA_LEFT) != 0u && (state_l & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) == 0u) { chosen = 1; }
+            else if ((state_l & LCA_LEFT) != 0u && (state_l & LCA_URGENT) != 0u) { hold_follower_for_blocked(e, n); }
         }
     }
     var state = lc_own & (LCA_AM_LEADER | LCA_AM_FOLLOWER | LCA_M_LEFT | LCA_M_RIGHT);

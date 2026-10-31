@@ -54,6 +54,13 @@ pub struct Args {
     trusted: bool,
     #[arg(long, default_value_t = 15.0)]
     target_submit_ms: f64,
+    /// Print the head vehicle of this lane, with its planned links, from `debug_from` seconds on.
+    #[arg(long)]
+    debug_lane: Option<String>,
+    #[arg(long, default_value_t = 0.0)]
+    debug_from: f32,
+    #[arg(long, default_value_t = 1e9)]
+    debug_to: f32,
 }
 
 pub fn run(args: Args) {
@@ -109,10 +116,37 @@ pub fn run(args: Args) {
     let mut vehicle_updates = 0u64;
     let mut last_summary_step = 0u64;
     while done < steps {
-        if fcd.is_some() || args.check_overlaps {
+        if fcd.is_some() || args.check_overlaps || args.debug_lane.is_some() {
             sim.run_batch(&gpu, 1);
             done += 1;
+            let now = args.begin + done as f32 * args.dt;
+            if let Some(name) = &args.debug_lane
+                && now < args.debug_from
+                && fcd.is_none()
+            {
+                let _ = name;
+                continue;
+            }
             let vs = sim.vehicles(&gpu);
+            if let Some(name) = &args.debug_lane
+                && now >= args.debug_from
+                && now <= args.debug_to
+            {
+                let lane = net.lane_index[name];
+                let items: Vec<[f32; 10]> = sim.read(&gpu, &sim.buffers.items, vs.len() as u64 * 8);
+                if let Some((i, v)) = vs.iter().enumerate().filter(|(_, v)| v.lane == lane).max_by(|a, b| a.1.pos.total_cmp(&b.1.pos)) {
+                    println!("t={now:.1} {} pos {:.2} v {:.2} acc {:.2} wait {:.1} flags {:#x} own {:#x} n_items {} best_off {} left_space {:.1} blocker {:.1}", demand.ids[demand.trips[v.trip as usize].id as usize], v.pos, v.speed, v.acc, v.wait, v.flags, v.lc_own, v.n_items, v.best_off, v.left_space, v.blocker);
+                    for j in 0..v.n_items as usize {
+                        let it = items[i * 8 + j];
+                        let link = it[0].to_bits();
+                        let desc = if link == u32::MAX { "end".to_string() } else {
+                            let l = &world.links[link as usize];
+                            format!("{}->{} flags {:#x} tl {} state {} foes {} confs {}", net.lanes[l.from_lane as usize].id, net.lanes[l.next_lane as usize].id, l.flags, l.tl as i32, l.state as u8 as char, l.foe_count, l.conf_count)
+                        };
+                        println!("   item {j}: {desc} pass {:.2} wait {:.2} req {} arr {:.2} arrv {:.2} dist {:.1} leave {:.2}", it[1], it[2], it[3].to_bits(), it[4], it[5], it[7], it[8]);
+                    }
+                }
+            }
             if args.check_overlaps {
                 let mut active: Vec<_> = vs.iter().filter(|v| v.flags & 1 == 0).collect();
                 active.sort_by(|a, b| a.lane.cmp(&b.lane).then(a.pos.total_cmp(&b.pos)));

@@ -55,6 +55,7 @@ pub struct Buffers {
     pub indirect: wgpu::Buffer,
     pub tls: wgpu::Buffer,
     pub queues: wgpu::Buffer,
+    pub items: wgpu::Buffer,
     pub total_bytes: u64,
 }
 
@@ -416,6 +417,7 @@ impl Sim {
             indirect,
             tls,
             queues,
+            items,
             total_bytes: total_bytes.get(),
         };
         Ok(Self {
