@@ -5,7 +5,7 @@ Re-run (paths may be replaced):
 ```sh
 nix develop --command python3 -I scripts/berlin_detectors.py map
 nix develop --command python3 -I scripts/berlin_detectors.py profile
-nix develop --command python3 -I scripts/berlin_detectors.py compare --cars /home/erikf/.t3/projects/cars/runs/berlin/day_edges.csv --sumo /home/erikf/projects/personal/cars-data/best/out/edge900.xml
+nix develop --command python3 -I scripts/berlin_detectors.py compare --cars runs/berlin/day_edges.csv --sumo /home/erikf/projects/personal/cars-data/best/out/edge900.xml
 ```
 
 ## Method and coverage
@@ -30,36 +30,36 @@ R² = 1 − SSE/SST (may be negative); slope is least squares through origin, si
 
 |Simulator|Hour|Sites|GEH <5 share|R²|Slope|
 |---|---:|---:|---:|---:|---:|
-|cars|0|100|0.050|-0.258|0.004|
+|cars|0|100|0.040|-0.258|0.004|
 |cars|1|100|0.080|-0.150|0.005|
 |cars|2|100|0.150|-2.088|0.053|
 |cars|3|101|0.158|-0.203|0.022|
 |cars|4|100|0.170|-0.383|0.057|
-|cars|5|101|0.188|-0.231|0.342|
+|cars|5|101|0.188|-0.225|0.344|
 |cars|6|100|0.180|-0.135|0.488|
-|cars|7|98|0.153|-0.594|0.469|
-|cars|8|99|0.111|-0.754|0.477|
-|cars|9|100|0.120|-0.620|0.537|
-|cars|10|100|0.170|-0.458|0.545|
-|cars|11|99|0.202|-0.474|0.467|
-|cars|12|98|0.143|-0.694|0.408|
-|cars|13|100|0.080|-1.003|0.348|
-|cars|14|100|0.080|-1.340|0.291|
-|cars|15|100|0.030|-1.673|0.233|
-|cars|16|100|0.040|-1.946|0.204|
-|cars|17|100|0.070|-2.127|0.191|
-|cars|18|100|0.050|-2.184|0.181|
-|cars|19|100|0.040|-1.652|0.193|
-|cars|20|101|0.059|-1.063|0.196|
-|cars|21|100|0.130|-0.672|0.216|
-|cars|22|101|0.208|-0.356|0.225|
-|cars|23|101|0.287|-0.161|0.259|
+|cars|7|98|0.153|-0.595|0.469|
+|cars|8|99|0.111|-0.751|0.477|
+|cars|9|100|0.120|-0.577|0.544|
+|cars|10|100|0.200|-0.386|0.565|
+|cars|11|99|0.222|-0.340|0.513|
+|cars|12|98|0.173|-0.418|0.494|
+|cars|13|100|0.140|-0.401|0.500|
+|cars|14|100|0.160|-0.421|0.502|
+|cars|15|100|0.180|-0.484|0.495|
+|cars|16|100|0.190|-0.405|0.534|
+|cars|17|100|0.190|-0.302|0.563|
+|cars|18|100|0.220|-0.399|0.559|
+|cars|19|100|0.260|-0.239|0.588|
+|cars|20|101|0.228|-0.253|0.468|
+|cars|21|100|0.210|-0.335|0.337|
+|cars|22|101|0.188|-0.369|0.214|
+|cars|23|101|0.119|-0.375|0.093|
 |SUMO|5|101|0.198|-0.274|0.326|
 |SUMO|6|100|0.180|-0.136|0.487|
 |SUMO|7|98|0.153|-0.595|0.470|
 |SUMO|8|99|0.111|-0.753|0.476|
 
-cars: pooled GEH<5 12.3%; simulated/real total 0.386, over 2399 site-hours.
+cars: pooled GEH<5 16.8%; simulated/real total 0.552, over 2399 site-hours.
 
 SUMO: pooled GEH<5 16.1%; simulated/real total 0.492, over 398 site-hours.
 
