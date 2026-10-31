@@ -399,17 +399,51 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
 }
 
 // Leaders past the end of the lane, on the way the vehicle would go from there.
-fn lc_leader_ahead(r: ptr<function, LcNeighbors>, l: u32, pos: f32, route_i: u32, route_end: u32, lookahead: f32) {
+fn lc_leader_ahead(r: ptr<function, LcNeighbors>, l: u32, pos: f32, route_i: u32, route_end: u32, speed: f32) {
     if ((*r).gap < 1e8) { return; }
+    // MSLaneChanger::getRealLeader, then MSLane::getLeaderOnConsecutive with its link leaders.
+    let dist = brake_gap(speed, ty.decel, ty.tau) + ty.min_gap;
     var ahead = l;
     var seen = lanes[l].length - pos;
     var ri = route_i;
-    for (var hop = 0u; hop < 4u; hop++) {
-        if (seen > lookahead) { break; }
+    for (var hop = 0u; hop < 6u; hop++) {
+        if (seen > dist && !is_internal(ahead)) { break; }
         let lk = pick_link(ahead, ri, route_end);
         if (lk == NONE) { break; }
-        if ((links[lk].flags & L_HAS_VIA) == 0u) { ri += 1u; }
-        ahead = links[lk].next_lane;
+        var best = 1e9;
+        var best_key = 1e9;
+        var best_speed = 0.0;
+        let k = links[lk];
+        for (var c = 0u; c < k.conf_count; c++) {
+            let cf = conflicts[k.conf_start + c];
+            if ((cf.flags & C_NO_CROSSING) != 0u) { continue; }
+            let same_target = (cf.flags & C_SAME_TARGET) != 0u;
+            let dist_cross = seen - cf.len_behind;
+            if (dist_cross + cf.width < 0.0 && !same_target) { continue; }
+            let p = atomicLoad(&tail[cf.foe_lane]);
+            if (p == NONE) { continue; }
+            let back_dist = lanes[cf.foe_lane].length - cf.foe_len_behind - unpack_back(p);
+            if (back_dist + cf.foe_width < 0.0 && !same_target) { continue; }
+            if (!same_target && back_dist >= ty.length) { continue; }
+            var bd = back_dist;
+            if (same_target && bd < 0.0) { bd += max(0.0, cf.foe_len_behind - cf.len_behind); }
+            let g = dist_cross - ty.min_gap - bd - cf.foe_width;
+            let v = unpack_speed(p);
+            let key = g + brake_gap(v, ty.apparent, 0.0);
+            if (key < best_key) {
+                best_key = key;
+                best = g;
+                best_speed = v;
+            }
+        }
+        if (best < 1e8) {
+            (*r).gap = best;
+            (*r).speed = best_speed;
+            (*r).decel = ty.apparent;
+            return;
+        }
+        if ((k.flags & L_HAS_VIA) == 0u) { ri += 1u; }
+        ahead = k.next_lane;
         let packed = atomicLoad(&tail[ahead]);
         if (packed != NONE) {
             (*r).gap = seen + unpack_back(packed) - ty.min_gap;
@@ -420,6 +454,78 @@ fn lc_leader_ahead(r: ptr<function, LcNeighbors>, l: u32, pos: f32, route_i: u32
         }
         seen += lanes[ahead].length;
     }
+}
+
+// MSLink::hasApproachingFoe for an entry link.
+fn has_approaching_foe(entry: u32, arrival: f32, leave: f32, speed: f32, trip: u32) -> bool {
+    let k = links[entry];
+    for (var f = 0u; f < k.foe_count; f++) {
+        let foe = foes[k.foe_start + f];
+        let same_target = links[foe].to_lane == k.to_lane;
+        let foe_state = link_state(foe);
+        for (var s = 0u; s < SLOTS; s++) {
+            let r = slots[foe * SLOTS + s];
+            if (r.stamp != G.step || r.trip == trip) { continue; }
+            if (blocked_by_foe(r, arrival, leave, speed, speed, same_target, 0.0, ty.decel, 0.0, foe_state)) { return true; }
+        }
+    }
+    if ((k.flags & L_HAS_VIA) != 0u) {
+        let via = lanes[k.next_lane];
+        if (via.links_count != 0u) {
+            let exit_link = links[via.links_start];
+            for (var c = 0u; c < exit_link.conf_count; c++) {
+                let foe_lane = conflicts[exit_link.conf_start + c].foe_lane;
+                if (lane_occupied(foe_lane) || atomicLoad(&tail[foe_lane]) != NONE) { return true; }
+            }
+        }
+    }
+    return false;
+}
+
+// MSVehicle::unsafeLinkAhead: a zipper or an unprioritized link close ahead rules out changing onto
+// the lane leading there while foes approach it.
+fn unsafe_link_ahead(e: Veh, onto: u32, ego: u32) -> bool {
+    var zipper_dist = 0.0;
+    let t = lanes[onto];
+    for (var j = 0u; j < t.links_count; j++) {
+        let c = t.links_start + j;
+        if (link_state(c) == CH_Z) { zipper_dist = max(zipper_dist, links[c].visibility); }
+    }
+    var seen = lanes[e.lane].length - e.pos;
+    let dist = max(zipper_dist, brake_gap(e.speed, ty.decel, 0.0));
+    if (seen >= dist) { return false; }
+    var lane = onto;
+    var r = e.route_i;
+    let base = ego * MAX_ITEMS;
+    var di = 0u;
+    for (var hop = 0u; hop < 6u && seen <= dist; hop++) {
+        let lk = pick_link(lane, r, e.route_end);
+        if (lk == NONE) { break; }
+        let internal = is_internal(lane);
+        let state = link_state(lk);
+        if ((!internal && ((state == CH_Z && seen < links[lk].visibility) || !have_priority(state))) || (internal && zipper_dist > 0.0)) {
+            var found = false;
+            var item: Item;
+            while (di < e.n_items && !found) {
+                item = items[base + di];
+                if (item.link != NONE && lanes[links[item.link].from_lane].edge == lanes[lane].edge) {
+                    found = true;
+                } else {
+                    di += 1u;
+                }
+            }
+            if (found) {
+                var leave_speed = item.leave;
+                if (leave_speed < 0.0) { leave_speed = item.v_pass; }
+                let leave = item.arrival + (links[lk].length + ty.length) / max((item.arr_speed + leave_speed) * 0.5, EPS);
+                if (has_approaching_foe(links[lk].entry, item.arrival, leave, item.arr_speed, e.trip)) { return true; }
+            }
+        }
+        if ((links[lk].flags & L_HAS_VIA) == 0u) { r += 1u; }
+        lane = links[lk].next_lane;
+        seen += lanes[lane].length;
+    }
+    return false;
 }
 
 fn lc_advice(trip: u32, speed: f32) { atomicMin(&advice[trip], u32(max(0.0, speed) * 1024.0)); }
@@ -1002,8 +1108,7 @@ fn lc_evaluate(i: u32) {
     lc_pk = e.lc_keep;
     let back = e.pos - ty.length;
     var own = lc_neighbors(e.lane, e.pos, i, back);
-    let lookahead = max(e.speed * 10.0, 100.0);
-    lc_leader_ahead(&own, e.lane, e.pos, e.route_i, e.route_end, lookahead);
+    lc_leader_ahead(&own, e.lane, e.pos, e.route_i, e.route_end, e.speed);
     var state_r = 0u;
     var state_l = 0u;
     var chosen = 0;
@@ -1012,9 +1117,10 @@ fn lc_evaluate(i: u32) {
         let dest = ed.first_lane + u32(index - 1);
         if ((lanes[dest].allow & ty.vclass) == ty.vclass && (lanes[e.lane].pad1 & ty.vclass) == ty.vclass) {
             var n = lc_neighbors(dest, e.pos, i, back);
-            lc_leader_ahead(&n, dest, e.pos, e.route_i, e.route_end, lookahead);
+            lc_leader_ahead(&n, dest, e.pos, e.route_i, e.route_end, e.speed);
             let b = check_blocked(e, n);
             state_r = wants_change(-1, e, own, n, b, dest, i);
+            if (b == 0u && (state_r & LCA_WANTS) != 0u && unsafe_link_ahead(e, dest, i)) { state_r |= LCA_BLOCK_LEADER; }
             if ((state_r & LCA_RIGHT) != 0u && (state_r & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) == 0u) { chosen = -1; }
             else if ((state_r & LCA_RIGHT) != 0u && (state_r & LCA_URGENT) != 0u) { hold_follower_for_blocked(e, n); }
         }
@@ -1023,9 +1129,10 @@ fn lc_evaluate(i: u32) {
         let dest = ed.first_lane + u32(index + 1);
         if ((lanes[dest].allow & ty.vclass) == ty.vclass && (lanes[e.lane].pad0 & ty.vclass) == ty.vclass) {
             var n = lc_neighbors(dest, e.pos, i, back);
-            lc_leader_ahead(&n, dest, e.pos, e.route_i, e.route_end, lookahead);
+            lc_leader_ahead(&n, dest, e.pos, e.route_i, e.route_end, e.speed);
             let b = check_blocked(e, n);
             state_l = wants_change(1, e, own, n, b, dest, i);
+            if (b == 0u && (state_l & LCA_WANTS) != 0u && unsafe_link_ahead(e, dest, i)) { state_l |= LCA_BLOCK_LEADER; }
             if ((state_l & LCA_LEFT) != 0u && (state_l & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) == 0u) { chosen = 1; }
             else if ((state_l & LCA_LEFT) != 0u && (state_l & LCA_URGENT) != 0u) { hold_follower_for_blocked(e, n); }
         }
