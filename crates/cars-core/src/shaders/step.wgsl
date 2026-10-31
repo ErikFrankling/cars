@@ -286,11 +286,7 @@ fn adapt_to_junction_leader(gap: f32, is_critical: bool, seen: f32, l_len: f32, 
             vsafe = max(vsafe, min(v2, vstop));
         }
     }
-    if (pl_n > 0u) {
-        let last = pl_base + pl_n - 1u;
-        let future = follow_speed(max(items[last].leave, 0.0), gap, ls, lb, lcacc, pl_lane_vmax, pl_limit);
-        if (gap >= 0.0 && !is_critical) { adapt_leave(last, future); }
-    }
+    if (pl_n > 0u) { adapt_leave(pl_base + pl_n - 1u, vsafe); }
     pl_v = min(pl_v, vsafe);
     pl_pass = min(pl_pass, vsafe);
 }
@@ -739,8 +735,25 @@ fn keep_clear(k: Link) -> bool {
     return (k.flags & L_KEEP_CLEAR) != 0u && (k.flags & L_HAS_FOES) != 0u;
 }
 
-// MSVehicle::checkRewindLinkLanes. Link.opened for links beyond the next one is taken from the
-// signal alone, as approach data of this step is still being written.
+// MSLink::opened for a link further ahead, at planning time: what foes announced in the last step.
+fn foe_on_last_approach(link: u32, a: f32, va: f32, vl: f32, ego: Veh) -> bool {
+    let k = links[link];
+    let l = a + (k.length + ty.length) / max((va + vl) * 0.5, EPS);
+    let impat = clamp(ty.impatience + ego.wait / P.time_to_impatience, 0.0, 1.0);
+    for (var f = 0u; f < k.foe_count; f++) {
+        let foe = foes[k.foe_start + f];
+        let same_target = links[foe].to_lane == k.to_lane;
+        let foe_state = link_state(foe);
+        for (var s = 0u; s < SLOTS; s++) {
+            let r = slots[foe * SLOTS + s];
+            if (r.stamp + 1u < G.step || r.trip == ego.trip) { continue; }
+            if (blocked_by_foe(r, a, l, va, vl, same_target, impat, ty.decel, ego.wait, foe_state)) { return true; }
+        }
+    }
+    return false;
+}
+
+// MSVehicle::checkRewindLinkLanes.
 fn check_rewind(ego: Veh, base: u32, n: u32, lengths_in_front: f32) {
     if ((lanes[ego.lane].flags & LANE_ROUNDABOUT) != 0u || n == 0u) { return; }
     let need = ty.length + ty.min_gap;
@@ -790,8 +803,13 @@ fn check_rewind(ego: Veh, base: u32, n: u32, lengths_in_front: f32) {
         let next = items[base + i];
         let can_leave = (k.flags & L_HAS_VIA) == 0u || next.link == NONE || next.request != 0u;
         let state = link_state(l);
-        let open_signal = !(have_red(state) || have_yellow(state) || state == CH_s || state == CH_w);
-        let opened = can_leave && (have_priority(state) || i == 1u || open_signal);
+        var opened = can_leave && (have_priority(state) || i == 1u);
+        if (can_leave && !opened && !(have_red(state) || have_yellow(state) || state == CH_s || state == CH_w)) {
+            let it = items[base + i - 1u];
+            var leave = it.leave;
+            if (leave < 0.0) { leave = it.v_pass; }
+            opened = !foe_on_last_approach(l, it.arrival, it.arr_speed, leave, ego);
+        }
         var allows = ((k.flags & L_CONT) != 0u || opened) && ((had >> (i - 1u)) & 1u) == 0u;
         if (!opened) {
             found = true;
