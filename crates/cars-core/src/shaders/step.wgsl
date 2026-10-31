@@ -490,7 +490,7 @@ fn pick_link(lane: u32, route_i: u32, route_end: u32) -> u32 {
     var count = 0u;
     for (var k = 0u; k < l.links_count; k++) {
         let c = l.links_start + k;
-        if (links[c].to_edge != want) { continue; }
+        if (links[c].to_edge != want || (lanes[links[c].to_lane].allow & ty.vclass) != ty.vclass) { continue; }
         count += 1u;
         if (count == 1u) { first = c; continue; }
         if (count == 2u) { best_len = continuation_length(links[first].to_lane, route_i + 1u, route_end); }

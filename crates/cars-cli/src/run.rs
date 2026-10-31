@@ -173,6 +173,12 @@ pub fn run(args: Args) {
                 let items: Vec<[f32; 10]> = sim.read(&gpu, &sim.buffers.items, vs.len() as u64 * 8);
                 if let Some((i, v)) = vs.iter().enumerate().filter(|(_, v)| v.lane == lane).max_by(|a, b| a.1.pos.total_cmp(&b.1.pos)) {
                     println!("t={now:.1} {} pos {:.2} v {:.2} acc {:.2} wait {:.1} flags {:#x} own {:#x} n_items {} best_off {} left_space {:.1} blocker {:.1}", demand.ids[demand.trips[world.trip_source[v.trip as usize] as usize].id as usize], v.pos, v.speed, v.acc, v.wait, v.flags, v.lc_own, v.n_items, v.best_off, v.left_space, v.blocker);
+                    let ed = net.lanes[lane as usize].edge as usize;
+                    for li in 0..net.edges[ed].lane_count {
+                        let l2 = net.edges[ed].first_lane + li;
+                        let txt = vs.iter().filter(|o| o.lane == l2 && o.flags & 1 == 0).map(|o| format!("{:.1}/{:.1}w{:.0}x{:x}", o.pos, o.speed, o.wait, o.lc_own)).collect::<Vec<_>>().join(" ");
+                        println!("      lane {} [{}]", net.lanes[l2 as usize].id, txt);
+                    }
                     for j in 0..v.n_items as usize {
                         let it = items[i * 8 + j];
                         let link = it[0].to_bits();
