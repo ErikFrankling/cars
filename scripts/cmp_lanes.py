@@ -11,13 +11,13 @@ rows = []
 for _, el in ET.iterparse(sumo_xml):
     if el.tag == "timestep":
         t = float(el.get("time"))
-        if t >= t0:
+        if t0 <= t <= t1:
             for v in el.findall("vehicle"):
                 rows.append((t, v.get("id"), v.get("lane"), float(v.get("pos")), float(v.get("speed"))))
         el.clear()
 s = pd.DataFrame(rows, columns=["time", "trip", "lane", "pos", "speed"])
 g = pd.read_csv(cars_csv)
-g = g[g.time >= t0]
+g = g[g.time.between(t0, t1)]
 pd.set_option("display.width", 200)
 pd.set_option("display.max_rows", 200)
 
