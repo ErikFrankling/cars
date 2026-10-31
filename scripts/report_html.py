@@ -61,10 +61,10 @@ def chart_data():
 
 
 TILES = [
-    ("149 s", "Berlin, 24 hours, 2.25M car trips, on one RX 7900 XT"),
+    ("148 s", "Berlin, 24 hours, 2.25M car trips, on one RX 7900 XT"),
     ("about 7 h", "the same day in SUMO, as published with BeST, 3.4 GHz CPU"),
-    ("343 s", "all 1,134 runs of the thesis sweeps; SUMO needs 8.2 h on the same PC"),
-    ("787.9 s / 789.0 s", "mean trip, Berlin 05:00-10:00, cars / SUMO"),
+    ("341 s", "all 1,134 runs of the thesis sweeps; SUMO needs 8.2 h on the same PC"),
+    ("788.1 s / 789.0 s", "mean trip, Berlin 05:00-10:00, cars / SUMO"),
 ]
 
 
@@ -97,12 +97,12 @@ def tables():
 
 
 SPEED = [
-    ("Bologna sweep, 315 runs", "6.4 h", "196 s", "118x"),
-    ("I-80 sweep, 252 runs", "58 min", "70 s", "49x"),
-    ("Ring sweep, 252 runs", "40 min", "51 s", "47x"),
+    ("Bologna sweep, 315 runs", "6.4 h", "195 s", "118x"),
+    ("I-80 sweep, 252 runs", "58 min", "69 s", "50x"),
+    ("Ring sweep, 252 runs", "40 min", "50 s", "48x"),
     ("Two-signal sweep, 315 runs", "7.5 min", "26 s", "17x"),
     ("Berlin 05:00-06:00, single run", "177 s", "5.0 s", "35x"),
-    ("Berlin 24 h, single run", "about 7 h (published)", "149 s", "about 170x"),
+    ("Berlin 24 h, single run", "about 7 h (published)", "148 s", "about 170x"),
     ("Bologna, single run", "73 s", "42 s", "1.8x"),
     ("I-80, single run", "14 s", "14 s", "1x"),
     ("Ring, 200 cars, single run", "1.5 s", "2.3 s", "0.6x"),

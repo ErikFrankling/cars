@@ -1,12 +1,12 @@
-done in 53.5s: arrived 0 teleports 0 collisions 0 overflow 0
-wall_seconds=53.51 steps=40000 replicas=252 peak_vehicles=50400 37.4 M updates/s
+done in 50.0s: arrived 0 teleports 0 collisions 0 overflow 0
+wall_seconds=49.98 steps=40000 replicas=252 peak_vehicles=50400 40.1 M updates/s
 scenario ring
-done in 27.1s: arrived 279881 teleports 0 collisions 0 overflow 34819591
-wall_seconds=27.08 steps=24000 replicas=315 peak_vehicles=21928 18.0 M updates/s
+done in 25.8s: arrived 279881 teleports 0 collisions 0 overflow 34819591
+wall_seconds=25.76 steps=24000 replicas=315 peak_vehicles=21928 19.0 M updates/s
 scenario glosa_two_signal
-done in 76.6s: arrived 6003722 teleports 987 collisions 993375 overflow 0
-wall_seconds=76.55 steps=18000 replicas=252 peak_vehicles=437224 50.6 M updates/s
+done in 69.5s: arrived 6003703 teleports 1060 collisions 984038 overflow 0
+wall_seconds=69.49 steps=18000 replicas=252 peak_vehicles=438622 55.7 M updates/s
 scenario i80_vsl
-done in 216.1s: arrived 3160199 teleports 905 collisions 2840 overflow 687201162
-wall_seconds=216.14 steps=54000 replicas=315 peak_vehicles=294687 46.2 M updates/s
+done in 195.4s: arrived 3159808 teleports 986 collisions 2834 overflow 687172406
+wall_seconds=195.39 steps=54000 replicas=315 peak_vehicles=295299 51.1 M updates/s
 scenario bologna

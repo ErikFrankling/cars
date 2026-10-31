@@ -11,7 +11,7 @@
   {
     "scenario": "one_av",
     "path": "/home/erikf/projects/personal/cars-data/videos/one_av.mp4",
-    "duration_s": 50.0,
+    "duration_s": 33.333008,
     "codec_name": "h264",
     "width": 1920,
     "height": 1080,
