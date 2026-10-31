@@ -115,8 +115,11 @@ pub fn run(args: Args) {
     let mut last_print = Instant::now();
     let mut vehicle_updates = 0u64;
     let mut last_summary_step = 0u64;
+    let debug_start = ((args.debug_from - args.begin).max(0.0) / args.dt).ceil() as u64;
+    let debug_end = ((args.debug_to - args.begin).max(0.0) / args.dt).floor() as u64;
     while done < steps {
-        if fcd.is_some() || args.check_overlaps || args.debug_lane.is_some() {
+        let debugging = args.debug_lane.is_some() && done + 1 >= debug_start && done < debug_end;
+        if fcd.is_some() || args.check_overlaps || debugging {
             sim.run_batch(&gpu, 1);
             done += 1;
             let now = args.begin + done as f32 * args.dt;
@@ -168,7 +171,12 @@ pub fn run(args: Args) {
             }
         } else {
             let next = ((done / interval) + 1) * interval;
-            let chunk = (next - done).min(steps - done).min((60.0 / args.dt).ceil() as u64);
+            let until_debug = if args.debug_lane.is_some() && done + 1 < debug_start {
+                debug_start - done - 1
+            } else {
+                u64::MAX
+            };
+            let chunk = (next - done).min(steps - done).min((60.0 / args.dt).ceil() as u64).min(until_debug);
             let g0 = sim.globals(&gpu);
             done += sim.run(&gpu, chunk);
             let g = sim.globals(&gpu);
