@@ -405,7 +405,9 @@ fn check_link_leader(link_i: u32, lane: u32, seen: f32, ego_lane: u32, ego_entry
                     gap = dist_cross - ty.min_gap - bd2 - cf.foe_width;
                 }
                 if (is_leader(link_i, ego_lane, ego_entry, idx, gap) || in_way) {
-                    adapt_to_junction_leader(gap, critical, seen, l_len, dist_cross, f.speed, ft.apparent, ft.model == MODEL_CACC);
+                    let stop_asap = select(same_target || same_source, cannot_ignore, idx + 1u == s.end);
+                    let crossing = select(dist_cross, -1.0, stop_asap);
+                    adapt_to_junction_leader(gap, critical, seen, l_len, crossing, f.speed, ft.apparent, ft.model == MODEL_CACC);
                     if (pl_n > 0u) { pl_v = max(pl_v, items[pl_base + pl_n - 1u].v_wait); }
                     if (pl_v < HALT_SPEED) {
                         let same_pred = lanes[f.lane].pred == lanes[ego_lane].pred;
