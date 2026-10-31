@@ -1,3 +1,3 @@
 {"keyframes":[{"time":27000,"center":[10900,13338],"metres_per_pixel":4},{"time":27400,"center":[10900,13338],"metres_per_pixel":1.2},{"time":28800,"center":[10900,13200],"metres_per_pixel":1.0}],
  "captions":[{"from":27000,"to":28000,"text":"A motorway on-ramp merging by zipper at the morning peak"},
- {"from":28000,"to":28800,"text":"Queues form and clear as in SUMO: ramp flow, lane use and speeds were matched"}]}
+ {"from":28000,"to":28800,"text":"Queues form and clear. Lane use on this ramp was checked against SUMO"}]}

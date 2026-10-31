@@ -125,3 +125,5 @@ city-wide congestion in the timelapse and visible Slussen approaches in the zoom
 ## Demand scale used for the report
 
 With the final engine the fitted 2.9M trips overload the network from 06:00 on: over 110,000 cars running and a million teleports. `scripts/stockholm/retime.py` keeps 60% of the trips and spreads each source band over a typical weekday profile instead of uniform hours, which removes the jump at 06:00. That profile is an assumption, the source has only three bands. At 60%, 82% of the 10,013 matched edges have daily GEH below 5 and r² is 0.61, against 70% and 0.50 at full demand. The scale was picked for this fit, so the fit is not independent validation. Teleports stay high, about 285,000, and the guessed signals and random route pool are the first things to replace.
+
+Latest figures at 60%, final engine: 1.63M trips inserted, 1.61M completed, peak 51,214 running, 302,180 teleports. Daily GEH<5 is 82%, r² 0.61, slope 0.49 at 10,013 matched edges. Per source band the GEH<5 share is lower, 38% for 06-18, 55% for 18-22, 71% for 22-06, because the retimed profile and the 60% scale were not fitted per band. The day took 172 s.
