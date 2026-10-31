@@ -566,7 +566,7 @@ impl World {
                     NONE
                 },
                 entry_link: incoming.map(|inc| topo.links[inc as usize].entry + link0).unwrap_or(NONE),
-                pad: [0; 2],
+                pad: [l.change_left, l.change_right],
             });
             *key_base += cells;
         }

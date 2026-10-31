@@ -1,0 +1,353 @@
+{
+  "status": "incomplete: statistical targets and thesis-scale collision/stuck requirements unmet",
+  "commands": [
+    "nix develop --command env RUSTC_WRAPPER= cargo build --release -p cars-cli -j 3",
+    "nix develop --command env RUSTC_WRAPPER= cargo test -p cars-core -j 3",
+    "nix develop --command python3 scripts/golden.py",
+    "nix develop --command python3 scripts/lc_conflicts.py",
+    "nix develop --command python3 scripts/golden.py --i80"
+  ],
+  "longitudinal": {
+    "platoon_krauss0_1": 0.0,
+    "platoon_krauss0_01": 0.0,
+    "platoon_idm_1": 0.003,
+    "platoon_idm_01": 0.003,
+    "platoon_acc_1": 0.0,
+    "platoon_acc_01": 0.001,
+    "platoon_cacc_01": 0.001,
+    "tls_krauss0_1": 0.005,
+    "tls_idm_01": 0.016,
+    "priority_krauss0_1": 0.0,
+    "priority_idm_01": 0.39
+  },
+  "multi_lane": {
+    "multi_overtake": {
+      "sumo": {
+        "completed": 13,
+        "duration": 74.61538461538461,
+        "speed": 22.582366821460276,
+        "flow": 390,
+        "changes": 2.3076923076923075,
+        "share": {
+          "ab_0": 0.40606060606060607,
+          "bc_0": 0.7052631578947368,
+          "ab_1": 0.593939393939394,
+          "bc_1": 0.29473684210526313
+        },
+        "arrivals": {
+          "1": 12,
+          "2": 1
+        }
+      },
+      "cars": {
+        "completed": 13,
+        "duration": 75.15384615384616,
+        "speed": 22.414428846153847,
+        "flow": 390,
+        "changes": 2.230769230769231,
+        "share": {
+          "ab_0": 0.45528455284552843,
+          "bc_0": 0.7669491525423728,
+          "ab_1": 0.5447154471544715,
+          "bc_1": 0.2330508474576271
+        },
+        "arrivals": {
+          "2": 1,
+          "1": 12
+        }
+      },
+      "lane_share_error": 0.06168599464763602
+    },
+    "multi_drop": {
+      "sumo": {
+        "completed": 258,
+        "duration": 77.9922480620155,
+        "speed": 16.64381314350023,
+        "flow": 3930,
+        "changes": 0.49612403100775193,
+        "share": {
+          "ab_0": 0.1464147363427939,
+          "ab_1": 0.5793343347300182,
+          "bc_0": 0.5476480954317473,
+          "ab_2": 0.27425092892718794,
+          "bc_1": 0.4523519045682527
+        },
+        "arrivals": {
+          "0": 9,
+          "1": 62,
+          "2": 69,
+          "3": 65,
+          "4": 53
+        }
+      },
+      "cars": {
+        "completed": 258,
+        "duration": 70.68217054263566,
+        "speed": 17.42982019379845,
+        "flow": 3840,
+        "changes": 0.32558139534883723,
+        "share": {
+          "ab_0": 0.1575462512171373,
+          "ab_1": 0.4816942551119766,
+          "bc_0": 0.5168376742962378,
+          "ab_2": 0.36075949367088606,
+          "bc_1": 0.48316232570376216
+        },
+        "arrivals": {
+          "0": 5,
+          "1": 58,
+          "2": 70,
+          "3": 71,
+          "4": 54
+        }
+      },
+      "lane_share_error": 0.09764007961804155
+    },
+    "multi_merge_low": {
+      "sumo": {
+        "completed": 88,
+        "duration": 66.18181818181819,
+        "speed": 22.529307194422866,
+        "flow": 2010,
+        "changes": 0.9090909090909091,
+        "share": {
+          "ab_0": 0.5990016638935108,
+          "bc_1": 0.4779270633397313,
+          "cd_0": 0.5228971962616823,
+          "rb_0": 1.0,
+          "bc_0": 0.08573256557901472,
+          "ab_1": 0.40099833610648916,
+          "bc_2": 0.436340371081254,
+          "cd_1": 0.47710280373831776
+        },
+        "arrivals": {
+          "1": 32,
+          "2": 35,
+          "3": 21
+        }
+      },
+      "cars": {
+        "completed": 88,
+        "duration": 79.07954545454545,
+        "speed": 19.405697647727273,
+        "flow": 1800,
+        "changes": 1.2045454545454546,
+        "share": {
+          "ab_0": 0.5990220048899756,
+          "bc_1": 0.5298759864712514,
+          "cd_0": 0.46645796064400713,
+          "rb_0": 1.0,
+          "bc_0": 0.1555806087936866,
+          "ab_1": 0.40097799511002447,
+          "bc_2": 0.314543404735062,
+          "cd_1": 0.5335420393559929
+        },
+        "arrivals": {
+          "1": 27,
+          "2": 33,
+          "3": 28
+        }
+      },
+      "lane_share_error": 0.12179696634619203
+    },
+    "multi_merge_high": {
+      "sumo": {
+        "completed": 188,
+        "duration": 82.1436170212766,
+        "speed": 19.236844588524953,
+        "flow": 3540,
+        "changes": 0.2553191489361702,
+        "share": {
+          "ab_0": 0.5477453580901857,
+          "bc_1": 0.5908285334514842,
+          "cd_0": 0.5895921756781694,
+          "rb_0": 1.0,
+          "bc_0": 0.08373947718210013,
+          "ab_1": 0.45225464190981435,
+          "bc_2": 0.3254319893664156,
+          "cd_1": 0.4104078243218306
+        },
+        "arrivals": {
+          "1": 53,
+          "2": 65,
+          "3": 67,
+          "4": 3
+        }
+      },
+      "cars": {
+        "completed": 188,
+        "duration": 89.74468085106383,
+        "speed": 18.065877061170212,
+        "flow": 3240,
+        "changes": 0.28191489361702127,
+        "share": {
+          "ab_0": 0.5320118478013215,
+          "bc_1": 0.5656048540007584,
+          "cd_0": 0.5559969731365872,
+          "rb_0": 1.0,
+          "bc_0": 0.1348122866894198,
+          "ab_1": 0.4679881521986785,
+          "bc_2": 0.29958285930982176,
+          "cd_1": 0.4440030268634128
+        },
+        "arrivals": {
+          "1": 48,
+          "2": 60,
+          "3": 65,
+          "4": 15
+        }
+      },
+      "lane_share_error": 0.05107280950731967
+    },
+    "multi_turns": {
+      "sumo": {
+        "completed": 60,
+        "duration": 74.95,
+        "speed": 10.979785405437045,
+        "flow": 1800,
+        "changes": 1.7166666666666666,
+        "share": {
+          "wc_0": 0.36968576709796674,
+          "cs_0": 0.3568075117370892,
+          "ec_0": 0.36704119850187267,
+          "cn_0": 0.3552941176470588,
+          "sc_0": 0.28772919605077574,
+          "ce_0": 0.3627906976744186,
+          "nc_0": 0.2648221343873518,
+          "cw_0": 0.3697674418604651,
+          "wc_1": 0.36044362292051757,
+          "ce_1": 0.3697674418604651,
+          "ec_1": 0.36329588014981273,
+          "cw_1": 0.3627906976744186,
+          "sc_1": 0.35684062059238364,
+          "cn_1": 0.32235294117647056,
+          "nc_1": 0.4137022397891963,
+          "cs_1": 0.27230046948356806,
+          "wc_2": 0.2698706099815157,
+          "cn_2": 0.32235294117647056,
+          "ec_2": 0.2696629213483146,
+          "cs_2": 0.37089201877934275,
+          "sc_2": 0.3554301833568406,
+          "cw_2": 0.26744186046511625,
+          "nc_2": 0.3214756258234519,
+          "ce_2": 0.26744186046511625
+        },
+        "arrivals": {
+          "1": 37,
+          "2": 23
+        }
+      },
+      "cars": {
+        "completed": 60,
+        "duration": 83.98333333333333,
+        "speed": 9.764974288333333,
+        "flow": 1800,
+        "changes": 1.7666666666666666,
+        "share": {
+          "wc_0": 0.3705357142857143,
+          "cs_0": 0.48372093023255813,
+          "ec_0": 0.37237237237237236,
+          "cn_0": 0.45433255269320844,
+          "sc_0": 0.29447115384615385,
+          "ce_0": 0.4788732394366197,
+          "ce_1": 0.36384976525821594,
+          "nc_0": 0.27695800227014755,
+          "cw_0": 0.48243559718969553,
+          "wc_1": 0.3169642857142857,
+          "ec_1": 0.3153153153153153,
+          "sc_1": 0.3125,
+          "nc_1": 0.36435868331441545,
+          "cs_1": 0.413953488372093,
+          "wc_2": 0.3125,
+          "cn_2": 0.2107728337236534,
+          "cn_1": 0.33489461358313816,
+          "ec_2": 0.3123123123123123,
+          "cs_2": 0.10232558139534884,
+          "sc_2": 0.39302884615384615,
+          "cw_1": 0.3793911007025761,
+          "nc_2": 0.358683314415437,
+          "ce_2": 0.1572769953051643,
+          "cw_2": 0.13817330210772832
+        },
+        "arrivals": {
+          "1": 29,
+          "2": 31
+        }
+      },
+      "lane_share_error": 0.2685664373839939
+    },
+    "multi_weave": {
+      "sumo": {
+        "completed": 60,
+        "duration": 53.55,
+        "speed": 19.523558026298733,
+        "flow": 1680,
+        "changes": 2.0,
+        "share": {
+          "ab_0": 0.05591798695246971,
+          "ab_1": 0.08480894687791239,
+          "ab_2": 0.8592730661696178,
+          "bc_2": 1.0,
+          "cd_0": 1.0
+        },
+        "arrivals": {
+          "0": 4,
+          "1": 29,
+          "2": 27
+        }
+      },
+      "cars": {
+        "completed": 60,
+        "duration": 54.43333333333333,
+        "speed": 19.208715700000003,
+        "flow": 1680,
+        "changes": 2.0,
+        "share": {
+          "ab_0": 0.05698005698005698,
+          "ab_1": 0.20512820512820512,
+          "ab_2": 0.7378917378917379,
+          "bc_2": 1.0,
+          "cd_0": 1.0
+        },
+        "arrivals": {
+          "0": 4,
+          "1": 29,
+          "2": 27
+        }
+      },
+      "lane_share_error": 0.12138132827787995
+    }
+  },
+  "i80": {
+    "sumo": {
+      "completed": 23814.333333333332,
+      "travel_time": 697.5864210913517,
+      "waiting_time": 26.12848017591562,
+      "time_loss": 189.22076819724543,
+      "speed": 27.409566666666667
+    },
+    "cars": {
+      "completed": 23656,
+      "travel_time": 1250.669766655394,
+      "waiting_time": 288.69208657423064,
+      "time_loss": 740.8910699777887,
+      "speed": 16.3
+    },
+    "stderr": "loaded in 0.05s: 24242 trips, 13 routes, 7 vTypes; dropped DropCounts { unknown_edge: 0, unconnected: 0, unknown_route: 0, unknown_vtype: 0, taz: 0, after_end: 0, unsupported_depart: 0 }; 0 stops and 0 persons ignored\nworld in 0.01s: 224 lanes, 212 links, 0 foes, 0 conflicts, 0 tls, 24242 trips, key bits 16\ngpu buffers: 17.8 MB, sort passes 2\nstep 1000/18000: active 478 inserted 773 arrived 294 teleports 1 overflow 46341 items_full 0 (1486.5 steps/s, 22 steps per submit)\nstep 2000/18000: active 707 inserted 1543 arrived 836 teleports 21 overflow 253625 items_full 0 (1442.6 steps/s, 22 steps per submit)\nstep 3000/18000: active 541 inserted 2312 arrived 1773 teleports 40 overflow 467919 items_full 0 (1428.8 steps/s, 21 steps per submit)\nstep 4000/18000: active 850 inserted 3351 arrived 2500 teleports 55 overflow 642758 items_full 0 (1418.7 steps/s, 22 steps per submit)\nstep 5000/18000: active 1306 inserted 4797 arrived 3492 teleports 70 overflow 1088014 items_full 0 (1412.3 steps/s, 21 steps per submit)\nstep 6000/18000: active 1554 inserted 6239 arrived 4685 teleports 82 overflow 1721520 items_full 0 (1406.6 steps/s, 20 steps per submit)\nstep 7000/18000: active 1627 inserted 7686 arrived 6057 teleports 95 overflow 2371178 items_full 0 (1402.6 steps/s, 21 steps per submit)\nstep 8000/18000: active 2183 inserted 9817 arrived 7633 teleports 112 overflow 3159038 items_full 0 (1397.8 steps/s, 20 steps per submit)\nstep 9000/18000: active 2622 inserted 11884 arrived 9262 teleports 125 overflow 4215573 items_full 0 (1387.3 steps/s, 20 steps per submit)\nstep 10000/18000: active 2890 inserted 13843 arrived 10954 teleports 143 overflow 5281163 items_full 0 (1377.3 steps/s, 17 steps per submit)\nstep 11000/18000: active 2888 inserted 15745 arrived 12860 teleports 163 overflow 6430059 items_full 0 (1369.3 steps/s, 20 steps per submit)\nstep 12000/18000: active 2564 inserted 17107 arrived 14545 teleports 178 overflow 7468741 items_full 0 (1363.3 steps/s, 20 steps per submit)\nstep 13000/18000: active 2502 inserted 18785 arrived 16283 teleports 194 overflow 8401305 items_full 0 (1359.8 steps/s, 19 steps per submit)\nstep 14000/18000: active 2417 inserted 20324 arrived 17906 teleports 222 overflow 9320199 items_full 0 (1357.6 steps/s, 20 steps per submit)\nstep 15000/18000: active 2020 inserted 21526 arrived 19507 teleports 244 overflow 10100606 items_full 0 (1356.8 steps/s, 20 steps per submit)\nstep 16000/18000: active 1553 inserted 22708 arrived 21154 teleports 255 overflow 10772208 items_full 0 (1358.4 steps/s, 20 steps per submit)\nstep 17000/18000: active 721 inserted 23477 arrived 22756 teleports 269 overflow 11265393 items_full 0 (1361.5 steps/s, 21 steps per submit)\nstep 18000/18000: active 586 inserted 24242 arrived 23656 teleports 281 overflow 11461693 items_full 0 (1364.1 steps/s, 20 steps per submit)\nlane changes 142729, teleports 281\n"
+  },
+  "safety": {
+    "tiny_scenarios": "per-step same-lane body overlap assertions passed; zero teleports; all demand arrived",
+    "same_gap_replay": "PASS: both-side same-gap proposals, all 6 arrived, no overlap, identical replay; /tmp/nix-shell.N6QqFG/lc-conflicts-3xjm_cc_\n",
+    "i80_overlap": "loaded in 0.05s: 24242 trips, 13 routes, 7 vTypes; dropped DropCounts { unknown_edge: 0, unconnected: 0, unknown_route: 0, unknown_vtype: 0, taz: 0, after_end: 0, unsupported_depart: 0 }; 0 stops and 0 persons ignored\nworld in 0.01s: 224 lanes, 212 links, 0 foes, 0 conflicts, 0 tls, 24242 trips, key bits 16\ngpu buffers: 17.8 MB, sort passes 2\n\nthread 'main' (746312) panicked at crates/cars-cli/src/main.rs:65:25:\noverlap at step 2806, lane 220, trips 1907 and 1849, gap -4.3390026\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+  },
+  "limitations": [
+    "Simplified cooperation does not port blocker-length negotiation or acceleration advice",
+    "Best-lane scoring lacks downstream occupation and exact SUMO ties; scratch limited to 64 lanes per edge",
+    "No sublane, opposite driving, pedestrians, stops/arrival-lane constraints, roundabout bonus or TraCI",
+    "Internal lane changes disabled; right-overtaking restrictions and fixed-point hysteresis approximate",
+    "Neighbor continuation search bounded to short internal connections; rear-most entrant only",
+    "Conservative hashed reservation conflicts may reject distant proposals",
+    "Priority-junction ramp fixture exposed overlap; current ramp fixtures use acceleration lanes followed by a drop",
+    "I-80 summary is one cars seed (0) versus three SUMO seeds, not a calibrated statistical validation"
+  ]
+}
