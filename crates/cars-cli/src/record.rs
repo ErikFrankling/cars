@@ -29,6 +29,12 @@ pub struct Args {
     end: f32,
     #[arg(long, default_value_t = 0)]
     seed: u64,
+    #[arg(long, default_value_t = 0)]
+    capacity: u32,
+    #[arg(long, default_value_t = 300.0)]
+    time_to_teleport: f32,
+    #[arg(long, default_value_t = 1e9)]
+    ignore_junction_blocker: f32,
     #[arg(long, default_value_t = 1)]
     steps_per_frame: u32,
     #[arg(long, default_value_t = 30)]
@@ -163,6 +169,9 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
             dt: a.dt,
             end_seconds: a.end,
             seed: a.seed,
+            capacity: a.capacity,
+            time_to_teleport: a.time_to_teleport,
+            ignore_blocker: a.ignore_junction_blocker,
             ..Default::default()
         },
         &[],
@@ -232,7 +241,7 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
                 "-preset",
                 "medium",
                 "-threads",
-                "3",
+                "2",
             ])
             .arg(&intermediate)
             .stdin(Stdio::piped())
@@ -322,7 +331,7 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
             "-preset",
             "medium",
             "-threads",
-            "3",
+            "2",
             "-movflags",
             "+faststart",
         ])

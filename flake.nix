@@ -44,6 +44,7 @@
             numpy
             pandas
             scipy
+            pyproj
             matplotlib
             lxml
           ]
