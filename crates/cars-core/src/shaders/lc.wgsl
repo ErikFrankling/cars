@@ -476,8 +476,44 @@ fn inform_follower(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f3
     }
 }
 
+// MSLaneChanger::dens includes only vehicles already swept ahead of ego.
+fn lc_ahead_load(l: u32, pos: f32, ego: u32) -> u32 {
+    var count = 0u;
+    var end = 0u;
+    var first = 0u;
+    if (lane_occupied(l)) {
+        let s = seg[l];
+        first = s.first;
+        var lo = s.first;
+        var hi = s.end;
+        loop {
+            if (lo >= hi) { break; }
+            let mid = (lo + hi) / 2u;
+            if (cur[mid].lane == l && (cur[mid].flags & F_REMOVED) == 0u) { lo = mid + 1u; }
+            else { hi = mid; }
+        }
+        end = lo;
+        lo = s.first;
+        hi = end;
+        loop {
+            if (lo >= hi) { break; }
+            let mid = (lo + hi) / 2u;
+            if (cur[mid].pos < pos) { lo = mid + 1u; } else { hi = mid; }
+        }
+        count = end - lo;
+        if (ego >= lo && ego < end) { count -= 1u; }
+    }
+    let ent = atomicLoad(&entrant[l]);
+    if (ent != NONE) {
+        let k = ent & 0x3fffffu;
+        let o = cur[k];
+        if (k != ego && (k < first || k >= end) && o.lane == l && o.pos >= pos && (o.flags & F_REMOVED) == 0u) { count += 1u; }
+    }
+    return count;
+}
+
 // MSLCM_LC2013::_wantsChange. Returns the state for this direction.
-fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked: u32, dest: u32) -> u32 {
+fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked: u32, dest: u32, ego: u32) -> u32 {
     let right = side < 0;
     let lca = select(LCA_LEFT, LCA_RIGHT, right);
     let my_lca = select(LCA_M_LEFT, LCA_M_RIGHT, right);
@@ -499,10 +535,10 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
     if (ty.lc_strategic < 0.0) { la_dist = -1e3; }
 
     let best_lane = u32(i32(e.lane) + clamp(best_offset, -8, 8));
-    let best_occ = f32(lane_load(best_lane)) * len_gap + select(e.occ_best, select(e.occ_left, e.occ_right, right), curr_offset == 0);
+    let best_occ = f32(lc_ahead_load(best_lane, pos, ego)) * len_gap + select(e.occ_best, select(e.occ_left, e.occ_right, right), curr_offset == 0);
     let usable = current_dist - pos - best_occ;
-    let cur_occ = f32(lane_load(e.lane)) * len_gap + e.occ_cur;
-    let neigh_occ = f32(lane_load(dest)) * len_gap + select(e.occ_left, e.occ_right, right);
+    let cur_occ = f32(lc_ahead_load(e.lane, pos, ego)) * len_gap + e.occ_cur;
+    let neigh_occ = f32(lc_ahead_load(dest, pos, ego)) * len_gap + select(e.occ_left, e.occ_right, right);
     let max_jam = max(cur_occ, neigh_occ);
     let neigh_left = max(0.0, neigh_dist - pos - max_jam);
     let has_own = own.gap < 1e8;
@@ -734,7 +770,7 @@ fn lc_evaluate(i: u32) {
             var n = lc_neighbors(dest, e.pos, i, back);
             lc_leader_ahead(&n, dest, e.pos, e.route_i, e.route_end, lookahead);
             let b = check_blocked(e, n);
-            state_r = wants_change(-1, e, own, n, b, dest);
+            state_r = wants_change(-1, e, own, n, b, dest, i);
             if ((state_r & LCA_RIGHT) != 0u && (state_r & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) == 0u) { chosen = -1; }
             else if ((state_r & LCA_RIGHT) != 0u && (state_r & LCA_URGENT) != 0u) { hold_follower_for_blocked(e, n); }
         }
@@ -745,7 +781,7 @@ fn lc_evaluate(i: u32) {
             var n = lc_neighbors(dest, e.pos, i, back);
             lc_leader_ahead(&n, dest, e.pos, e.route_i, e.route_end, lookahead);
             let b = check_blocked(e, n);
-            state_l = wants_change(1, e, own, n, b, dest);
+            state_l = wants_change(1, e, own, n, b, dest, i);
             if ((state_l & LCA_LEFT) != 0u && (state_l & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) == 0u) { chosen = 1; }
             else if ((state_l & LCA_LEFT) != 0u && (state_l & LCA_URGENT) != 0u) { hold_follower_for_blocked(e, n); }
         }
