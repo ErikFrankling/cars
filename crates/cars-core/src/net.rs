@@ -137,6 +137,7 @@ pub struct Net {
     pub tls_index: FxHashMap<String, u32>,
     pub junction_index: FxHashMap<String, u32>,
     pub bounds: [f32; 4],
+    pub roundabout_edges: Vec<u32>,
 }
 
 fn bits(s: &str) -> Vec<bool> {
@@ -190,6 +191,15 @@ impl Net {
                                 foes: bits(&attr(e, "foes").unwrap_or_default()),
                                 cont: attr(e, "cont").is_some_and(|c| c == "1"),
                             });
+                        }
+                    }
+                    b"roundabout" => {
+                        if let Some(list) = attr(e, "edges") {
+                            for id in list.split_ascii_whitespace() {
+                                if let Some(&ei) = self.edge_index.get(id) {
+                                    self.roundabout_edges.push(ei);
+                                }
+                            }
                         }
                     }
                     b"connection" => {

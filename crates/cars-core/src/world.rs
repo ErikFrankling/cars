@@ -565,6 +565,13 @@ impl World {
         }
 
         // Lanes.
+        let roundabout: Vec<bool> = {
+            let mut r = vec![false; net.edges.len()];
+            for &e in &net.roundabout_edges {
+                r[e as usize] = true;
+            }
+            r
+        };
         let mut detector_pos = vec![-1.0f32; net.lanes.len()];
         let mut actuation: Vec<Option<Actuation>> = Vec::new();
         for (id, t) in net.tls.iter().enumerate() {
@@ -596,7 +603,7 @@ impl World {
                 links_count: links.len() as u32,
                 index: l.index,
                 allow: l.allow,
-                flags: u32::from(internal),
+                flags: u32::from(internal) | if on_roundabout(topo, net, &roundabout, li as u32) { 2 } else { 0 },
                 key_base: *key_base as u32,
                 key_scale: 1.0 / KEY_METRES,
                 det_pos: detector_pos[li],
@@ -834,6 +841,18 @@ fn topo_exit_after_ij(topo: &Topology, id: u32) -> bool {
         let v = &topo.links[inc[0] as usize];
         v.internal_before.is_some() && v.via.is_some()
     }
+}
+
+/// A roundabout edge, or an internal lane between roundabout edges.
+fn on_roundabout(topo: &Topology, net: &Net, roundabout: &[bool], lane: u32) -> bool {
+    let edge = |l: u32| net.lanes[l as usize].edge as usize;
+    if !net.is_internal_lane(lane) {
+        return roundabout[edge(lane)];
+    }
+    let (Some(&inc), Some(&out)) = (topo.incoming[lane as usize].first(), topo.lane_links[lane as usize].first()) else {
+        return false;
+    };
+    roundabout[edge(normal_pred(topo, net, inc))] || roundabout[edge(topo.links[out as usize].to_lane)]
 }
 
 fn normal_pred(topo: &Topology, net: &Net, link: u32) -> u32 {

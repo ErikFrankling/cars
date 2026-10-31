@@ -26,6 +26,7 @@ const F_GLOSA_ACTIVE: u32 = 64u;
 const F_ON_JUNCTION: u32 = 128u;
 const F_HAVE_STOPPED: u32 = 256u; // has stopped for its stop sign
 const F_WILL_PASS: u32 = 512u;     // requested its next link in the last step
+const F_HAVE_TO_WAIT: u32 = 2048u; // must stop at its next link, as of the last step
 const F_SCRIPTED: u32 = 1024u;     // gets the speed cap disturbance from Params.script_t0
 
 // Link flags.
@@ -47,6 +48,7 @@ const C_NO_CROSSING: u32 = 16u;
 
 // Lane flags.
 const LANE_INTERNAL: u32 = 1u;
+const LANE_ROUNDABOUT: u32 = 2u;
 
 struct Params {
     dt: f32,
@@ -238,6 +240,13 @@ struct TripOut {
     time_loss: f32,
     route_len: f32,
     wait_count: u32,
+    flags: u32,
+    pad: u32,
+}
+
+struct LaneFree {
+    space: f32,
+    brutto: f32,
     flags: u32,
     pad: u32,
 }

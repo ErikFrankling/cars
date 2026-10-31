@@ -19,7 +19,7 @@ const MAIN_BINDINGS: &[bool] = &[
     /*0 P*/ true, /*1 G*/ false, /*2 C*/ false, /*3 lanes*/ true, /*4 edges*/ true,
     /*5 links*/ true, /*6 foes*/ true, /*7 conflicts*/ true, /*8 types*/ true, /*9 routes*/ true,
     /*10 trips*/ true, /*11 queues*/ false, /*12 tls*/ false, /*13 phases*/ true, /*14 states*/ true,
-    /*15 prev*/ true, /*16 cur*/ false, /*17 incoming*/ true, /*18 adv_flags*/ false, /*19 unused*/ true,
+    /*15 prev*/ true, /*16 cur*/ false, /*17 incoming*/ true, /*18 adv_flags*/ false, /*19 lane_free*/ false,
     /*20 seg*/ false, /*21 items*/ false, /*22 slots*/ false, /*23 link_count*/ false,
     /*24 partial*/ false, /*25 tail*/ false, /*26 entrant*/ false, /*27 trip_out*/ false,
     /*28 series*/ false, /*29 edge_acc*/ false, /*30 unused*/ true, /*31 advice*/ false,
@@ -72,6 +72,7 @@ struct Pipelines {
     clear_links: wgpu::ComputePipeline,
     clear_lanes: wgpu::ComputePipeline,
     plan: wgpu::ComputePipeline,
+    lane_free_scan: wgpu::ComputePipeline,
     approach: wgpu::ComputePipeline,
     exec: wgpu::ComputePipeline,
     lc_best: Option<wgpu::ComputePipeline>,
@@ -207,6 +208,7 @@ impl Sim {
         let last_detect = empty("last_detect", p.n_lanes as u64 * 4);
         let lc_plan = empty("lc_plan", cap * LCPLAN_BYTES);
         let unused = empty("unused", 16);
+        let lane_free = empty("lane_free", p.n_lanes as u64 * 16);
 
         // Layouts.
         let main_layout = {
@@ -276,7 +278,7 @@ impl Sim {
         let main_group = |prev: &wgpu::Buffer, cur: &wgpu::Buffer| {
             let list: Vec<&wgpu::Buffer> = vec![
                 &params, &globals, &counters, &lanes, &edges, &links, &foes, &conflicts, &types, &routes,
-                &trips, &queues, &tls, &phases, &states, prev, cur, &incoming_links, &adv_flags, &unused, &seg,
+                &trips, &queues, &tls, &phases, &states, prev, cur, &incoming_links, &adv_flags, &lane_free, &seg,
                 &items, &slots, &link_count, &partial, &tail, &entrant, &trip_out, &series, &edge_acc,
                 &unused, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
             ];
@@ -394,6 +396,7 @@ impl Sim {
             clear_links: m("clear_links"),
             clear_lanes: m("clear_lanes"),
             plan: m("plan"),
+            lane_free_scan: m("lane_free_scan"),
             approach: m("approach"),
             exec: m("exec"),
             lc_best: has("lc_best").then(|| m("lc_best")),
@@ -495,6 +498,8 @@ impl Sim {
         c.set_pipeline(&p.clear_links);
         c.dispatch_workgroups(params.n_links.div_ceil(64), 1, 1);
         c.set_pipeline(&p.plan);
+        c.dispatch_workgroups_indirect(ind, 24);
+        c.set_pipeline(&p.lane_free_scan);
         c.dispatch_workgroups_indirect(ind, 24);
         c.set_pipeline(&p.approach);
         c.dispatch_workgroups_indirect(ind, 24);
@@ -722,6 +727,11 @@ impl Sim {
         pass("plan", &mut |c| {
             c.set_bind_group(0, group, &[]);
             c.set_pipeline(&p.plan);
+            c.dispatch_workgroups_indirect(ind, 24);
+        });
+        pass("lane_free_scan", &mut |c| {
+            c.set_bind_group(0, group, &[]);
+            c.set_pipeline(&p.lane_free_scan);
             c.dispatch_workgroups_indirect(ind, 24);
         });
         pass("approach", &mut |c| {

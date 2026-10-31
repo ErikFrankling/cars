@@ -151,7 +151,15 @@ pub fn run(args: Args) {
                         let link = it[0].to_bits();
                         let desc = if link == u32::MAX { "end".to_string() } else {
                             let l = &world.links[link as usize];
-                            format!("{}->{} flags {:#x} tl {} state {} foes {} confs {}", net.lanes[l.from_lane as usize].id, net.lanes[l.next_lane as usize].id, l.flags, l.tl as i32, l.state as u8 as char, l.foe_count, l.conf_count)
+                            let mut st = l.state as u8 as char;
+                            let mut phase = -1i32;
+                            if l.tl != u32::MAX {
+                                let tls: Vec<cars_core::world::GpuTlsState> = sim.read(&gpu, &sim.buffers.tls, world.tls.len() as u64);
+                                let ts = &tls[l.tl as usize];
+                                phase = ts.phase as i32;
+                                st = world.states[(world.phases[(ts.first_phase + ts.phase) as usize].state_start + l.tl_index) as usize] as u8 as char;
+                            }
+                            format!("{}->{} flags {:#x} tl {} ph {phase} state {st} foes {} confs {}", net.lanes[l.from_lane as usize].id, net.lanes[l.next_lane as usize].id, l.flags, l.tl as i32, l.foe_count, l.conf_count)
                         };
                         println!("   item {j}: {desc} pass {:.2} wait {:.2} req {} arr {:.2} arrv {:.2} dist {:.1} leave {:.2}", it[1], it[2], it[3].to_bits(), it[4], it[5], it[7], it[8]);
                         if link != u32::MAX && j == 0 {
