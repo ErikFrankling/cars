@@ -4,3 +4,9 @@ scenario ring
 done in 25.6s: arrived 279881 teleports 0 collisions 0 overflow 34819028
 wall_seconds=25.62 steps=24000 replicas=315
 scenario glosa_two_signal
+done in 67.1s: arrived 6003638 teleports 975 collisions 917157 overflow 0
+wall_seconds=67.09 steps=18000 replicas=252
+scenario i80_vsl
+done in 196.2s: arrived 3159513 teleports 693 collisions 3027 overflow 659799560
+wall_seconds=196.18 steps=54000 replicas=315
+scenario bologna

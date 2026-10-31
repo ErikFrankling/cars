@@ -1,0 +1,5 @@
+metric,sumo_mean,cars_mean,sumo_p95,cars_p95
+duration s,293.9,296.1,653.0,655.0
+waiting s,39.9,39.4,119.0,118.0
+time loss s,91.2,92.5,240.3,241.5
+route length m,2396.2,2396.1,5365.4,5365.0
