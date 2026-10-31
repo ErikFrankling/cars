@@ -407,7 +407,9 @@ fn check_link_leader(link_i: u32, lane: u32, seen: f32, ego_lane: u32, ego_entry
                     gap = dist_cross - ty.min_gap - bd2 - cf.foe_width;
                 }
                 if (is_leader(link_i, ego_lane, ego_entry, idx, gap) || in_way) {
-                    adapt_to_junction_leader(gap, critical, seen, l_len, dist_cross, f.speed, ft.apparent, ft.model == MODEL_CACC);
+                    let stop_asap = cannot_ignore;
+                    let crossing = select(dist_cross, -1.0, stop_asap);
+                    adapt_to_junction_leader(gap, critical, seen, l_len, crossing, f.speed, ft.apparent, ft.model == MODEL_CACC);
                     if (pl_n > 0u) { pl_v = max(pl_v, items[pl_base + pl_n - 1u].v_wait); }
                     if (pl_v < HALT_SPEED) {
                         let same_pred = lanes[f.lane].pred == lanes[ego_lane].pred;
@@ -431,7 +433,8 @@ fn check_link_leader(link_i: u32, lane: u32, seen: f32, ego_lane: u32, ego_entry
             if ((in_way || !past) && dist_cross >= -POS_EPS && !(past && !same_target)) {
                 let gap = dist_cross - ty.min_gap - back_dist - cf.foe_width;
                 if (in_way) {
-                    adapt_to_junction_leader(gap, false, seen, l_len, dist_cross, unpack_speed(p), ty.apparent, false);
+                    let crossing = select(dist_cross, -1.0, same_target || same_source);
+                    adapt_to_junction_leader(gap, false, seen, l_len, crossing, unpack_speed(p), ty.apparent, unpack_cacc(p));
                 }
             }
         }

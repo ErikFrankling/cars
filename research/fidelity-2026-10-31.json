@@ -1,0 +1,2228 @@
+{
+  "date": "2026-10-31",
+  "branch": "t3/7e8fc67b",
+  "implementation_head": "2306d7df6902050fa25e81eccbb76eb2d689429a",
+  "sumo_version": "1.28.0",
+  "comparison_notes": [
+    "GPU sweeps use seeds 0,1, tiers idm,cacc for Bologna and idm,acc for I80, penetrations 0,1. Thesis reference averages three SUMO seeds.",
+    "p=0 is human in both labelled tiers. World seed includes replica index, so these provide four distinct human speed-factor realizations.",
+    "GPU identical-seed replay remains nondeterministic once congestion/collisions occur. These are individual validation sweeps, not confidence intervals.",
+    "Only the retained small source ports and ahead-only lane occupation are in the branch. Larger clock/cooperation/reservation and slot-capacity experiments were reverted.",
+    "Intermediate sweeps combine experiments; they are retained for diagnosis and are not all isolated causal comparisons."
+  ],
+  "source_evidence": [
+    {
+      "path": "/home/erikf/projects/personal/thesis-src/sumo/src/microsim/MSLaneChanger.cpp",
+      "lines": [
+        115,
+        221,
+        390,
+        452
+      ],
+      "finding": "Lane-change dens counts already-swept vehicles ahead, not total lane occupancy."
+    },
+    {
+      "path": "/home/erikf/projects/personal/thesis-src/sumo/src/microsim/MSLink.cpp",
+      "lines": [
+        1910,
+        1915
+      ],
+      "finding": "Full occupants use cannotIgnore for stopAsap; partial occupants use sameTarget or sameSource."
+    },
+    {
+      "path": "/home/erikf/projects/personal/thesis-src/sumo/src/microsim/MSVehicle.cpp",
+      "lines": [
+        5251,
+        5252
+      ],
+      "finding": "isFrontOnLane means front physically on the lane, not queue leader."
+    },
+    {
+      "path": "/home/erikf/projects/personal/thesis-src/sumo/src/microsim/cfmodels/MSCFModel_CACC.cpp",
+      "lines": [
+        191,
+        202
+      ],
+      "finding": "CACC secure gap depends on the actual leader model."
+    },
+    {
+      "path": "/home/erikf/projects/personal/thesis-src/sumo/src/microsim/cfmodels/MSCFModel_ACC.cpp",
+      "lines": [
+        265,
+        274
+      ],
+      "finding": "lastUpdateTime latches on the first call even in the hysteresis band."
+    }
+  ],
+  "comparisons": {
+    "bologna": {
+      "before": [
+        {
+          "scenario": "bologna",
+          "tier": "idm",
+          "penetration": 0,
+          "seed": 0,
+          "completed": 10069,
+          "travel_time": 364.9621963212684,
+          "waiting_time": 153.66265454418843,
+          "time_loss": 238.1268538455052,
+          "speed": 5.009241687791442,
+          "running": 690.7522590361446,
+          "edge_flow": 562.0785434080714,
+          "density": 18.10832674359585
+        },
+        {
+          "scenario": "bologna",
+          "tier": "idm",
+          "penetration": 0,
+          "seed": 1,
+          "completed": 9327,
+          "travel_time": 318.9012377315205,
+          "waiting_time": 126.71242188693924,
+          "time_loss": 195.7961824063359,
+          "speed": 3.799011602986112,
+          "running": 819.1629931468791,
+          "edge_flow": 535.9825240210523,
+          "density": 21.74917928391597
+        },
+        {
+          "scenario": "bologna",
+          "tier": "idm",
+          "penetration": 1,
+          "seed": 0,
+          "completed": 10069,
+          "travel_time": 214.40388640074625,
+          "waiting_time": 56.92924146839533,
+          "time_loss": 88.7422523906989,
+          "speed": 8.137409522151916,
+          "running": 510.5973902728351,
+          "edge_flow": 623.3129124280204,
+          "density": 10.593427192363308
+        },
+        {
+          "scenario": "bologna",
+          "tier": "idm",
+          "penetration": 1,
+          "seed": 1,
+          "completed": 10069,
+          "travel_time": 214.24415852072187,
+          "waiting_time": 56.85383772996325,
+          "time_loss": 88.584744863423,
+          "speed": 8.108571241250688,
+          "running": 521.352,
+          "edge_flow": 624.3506714658716,
+          "density": 10.585957778120443
+        },
+        {
+          "scenario": "bologna",
+          "tier": "cacc",
+          "penetration": 0,
+          "seed": 0,
+          "completed": 10069,
+          "travel_time": 351.749960549855,
+          "waiting_time": 141.9634217690147,
+          "time_loss": 224.74269364580803,
+          "speed": 5.103165795313788,
+          "running": 679.151718840023,
+          "edge_flow": 568.4817723660693,
+          "density": 17.423607252138886
+        },
+        {
+          "scenario": "bologna",
+          "tier": "cacc",
+          "penetration": 0,
+          "seed": 1,
+          "completed": 10069,
+          "travel_time": 361.52186455881065,
+          "waiting_time": 151.4070249606227,
+          "time_loss": 234.782828381121,
+          "speed": 5.03944793882073,
+          "running": 696.4309254646485,
+          "edge_flow": 563.1340100469776,
+          "density": 17.939173404144565
+        },
+        {
+          "scenario": "bologna",
+          "tier": "cacc",
+          "penetration": 1,
+          "seed": 0,
+          "completed": 10069,
+          "travel_time": 365.903292769893,
+          "waiting_time": 165.50129455919654,
+          "time_loss": 240.238190236614,
+          "speed": 5.183614036862043,
+          "running": 701.402020587114,
+          "edge_flow": 544.4450679933575,
+          "density": 18.220111129241957
+        },
+        {
+          "scenario": "bologna",
+          "tier": "cacc",
+          "penetration": 1,
+          "seed": 1,
+          "completed": 10069,
+          "travel_time": 356.6176833356681,
+          "waiting_time": 155.40150688461642,
+          "time_loss": 230.95241195332247,
+          "speed": 5.359521819230095,
+          "running": 707.9956564659427,
+          "edge_flow": 553.7174180309439,
+          "density": 17.71745593466325
+        }
+      ],
+      "after": [
+        {
+          "scenario": "bologna",
+          "tier": "idm",
+          "penetration": 0,
+          "seed": 0,
+          "completed": 10069,
+          "travel_time": 321.3448056623803,
+          "waiting_time": 118.74239463944642,
+          "time_loss": 194.5131310539812,
+          "speed": 5.684069338264949,
+          "running": 654.3660858995138,
+          "edge_flow": 588.4071494472859,
+          "density": 15.960848746438582
+        },
+        {
+          "scenario": "bologna",
+          "tier": "idm",
+          "penetration": 0,
+          "seed": 1,
+          "completed": 10069,
+          "travel_time": 329.60468263519886,
+          "waiting_time": 127.34461380896204,
+          "time_loss": 202.70065314259,
+          "speed": 5.541826985068913,
+          "running": 683.2584037945968,
+          "edge_flow": 587.8715092995371,
+          "density": 16.330108549549582
+        },
+        {
+          "scenario": "bologna",
+          "tier": "idm",
+          "penetration": 1,
+          "seed": 0,
+          "completed": 10069,
+          "travel_time": 213.35639408202888,
+          "waiting_time": 56.19098818117833,
+          "time_loss": 87.69474427247073,
+          "speed": 8.106788966552221,
+          "running": 519.1883636363636,
+          "edge_flow": 624.4234920319874,
+          "density": 10.5391936803535
+        },
+        {
+          "scenario": "bologna",
+          "tier": "idm",
+          "penetration": 1,
+          "seed": 1,
+          "completed": 10069,
+          "travel_time": 213.2223291281988,
+          "waiting_time": 56.138858935202,
+          "time_loss": 87.56169166907333,
+          "speed": 8.102132923081292,
+          "running": 518.8644848484848,
+          "edge_flow": 623.4981764925978,
+          "density": 10.531504892196622
+        },
+        {
+          "scenario": "bologna",
+          "tier": "cacc",
+          "penetration": 0,
+          "seed": 0,
+          "completed": 9909,
+          "travel_time": 359.7928300661447,
+          "waiting_time": 158.05269774041025,
+          "time_loss": 234.18264985741396,
+          "speed": 4.381302874211381,
+          "running": 717.4045193554362,
+          "edge_flow": 563.5003665159464,
+          "density": 19.022340130442345
+        },
+        {
+          "scenario": "bologna",
+          "tier": "cacc",
+          "penetration": 0,
+          "seed": 1,
+          "completed": 10069,
+          "travel_time": 327.5337023679698,
+          "waiting_time": 124.62388754167957,
+          "time_loss": 200.797366947057,
+          "speed": 5.525552526390046,
+          "running": 679.3704085843995,
+          "edge_flow": 584.3378611454606,
+          "density": 16.244311946838717
+        },
+        {
+          "scenario": "bologna",
+          "tier": "cacc",
+          "penetration": 1,
+          "seed": 0,
+          "completed": 10069,
+          "travel_time": 311.78164135263205,
+          "waiting_time": 115.71093702060335,
+          "time_loss": 186.12024943529525,
+          "speed": 5.9685634235880105,
+          "running": 657.2384147620046,
+          "edge_flow": 572.505102237639,
+          "density": 15.471168716286051
+        },
+        {
+          "scenario": "bologna",
+          "tier": "cacc",
+          "penetration": 1,
+          "seed": 1,
+          "completed": 10069,
+          "travel_time": 302.1479635846874,
+          "waiting_time": 106.75042251282034,
+          "time_loss": 176.48614841748733,
+          "speed": 5.979418688661793,
+          "running": 643.7776600254346,
+          "edge_flow": 579.6023445509617,
+          "density": 14.997604642938333
+        }
+      ],
+      "before_counters": {
+        "wall_seconds": 72.1,
+        "arrived": 79810.0,
+        "stuck_teleports": 137.0,
+        "collisions": 18.0,
+        "approach_overflow": 16439616.0
+      },
+      "after_counters": {
+        "wall_seconds": 48.7,
+        "arrived": 80392.0,
+        "stuck_teleports": 65.0,
+        "collisions": 18.0,
+        "approach_overflow": 16681373.0
+      },
+      "sumo": [
+        {
+          "tier": "acc",
+          "penetration": 0.0,
+          "speed": 5.504921182329475,
+          "travel_time": 331.9108650312841,
+          "waiting_time": 126.93950739894724,
+          "time_loss": 204.97356241930677,
+          "completed": 10069.0
+        },
+        {
+          "tier": "acc",
+          "penetration": 1.0,
+          "speed": 3.1186833333333333,
+          "travel_time": 565.2344312645625,
+          "waiting_time": 159.4372484643084,
+          "time_loss": 443.144028807456,
+          "completed": 9442.0
+        },
+        {
+          "tier": "cacc",
+          "penetration": 0.0,
+          "speed": 5.504921182329475,
+          "travel_time": 331.9108650312841,
+          "waiting_time": 126.93950739894724,
+          "time_loss": 204.97356241930677,
+          "completed": 10069.0
+        },
+        {
+          "tier": "cacc",
+          "penetration": 1.0,
+          "speed": 6.116760867704946,
+          "travel_time": 285.44544641970407,
+          "waiting_time": 101.810507498262,
+          "time_loss": 159.8683265468269,
+          "completed": 10069.0
+        },
+        {
+          "tier": "glosa",
+          "penetration": 0.0,
+          "speed": 5.504921182329475,
+          "travel_time": 331.9108650312841,
+          "waiting_time": 126.93950739894724,
+          "time_loss": 204.97356241930677,
+          "completed": 10069.0
+        },
+        {
+          "tier": "glosa",
+          "penetration": 1.0,
+          "speed": 5.406050871711592,
+          "travel_time": 339.00120170821333,
+          "waiting_time": 120.03190982222662,
+          "time_loss": 203.65476942430564,
+          "completed": 10069.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 0.0,
+          "speed": 5.504921182329475,
+          "travel_time": 331.9108650312841,
+          "waiting_time": 126.93950739894724,
+          "time_loss": 204.97356241930677,
+          "completed": 10069.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 1.0,
+          "speed": 8.035867668444014,
+          "travel_time": 214.25563611083524,
+          "waiting_time": 56.76021451981328,
+          "time_loss": 88.68184626080047,
+          "completed": 10069.0
+        },
+        {
+          "tier": "krauss",
+          "penetration": 0.0,
+          "speed": 5.504921182329475,
+          "travel_time": 331.9108650312841,
+          "waiting_time": 126.93950739894724,
+          "time_loss": 204.97356241930677,
+          "completed": 10069.0
+        },
+        {
+          "tier": "krauss",
+          "penetration": 1.0,
+          "speed": 8.62926390033448,
+          "travel_time": 199.3845267653193,
+          "waiting_time": 49.12070712086603,
+          "time_loss": 73.79857979938426,
+          "completed": 10069.0
+        }
+      ]
+    },
+    "i80_vsl": {
+      "before": [
+        {
+          "scenario": "i80_vsl",
+          "tier": "idm",
+          "penetration": 0,
+          "seed": 0,
+          "completed": 23812,
+          "travel_time": 631.9417940534184,
+          "waiting_time": 2.142323198387368,
+          "time_loss": 121.92023556035056,
+          "speed": 28.62456652727876,
+          "running": 841.0915050836157,
+          "edge_flow": 2769.088244066769,
+          "density": 28.58241122709289
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "idm",
+          "penetration": 0,
+          "seed": 1,
+          "completed": 23810,
+          "travel_time": 632.2521629567409,
+          "waiting_time": 3.778916421671567,
+          "time_loss": 121.9524886165376,
+          "speed": 28.607393597856746,
+          "running": 841.3742430135007,
+          "edge_flow": 2770.1762680029124,
+          "density": 28.59077894356508
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "idm",
+          "penetration": 1,
+          "seed": 0,
+          "completed": 23830,
+          "travel_time": 538.6504406210659,
+          "waiting_time": 10.531179185900124,
+          "time_loss": 33.576922984441886,
+          "speed": 31.715327590807465,
+          "running": 717.4839157730985,
+          "edge_flow": 2765.060629663224,
+          "density": 24.38090814798511
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "idm",
+          "penetration": 1,
+          "seed": 1,
+          "completed": 23829,
+          "travel_time": 537.4446682613622,
+          "waiting_time": 9.19879138864409,
+          "time_loss": 32.315605770849224,
+          "speed": 31.7663572153826,
+          "running": 715.8967720428913,
+          "edge_flow": 2765.4762490833405,
+          "density": 24.32833585777753
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "acc",
+          "penetration": 0,
+          "seed": 0,
+          "completed": 23812,
+          "travel_time": 628.793549470855,
+          "waiting_time": 2.0997816227112382,
+          "time_loss": 118.7038447254724,
+          "speed": 28.693939943567692,
+          "running": 836.8488804933608,
+          "edge_flow": 2769.090938727743,
+          "density": 28.4368808325901
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "acc",
+          "penetration": 0,
+          "seed": 1,
+          "completed": 23815,
+          "travel_time": 627.7215200503884,
+          "waiting_time": 3.1229477220239343,
+          "time_loss": 117.55228468696222,
+          "speed": 28.71880785933871,
+          "running": 835.4640257792099,
+          "edge_flow": 2770.927400768359,
+          "density": 28.39167152279164
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "acc",
+          "penetration": 1,
+          "seed": 0,
+          "completed": 21664,
+          "travel_time": 1824.802160265879,
+          "waiting_time": 14.457071639586411,
+          "time_loss": 1328.8158237190182,
+          "speed": 15.65779175519467,
+          "running": 2442.6156453136286,
+          "edge_flow": 2523.981649949385,
+          "density": 82.96206527750385
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "acc",
+          "penetration": 1,
+          "seed": 1,
+          "completed": 21653,
+          "travel_time": 1834.5426961621947,
+          "waiting_time": 15.792453701565602,
+          "time_loss": 1338.801974824737,
+          "speed": 15.614214404501968,
+          "running": 2450.391410633924,
+          "edge_flow": 2517.6620134488826,
+          "density": 83.22430138996735
+        }
+      ],
+      "after": [
+        {
+          "scenario": "i80_vsl",
+          "tier": "idm",
+          "penetration": 0,
+          "seed": 0,
+          "completed": 23811,
+          "travel_time": 632.7646465919113,
+          "waiting_time": 2.404938893788585,
+          "time_loss": 122.73350675373344,
+          "speed": 28.62642085146576,
+          "running": 842.1690093894106,
+          "edge_flow": 2769.6610396518886,
+          "density": 28.61702600500798
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "idm",
+          "penetration": 0,
+          "seed": 1,
+          "completed": 23812,
+          "travel_time": 636.5325046195196,
+          "waiting_time": 1.856332941374097,
+          "time_loss": 126.20846413631932,
+          "speed": 28.527538659003543,
+          "running": 847.0220012222901,
+          "edge_flow": 2769.9346020881503,
+          "density": 28.782136360360557
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "idm",
+          "penetration": 1,
+          "seed": 0,
+          "completed": 23830,
+          "travel_time": 540.8191355434326,
+          "waiting_time": 12.671128829206882,
+          "time_loss": 35.72842376209386,
+          "speed": 31.631864549318287,
+          "running": 720.3718539918884,
+          "edge_flow": 2764.9857540213725,
+          "density": 24.479517177690145
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "idm",
+          "penetration": 1,
+          "seed": 1,
+          "completed": 23829,
+          "travel_time": 537.2079818708297,
+          "waiting_time": 9.052121364723655,
+          "time_loss": 32.11639997142346,
+          "speed": 31.781399134815214,
+          "running": 715.6003666870382,
+          "edge_flow": 2765.0892843710963,
+          "density": 24.3185515969128
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "acc",
+          "penetration": 0,
+          "seed": 0,
+          "completed": 23814,
+          "travel_time": 634.981187536743,
+          "waiting_time": 3.919165196942975,
+          "time_loss": 124.92945881792872,
+          "speed": 28.564403951664875,
+          "running": 845.0618367687093,
+          "edge_flow": 2768.8764745901376,
+          "density": 28.71781037408299
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "acc",
+          "penetration": 0,
+          "seed": 1,
+          "completed": 23811,
+          "travel_time": 632.0344378648524,
+          "waiting_time": 2.9785393305615053,
+          "time_loss": 121.87814289471304,
+          "speed": 28.63916109071449,
+          "running": 841.1662314573032,
+          "edge_flow": 2770.447191093402,
+          "density": 28.584504586100987
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "acc",
+          "penetration": 1,
+          "seed": 0,
+          "completed": 21666,
+          "travel_time": 1804.642481307117,
+          "waiting_time": 15.442444382904087,
+          "time_loss": 1308.938796005668,
+          "speed": 15.873845058701916,
+          "running": 2427.7950441691205,
+          "edge_flow": 2521.7628905790184,
+          "density": 82.45510253265905
+        },
+        {
+          "scenario": "i80_vsl",
+          "tier": "acc",
+          "penetration": 1,
+          "seed": 1,
+          "completed": 21704,
+          "travel_time": 1819.197198673056,
+          "waiting_time": 13.6034832288979,
+          "time_loss": 1323.3823111074253,
+          "speed": 15.664919209251607,
+          "running": 2436.994333018501,
+          "edge_flow": 2526.9793349768947,
+          "density": 82.77746456774362
+        }
+      ],
+      "before_counters": {
+        "wall_seconds": 64.1,
+        "arrived": 186225.0,
+        "stuck_teleports": 21.0,
+        "collisions": 1987.0,
+        "approach_overflow": 0.0
+      },
+      "after_counters": {
+        "wall_seconds": 18.3,
+        "arrived": 186277.0,
+        "stuck_teleports": 28.0,
+        "collisions": 1910.0,
+        "approach_overflow": 0.0
+      },
+      "sumo": [
+        {
+          "tier": "acc",
+          "penetration": 0.0,
+          "speed": 27.409566666666667,
+          "travel_time": 697.5864210913518,
+          "waiting_time": 26.128480175915616,
+          "time_loss": 189.22076819724543,
+          "completed": 23814.333333333332
+        },
+        {
+          "tier": "acc",
+          "penetration": 1.0,
+          "speed": 24.496781296296295,
+          "travel_time": 904.8181716459662,
+          "waiting_time": 3.9018826228040724,
+          "time_loss": 397.45743482152847,
+          "completed": 23832.0
+        },
+        {
+          "tier": "cacc",
+          "penetration": 0.0,
+          "speed": 27.409566666666667,
+          "travel_time": 697.5864210913518,
+          "waiting_time": 26.128480175915616,
+          "time_loss": 189.22076819724543,
+          "completed": 23814.333333333332
+        },
+        {
+          "tier": "cacc",
+          "penetration": 1.0,
+          "speed": 28.11898259259259,
+          "travel_time": 604.3702740128405,
+          "waiting_time": 1.5711468255633418,
+          "time_loss": 134.83412334074663,
+          "completed": 23831.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 0.0,
+          "speed": 27.409566666666667,
+          "travel_time": 697.5864210913518,
+          "waiting_time": 26.128480175915616,
+          "time_loss": 189.22076819724543,
+          "completed": 23814.333333333332
+        },
+        {
+          "tier": "idm",
+          "penetration": 1.0,
+          "speed": 31.607940555555555,
+          "travel_time": 540.6826507765578,
+          "waiting_time": 14.175743136533116,
+          "time_loss": 36.36098324697968,
+          "completed": 23829.333333333332
+        },
+        {
+          "tier": "krauss",
+          "penetration": 0.0,
+          "speed": 27.409566666666667,
+          "travel_time": 697.5864210913518,
+          "waiting_time": 26.128480175915616,
+          "time_loss": 189.22076819724543,
+          "completed": 23814.333333333332
+        },
+        {
+          "tier": "krauss",
+          "penetration": 1.0,
+          "speed": 33.101745,
+          "travel_time": 508.9167890357318,
+          "waiting_time": 2.3536116355499614,
+          "time_loss": 4.795514719250402,
+          "completed": 23835.0
+        }
+      ]
+    }
+  },
+  "ring": {
+    "before": [
+      {
+        "scenario": "ring",
+        "tier": "acc",
+        "penetration": 1,
+        "seed": 0,
+        "completed": 0,
+        "travel_time": 0,
+        "waiting_time": 0,
+        "time_loss": 0,
+        "speed": 7.283591260315066,
+        "running": 200,
+        "edge_flow": 1295.0124667693656,
+        "density": 49.85300155366107
+      },
+      {
+        "scenario": "ring",
+        "tier": "acc",
+        "penetration": 1,
+        "seed": 1,
+        "completed": 0,
+        "travel_time": 0,
+        "waiting_time": 0,
+        "time_loss": 0,
+        "speed": 7.283591260315066,
+        "running": 200,
+        "edge_flow": 1295.0124667693656,
+        "density": 49.85300155366107
+      },
+      {
+        "scenario": "ring",
+        "tier": "cacc",
+        "penetration": 1,
+        "seed": 0,
+        "completed": 0,
+        "travel_time": 0,
+        "waiting_time": 0,
+        "time_loss": 0,
+        "speed": 22.29279074768692,
+        "running": 200,
+        "edge_flow": 3990.708925945204,
+        "density": 49.854814035539285
+      },
+      {
+        "scenario": "ring",
+        "tier": "cacc",
+        "penetration": 1,
+        "seed": 1,
+        "completed": 0,
+        "travel_time": 0,
+        "waiting_time": 0,
+        "time_loss": 0,
+        "speed": 22.29279074768692,
+        "running": 200,
+        "edge_flow": 3990.708925945204,
+        "density": 49.854814035539285
+      }
+    ],
+    "after": [
+      {
+        "scenario": "ring",
+        "tier": "acc",
+        "penetration": 1,
+        "seed": 0,
+        "completed": 0,
+        "travel_time": 0,
+        "waiting_time": 0,
+        "time_loss": 0,
+        "speed": 7.283591260315066,
+        "running": 200,
+        "edge_flow": 1295.0124667693656,
+        "density": 49.85300155366107
+      },
+      {
+        "scenario": "ring",
+        "tier": "acc",
+        "penetration": 1,
+        "seed": 1,
+        "completed": 0,
+        "travel_time": 0,
+        "waiting_time": 0,
+        "time_loss": 0,
+        "speed": 7.283591260315066,
+        "running": 200,
+        "edge_flow": 1295.0124667693656,
+        "density": 49.85300155366107
+      },
+      {
+        "scenario": "ring",
+        "tier": "cacc",
+        "penetration": 1,
+        "seed": 0,
+        "completed": 0,
+        "travel_time": 0,
+        "waiting_time": 0,
+        "time_loss": 0,
+        "speed": 22.29279074768692,
+        "running": 200,
+        "edge_flow": 3990.708925945204,
+        "density": 49.854814035539285
+      },
+      {
+        "scenario": "ring",
+        "tier": "cacc",
+        "penetration": 1,
+        "seed": 1,
+        "completed": 0,
+        "travel_time": 0,
+        "waiting_time": 0,
+        "time_loss": 0,
+        "speed": 22.29279074768692,
+        "running": 200,
+        "edge_flow": 3990.708925945204,
+        "density": 49.854814035539285
+      }
+    ],
+    "notes": "ACC and CACC speed unchanged exactly; no collisions or stuck teleports. Ahead-only occupation does not run on single-lane ring."
+  },
+  "validation": {
+    "build": "nix develop --command env RUSTC_WRAPPER= cargo build --release -p cars-cli --bin cars --bin sweep -j 1",
+    "golden": {
+      "command": "nix develop --command python3 scripts/golden.py",
+      "passed": 15,
+      "total": 17,
+      "failures": [
+        "multi_drop",
+        "multi_merge_low"
+      ]
+    },
+    "same_gap": "PASS: both-side same-gap proposals, all 6 arrived, no overlap, identical replay; /tmp/nix-shell.GIWSRa/lc-conflicts-9s7ledrd",
+    "junctions": {
+      "before_selected": {
+        "rbl/k": {
+          "worst_loss_error": 0.72,
+          "routes": {
+            "ew": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 147.0,
+              "sumo_wait": 70.6,
+              "sumo_loss": 89.2,
+              "gpu_completed": 75.0,
+              "gpu_duration": 98.8,
+              "gpu_wait": 30.1,
+              "gpu_loss": 40.0
+            },
+            "ns": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 139.3,
+              "sumo_wait": 63.9,
+              "sumo_loss": 81.5,
+              "gpu_completed": 75.0,
+              "gpu_duration": 81.7,
+              "gpu_wait": 15.9,
+              "gpu_loss": 22.9
+            },
+            "sn": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 95.2,
+              "sumo_wait": 29.2,
+              "sumo_loss": 37.5,
+              "gpu_completed": 75.0,
+              "gpu_duration": 81.8,
+              "gpu_wait": 17.0,
+              "gpu_loss": 23.0
+            },
+            "we": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 93.3,
+              "sumo_wait": 27.5,
+              "sumo_loss": 35.6,
+              "gpu_completed": 75.0,
+              "gpu_duration": 98.8,
+              "gpu_wait": 29.7,
+              "gpu_loss": 40.0
+            }
+          }
+        },
+        "rbl/i": {
+          "worst_loss_error": 1.82,
+          "routes": {
+            "ew": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 240.6,
+              "sumo_wait": 110.0,
+              "sumo_loss": 182.6,
+              "gpu_completed": 75.0,
+              "gpu_duration": 133.6,
+              "gpu_wait": 31.3,
+              "gpu_loss": 73.5
+            },
+            "ns": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 210.8,
+              "sumo_wait": 93.7,
+              "sumo_loss": 153.9,
+              "gpu_completed": 75.0,
+              "gpu_duration": 176.7,
+              "gpu_wait": 58.2,
+              "gpu_loss": 118.0
+            },
+            "sn": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 104.8,
+              "sumo_wait": 23.3,
+              "sumo_loss": 46.7,
+              "gpu_completed": 75.0,
+              "gpu_duration": 191.1,
+              "gpu_wait": 63.2,
+              "gpu_loss": 131.8
+            },
+            "we": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 197.2,
+              "sumo_wait": 82.7,
+              "sumo_loss": 138.8,
+              "gpu_completed": 75.0,
+              "gpu_duration": 128.1,
+              "gpu_wait": 32.7,
+              "gpu_loss": 68.3
+            }
+          }
+        },
+        "rbl_heavy/k": {
+          "worst_loss_error": 0.28,
+          "routes": {
+            "ew": {
+              "sumo_completed": 117.0,
+              "sumo_duration": 424.7,
+              "sumo_wait": 290.1,
+              "sumo_loss": 366.9,
+              "gpu_completed": 151.0,
+              "gpu_duration": 375.4,
+              "gpu_wait": 187.0,
+              "gpu_loss": 316.4
+            },
+            "ns": {
+              "sumo_completed": 116.0,
+              "sumo_duration": 462.7,
+              "sumo_wait": 327.9,
+              "sumo_loss": 404.9,
+              "gpu_completed": 157.0,
+              "gpu_duration": 348.4,
+              "gpu_wait": 139.7,
+              "gpu_loss": 289.9
+            },
+            "sn": {
+              "sumo_completed": 116.0,
+              "sumo_duration": 456.8,
+              "sumo_wait": 319.4,
+              "sumo_loss": 399.0,
+              "gpu_completed": 156.0,
+              "gpu_duration": 354.7,
+              "gpu_wait": 136.9,
+              "gpu_loss": 296.2
+            },
+            "we": {
+              "sumo_completed": 105.0,
+              "sumo_duration": 417.1,
+              "sumo_wait": 277.3,
+              "sumo_loss": 359.3,
+              "gpu_completed": 140.0,
+              "gpu_duration": 392.0,
+              "gpu_wait": 212.0,
+              "gpu_loss": 333.1
+            }
+          }
+        },
+        "rbl_heavy/i": {
+          "worst_loss_error": 0.32,
+          "routes": {
+            "ew": {
+              "sumo_completed": 97.0,
+              "sumo_duration": 530.3,
+              "sumo_wait": 271.4,
+              "sumo_loss": 471.8,
+              "gpu_completed": 104.0,
+              "gpu_duration": 480.0,
+              "gpu_wait": 183.0,
+              "gpu_loss": 419.8
+            },
+            "ns": {
+              "sumo_completed": 85.0,
+              "sumo_duration": 551.9,
+              "sumo_wait": 297.1,
+              "sumo_loss": 494.5,
+              "gpu_completed": 115.0,
+              "gpu_duration": 397.5,
+              "gpu_wait": 149.5,
+              "gpu_loss": 338.6
+            },
+            "sn": {
+              "sumo_completed": 106.0,
+              "sumo_duration": 428.2,
+              "sumo_wait": 189.3,
+              "sumo_loss": 370.2,
+              "gpu_completed": 102.0,
+              "gpu_duration": 456.6,
+              "gpu_wait": 183.0,
+              "gpu_loss": 397.7
+            },
+            "we": {
+              "sumo_completed": 123.0,
+              "sumo_duration": 419.1,
+              "sumo_wait": 165.4,
+              "sumo_loss": 361.1,
+              "gpu_completed": 112.0,
+              "gpu_duration": 478.5,
+              "gpu_wait": 189.7,
+              "gpu_loss": 418.6
+            }
+          }
+        },
+        "prio_minor_cross/k": {
+          "worst_loss_error": 0.34,
+          "routes": {
+            "ew": {
+              "sumo_completed": 125.0,
+              "sumo_duration": 58.0,
+              "sumo_wait": 0.0,
+              "sumo_loss": 0.0,
+              "gpu_completed": 125.0,
+              "gpu_duration": 59.0,
+              "gpu_wait": 0.0,
+              "gpu_loss": 0.0
+            },
+            "se": {
+              "sumo_completed": 25.0,
+              "sumo_duration": 355.7,
+              "sumo_wait": 252.6,
+              "sumo_loss": 297.8,
+              "gpu_completed": 25.0,
+              "gpu_duration": 256.4,
+              "gpu_wait": 157.4,
+              "gpu_loss": 197.6
+            },
+            "sn": {
+              "sumo_completed": 50.0,
+              "sumo_duration": 345.9,
+              "sumo_wait": 243.6,
+              "sumo_loss": 288.1,
+              "gpu_completed": 50.0,
+              "gpu_duration": 250.1,
+              "gpu_wait": 151.8,
+              "gpu_loss": 191.4
+            },
+            "sw": {
+              "sumo_completed": 25.0,
+              "sumo_duration": 362.6,
+              "sumo_wait": 258.2,
+              "sumo_loss": 304.2,
+              "gpu_completed": 25.0,
+              "gpu_duration": 271.4,
+              "gpu_wait": 169.1,
+              "gpu_loss": 211.7
+            },
+            "we": {
+              "sumo_completed": 125.0,
+              "sumo_duration": 58.0,
+              "sumo_wait": 0.0,
+              "sumo_loss": 0.0,
+              "gpu_completed": 125.0,
+              "gpu_duration": 59.0,
+              "gpu_wait": 0.0,
+              "gpu_loss": 0.0
+            }
+          }
+        },
+        "prio_minor_cross/i": {
+          "worst_loss_error": 0.23,
+          "routes": {
+            "ew": {
+              "sumo_completed": 125.0,
+              "sumo_duration": 59.7,
+              "sumo_wait": 0.0,
+              "sumo_loss": 2.0,
+              "gpu_completed": 125.0,
+              "gpu_duration": 63.0,
+              "gpu_wait": 0.0,
+              "gpu_loss": 2.7
+            },
+            "se": {
+              "sumo_completed": 25.0,
+              "sumo_duration": 394.7,
+              "sumo_wait": 209.9,
+              "sumo_loss": 336.3,
+              "gpu_completed": 25.0,
+              "gpu_duration": 328.9,
+              "gpu_wait": 159.6,
+              "gpu_loss": 270.3
+            },
+            "sn": {
+              "sumo_completed": 50.0,
+              "sumo_duration": 394.3,
+              "sumo_wait": 209.7,
+              "sumo_loss": 335.7,
+              "gpu_completed": 50.0,
+              "gpu_duration": 330.7,
+              "gpu_wait": 162.7,
+              "gpu_loss": 271.2
+            },
+            "sw": {
+              "sumo_completed": 25.0,
+              "sumo_duration": 406.7,
+              "sumo_wait": 218.8,
+              "sumo_loss": 346.6,
+              "gpu_completed": 25.0,
+              "gpu_duration": 347.0,
+              "gpu_wait": 172.0,
+              "gpu_loss": 285.8
+            },
+            "we": {
+              "sumo_completed": 125.0,
+              "sumo_duration": 60.5,
+              "sumo_wait": 0.0,
+              "sumo_loss": 2.6,
+              "gpu_completed": 125.0,
+              "gpu_duration": 61.2,
+              "gpu_wait": 0.0,
+              "gpu_loss": 2.4
+            }
+          }
+        }
+      },
+      "after_full": {
+        "tls_permissive_left/k": {
+          "worst_loss_error": 0.03
+        },
+        "tls_permissive_left/i": {
+          "worst_loss_error": 0.07
+        },
+        "tls_left_2lane/k": {
+          "worst_loss_error": 0.05
+        },
+        "tls_left_2lane/i": {
+          "worst_loss_error": 0.09
+        },
+        "prio_major_left/k": {
+          "worst_loss_error": 0.13
+        },
+        "prio_major_left/i": {
+          "worst_loss_error": 0.02
+        },
+        "prio_minor_cross/k": {
+          "worst_loss_error": 0.01,
+          "routes": {
+            "ew": {
+              "sumo_completed": 125.0,
+              "sumo_duration": 58.0,
+              "sumo_wait": 0.0,
+              "sumo_loss": 0.0,
+              "gpu_completed": 125.0,
+              "gpu_duration": 59.0,
+              "gpu_wait": 0.0,
+              "gpu_loss": 0.0
+            },
+            "se": {
+              "sumo_completed": 25.0,
+              "sumo_duration": 355.7,
+              "sumo_wait": 252.6,
+              "sumo_loss": 297.8,
+              "gpu_completed": 25.0,
+              "gpu_duration": 354.1,
+              "gpu_wait": 255.8,
+              "gpu_loss": 295.3
+            },
+            "sn": {
+              "sumo_completed": 50.0,
+              "sumo_duration": 345.9,
+              "sumo_wait": 243.6,
+              "sumo_loss": 288.1,
+              "gpu_completed": 50.0,
+              "gpu_duration": 347.3,
+              "gpu_wait": 249.7,
+              "gpu_loss": 288.7
+            },
+            "sw": {
+              "sumo_completed": 25.0,
+              "sumo_duration": 362.6,
+              "sumo_wait": 258.2,
+              "sumo_loss": 304.2,
+              "gpu_completed": 25.0,
+              "gpu_duration": 363.9,
+              "gpu_wait": 263.8,
+              "gpu_loss": 304.3
+            },
+            "we": {
+              "sumo_completed": 125.0,
+              "sumo_duration": 58.0,
+              "sumo_wait": 0.0,
+              "sumo_loss": 0.0,
+              "gpu_completed": 125.0,
+              "gpu_duration": 59.0,
+              "gpu_wait": 0.0,
+              "gpu_loss": 0.0
+            }
+          }
+        },
+        "prio_minor_cross/i": {
+          "worst_loss_error": 0.23,
+          "routes": {
+            "ew": {
+              "sumo_completed": 125.0,
+              "sumo_duration": 59.7,
+              "sumo_wait": 0.0,
+              "sumo_loss": 2.0,
+              "gpu_completed": 125.0,
+              "gpu_duration": 63.1,
+              "gpu_wait": 0.0,
+              "gpu_loss": 2.7
+            },
+            "se": {
+              "sumo_completed": 25.0,
+              "sumo_duration": 394.7,
+              "sumo_wait": 209.9,
+              "sumo_loss": 336.3,
+              "gpu_completed": 25.0,
+              "gpu_duration": 340.2,
+              "gpu_wait": 171.0,
+              "gpu_loss": 281.4
+            },
+            "sn": {
+              "sumo_completed": 50.0,
+              "sumo_duration": 394.3,
+              "sumo_wait": 209.7,
+              "sumo_loss": 335.7,
+              "gpu_completed": 50.0,
+              "gpu_duration": 340.7,
+              "gpu_wait": 172.5,
+              "gpu_loss": 281.1
+            },
+            "sw": {
+              "sumo_completed": 25.0,
+              "sumo_duration": 406.7,
+              "sumo_wait": 218.8,
+              "sumo_loss": 346.6,
+              "gpu_completed": 25.0,
+              "gpu_duration": 357.0,
+              "gpu_wait": 181.9,
+              "gpu_loss": 295.8
+            },
+            "we": {
+              "sumo_completed": 125.0,
+              "sumo_duration": 60.5,
+              "sumo_wait": 0.0,
+              "sumo_loss": 2.6,
+              "gpu_completed": 125.0,
+              "gpu_duration": 61.2,
+              "gpu_wait": 0.0,
+              "gpu_loss": 2.4
+            }
+          }
+        },
+        "prio_heavy/k": {
+          "worst_loss_error": 0.01
+        },
+        "prio_heavy/i": {
+          "worst_loss_error": 0.2
+        },
+        "rbl/k": {
+          "worst_loss_error": 0.72,
+          "routes": {
+            "ew": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 147.0,
+              "sumo_wait": 70.6,
+              "sumo_loss": 89.2,
+              "gpu_completed": 75.0,
+              "gpu_duration": 98.8,
+              "gpu_wait": 30.1,
+              "gpu_loss": 40.0
+            },
+            "ns": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 139.3,
+              "sumo_wait": 63.9,
+              "sumo_loss": 81.5,
+              "gpu_completed": 75.0,
+              "gpu_duration": 81.7,
+              "gpu_wait": 15.9,
+              "gpu_loss": 22.9
+            },
+            "sn": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 95.2,
+              "sumo_wait": 29.2,
+              "sumo_loss": 37.5,
+              "gpu_completed": 75.0,
+              "gpu_duration": 81.8,
+              "gpu_wait": 17.0,
+              "gpu_loss": 23.0
+            },
+            "we": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 93.3,
+              "sumo_wait": 27.5,
+              "sumo_loss": 35.6,
+              "gpu_completed": 75.0,
+              "gpu_duration": 98.8,
+              "gpu_wait": 29.7,
+              "gpu_loss": 40.0
+            }
+          }
+        },
+        "rbl/i": {
+          "worst_loss_error": 1.82,
+          "routes": {
+            "ew": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 240.6,
+              "sumo_wait": 110.0,
+              "sumo_loss": 182.6,
+              "gpu_completed": 75.0,
+              "gpu_duration": 133.6,
+              "gpu_wait": 31.3,
+              "gpu_loss": 73.5
+            },
+            "ns": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 210.8,
+              "sumo_wait": 93.7,
+              "sumo_loss": 153.9,
+              "gpu_completed": 75.0,
+              "gpu_duration": 176.7,
+              "gpu_wait": 58.2,
+              "gpu_loss": 118.0
+            },
+            "sn": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 104.8,
+              "sumo_wait": 23.3,
+              "sumo_loss": 46.7,
+              "gpu_completed": 75.0,
+              "gpu_duration": 191.1,
+              "gpu_wait": 63.2,
+              "gpu_loss": 131.8
+            },
+            "we": {
+              "sumo_completed": 75.0,
+              "sumo_duration": 197.2,
+              "sumo_wait": 82.7,
+              "sumo_loss": 138.8,
+              "gpu_completed": 75.0,
+              "gpu_duration": 128.1,
+              "gpu_wait": 32.7,
+              "gpu_loss": 68.3
+            }
+          }
+        },
+        "rbl_heavy/k": {
+          "worst_loss_error": 0.28,
+          "routes": {
+            "ew": {
+              "sumo_completed": 117.0,
+              "sumo_duration": 424.7,
+              "sumo_wait": 290.1,
+              "sumo_loss": 366.9,
+              "gpu_completed": 151.0,
+              "gpu_duration": 375.4,
+              "gpu_wait": 187.0,
+              "gpu_loss": 316.4
+            },
+            "ns": {
+              "sumo_completed": 116.0,
+              "sumo_duration": 462.7,
+              "sumo_wait": 327.9,
+              "sumo_loss": 404.9,
+              "gpu_completed": 157.0,
+              "gpu_duration": 348.4,
+              "gpu_wait": 139.7,
+              "gpu_loss": 289.9
+            },
+            "sn": {
+              "sumo_completed": 116.0,
+              "sumo_duration": 456.8,
+              "sumo_wait": 319.4,
+              "sumo_loss": 399.0,
+              "gpu_completed": 156.0,
+              "gpu_duration": 354.7,
+              "gpu_wait": 136.9,
+              "gpu_loss": 296.2
+            },
+            "we": {
+              "sumo_completed": 105.0,
+              "sumo_duration": 417.1,
+              "sumo_wait": 277.3,
+              "sumo_loss": 359.3,
+              "gpu_completed": 140.0,
+              "gpu_duration": 392.0,
+              "gpu_wait": 212.0,
+              "gpu_loss": 333.1
+            }
+          }
+        },
+        "rbl_heavy/i": {
+          "worst_loss_error": 0.32,
+          "routes": {
+            "ew": {
+              "sumo_completed": 97.0,
+              "sumo_duration": 530.3,
+              "sumo_wait": 271.4,
+              "sumo_loss": 471.8,
+              "gpu_completed": 104.0,
+              "gpu_duration": 480.0,
+              "gpu_wait": 183.0,
+              "gpu_loss": 419.8
+            },
+            "ns": {
+              "sumo_completed": 85.0,
+              "sumo_duration": 551.9,
+              "sumo_wait": 297.1,
+              "sumo_loss": 494.5,
+              "gpu_completed": 115.0,
+              "gpu_duration": 397.5,
+              "gpu_wait": 149.5,
+              "gpu_loss": 338.6
+            },
+            "sn": {
+              "sumo_completed": 106.0,
+              "sumo_duration": 428.2,
+              "sumo_wait": 189.3,
+              "sumo_loss": 370.2,
+              "gpu_completed": 102.0,
+              "gpu_duration": 456.6,
+              "gpu_wait": 183.0,
+              "gpu_loss": 397.7
+            },
+            "we": {
+              "sumo_completed": 123.0,
+              "sumo_duration": 419.1,
+              "sumo_wait": 165.4,
+              "sumo_loss": 361.1,
+              "gpu_completed": 112.0,
+              "gpu_duration": 478.5,
+              "gpu_wait": 189.7,
+              "gpu_loss": 418.6
+            }
+          }
+        },
+        "allway/k": {
+          "worst_loss_error": 0.15
+        },
+        "allway/i": {
+          "worst_loss_error": 0.08
+        },
+        "stop_minor/k": {
+          "worst_loss_error": 0.01
+        },
+        "stop_minor/i": {
+          "worst_loss_error": 0.52
+        },
+        "zipper/k": {
+          "worst_loss_error": 1.0
+        },
+        "zipper/i": {
+          "worst_loss_error": 0.13
+        }
+      }
+    }
+  },
+  "lane_sampling": {
+    "window": [
+      7200,
+      9000
+    ],
+    "period_seconds": 60,
+    "sumo_seed": 1,
+    "gpu_tier": "idm",
+    "gpu_penetration": 0,
+    "gpu_sweep_seed": 0,
+    "note": "Sampling precedes the ahead-only correction; SUMO/GPU random streams differ. Shares are sampled occupation, not throughput.",
+    "comparison": {
+      "edge_merge4_71_0": {
+        "n_sumo": 217,
+        "speed_sumo": 9.6481105991,
+        "share_sumo": 11.5302869288,
+        "n_cars": 11.0,
+        "speed_cars": 16.320183,
+        "share_cars": 0.8500772798
+      },
+      "edge_merge4_71_1": {
+        "n_sumo": 999,
+        "speed_sumo": 9.2665265265,
+        "share_sumo": 53.0818278427,
+        "n_cars": 483.0,
+        "speed_cars": 22.2160100673,
+        "share_cars": 37.3261205564
+      },
+      "edge_merge4_71_2": {
+        "n_sumo": 365,
+        "speed_sumo": 27.1652876712,
+        "share_sumo": 19.394261424,
+        "n_cars": 418.0,
+        "speed_cars": 26.0280299833,
+        "share_cars": 32.3029366306
+      },
+      "edge_merge4_71_3": {
+        "n_sumo": 301,
+        "speed_sumo": 31.0028903654,
+        "share_sumo": 15.9936238045,
+        "n_cars": 382.0,
+        "speed_cars": 28.8618249738,
+        "share_cars": 29.5208655332
+      },
+      "edge_merge5_71_0": {
+        "n_sumo": 18,
+        "speed_sumo": 7.9116666667,
+        "share_sumo": 1.888772298,
+        "n_cars": null,
+        "speed_cars": null,
+        "share_cars": null
+      },
+      "edge_merge5_71_1": {
+        "n_sumo": 158,
+        "speed_sumo": 10.6237341772,
+        "share_sumo": 16.5792235047,
+        "n_cars": 20.0,
+        "speed_cars": 18.72780885,
+        "share_cars": 3.355704698
+      },
+      "edge_merge5_71_2": {
+        "n_sumo": 487,
+        "speed_sumo": 7.6897741273,
+        "share_sumo": 51.1017838405,
+        "n_cars": 257.0,
+        "speed_cars": 18.2281259416,
+        "share_cars": 43.1208053691
+      },
+      "edge_merge5_71_3": {
+        "n_sumo": 166,
+        "speed_sumo": 24.5384939759,
+        "share_sumo": 17.4186778594,
+        "n_cars": 162.0,
+        "speed_cars": 26.4559441049,
+        "share_cars": 27.1812080537
+      },
+      "edge_merge5_71_4": {
+        "n_sumo": 124,
+        "speed_sumo": 31.1798387097,
+        "share_sumo": 13.0115424974,
+        "n_cars": 157.0,
+        "speed_cars": 28.9930305541,
+        "share_cars": 26.3422818792
+      },
+      "edge_merge6_71_0": {
+        "n_sumo": 6,
+        "speed_sumo": 0.9433333333,
+        "share_sumo": 0.4470938897,
+        "n_cars": null,
+        "speed_cars": null,
+        "share_cars": null
+      },
+      "edge_merge6_71_1": {
+        "n_sumo": 66,
+        "speed_sumo": 5.298030303,
+        "share_sumo": 4.9180327869,
+        "n_cars": 1.0,
+        "speed_cars": 25.27246,
+        "share_cars": 0.1245330012
+      },
+      "edge_merge6_71_2": {
+        "n_sumo": 282,
+        "speed_sumo": 10.6693262411,
+        "share_sumo": 21.0134128167,
+        "n_cars": 90.0,
+        "speed_cars": 19.6886809278,
+        "share_cars": 11.2079701121
+      },
+      "edge_merge6_71_3": {
+        "n_sumo": 639,
+        "speed_sumo": 6.6025039124,
+        "share_sumo": 47.6154992548,
+        "n_cars": 320.0,
+        "speed_cars": 17.6576678281,
+        "share_cars": 39.8505603985
+      },
+      "edge_merge6_71_4": {
+        "n_sumo": 201,
+        "speed_sumo": 24.3452736318,
+        "share_sumo": 14.9776453055,
+        "n_cars": 208.0,
+        "speed_cars": 26.9215493798,
+        "share_cars": 25.902864259
+      },
+      "edge_merge6_71_5": {
+        "n_sumo": 148,
+        "speed_sumo": 31.4192567568,
+        "share_sumo": 11.0283159463,
+        "n_cars": 184.0,
+        "speed_cars": 30.1327583967,
+        "share_cars": 22.9140722291
+      },
+      "edge_merge7_71_1": {
+        "n_sumo": 4,
+        "speed_sumo": 11.3475,
+        "share_sumo": 0.8350730689,
+        "n_cars": 1.0,
+        "speed_cars": 23.340263,
+        "share_cars": 0.3676470588
+      },
+      "edge_merge7_71_2": {
+        "n_sumo": 39,
+        "speed_sumo": 14.8974358974,
+        "share_sumo": 8.1419624217,
+        "n_cars": 11.0,
+        "speed_cars": 23.6615436364,
+        "share_cars": 4.0441176471
+      },
+      "edge_merge7_71_3": {
+        "n_sumo": 89,
+        "speed_sumo": 14.1776404494,
+        "share_sumo": 18.5803757829,
+        "n_cars": 49.0,
+        "speed_cars": 22.8004023061,
+        "share_cars": 18.0147058824
+      },
+      "edge_merge7_71_4": {
+        "n_sumo": 223,
+        "speed_sumo": 6.3168609865,
+        "share_sumo": 46.5553235908,
+        "n_cars": 94.0,
+        "speed_cars": 20.9634701968,
+        "share_cars": 34.5588235294
+      },
+      "edge_merge7_71_5": {
+        "n_sumo": 66,
+        "speed_sumo": 26.3768181818,
+        "share_sumo": 13.7787056367,
+        "n_cars": 63.0,
+        "speed_cars": 28.5151097302,
+        "share_cars": 23.1617647059
+      },
+      "edge_merge7_71_6": {
+        "n_sumo": 58,
+        "speed_sumo": 31.6148275862,
+        "share_sumo": 12.108559499,
+        "n_cars": 54.0,
+        "speed_cars": 30.5983392593,
+        "share_cars": 19.8529411765
+      },
+      "edge_merge_78_0": {
+        "n_sumo": 58,
+        "speed_sumo": 8.3437931034,
+        "share_sumo": 13.2118451025,
+        "n_cars": 92.0,
+        "speed_cars": 5.5160893167,
+        "share_cars": 20.3090507726
+      },
+      "edge_merge_78_1": {
+        "n_sumo": 247,
+        "speed_sumo": 6.005708502,
+        "share_sumo": 56.2642369021,
+        "n_cars": 202.0,
+        "speed_cars": 6.7622719247,
+        "share_cars": 44.591611479
+      },
+      "edge_merge_78_2": {
+        "n_sumo": 68,
+        "speed_sumo": 28.2482352941,
+        "share_sumo": 15.4897494305,
+        "n_cars": 76.0,
+        "speed_cars": 25.8906373947,
+        "share_cars": 16.7770419426
+      },
+      "edge_merge_78_3": {
+        "n_sumo": 66,
+        "speed_sumo": 29.9756060606,
+        "share_sumo": 15.0341685649,
+        "n_cars": 83.0,
+        "speed_cars": 27.0321962771,
+        "share_cars": 18.3222958057
+      },
+      "edge_up_72_0": {
+        "n_sumo": 276,
+        "speed_sumo": 18.5258695652,
+        "share_sumo": 44.7325769854,
+        "n_cars": 218.0,
+        "speed_cars": 21.8257520688,
+        "share_cars": 34.1158059468
+      },
+      "edge_up_72_1": {
+        "n_sumo": 182,
+        "speed_sumo": 27.1767582418,
+        "share_sumo": 29.4975688817,
+        "n_cars": 206.0,
+        "speed_cars": 25.4757421553,
+        "share_cars": 32.2378716745
+      },
+      "edge_up_72_2": {
+        "n_sumo": 159,
+        "speed_sumo": 30.882327044,
+        "share_sumo": 25.7698541329,
+        "n_cars": 215.0,
+        "speed_cars": 27.4924509721,
+        "share_cars": 33.6463223787
+      }
+    },
+    "probe_source": "/tmp/cars-lane-probe.rs"
+  },
+  "replay_experiment": {
+    "before": [
+      {
+        "wall_seconds": 37.5,
+        "arrived": 18590.0,
+        "stuck_teleports": 244.0,
+        "collisions": 23.0,
+        "approach_overflow": 30777.0
+      },
+      {
+        "wall_seconds": 37.3,
+        "arrived": 18578.0,
+        "stuck_teleports": 240.0,
+        "collisions": 28.0,
+        "approach_overflow": 30427.0
+      }
+    ],
+    "rejected_cooperation_patch": [
+      {
+        "wall_seconds": 37.5,
+        "arrived": 19418.0,
+        "stuck_teleports": 114.0,
+        "collisions": 7.0,
+        "approach_overflow": 25588.0
+      },
+      {
+        "wall_seconds": 37.9,
+        "arrived": 19298.0,
+        "stuck_teleports": 132.0,
+        "collisions": 6.0,
+        "approach_overflow": 29690.0
+      }
+    ]
+  },
+  "reproduce": {
+    "bologna": "target/release/sweep --scenario bologna --tiers idm,cacc --penetrations 0,1 --seeds 0,1 --out /tmp/check-bologna.csv",
+    "i80": "target/release/sweep --scenario i80_vsl --tiers idm,acc --penetrations 0,1 --seeds 0,1 --out /tmp/check-i80.csv"
+  },
+  "intermediate_sweeps": {
+    "stopasap": {
+      "means": [
+        {
+          "tier": "cacc",
+          "penetration": 0,
+          "speed": 3.8999885612392533,
+          "travel_time": 379.02036064166515,
+          "waiting_time": 177.86820788901724,
+          "time_loss": 255.58392035933383,
+          "completed": 9612.5
+        },
+        {
+          "tier": "cacc",
+          "penetration": 1,
+          "speed": 5.280957230477252,
+          "travel_time": 362.0866674274911,
+          "waiting_time": 162.21354137087712,
+          "time_loss": 236.4212219625377,
+          "completed": 10069.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 0,
+          "speed": 5.117079684604243,
+          "travel_time": 360.76318444024554,
+          "waiting_time": 149.0392898262429,
+          "time_loss": 233.89245472378548,
+          "completed": 10069.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 1,
+          "speed": 8.062858889452379,
+          "travel_time": 214.96842111965606,
+          "waiting_time": 57.50805769521477,
+          "time_loss": 89.30551796604001,
+          "completed": 10069.0
+        }
+      ],
+      "counters": {
+        "wall_seconds": 100.8,
+        "arrived": 79639.0,
+        "stuck_teleports": 145.0,
+        "collisions": 19.0,
+        "approach_overflow": 16505469.0
+      }
+    },
+    "entry": {
+      "means": [
+        {
+          "tier": "cacc",
+          "penetration": 0,
+          "speed": 3.889942357149039,
+          "travel_time": 420.0241070869374,
+          "waiting_time": 214.29195513400035,
+          "time_loss": 296.0855757486481,
+          "completed": 9684.5
+        },
+        {
+          "tier": "cacc",
+          "penetration": 1,
+          "speed": 5.182928252205088,
+          "travel_time": 368.9515796362516,
+          "waiting_time": 169.23399257309174,
+          "time_loss": 243.29309748992367,
+          "completed": 10069.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 0,
+          "speed": 3.6603577582635944,
+          "travel_time": 330.8753205601743,
+          "waiting_time": 138.71856803062508,
+          "time_loss": 208.6793507786967,
+          "completed": 9202.5
+        },
+        {
+          "tier": "idm",
+          "penetration": 1,
+          "speed": 8.086096283435808,
+          "travel_time": 214.9666284887822,
+          "waiting_time": 57.59057764047589,
+          "time_loss": 89.30389600654192,
+          "completed": 10069.0
+        }
+      ],
+      "counters": {
+        "wall_seconds": 58.5,
+        "arrived": 78050.0,
+        "stuck_teleports": 457.0,
+        "collisions": 34.0,
+        "approach_overflow": 16201976.0
+      }
+    },
+    "slots32": {
+      "means": [
+        {
+          "tier": "cacc",
+          "penetration": 0,
+          "speed": 3.849849176156081,
+          "travel_time": 358.21580978116924,
+          "waiting_time": 159.44202632201362,
+          "time_loss": 234.96491501639804,
+          "completed": 9521.0
+        },
+        {
+          "tier": "cacc",
+          "penetration": 1,
+          "speed": 5.242571175907241,
+          "travel_time": 362.92674589864464,
+          "waiting_time": 163.0442959592368,
+          "time_loss": 237.26119652409128,
+          "completed": 10069.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 0,
+          "speed": 4.282490682312762,
+          "travel_time": 355.17252909280745,
+          "waiting_time": 152.25579028747885,
+          "time_loss": 230.76111346249775,
+          "completed": 9551.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 1,
+          "speed": 8.061123841007749,
+          "travel_time": 215.01817779931298,
+          "waiting_time": 57.56571073987442,
+          "time_loss": 89.35530944502287,
+          "completed": 10069.0
+        }
+      ],
+      "counters": {
+        "wall_seconds": 54.7,
+        "arrived": 78420.0,
+        "stuck_teleports": 334.0,
+        "collisions": 29.0,
+        "approach_overflow": 124878.0
+      }
+    },
+    "keepclear": {
+      "means": [
+        {
+          "tier": "cacc",
+          "penetration": 0,
+          "speed": 4.395222033151267,
+          "travel_time": 361.2748011829418,
+          "waiting_time": 156.29215763325726,
+          "time_loss": 236.31082071946147,
+          "completed": 9799.0
+        },
+        {
+          "tier": "cacc",
+          "penetration": 1,
+          "speed": 4.536915026693923,
+          "travel_time": 343.51791157532534,
+          "waiting_time": 150.36675105061386,
+          "time_loss": 219.66898181252196,
+          "completed": 9781.5
+        },
+        {
+          "tier": "idm",
+          "penetration": 0,
+          "speed": 3.8433425083026505,
+          "travel_time": 353.47446619055586,
+          "waiting_time": 155.46080858693222,
+          "time_loss": 230.21177536483947,
+          "completed": 9450.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 1,
+          "speed": 8.061125480602499,
+          "travel_time": 215.01816290210348,
+          "waiting_time": 57.56570080841105,
+          "time_loss": 89.35528281170937,
+          "completed": 10069.0
+        }
+      ],
+      "counters": {
+        "wall_seconds": 52.7,
+        "arrived": 78199.0,
+        "stuck_teleports": 352.0,
+        "collisions": 19.0,
+        "approach_overflow": 120738.0
+      }
+    },
+    "full-stop": {
+      "means": [
+        {
+          "tier": "cacc",
+          "penetration": 0,
+          "speed": 5.074847037483917,
+          "travel_time": 361.7598574116966,
+          "waiting_time": 150.7598382562624,
+          "time_loss": 234.8876589787659,
+          "completed": 10069.0
+        },
+        {
+          "tier": "cacc",
+          "penetration": 1,
+          "speed": 5.2427712238326505,
+          "travel_time": 362.24001930185887,
+          "waiting_time": 162.34818225903186,
+          "time_loss": 236.57364382162766,
+          "completed": 10069.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 0,
+          "speed": 3.7857596904899387,
+          "travel_time": 344.50627311051755,
+          "waiting_time": 149.03115894266074,
+          "time_loss": 221.75909679166347,
+          "completed": 9377.5
+        },
+        {
+          "tier": "idm",
+          "penetration": 1,
+          "speed": 8.065384189367617,
+          "travel_time": 214.99205802536136,
+          "waiting_time": 57.531280280683475,
+          "time_loss": 89.32953146434798,
+          "completed": 10069.0
+        }
+      ],
+      "counters": {
+        "wall_seconds": 51.9,
+        "arrived": 79169.0,
+        "stuck_teleports": 222.0,
+        "collisions": 28.0,
+        "approach_overflow": 152304.0
+      }
+    },
+    "cacc-gap": {
+      "means": [
+        {
+          "tier": "cacc",
+          "penetration": 0,
+          "speed": 5.074200773806935,
+          "travel_time": 361.1568829265968,
+          "waiting_time": 149.99459896263667,
+          "time_loss": 234.28483749625818,
+          "completed": 10069.0
+        },
+        {
+          "tier": "cacc",
+          "penetration": 1,
+          "speed": 5.2113818433682955,
+          "travel_time": 365.3280057838766,
+          "waiting_time": 164.31579797136789,
+          "time_loss": 239.67804706610067,
+          "completed": 10068.5
+        },
+        {
+          "tier": "idm",
+          "penetration": 0,
+          "speed": 3.7857597037358004,
+          "travel_time": 344.50627311051755,
+          "waiting_time": 149.0311807027465,
+          "time_loss": 221.75909679332364,
+          "completed": 9377.5
+        },
+        {
+          "tier": "idm",
+          "penetration": 1,
+          "speed": 8.065384189367617,
+          "travel_time": 214.99205802536136,
+          "waiting_time": 57.531280280683475,
+          "time_loss": 89.32953146434798,
+          "completed": 10069.0
+        }
+      ],
+      "counters": {
+        "wall_seconds": 51.8,
+        "arrived": 79168.0,
+        "stuck_teleports": 224.0,
+        "collisions": 30.0,
+        "approach_overflow": 153747.0
+      }
+    },
+    "room": {
+      "means": [
+        {
+          "tier": "cacc",
+          "penetration": 0,
+          "speed": 3.6652190470317345,
+          "travel_time": 337.91194074377916,
+          "waiting_time": 143.01897798415268,
+          "time_loss": 215.10188143162242,
+          "completed": 9248.0
+        },
+        {
+          "tier": "cacc",
+          "penetration": 1,
+          "speed": 5.2113818433682955,
+          "travel_time": 365.3280057838766,
+          "waiting_time": 164.31579797136789,
+          "time_loss": 239.67804706610067,
+          "completed": 10068.5
+        },
+        {
+          "tier": "idm",
+          "penetration": 0,
+          "speed": 3.744022645319206,
+          "travel_time": 322.17130438925324,
+          "waiting_time": 129.14748343289426,
+          "time_loss": 199.4697490587314,
+          "completed": 9289.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 1,
+          "speed": 8.065384228761733,
+          "travel_time": 214.99205802536136,
+          "waiting_time": 57.53127034936219,
+          "time_loss": 89.32953124053904,
+          "completed": 10069.0
+        }
+      ],
+      "counters": {
+        "wall_seconds": 53.6,
+        "arrived": 77349.0,
+        "stuck_teleports": 467.0,
+        "collisions": 39.0,
+        "approach_overflow": 152291.0
+      }
+    },
+    "reserve-snapshot": {
+      "means": [
+        {
+          "tier": "cacc",
+          "penetration": 0,
+          "speed": 3.752111321917478,
+          "travel_time": 342.2486710689857,
+          "waiting_time": 148.23840512387937,
+          "time_loss": 219.73974113418842,
+          "completed": 9305.0
+        },
+        {
+          "tier": "cacc",
+          "penetration": 1,
+          "speed": 5.206064180085017,
+          "travel_time": 363.72459523026316,
+          "waiting_time": 163.06882186281553,
+          "time_loss": 238.06532437297847,
+          "completed": 10068.5
+        },
+        {
+          "tier": "idm",
+          "penetration": 0,
+          "speed": 4.997053195043238,
+          "travel_time": 375.70329291592446,
+          "waiting_time": 163.34087731634753,
+          "time_loss": 248.83564874388657,
+          "completed": 10069.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 1,
+          "speed": 8.081675922194814,
+          "travel_time": 214.98494709070377,
+          "waiting_time": 57.55586373750318,
+          "time_loss": 89.32314133261696,
+          "completed": 10069.0
+        }
+      ],
+      "counters": {
+        "wall_seconds": 52.5,
+        "arrived": 79023.0,
+        "stuck_teleports": 254.0,
+        "collisions": 24.0,
+        "approach_overflow": 165175.0
+      }
+    },
+    "acc-mode": {
+      "means": [
+        {
+          "tier": "cacc",
+          "penetration": 0,
+          "speed": 4.9426226571247565,
+          "travel_time": 371.9722868021297,
+          "waiting_time": 159.8934706861418,
+          "time_loss": 245.10091585063546,
+          "completed": 10069.0
+        },
+        {
+          "tier": "cacc",
+          "penetration": 1,
+          "speed": 5.134464938811327,
+          "travel_time": 371.2640326365628,
+          "waiting_time": 169.66062199429498,
+          "time_loss": 245.6234533486143,
+          "completed": 10067.5
+        },
+        {
+          "tier": "idm",
+          "penetration": 0,
+          "speed": 5.081911815547336,
+          "travel_time": 366.3708267921544,
+          "waiting_time": 154.82016279124264,
+          "time_loss": 239.498961964878,
+          "completed": 10069.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 1,
+          "speed": 8.072594997495397,
+          "travel_time": 214.93035378370294,
+          "waiting_time": 57.46755662285534,
+          "time_loss": 89.26775247867891,
+          "completed": 10069.0
+        }
+      ],
+      "counters": {
+        "wall_seconds": 48.1,
+        "arrived": 80549.0,
+        "stuck_teleports": 58.0,
+        "collisions": 14.0,
+        "approach_overflow": 16626181.0
+      }
+    },
+    "cacc-partial": {
+      "means": [
+        {
+          "tier": "cacc",
+          "penetration": 0,
+          "speed": 5.114182157237506,
+          "travel_time": 360.76269283233273,
+          "waiting_time": 149.51056840739,
+          "time_loss": 233.89108775288074,
+          "completed": 10069.0
+        },
+        {
+          "tier": "cacc",
+          "penetration": 1,
+          "speed": 5.187585283583964,
+          "travel_time": 362.3578413316212,
+          "waiting_time": 162.53255704673552,
+          "time_loss": 236.69095956032533,
+          "completed": 10069.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 0,
+          "speed": 4.397990552609285,
+          "travel_time": 349.0603904230748,
+          "waiting_time": 144.90666391550502,
+          "time_loss": 223.98667790301772,
+          "completed": 9756.0
+        },
+        {
+          "tier": "idm",
+          "penetration": 1,
+          "speed": 8.072594972223984,
+          "travel_time": 214.93035378370294,
+          "waiting_time": 57.46755662285534,
+          "time_loss": 89.26775248625603,
+          "completed": 10069.0
+        }
+      ],
+      "counters": {
+        "wall_seconds": 49.9,
+        "arrived": 79926.0,
+        "stuck_teleports": 117.0,
+        "collisions": 15.0,
+        "approach_overflow": 16483364.0
+      }
+    }
+  },
+  "rejected_experiments": [
+    "entry clocks",
+    "32 approach slots",
+    "keep-clear shortcut",
+    "cooperative snapshots and blocker reservation"
+  ]
+}

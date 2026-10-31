@@ -129,8 +129,11 @@ pub fn run(args: Args) {
     let mut collision_prev: Vec<cars_core::world::GpuVeh> = Vec::new();
     let mut vehicle_updates = 0u64;
     let mut last_summary_step = 0u64;
+    let debug_start = ((args.debug_from - args.begin).max(0.0) / args.dt).ceil() as u64;
+    let debug_end = ((args.debug_to - args.begin).max(0.0) / args.dt).floor() as u64;
     while done < steps {
-        if fcd.is_some() || args.check_overlaps || args.debug_lane.is_some() || args.debug_collisions {
+        let debugging = (args.debug_lane.is_some() || args.debug_collisions) && done + 1 >= debug_start && done < debug_end;
+        if fcd.is_some() || args.check_overlaps || debugging {
             sim.run_batch(&gpu, 1);
             done += 1;
             let now = args.begin + done as f32 * args.dt;
@@ -217,7 +220,12 @@ pub fn run(args: Args) {
             }
         } else {
             let next = ((done / interval) + 1) * interval;
-            let mut chunk = (next - done).min(steps - done).min((60.0 / args.dt).ceil() as u64);
+            let until_debug = if (args.debug_lane.is_some() || args.debug_collisions) && done + 1 < debug_start {
+                debug_start - done - 1
+            } else {
+                u64::MAX
+            };
+            let mut chunk = (next - done).min(steps - done).min((60.0 / args.dt).ceil() as u64).min(until_debug);
             let t_next = args.begin + (done + chunk) as f32 * args.dt;
             if let Some(&at) = args.diagnose_at.iter().find(|&&at| at > args.begin + done as f32 * args.dt && at <= t_next) {
                 chunk = ((at - args.begin) / args.dt) as u64 - done;
