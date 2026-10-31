@@ -1,0 +1,8 @@
+/target
+/data
+/runs
+/videos
+/site
+.direnv
+__pycache__
+*.pyc

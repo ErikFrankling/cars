@@ -1,0 +1,19 @@
+[package]
+name = "cars-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "cars"
+path = "src/main.rs"
+
+[dependencies]
+cars-core = { path = "../cars-core" }
+wgpu.workspace = true
+bytemuck.workspace = true
+pollster.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+clap.workspace = true
+rayon.workspace = true

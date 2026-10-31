@@ -1,0 +1,16 @@
+[package]
+name = "cars-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+wgpu.workspace = true
+bytemuck.workspace = true
+pollster.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+quick-xml.workspace = true
+flate2.workspace = true
+log.workspace = true
+rustc-hash.workspace = true
