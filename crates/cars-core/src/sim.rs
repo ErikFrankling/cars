@@ -19,7 +19,7 @@ const MAIN_BINDINGS: &[bool] = &[
     /*0 P*/ true, /*1 G*/ false, /*2 C*/ false, /*3 lanes*/ true, /*4 edges*/ true,
     /*5 links*/ true, /*6 foes*/ true, /*7 conflicts*/ true, /*8 types*/ true, /*9 routes*/ true,
     /*10 trips*/ true, /*11 queues*/ false, /*12 tls*/ false, /*13 phases*/ true, /*14 states*/ true,
-    /*15 prev*/ true, /*16 cur*/ false, /*17 unused*/ true, /*18 unused*/ true, /*19 unused*/ true,
+    /*15 prev*/ true, /*16 cur*/ false, /*17 incoming*/ true, /*18 adv_flags*/ false, /*19 unused*/ true,
     /*20 seg*/ false, /*21 items*/ false, /*22 slots*/ false, /*23 link_count*/ false,
     /*24 partial*/ false, /*25 tail*/ false, /*26 entrant*/ false, /*27 trip_out*/ false,
     /*28 series*/ false, /*29 edge_acc*/ false, /*30 unused*/ true, /*31 advice*/ false,
@@ -73,6 +73,7 @@ struct Pipelines {
     lc_best: Option<wgpu::ComputePipeline>,
     lc_decide: wgpu::ComputePipeline,
     lc_commit: Option<wgpu::ComputePipeline>,
+    lc_release: Option<wgpu::ComputePipeline>,
     glosa: Option<wgpu::ComputePipeline>,
     insert: wgpu::ComputePipeline,
     sample_stats: wgpu::ComputePipeline,
@@ -192,7 +193,10 @@ impl Sim {
         let edge_acc = empty("edge_acc", p.n_edges as u64 * 16);
         let advice_init = vec![0xffu8; p.n_trips as usize * 4];
         let advice = init("advice", &advice_init, storage);
-        let claims = empty("claims", p.n_lanes as u64 * 4 * 64);
+        let adv_flags = empty("adv_flags", p.n_trips as u64 * 4);
+        let incoming_links = init("incoming_links", bytemuck::cast_slice(&world.incoming_links), storage);
+        let claims_init = vec![0xffu8; p.n_lanes as usize * 4 * 64];
+        let claims = init("claims", &claims_init, storage);
         let last_detect = empty("last_detect", p.n_lanes as u64 * 4);
         let lc_plan = empty("lc_plan", cap * LCPLAN_BYTES);
         let unused = empty("unused", 16);
@@ -265,7 +269,7 @@ impl Sim {
         let main_group = |prev: &wgpu::Buffer, cur: &wgpu::Buffer| {
             let list: Vec<&wgpu::Buffer> = vec![
                 &params, &globals, &counters, &lanes, &edges, &links, &foes, &conflicts, &types, &routes,
-                &trips, &queues, &tls, &phases, &states, prev, cur, &unused, &unused, &unused, &seg,
+                &trips, &queues, &tls, &phases, &states, prev, cur, &incoming_links, &adv_flags, &unused, &seg,
                 &items, &slots, &link_count, &partial, &tail, &entrant, &trip_out, &series, &edge_acc,
                 &unused, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
             ];
@@ -388,6 +392,7 @@ impl Sim {
             lc_best: has("lc_best").then(|| m("lc_best")),
             lc_decide: m("lc_decide"),
             lc_commit: has("lc_commit").then(|| m("lc_commit")),
+            lc_release: has("lc_release").then(|| m("lc_release")),
             glosa: world.vtypes.iter().any(|t| t.glosa_range > 0.0).then(|| m("glosa")),
             insert: m("insert"),
             sample_stats: m("sample_stats"),
@@ -497,6 +502,10 @@ impl Sim {
         c.dispatch_workgroups_indirect(ind, 24);
         if let Some(commit) = &p.lc_commit {
             c.set_pipeline(commit);
+            c.dispatch_workgroups_indirect(ind, 24);
+        }
+        if let Some(release) = &p.lc_release {
+            c.set_pipeline(release);
             c.dispatch_workgroups_indirect(ind, 24);
         }
         if params.n_queues > 0 {

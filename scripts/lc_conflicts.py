@@ -18,7 +18,7 @@ def main():
     tracks = []
     for repeat in range(2):
         path = d / f"cars{repeat}.csv"
-        result = run([CARS, "--net", d / "net.xml", "--routes", d / "r.rou.xml", "--dt", "1", "--end", "150", "--seed", "1", "--fcd", path, "--check-overlaps"])
+        result = run([CARS, "run", "--net", d / "net.xml", "--routes", d / "r.rou.xml", "--dt", "1", "--end", "150", "--seed", "1", "--fcd", path, "--check-overlaps"])
         assert "trips done 6" in result.stdout, result.stdout
         assert "teleports 0" in result.stderr, result.stderr
         tracks.append(read_cars(path))

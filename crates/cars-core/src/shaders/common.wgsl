@@ -35,6 +35,7 @@ const L_HAS_VIA: u32 = 8u;
 const L_FROM_INTERNAL: u32 = 16u;
 const L_EXIT_AFTER_IJ: u32 = 32u;
 const L_INTERNAL_JUNCTION: u32 = 64u;
+const L_WATCHED: u32 = 1u << 16u;  // some other link yields to this one
 
 // Conflict flags.
 const C_SAME_TARGET: u32 = 1u;
@@ -113,6 +114,10 @@ struct Veh {
     replica: u32,
     v_next: f32,
     n_items: u32,
+    lc_own: u32,
+    left_space: f32,
+    blocker: f32,
+    pad: u32,
 }
 
 struct Lane {
@@ -132,6 +137,8 @@ struct Lane {
     entry_link: u32,
     pad0: u32,
     pad1: u32,
+    in_start: u32,
+    in_count: u32,
 }
 
 struct Edge {

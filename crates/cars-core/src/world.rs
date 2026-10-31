@@ -77,6 +77,10 @@ pub struct GpuVeh {
     pub replica: u32,
     pub v_next: f32,
     pub n_items: u32,
+    pub lc_own: u32,
+    pub left_space: f32,
+    pub blocker: f32,
+    pub pad: u32,
 }
 
 #[repr(C)]
@@ -97,6 +101,8 @@ pub struct GpuLane {
     pub pred: u32,
     pub entry_link: u32,
     pub pad: [u32; 2],
+    pub in_start: u32,
+    pub in_count: u32,
 }
 
 #[repr(C)]
@@ -310,6 +316,7 @@ pub struct World {
     pub tls: Vec<GpuTlsState>,
     pub phases: Vec<GpuTlsPhase>,
     pub states: Vec<u32>,
+    pub incoming_links: Vec<u32>,
     /// Lane polylines for drawing: flat points, offset per lane in `GpuLane::shape_start`.
     pub shapes: Vec<[f32; 2]>,
     pub shape_range: Vec<(u32, u32)>,
@@ -569,6 +576,8 @@ impl World {
                 },
                 entry_link: incoming.map(|inc| topo.links[inc as usize].entry + link0).unwrap_or(NONE),
                 pad: [l.change_left, l.change_right],
+                in_start: 0,
+                in_count: 0,
             });
             *key_base += cells;
         }
@@ -590,18 +599,26 @@ impl World {
                 self.lanes[lane0 as usize + li].links_start = remap[f as usize];
             }
         }
+        for (li, inc) in topo.incoming.iter().enumerate() {
+            let gl = &mut self.lanes[lane0 as usize + li];
+            gl.in_start = self.incoming_links.len() as u32;
+            gl.in_count = inc.len() as u32;
+            self.incoming_links.extend(inc.iter().map(|&l| remap[l as usize]));
+        }
+        let mut watched = vec![false; topo.links.len()];
+        for l in &topo.links {
+            for &f in &l.foe_links {
+                watched[f as usize] = true;
+            }
+        }
         for gl in self.lanes.iter_mut().skip(lane0 as usize) {
             if gl.entry_link != NONE {
                 gl.entry_link = remap[(gl.entry_link - link0) as usize];
             }
         }
-        for t in self.tls.iter_mut().skip(tls0 as usize) {
-            // Controlled links need not be contiguous: only their source lanes matter here.
-            t.link_start = if t.link_count > 0 {
-                remap[(t.link_start - link0) as usize]
-            } else {
-                0
-            };
+        for (ti, t) in self.tls.iter_mut().skip(tls0 as usize).enumerate() {
+            t.link_start = self.incoming_links.len() as u32;
+            self.incoming_links.extend(tls_links[ti].iter().map(|&l| remap[l as usize]));
         }
         for links in &topo.lane_links {
             for &id in links {
@@ -658,6 +675,9 @@ impl World {
                     flags |= 64;
                 }
                 flags |= (l.dir as u32) << 8;
+                if watched[id as usize] {
+                    flags |= 1 << 16;
+                }
                 self.links.push(GpuLink {
                     next_lane: l.next_lane + lane0,
                     to_lane: l.to_lane + lane0,

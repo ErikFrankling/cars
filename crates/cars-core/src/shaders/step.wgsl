@@ -31,6 +31,8 @@
 @group(0) @binding(27) var<storage, read_write> trip_out: array<TripOut>;
 @group(0) @binding(28) var<storage, read_write> series: array<atomic<u32>>;
 @group(0) @binding(29) var<storage, read_write> edge_acc: array<atomic<u32>>;
+@group(0) @binding(17) var<storage, read> incoming_links: array<u32>;
+@group(0) @binding(18) var<storage, read_write> adv_flags: array<atomic<u32>>;
 @group(0) @binding(31) var<storage, read_write> advice: array<atomic<u32>>;
 @group(0) @binding(32) var<storage, read> queue_trips: array<u32>;
 @group(0) @binding(33) var<storage, read_write> claims: array<atomic<u32>>;
@@ -115,7 +117,7 @@ fn tls_step(@builtin(global_invocation_id) id: vec3u) {
         if (elapsed < ph.max_dur && ph.max_dur > ph.min_dur) {
             var demand = false;
             for (var k = 0u; k < s.link_count; k++) {
-                let l = s.link_start + k;
+                let l = incoming_links[s.link_start + k];
                 let cs = states[ph.state_start + links[l].tl_index];
                 if (have_green(cs)) {
                     let at = last_detect[links[l].from_lane];
@@ -180,14 +182,16 @@ fn clear_lanes(@builtin(global_invocation_id) id: vec3u) {
     atomicStore(&partial_occ[id.x], NONE);
     atomicStore(&tail[id.x], NONE);
     atomicStore(&entrant[id.x], NONE);
-    for (var k = 0u; k < 64u; k++) { atomicStore(&claims[id.x * 64u + k], NONE); }
 }
 
-fn pack_back(back: f32, speed: f32) -> u32 {
-    return (u32(clamp(back, 0.0, 8000.0) * 8.0) << 16u) | u32(clamp(speed, 0.0, 200.0) * 256.0);
+// Back position in 1/8 m, then a CACC bit and the speed in 1/256 m/s.
+fn pack_back(back: f32, speed: f32, cacc: u32) -> u32 {
+    return (u32(clamp(back, 0.0, 8000.0) * 8.0) << 16u) | (cacc << 15u) | u32(clamp(speed, 0.0, 127.0) * 256.0);
 }
+fn is_cacc(t: VType) -> u32 { return u32(t.model == MODEL_CACC); }
 fn unpack_back(p: u32) -> f32 { return f32(p >> 16u) / 8.0; }
-fn unpack_speed(p: u32) -> f32 { return f32(p & 0xffffu) / 256.0; }
+fn unpack_speed(p: u32) -> f32 { return f32(p & 0x7fffu) / 256.0; }
+fn unpack_cacc(p: u32) -> bool { return (p & 0x8000u) != 0u; }
 
 fn lane_occupied(l: u32) -> bool { return seg[l].stamp == G.step; }
 
@@ -255,7 +259,7 @@ fn adapt_to_lane(lane: u32, seen: f32, first: bool, leader_index: u32, ego_pos: 
         if (!first || back > ego_pos) {
             var gap: f32;
             if (first) { gap = back - ego_pos - ty.min_gap; } else { gap = back + seen - l_len - ty.min_gap; }
-            adapt_to_leader(gap, seen, l_len, unpack_speed(p), ty.apparent, false, true, extra);
+            adapt_to_leader(gap, seen, l_len, unpack_speed(p), ty.apparent, unpack_cacc(p), true, extra);
         }
     }
 }
@@ -701,6 +705,7 @@ fn approach(@builtin(global_invocation_id) id: vec3u) {
         if (it.request != u32(request)) { items[base + j].request = u32(request); }
         if (j == 0u && request) { wants = true; }
         if (it.arrival > CUTOFF) { continue; }
+        if ((k.flags & L_WATCHED) == 0u) { continue; }
         let slot = atomicAdd(&link_count[it.link], 1u);
         if (slot >= SLOTS) {
             atomicAdd(&C[C_OVERFLOW], 1u);
@@ -801,11 +806,56 @@ fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f3
     return true;
 }
 
+var<private> fin_min: f32;
+var<private> fin_max: f32;
+
+// MSLCM_LC2013::_patchSpeed: what lane changing wants from the speed this step.
+fn lc_patch_speed(wanted: f32, e: Veh, vmax: f32) -> f32 {
+    var mn = fin_min;
+    var mx = fin_max;
+    var nv = wanted;
+    var got = false;
+    if (e.blocker != 0.0 && !is_internal(e.lane)) {
+        let space = e.left_space - e.blocker - POS_EPS;
+        if (space > 0.0) {
+            let vme = min_next_speed_emergency(e.speed);
+            let safe = stop_speed(e.speed, space, ty.decel, true, vmax);
+            mx = min(mx, max(safe, vme));
+            if (safe < wanted) {
+                if (safe < mn && safe >= vme) { mn = max(vme, safe); }
+                nv = max(mn, safe);
+                got = true;
+            }
+        }
+    }
+    let adv = atomicExchange(&advice[e.trip], NONE);
+    if (adv != NONE) {
+        let v = f32(adv) / 1024.0;
+        if (v >= mn && v <= mx) {
+            nv = min(v, nv);
+            got = true;
+        }
+    }
+    if (got) { return nv; }
+    let state = e.lc_own | atomicLoad(&adv_flags[e.trip]);
+    if ((state & LCA_WANTS) != 0u && (state & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) != 0u) {
+        if ((state & LCA_STRATEGIC) != 0u) { return (mx + wanted) / 2.0; }
+        if ((state & LCA_COOPERATIVE) != 0u) {
+            if ((state & LCA_BLOCK_LEADER) != 0u) { return (max(0.0, mn) + wanted) / 2.0; }
+            return (mx + wanted) / 2.0;
+        }
+    }
+    if ((state & LCA_AM_LEADER) != 0u && ty.lc_cooperative >= 0.0) { return (mx + wanted) / 2.0; }
+    return wanted;
+}
+
 fn finalize_speed(v_pos: f32, old_v: f32, lane_vmax_: f32, rng: ptr<private, u32>) -> f32 {
     let v_e = min_next_speed_emergency(old_v);
     let v_min = min(min_next_speed(old_v), max(v_pos, v_e));
     let a_max = (max(lane_vmax_, v_pos) - old_v) / dt;
     let v_max = max(v_min, min(min(old_v + a_max * dt, max_next_speed(old_v)), v_pos));
+    fin_min = v_min;
+    fin_max = v_max;
     if (ty.model == MODEL_KRAUSS) {
         let r = rand01(rng);
         var s = v_max;
@@ -892,15 +942,9 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     let vmax_here = lane_vmax(e.lane, e.sf);
     var v_next = finalize_speed(v_safe, speed, vmax_here, &ex_rng);
     e.rng = ex_rng;
+    v_next = lc_patch_speed(v_next, e, vmax_here);
     v_next = max(v_next, v_safe_min);
     if (v_next < 0.1 * EPS * dt) { v_next = 0.0; }
-
-    // Cooperative requests from neighbours.
-    let adv = atomicExchange(&advice[e.trip], NONE);
-    if (adv != NONE) {
-        let wanted = f32(adv) / 1024.0;
-        v_next = min(v_next, max(wanted, min_next_speed(speed)));
-    }
 
     let acc = (v_next - speed) / dt;
     let old_pos = e.pos;
@@ -997,17 +1041,18 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     if (back < 0.0 && e.prev_lane != NONE) {
         let plen = lanes[e.prev_lane].length;
         let b2 = plen + back;
-        atomicMin(&partial_occ[e.prev_lane], pack_back(b2, e.speed));
-        atomicMin(&tail[e.prev_lane], pack_back(b2, e.speed));
+        let cb = is_cacc(ty);
+        atomicMin(&partial_occ[e.prev_lane], pack_back(b2, e.speed, cb));
+        atomicMin(&tail[e.prev_lane], pack_back(b2, e.speed, cb));
         if (b2 < 0.0 && e.prev2_lane != NONE) {
             let b3 = lanes[e.prev2_lane].length + b2;
-            atomicMin(&partial_occ[e.prev2_lane], pack_back(b3, e.speed));
-            atomicMin(&tail[e.prev2_lane], pack_back(b3, e.speed));
+            atomicMin(&partial_occ[e.prev2_lane], pack_back(b3, e.speed, cb));
+            atomicMin(&tail[e.prev2_lane], pack_back(b3, e.speed, cb));
         }
     }
     let s = seg[first_lane];
     if (e.lane != first_lane || i == s.first) {
-        atomicMin(&tail[e.lane], pack_back(back, e.speed));
+        atomicMin(&tail[e.lane], pack_back(back, e.speed, is_cacc(ty)));
     }
     if (e.lane != first_lane) {
         atomicMin(&entrant[e.lane], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
@@ -1426,7 +1471,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     e.best_right = 0.0;
     cur[idx] = e;
     atomicAdd(&C[C_INSERTED], 1u);
-    let lb = pack_back(pos - ty.length, speed);
+    let lb = pack_back(pos - ty.length, speed, is_cacc(ty));
     atomicMin(&tail[lane], lb);
     return true;
 }
