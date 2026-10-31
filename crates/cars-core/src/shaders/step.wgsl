@@ -432,7 +432,7 @@ fn check_link_leader(link_i: u32, lane: u32, seen: f32, ego_lane: u32, ego_entry
                 let gap = dist_cross - ty.min_gap - back_dist - cf.foe_width;
                 if (in_way) {
                     let crossing = select(dist_cross, -1.0, same_target || same_source);
-                    adapt_to_junction_leader(gap, false, seen, l_len, crossing, unpack_speed(p), ty.apparent, false);
+                    adapt_to_junction_leader(gap, false, seen, l_len, crossing, unpack_speed(p), ty.apparent, unpack_cacc(p));
                 }
             }
         }
