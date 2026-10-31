@@ -85,7 +85,7 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
             occ[k] = 0.0;
             prio[k] = -1;
             var fits = !has_next;
-            if (has_next) {
+            if (has_next && a[k] > 0.0) {
                 for (var j = 0u; j < l.links_count; j++) {
                     let lk = links[l.links_start + j];
                     if (lk.to_edge == routes[ri + 1u] && (lanes[lk.to_lane].allow & ty.vclass) == ty.vclass) { fits = true; break; }
