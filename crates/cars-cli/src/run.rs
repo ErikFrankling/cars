@@ -89,7 +89,7 @@ pub fn run(args: Args) {
     }
     eprintln!("net loaded in {:.2}s", t.elapsed().as_secs_f64());
     let t = Instant::now();
-    let demand = Demand::load(&net, &args.routes, &args.additional, args.seed, Some(args.end as f64)).expect("demand");
+    let mut demand = Demand::load(&net, &args.routes, &args.additional, args.seed, Some(args.end as f64)).expect("demand");
     eprintln!("demand loaded in {:.2}s: {}", t.elapsed().as_secs_f64(), demand.summary());
     let cfg = SimConfig {
         dt: args.dt,
@@ -103,7 +103,7 @@ pub fn run(args: Args) {
         ..Default::default()
     };
     let t = Instant::now();
-    let world = World::build(&net, &demand, &cfg, &[]);
+    let mut world = World::build(&net, &demand, &cfg, &[]);
     eprintln!(
         "world in {:.2}s: {} lanes, {} links, {} foes, {} conflicts, {} tls, {} trips, capacity {}, key bits {}",
         t.elapsed().as_secs_f64(), world.lanes.len(), world.links.len(), world.foes.len(), world.conflicts.len(),
@@ -113,6 +113,21 @@ pub fn run(args: Args) {
     let gpu = pollster::block_on(Gpu::headless(GpuOptions { adapter_name: Some("7900".into()), checks })).expect("gpu");
     let mut sim = Sim::new(&gpu, &world).expect("sim");
     sim.target_submit_ms = args.target_submit_ms;
+    // The GPU has its copies now. A day of Berlin would otherwise keep gigabytes in RAM.
+    demand.routes = Vec::new();
+    world.routes = Vec::new();
+    world.shapes = Vec::new();
+    for l in &mut net.lanes {
+        l.shape = Vec::new();
+    }
+    net.conns = Vec::new();
+    net.junctions = Vec::new();
+    unsafe extern "C" {
+        fn malloc_trim(pad: usize) -> i32;
+    }
+    unsafe {
+        malloc_trim(0);
+    }
     eprintln!("gpu buffers: {:.1} MB, sort passes {}", sim.buffers.total_bytes as f64 / 1e6, sim.passes());
     let steps = ((args.end - args.begin) / args.dt).ceil() as u64;
     let t = Instant::now();
