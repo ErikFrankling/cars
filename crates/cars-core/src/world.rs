@@ -316,6 +316,8 @@ pub struct World {
     pub vtypes: Vec<GpuVType>,
     pub routes: Vec<u32>,
     pub trips: Vec<GpuTrip>,
+    /// Which demand trip each GPU trip came from.
+    pub trip_source: Vec<u32>,
     pub queues: Vec<GpuQueue>,
     pub queue_trips: Vec<u32>,
     pub tls: Vec<GpuTlsState>,
@@ -734,7 +736,6 @@ impl World {
             self.routes.extend(r.iter().map(|&e| e + edge0));
         }
         let _ = route0;
-        let trip0 = self.trips.len() as u32;
         let mut rng_state = rep.seed.wrapping_mul(0x2545F4914F6CDD1D) ^ (ri as u64 + 1);
         let mut by_edge: Vec<Vec<u32>> = vec![Vec::new(); net.edges.len()];
         for (ti, t) in demand.trips.iter().enumerate() {
@@ -777,7 +778,8 @@ impl World {
                 }
             };
             let sf = speed_factor(vt, &mut rng_state);
-            let id = trip0 + ti as u32;
+            let id = self.trips.len() as u32;
+            self.trip_source.push(ti as u32);
             let start = route_at[t.route as usize];
             self.trips.push(GpuTrip {
                 depart_step: ((t.depart - cfg.begin_seconds as f64) / cfg.dt as f64 - 1e-6).ceil().max(0.0) as u32,

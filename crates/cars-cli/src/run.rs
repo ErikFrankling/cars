@@ -135,7 +135,7 @@ pub fn run(args: Args) {
                 let lane = net.lane_index[name];
                 let items: Vec<[f32; 10]> = sim.read(&gpu, &sim.buffers.items, vs.len() as u64 * 8);
                 if let Some((i, v)) = vs.iter().enumerate().filter(|(_, v)| v.lane == lane).max_by(|a, b| a.1.pos.total_cmp(&b.1.pos)) {
-                    println!("t={now:.1} {} pos {:.2} v {:.2} acc {:.2} wait {:.1} flags {:#x} own {:#x} n_items {} best_off {} left_space {:.1} blocker {:.1}", demand.ids[demand.trips[v.trip as usize].id as usize], v.pos, v.speed, v.acc, v.wait, v.flags, v.lc_own, v.n_items, v.best_off, v.left_space, v.blocker);
+                    println!("t={now:.1} {} pos {:.2} v {:.2} acc {:.2} wait {:.1} flags {:#x} own {:#x} n_items {} best_off {} left_space {:.1} blocker {:.1}", demand.ids[demand.trips[world.trip_source[v.trip as usize] as usize].id as usize], v.pos, v.speed, v.acc, v.wait, v.flags, v.lc_own, v.n_items, v.best_off, v.left_space, v.blocker);
                     for j in 0..v.n_items as usize {
                         let it = items[i * 8 + j];
                         let link = it[0].to_bits();
@@ -163,7 +163,7 @@ pub fn run(args: Args) {
                     if v.flags & 1 != 0 || v.lane == world.params.dummy_lane {
                         continue;
                     }
-                    writeln!(f, "{:.2},{},{},{:.4},{:.4},{:.4},{:.1},{},{},{}", args.begin + (done - 1) as f32 * args.dt, demand.ids[demand.trips[v.trip as usize].id as usize], net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc, v.wait, v.lc_own, v.n_items, v.best_off).unwrap();
+                    writeln!(f, "{:.2},{},{},{:.4},{:.4},{:.4},{:.1},{},{},{}", args.begin + (done - 1) as f32 * args.dt, demand.ids[demand.trips[world.trip_source[v.trip as usize] as usize].id as usize], net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc, v.wait, v.lc_own, v.n_items, v.best_off).unwrap();
                 }
             }
         } else {
@@ -214,7 +214,7 @@ pub fn run(args: Args) {
             let duration = (o.arrive_step - o.depart_step) as f32 * args.dt;
             writeln!(
                 f, "{},{},{},{},{},{},{}",
-                demand.ids[demand.trips[i].id as usize], args.begin + o.depart_step as f32 * args.dt, args.begin + o.arrive_step as f32 * args.dt,
+                demand.ids[demand.trips[world.trip_source[i] as usize].id as usize], args.begin + o.depart_step as f32 * args.dt, args.begin + o.arrive_step as f32 * args.dt,
                 duration, o.wait, o.time_loss, o.route_len
             ).unwrap();
         }
