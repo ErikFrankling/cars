@@ -1,81 +1,227 @@
 #!/usr/bin/env python3
-"""Restartable intersection captures. Run inside nix develop; every GPU command holds cars-gpu.lock."""
+"""Close-up clips and stills of intersections. Restartable: finished files are skipped.
+
+Run inside nix develop. GPU jobs hold /tmp/cars-gpu.lock and each writes many cameras in one
+simulation run, so a city only warms up once.
+"""
 import argparse
-import gzip
 import json
-import os
-from pathlib import Path
+import math
 import subprocess
-import xml.etree.ElementTree as ET
-from junctions import busiest
+from pathlib import Path
 
-ROOT=Path(__file__).resolve().parents[1]
-DATA=Path('/home/erikf/projects/personal/cars-data')
-
-
-def run(args):
-    print(' '.join(map(str,args)),flush=True);subprocess.run(list(map(str,args)),check=True)
-
-
-def generate(d,kind):
-    d.mkdir(parents=True,exist_ok=True)
-    if (d/'net.xml').exists():return
-    jt={'signal':'traffic_light','priority':'priority','all-way-stop':'allway_stop','zipper':'zipper'}.get(kind,'priority')
-    nodes=[('c',0,0,jt),('w',-250,0,'priority'),('e',250,0,'priority'),('s',0,-250,'priority'),('n',0,250,'priority')]
-    spec=[('wc','w','c',2,2),('ce','c','e',2,2),('ec','e','c',2,2),('cw','c','w',2,2),('sc','s','c',1,1),('cn','c','n',1,1),('nc','n','c',1,1),('cs','c','s',1,1)]
-    routes=[('wc ce',800),('ec cw',800),('sc cn',400),('nc cs',400),('wc cn',180),('sc ce',150)]
-    if kind in ('on-ramp','zipper','lane-drop'):
-        spec=[('wc','w','c',2,2),('ce','c','e',2,1 if kind=='lane-drop' else 2),('sc','s','c',1,1)]
-        nodes=[(i,(-150 if i=='s' else x),(-70 if i=='s' else y),t) for i,x,y,t in nodes]
-        if kind=='lane-drop':spec=spec[:2]
-        routes=[('wc ce',1800),('sc ce',600)] if kind!='lane-drop' else [('wc ce',2200)]
-    if kind=='roundabout':
-        nodes=[('a',-20,0,'priority'),('b',0,-20,'priority'),('c',20,0,'priority'),('d',0,20,'priority'),('w',-250,0,'priority'),('e',250,0,'priority'),('s',0,-250,'priority'),('n',0,250,'priority')]
-        spec=[('ab','a','b',3,1),('bc','b','c',3,1),('cd','c','d',3,1),('da','d','a',3,1),('wa','w','a',1,1),('aw','a','w',1,1),('sb','s','b',1,1),('bs','b','s',1,1),('ec','e','c',1,1),('ce','c','e',1,1),('nd','n','d',1,1),('dn','d','n',1,1)]
-        routes=[('wa ab bc ce',700),('sb bc cd dn',500),('ec cd da aw',700)]
-    (d/'n.nod.xml').write_text('<nodes>'+''.join(f'<node id="{i}" x="{x}" y="{y}" type="{t}"/>' for i,x,y,t in nodes)+'</nodes>')
-    (d/'n.edg.xml').write_text('<edges>'+''.join(f'<edge id="{i}" from="{a}" to="{b}" priority="{p}" numLanes="{n}" speed="{27.78 if kind=='on-ramp' and i in ('wc','ce') else 13.89}"/>' for i,a,b,p,n in spec)+('</edges>' if kind!='roundabout' else '<roundabout edges="ab bc cd da" nodes="a b c d"/></edges>'))
-    run(['netconvert','-n',d/'n.nod.xml','-e',d/'n.edg.xml','-o',d/'net.xml','--no-turnarounds'])
-    body='<vType id="k" sigma="0" speedDev="0"/>'
-    for i,(edges,rate) in enumerate(routes):body+=f'<route id="r{i}" edges="{edges}"/><flow id="f{i}" type="k" route="r{i}" begin="0" end="300" vehsPerHour="{rate}" departLane="best" departSpeed="max"/>'
-    (d/'routes.xml').write_text('<routes>'+body+'</routes>')
+ROOT = Path(__file__).resolve().parents[1]
+DATA = Path('/home/erikf/projects/personal/cars-data')
+GALLERY = DATA / 'videos/gallery'
+CITIES = {
+    'berlin': (DATA / 'best/berlin.net.xml', DATA / 'best/berlin.rou.gz'),
+    'stockholm': (DATA / 'stockholm/stockholm.net.xml', DATA / 'stockholm/stockholm60.rou.gz'),
+}
+CITY_ARGS = ['--capacity', '300000', '--dt', '1', '--time-to-teleport', '120', '--ignore-junction-blocker', '20']
+KINDS = ['signal', 'priority', 'roundabout', 'zipper', 'ramp']
 
 
-def peak(routes):
-    counts={}
-    with (gzip.open(routes,'rb') if str(routes).endswith('.gz') else open(routes,'rb')) as f:
-        for _,e in ET.iterparse(f,events=('end',)):
-            if e.tag in ('vehicle','trip','flow'):
-                try:t=int(float(e.get('depart',e.get('begin','0'))))//900*900
-                except ValueError:continue
-                counts[t]=counts.get(t,0)+1;e.clear()
-    return max(counts,key=counts.get) if counts else 0
+def run(args, **kw):
+    print(' '.join(map(str, args)), flush=True)
+    return subprocess.run(list(map(str, args)), check=True, **kw)
+
+
+def write_net(d, nodes, edges, extra=''):
+    (d / 'n.nod.xml').write_text('<nodes>' + ''.join(
+        f'<node id="{i}" x="{x}" y="{y}" type="{t}"/>' for i, x, y, t in nodes) + '</nodes>')
+    body = ''
+    for e in edges:
+        shape = f' shape="{e["shape"]}"' if 'shape' in e else ''
+        body += (f'<edge id="{e["id"]}" from="{e["from"]}" to="{e["to"]}" priority="{e.get("priority", 1)}" '
+                 f'numLanes="{e.get("lanes", 1)}" speed="{e.get("speed", 13.89)}"{shape}/>')
+    (d / 'n.edg.xml').write_text('<edges>' + body + extra + '</edges>')
+    run(['netconvert', '-n', d / 'n.nod.xml', '-e', d / 'n.edg.xml', '-o', d / 'net.xml', '--no-turnarounds',
+         '--junctions.corner-detail', '8', '--no-internal-links', 'false'], capture_output=True)
+
+
+def write_routes(d, flows):
+    vt = '<vType id="car" vClass="passenger" sigma="0.5"/><vType id="truck" vClass="truck" length="10" sigma="0.5"/>'
+    body = vt
+    for i, (edges, rate, *rest) in enumerate(flows):
+        kind = rest[0] if rest else 'car'
+        body += (f'<route id="r{i}" edges="{edges}"/><flow id="f{i}" type="{kind}" route="r{i}" begin="0" end="900" '
+                 f'vehsPerHour="{rate}" departLane="best" departSpeed="max"/>')
+    (d / 'routes.xml').write_text('<routes>' + body + '</routes>')
+
+
+def cross(d, kind, main_lanes=2, side_lanes=1, arm=220):
+    nodes = [('c', 0, 0, kind), ('w', -arm, 0, 'priority'), ('e', arm, 0, 'priority'), ('s', 0, -arm, 'priority'), ('n', 0, arm, 'priority')]
+    edges = []
+    for a, b, lanes, pr in [('w', 'c', main_lanes, 3), ('c', 'e', main_lanes, 3), ('e', 'c', main_lanes, 3), ('c', 'w', main_lanes, 3),
+                            ('s', 'c', side_lanes, 1), ('c', 'n', side_lanes, 1), ('n', 'c', side_lanes, 1), ('c', 's', side_lanes, 1)]:
+        edges.append(dict(id=a + b, **{'from': a, 'to': b}, lanes=lanes, priority=pr))
+    write_net(d, nodes, edges)
+    write_routes(d, [('wc ce', 700), ('ec cw', 700), ('sc cn', 300), ('nc cs', 300), ('wc cn', 180), ('ec cs', 150), ('sc ce', 150), ('nc cw', 120),
+                     ('wc cs', 150), ('ec cn', 140), ('wc ce', 60, 'truck')])
+    return dict(junction='c')
+
+
+def roundabout(d, radius=22, arm=220):
+    ring = ['a', 'b', 'c', 'd']
+    angles = {'a': 180, 'b': 270, 'c': 0, 'd': 90}
+    outer = {'a': 'w', 'b': 's', 'c': 'e', 'd': 'n'}
+    point = lambda deg, r=radius: (round(r * math.cos(math.radians(deg)), 2), round(r * math.sin(math.radians(deg)), 2))
+    nodes = [(k, *point(angles[k]), 'priority') for k in ring]
+    nodes += [(outer[k], *point(angles[k], arm), 'priority') for k in ring]
+    edges = []
+    for i, k in enumerate(ring):
+        nxt = ring[(i + 1) % 4]
+        arc = ' '.join('%g,%g' % point(angles[k] + 90 * t / 6) for t in range(7))
+        edges.append(dict(id=k + nxt, **{'from': k, 'to': nxt}, priority=3, shape=arc, speed=8.33))
+        edges.append(dict(id=outer[k] + k, **{'from': outer[k], 'to': k}))
+        edges.append(dict(id=k + outer[k], **{'from': k, 'to': outer[k]}))
+    write_net(d, nodes, edges, '<roundabout nodes="a b c d" edges="ab bc cd da"/>')
+    write_routes(d, [('wa ab bc ce', 500), ('sb bc cd dn', 400), ('ec cd da aw', 500), ('nd da ab bs', 400), ('wa ab bs', 200), ('ec cd dn', 200), ('sb bc ce', 200), ('nd da aw', 200)])
+    return dict(center=[0, 0], metres_per_pixel=0.07)
+
+
+def zipper(d):
+    nodes = [('c', 0, 0, 'zipper'), ('a', -220, 10, 'priority'), ('b', -220, -10, 'priority'), ('e', 220, 0, 'priority')]
+    edges = [dict(id='ac', **{'from': 'a', 'to': 'c'}), dict(id='bc', **{'from': 'b', 'to': 'c'}), dict(id='ce', **{'from': 'c', 'to': 'e'})]
+    write_net(d, nodes, edges)
+    write_routes(d, [('ac ce', 800), ('bc ce', 800)])
+    return dict(junction='c')
+
+
+def on_ramp(d):
+    nodes = [('w', -400, 0, 'priority'), ('m', 0, 0, 'priority'), ('r', -260, -60, 'priority'), ('k', 180, 0, 'priority'), ('e', 500, 0, 'priority')]
+    edges = [dict(id='wm', **{'from': 'w', 'to': 'm'}, lanes=2, speed=27.78, priority=5),
+             dict(id='rm', **{'from': 'r', 'to': 'm'}, lanes=1, speed=19.44, priority=2),
+             dict(id='mk', **{'from': 'm', 'to': 'k'}, lanes=3, speed=27.78, priority=5),
+             dict(id='ke', **{'from': 'k', 'to': 'e'}, lanes=2, speed=27.78, priority=5)]
+    write_net(d, nodes, edges)
+    write_routes(d, [('wm mk ke', 2600), ('rm mk ke', 700), ('wm mk ke', 200, 'truck')])
+    return dict(center=[90, -5], metres_per_pixel=0.16)
+
+
+def lane_drop(d):
+    nodes = [('w', -400, 0, 'priority'), ('k', 0, 0, 'priority'), ('e', 300, 0, 'priority')]
+    edges = [dict(id='wk', **{'from': 'w', 'to': 'k'}, lanes=3, priority=3), dict(id='ke', **{'from': 'k', 'to': 'e'}, lanes=2, priority=3)]
+    write_net(d, nodes, edges)
+    write_routes(d, [('wk ke', 2700), ('wk ke', 150, 'truck')])
+    return dict(junction='k', metres_per_pixel=0.12)
+
+
+FIXTURES = {
+    'signal': lambda d: cross(d, 'traffic_light'),
+    'priority': lambda d: cross(d, 'priority'),
+    'roundabout': roundabout,
+    'all-way-stop': lambda d: cross(d, 'allway_stop', main_lanes=1),
+    'zipper': zipper,
+    'on-ramp': on_ramp,
+    'lane-drop': lane_drop,
+}
+
+
+def small_job(name, a):
+    d = a.out / 'fixtures' / name
+    d.mkdir(parents=True, exist_ok=True)
+    meta = d / 'camera.json'
+    if not meta.exists() or not (d / 'net.xml').exists():
+        meta.write_text(json.dumps(FIXTURES[name](d)))
+    camera = json.loads(meta.read_text())
+    base = a.out / name
+    begin, end = 150.0, 150.0 + a.seconds
+    views = make_views(base, name, camera, begin, end, 'Generated test junction, dt 0.1, sigma 0.5')
+    if not views:
+        print(name, 'done')
+        return
+    spec = base / 'views.json'
+    base.mkdir(parents=True, exist_ok=True)
+    spec.write_text(json.dumps({'views': views}))
+    run(['flock', '/tmp/cars-gpu.lock', a.cars, 'record', '--net', d / 'net.xml', '--routes', d / 'routes.xml', '--dt', '0.1',
+         '--begin', begin, '--end', end, '--views', spec])
+
+
+def make_views(base, title, camera, begin, end, subtitle):
+    """A plain clip and a debug clip with stills, leaving out whatever already exists."""
+    views = []
+    middle = (begin + end) / 2
+    plain = base / 'clip.mp4'
+    debug = base / 'clip-debug.mp4'
+    stills = [(begin, base / 'start.png'), (middle, base / 'middle.png')]
+    missing = [t for t, p in stills if not p.exists()]
+    if not plain.exists() or missing:
+        v = dict(camera, title=title, subtitle=subtitle)
+        if not plain.exists():
+            v['out'] = str(plain)
+        if missing:
+            # The renderer names several stills by time; give each its own view to keep names stable.
+            views += [dict(camera, title=title, subtitle=subtitle, png=str(p), shots=[t]) for t, p in stills if not p.exists()]
+        if 'out' in v:
+            views.append(v)
+    overlay = ['speed', 'leader', 'braking', 'state', 'foes', 'events']
+    if not debug.exists():
+        views.append(dict(camera, title=title, subtitle=subtitle + ' | debug', overlay=overlay, out=str(debug)))
+    still = base / 'debug.png'
+    if not still.exists():
+        views.append(dict(camera, title=title, subtitle=subtitle + ' | debug', overlay=overlay, png=str(still), shots=[middle]))
+    return views
+
+
+def city_job(city, a):
+    net, routes = CITIES[city]
+    cache = a.out / 'cache'
+    cache.mkdir(parents=True, exist_ok=True)
+    sim_begin, begin = a.city_warm_from, a.city_begin
+    end = begin + a.seconds
+    common = ['--net', net, '--routes', routes, *CITY_ARGS]
+    edge_csv = cache / f'{city}.edges.csv'
+    if not edge_csv.exists():
+        run(['free', '-g'])
+        temporary = edge_csv.with_suffix('.partial')
+        run(['flock', '/tmp/cars-gpu.lock', a.cars, 'run', *common, '--begin', sim_begin, '--end', begin, '--edge-csv', temporary, '--edge-interval', 900],
+            stdout=subprocess.DEVNULL)
+        temporary.replace(edge_csv)
+    listing = cache / f'{city}.junctions.json'
+    if not listing.exists():
+        out = subprocess.run([str(a.cars), 'junctions', '--net', str(net), '--edge-csv', str(edge_csv), '--limit', str(a.per_kind + 1), '--json'], check=True, capture_output=True, text=True).stdout
+        listing.write_text(out)
+    rows = json.loads(listing.read_text())
+    views = []
+    for kind in KINDS:
+        chosen = [r for r in rows if r['type'] == kind][:a.per_kind]
+        if not chosen:
+            print(city, 'has no', kind, 'junction')
+        for i, r in enumerate(chosen):
+            base = a.out / f'{city}-{kind}-{i}'
+            base.mkdir(parents=True, exist_ok=True)
+            (base / 'camera.json').write_text(json.dumps(dict(r, begin=begin, end=end)))
+            title = f'{city.title()} {kind}, junction {r["id"]}'
+            subtitle = f'{r["score"]:.0f} vehicles entered in the hour before, {int(begin // 3600):02d}:{int(begin % 3600 // 60):02d} peak, dt 1'
+            views += make_views(base, title, dict(junction=r['id']), begin, end, subtitle)
+    if not views:
+        print(city, 'done')
+        return
+    spec = cache / f'{city}.views.json'
+    spec.write_text(json.dumps({'views': views}))
+    run(['free', '-g'])
+    run(['flock', '/tmp/cars-gpu.lock', a.cars, 'record', *common, '--sim-begin', sim_begin, '--begin', begin, '--end', end, '--views', spec])
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--cars',type=Path,default=ROOT/'target/release/cars');p.add_argument('--out',type=Path,default=DATA/'videos/gallery');p.add_argument('--only',nargs='+');p.add_argument('--city-begin',type=float);p.add_argument('--duration',type=float,default=12);p.add_argument('--cities-per-type',type=int,default=1);a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
-    jobs=[]
-    for kind in ['signal','priority','roundabout','all-way-stop','zipper','on-ramp','lane-drop']:
-        if a.only and kind not in a.only:continue
-        d=a.out/'fixtures'/kind;generate(d,kind);js=busiest(d/'net.xml');j=next((j for j in js if j['id']=='c'),js[0]);jobs.append((kind,d/'net.xml',d/'routes.xml',j,60.,False))
-    for city,net,rou in [('berlin',DATA/'best/berlin.net.xml',DATA/'best/berlin.rou.gz'),('stockholm',DATA/'stockholm/stockholm.net.xml',DATA/'stockholm/stockholm60.rou.gz')]:
-        if a.only and city not in a.only:continue
-        run(['free','-g'])
-        begin=a.city_begin if a.city_begin is not None else peak(rou)
-        edge_csv=net.parent/'cars.edges.csv';js=busiest(net,edge_csv if edge_csv.exists() else None)
-        for kind in ['signal','priority','roundabout','zipper','ramp']:
-            for i,j in enumerate([j for j in js if j['type']==kind][:a.cities_per_type]):jobs.append((f'{city}-{kind}-{i}',net,rou,j,begin,True))
-    for name,net,rou,j,begin,city in jobs:
-        base=a.out/name;base.mkdir(exist_ok=True)
-        (base/'camera.json').write_text(json.dumps({'junction':j,'begin':begin,'ranking':'incoming edge samples if available, otherwise lane count'}))
-        common=[a.cars,'record','--net',net,'--routes',rou,'--dt',1 if city else .1,'--sim-begin',max(0,begin-300) if city else 0,'--junction',j['id'],'--metres-per-pixel',.08,'--width',1920,'--height',1080]
-        if city:common+=['--capacity',300000,'--time-to-teleport',120,'--ignore-junction-blocker',20]
-        output=base/'clip.mp4'
-        if not output.exists():
-            temporary=base/'clip.partial.mp4'
-            run(['flock','/tmp/cars-gpu.lock']+common+['--begin',begin,'--end',begin+a.duration,'--fps',30,'--realtime','--title',name,'--out',temporary]);temporary.replace(output)
-        for suffix,t in [('overview',0),('middle',a.duration/2),('end',a.duration-0.1)]:
-            image=base/f'{suffix}.png'
-            if not image.exists():run(['ffmpeg','-y','-v','error','-threads','1','-filter_threads','1','-ss',t,'-i',output,'-frames:v','1','-threads','1',image])
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--cars', type=Path, default=ROOT / 'target/release/cars')
+    p.add_argument('--out', type=Path, default=GALLERY)
+    p.add_argument('--only', nargs='+', help='fixture or city names')
+    p.add_argument('--seconds', type=float, default=15)
+    p.add_argument('--city-begin', type=float, default=28800, help='start of clips in a city, seconds')
+    p.add_argument('--city-warm-from', type=float, default=25200)
+    p.add_argument('--per-kind', type=int, default=2)
+    a = p.parse_args()
+    a.out.mkdir(parents=True, exist_ok=True)
+    for name in FIXTURES:
+        if not a.only or name in a.only:
+            small_job(name, a)
+    for city in CITIES:
+        if not a.only or city in a.only:
+            city_job(city, a)
 
-if __name__=='__main__':main()
+
+if __name__ == '__main__':
+    main()
