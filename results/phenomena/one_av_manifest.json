@@ -6,11 +6,14 @@
   "ring": true,
   "note": "Long-headway vehicle present from start; not the Stern feedback controller.",
   "inputs": {
+    "edge.add.xml": "3e11a5026c2f4a97a9c988bcdd86c6599ba6a079b609e37144c2464043e3598a",
+    "sumo_trips.xml": "7842f27e9af7518ff7dd56b045f95b836e6c1bd4402ea588e7c62877ca19a442",
     "edges.xml": "d005b4e205f9d6345ec044ff513cae004f930ce6c5d0fb9ba7b5f39e031afe00",
-    "net.xml": "21b0f1003ea1547a0ec7ce0ec98b0f978407027af5c0e55eec438c93436bd69d",
-    "routes.xml": "6155eaeccfea6942288cd954445f2d590531b61e300c186714b26fa1fe3ed57a",
+    "sumo_edges.xml": "a36a595c472483777e9409c638b526481670283b423d95ffa7915b5f932d4b96",
+    "net.xml": "c3ba71ff48a91cfd0bf0be8063009af346544a881162e16ad98d4531bc96561c",
+    "routes.xml": "0563cc37e0e27f8ca8dd5b48c74fa4542f94b19c5609d98bac9fb5c181efd05e",
     "nodes.xml": "f23d4cb797d0b19783aa4d96a71184b7b31509e04b78174f09fea45e7cc70856"
   },
   "sumo_version": "Eclipse SUMO sumo 1.28.0\n Build features: Linux-6.18.57 x86_64 GNU 16.2.0 Release FMI Proj GUI Intl SWIG Eigen GDAL FFmpeg OSG GL2PS\n Copyright (C) 2001-2026 German Aerospace Center (DLR) and others; https://sumo.dlr.de\n\nEclipse SUMO sumo 1.28.0 is part of SUMO.\nThis program and the accompanying materials\nare made available under the terms of the Eclipse Public License v2.0\nwhich accompanies this distribution, and is available at\nhttp://www.eclipse.org/legal/epl-v20.html\nThis program may also be made available under the following Secondary\nLicenses when the conditions for such availability set forth in the Eclipse\nPublic License 2.0 are satisfied: GNU General Public License, version 2\nor later which is available at\nhttps://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html\nSPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later\n",
-  "git_commit": "acacd797e8596d14313f8b2b5457feccf6ffd425"
+  "git_commit": "9bbe1bba701dcb2881ee90686fc92929ad381892"
 }

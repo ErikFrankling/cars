@@ -9,6 +9,7 @@ import csv
 import hashlib
 import json
 import math
+import re
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
@@ -65,7 +66,7 @@ def ring(d, circumference, count, end=600, one=False):
     for i in range(count):
         body += f'<vehicle id="v{i}" type="{"buffer" if one and i == 0 else "human"}" route="r{int(i*2/count)}" depart="0" departPos="{(i*circumference/count)%(circumference/2)}" departSpeed="0"/>'
     demand(d, body, 8.333333, '<vType id="buffer" carFollowModel="IDM" tau="2" speedDev="0" maxSpeed="8.333333" length="5" minGap="2.5" accel="2.6" decel="4.5"/>')
-    return dict(end=end, ring=True, note='Long-headway vehicle present from start; not the Stern feedback controller.' if one else 'Noise can create a wave without an obstacle.')
+    return dict(end=end, ring=True, note='Long-headway vehicle present from start; not the Stern feedback controller.' if one else '22 drivers on a ring. This run shows whether waves emerge without an obstacle.')
 
 
 @scenario
@@ -266,6 +267,10 @@ def measure(d,cfg,name):
     with open(OUT/f'{name}_summary.csv','w') as f:
         w=csv.writer(f);w.writerow(['simulator','space_mean_speed_m_s','peak_accumulation_veh','peak_production_veh_m_s']);w.writerows(summary)
     if cfg.get("ring"): trajectories(d,name)
+    diagnostics = re.search(r'lane changes (\d+), teleports (\d+), collisions (\d+), overflow (\d+), items full (\d+)', (d/'cars.log').read_text())
+    if diagnostics:
+        with open(OUT/f'{name}_diagnostics.csv','w') as f:
+            w=csv.writer(f);w.writerow(['lane_changes','teleports','collisions','overflow_counter','items_full']);w.writerow(diagnostics.groups())
     readme()
 
 
@@ -316,14 +321,26 @@ def readme():
         for key in ['space_mean_speed_m_s','peak_accumulation_veh','peak_production_veh_m_s']:
             a,b=float(rows['SUMO'][key]),float(rows['cars'][key])
             text+=f'| {p.stem.removesuffix("_summary")} | {key} | No transferable value | {a:.3f} | {b:.3f} | {b-a:+.3f} |\n'
-    text+='\nPublished anchors and experiment specifications: [research report](../../research/validation-and-phenomena.md). Freeway ideal reference is 2400 pc/h/lane; signal ideal reference is 1900 pc/h/lane; backward waves commonly −10 to −20 km/h. None is substituted for a measurement.\n\nCurrent limitations: videos show cars only, explicitly labelled; no SUMO trajectory replay. Ring wave fits, pre/post capacity drop, queue-position headways, blocked-green time, and MFD branch uncertainty are not yet implemented. one_av uses a static longer headway from time zero, not feedback control or a before/after switch. brake_wave uses a persistent bottleneck, not a pulse. Grid clearing is an outcome, not guaranteed. Thesis scenarios fail explicitly rather than silently substituting a different experiment.\n'
+    text+='\nImportant: SUMO edge sampledSeconds can include vehicles overlapping edge boundaries; edge-based accumulation is a proxy and can exceed the physical count. Ring trajectory CSVs count front positions explicitly. Do not interpret the difference as lost vehicles without checking insertion and arrival logs.\n\nPublished anchors and experiment specifications: [research report](../../research/validation-and-phenomena.md). Freeway ideal reference is 2400 pc/h/lane; signal ideal reference is 1900 pc/h/lane; backward waves commonly −10 to −20 km/h. None is substituted for a measurement.\n\nCurrent limitations: videos show cars only, explicitly labelled; no SUMO trajectory replay. Ring wave fits, pre/post capacity drop, queue-position headways, blocked-green time, and MFD branch uncertainty are not yet implemented. one_av uses a static longer headway from time zero, not feedback control or a before/after switch. brake_wave uses a persistent bottleneck, not a pulse. Grid clearing is an outcome, not guaranteed. Thesis scenarios fail explicitly rather than silently substituting a different experiment.\n'
+    text+='\nGPU diagnostics (nonzero overflow requires investigation; results are provisional):\n\n| Scenario | Overflow counter | Collisions | Teleports |\n|---|---:|---:|---:|\n'
+    for p in sorted(OUT.glob('*_diagnostics.csv')):
+        with open(p) as f: r=next(csv.DictReader(f))
+        text+=f'| {p.stem.removesuffix("_diagnostics")} | {r["overflow_counter"]} | {r["collisions"]} | {r["teleports"]} |\n'
+    text+='\nVideo status: phantom_jam.mp4 completed at 1920×1080, 30 fps, 40 seconds; inspected frame shows visible cars and readable captions, but no clear jam. one_av recording failed because lag-guard killed ffmpeg during desktop memory/disk pressure; further local recordings stopped. No completed side-by-side SUMO videos.\n'
     (OUT/'README.md').write_text(text)
 
 
 def video(d,cfg,name):
     VIDEOS.mkdir(parents=True,exist_ok=True)
-    write(d,'camera.json',json.dumps({'captions':[{'from':0,'to':cfg['end'],'text':cfg['note']}]}))
-    cmd=[ROOT/'target/release/cars','record','--net',d/'net.xml','--routes',d/'routes.xml','--dt','.1','--end',cfg['end'],'--seed','42','--steps-per-frame',max(1,math.ceil(cfg['end']/.1/1200)),'--fps','30','--width','1920','--height','1080','--fit','--camera',d/'camera.json','--color','speed','--title',name.replace('_',' ').title(),'--subtitle','cars GPU simulation | identical inputs measured against SUMO','--out',VIDEOS/f'{name}.mp4']
+    camera={'captions':[{'from':0,'to':cfg['end'],'text':cfg['note']}]}
+    if not cfg.get('ring') and name not in ('gridlock','mfd'):
+        net=ET.parse(d/'net.xml').getroot()
+        lane=next(e.find('lane') for e in net.findall('edge') if e.get('id')=='e0')
+        point=list(map(float,lane.get('shape').split()[-1].split(',')))
+        camera['keyframes']=[{'time':0,'center':point,'metres_per_pixel':.6},{'time':cfg['end'],'center':point,'metres_per_pixel':.35}]
+    write(d,'camera.json',json.dumps(camera))
+    cmd=[ROOT/'target/release/cars','record','--net',d/'net.xml','--routes',d/'routes.xml','--dt','.1','--end',cfg['end'],'--seed','42','--steps-per-frame',max(1,math.ceil(cfg['end']/.1/1200)),'--fps','30','--width','1920','--height','1080','--camera',d/'camera.json','--color','speed','--title',name.replace('_',' ').title(),'--subtitle','cars GPU simulation | identical inputs measured against SUMO','--out',VIDEOS/f'{name}.mp4']
+    if cfg.get('ring') or name in ('gridlock','mfd'): cmd+=['--fit']
     if (d/'signals.xml').exists(): cmd+=['--additional',d/'signals.xml']
     command(['flock','/tmp/cars-gpu.lock',*cmd],d/'record.log')
     command(['ffmpeg','-y','-ss','20','-i',VIDEOS/f'{name}.mp4','-frames:v','1',d/'inspection.png'],d/'inspection.log')
