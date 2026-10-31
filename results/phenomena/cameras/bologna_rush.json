@@ -1,0 +1,29 @@
+{
+  "captions": [
+    {
+      "from": 3600,
+      "to": 3700.0,
+      "text": "Bologna thesis human baseline during rush demand."
+    },
+    {
+      "from": 3700.0,
+      "to": 3800.0,
+      "text": "Color shows speed: red vehicles are stopped or slow."
+    },
+    {
+      "from": 3800.0,
+      "to": 3900,
+      "text": "Follow slow red vehicles as traffic evolves."
+    }
+  ],
+  "keyframes": [
+    {
+      "time": 3600,
+      "center": [
+        840.8,
+        851.1
+      ],
+      "metres_per_pixel": 0.5
+    }
+  ]
+}

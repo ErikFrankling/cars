@@ -1,0 +1,14 @@
+{
+  "scenario": "freeway_fd",
+  "variant": "_n240",
+  "seed": 44,
+  "end": 600,
+  "ring": false,
+  "note": "Closed 2 km ring at 120 vehicles/km; fixed density, no insertion bottleneck.",
+  "density_count": 240,
+  "inputs": {
+    "net.xml": "b1790985ea8d0f646dd1e396d57117c640b95fb1689d4282b7b2da603b6d3b38",
+    "routes.xml": "9b06aaa2b181542cfe3c1cd49cbca3c0cf7da4e27ab29896d728bdca572e3bd8"
+  },
+  "binary_sha256": "e700938df3f463bc12e33d42c074e4502e80f3eb8fcddba409eafa43614b3fb7"
+}

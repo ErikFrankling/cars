@@ -2,26 +2,47 @@
   "captions": [
     {
       "from": 0,
-      "to": 1800,
-      "text": "Ramp inflow meets rising mainline demand."
+      "to": 900,
+      "text": "Ramp traffic joins the increasing mainline demand."
+    },
+    {
+      "from": 900,
+      "to": 1500,
+      "text": "Heavy mainline demand leaves fewer merge gaps; slow traffic spreads upstream."
     }
   ],
   "keyframes": [
     {
       "time": 0,
       "center": [
-        2490.5,
-        395.2
+        2450,
+        336.79999999999995
       ],
-      "metres_per_pixel": 0.6
+      "metres_per_pixel": 0.45
+    },
+    {
+      "time": 600,
+      "center": [
+        2450,
+        316.79999999999995
+      ],
+      "metres_per_pixel": 0.3
+    },
+    {
+      "time": 1200,
+      "center": [
+        2470,
+        336.79999999999995
+      ],
+      "metres_per_pixel": 0.2
     },
     {
       "time": 1800,
       "center": [
-        2490.5,
-        395.2
+        2470,
+        336.79999999999995
       ],
-      "metres_per_pixel": 0.35
+      "metres_per_pixel": 0.2
     }
   ]
 }

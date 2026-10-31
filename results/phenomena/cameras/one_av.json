@@ -1,9 +1,19 @@
 {
   "captions": [
     {
-      "from": 0,
+      "from": 600,
+      "to": 700.0,
+      "text": "Same perturbed IDM ring; one smooth long-headway driver limits the stop-and-go wave."
+    },
+    {
+      "from": 700.0,
+      "to": 800.0,
+      "text": "Color shows speed: red vehicles are stopped or slow."
+    },
+    {
+      "from": 800.0,
       "to": 900,
-      "text": "Long-headway vehicle present from start; not the Stern feedback controller."
+      "text": "Follow slow red vehicles as traffic evolves."
     }
   ]
 }

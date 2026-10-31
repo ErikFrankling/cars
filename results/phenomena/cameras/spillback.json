@@ -2,26 +2,44 @@
   "captions": [
     {
       "from": 0,
-      "to": 1800,
-      "text": "Downstream green serves only one fifth of each cycle."
+      "to": 150,
+      "text": "The downstream red fills the 100 m storage link."
+    },
+    {
+      "from": 150,
+      "to": 160,
+      "text": "A short green releases only a few vehicles."
+    },
+    {
+      "from": 160,
+      "to": 300,
+      "text": "The shared approach remains blocked, including drivers seeking the side exit."
     }
   ],
   "keyframes": [
     {
       "time": 0,
       "center": [
-        500.0,
-        -1.6
+        550,
+        248.39999999999998
       ],
-      "metres_per_pixel": 0.6
+      "metres_per_pixel": 0.3
     },
     {
-      "time": 1800,
+      "time": 150,
       "center": [
-        500.0,
-        -1.6
+        550,
+        268.4
       ],
-      "metres_per_pixel": 0.35
+      "metres_per_pixel": 0.2
+    },
+    {
+      "time": 300,
+      "center": [
+        550,
+        268.4
+      ],
+      "metres_per_pixel": 0.2
     }
   ]
 }

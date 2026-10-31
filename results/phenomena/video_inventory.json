@@ -2,161 +2,198 @@
   {
     "scenario": "phantom_jam",
     "path": "/home/erikf/projects/personal/cars-data/videos/phantom_jam.mp4",
-    "programs": [],
-    "stream_groups": [],
-    "streams": [
-      {
-        "codec_name": "h264",
-        "width": 1920,
-        "height": 1080
-      }
+    "duration_s": 33.333008,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "ed4c56c0462d7016dd497db4f44118e3819a485fd710811e51680dea391c6cec",
+    "reviewed_frames_s": [
+      20
     ],
-    "format": {
-      "duration": "40.000000"
-    }
+    "frame_review": "Packed red wave and moving free-flow vehicles are visible on the full ring.",
+    "reviewed_utc": "2026-10-31T19:25:36.504358+00:00"
   },
   {
     "scenario": "one_av",
     "path": "/home/erikf/projects/personal/cars-data/videos/one_av.mp4",
-    "programs": [],
-    "stream_groups": [],
-    "streams": [
-      {
-        "codec_name": "h264",
-        "width": 1920,
-        "height": 1080
-      }
+    "duration_s": 50.0,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "39b62106b1fb5497c4641be070e7ceeefceb9921a9b6379f45cb1b663b70603f",
+    "reviewed_frames_s": [
+      10,
+      35
     ],
-    "format": {
-      "duration": "37.500000"
-    }
+    "frame_review": "Human-only red jam followed by uniform flow with one smooth driver; both segments inspected.",
+    "reviewed_utc": "2026-10-31T19:25:36.505903+00:00"
   },
   {
     "scenario": "brake_wave",
     "path": "/home/erikf/projects/personal/cars-data/videos/brake_wave.mp4",
-    "programs": [],
-    "stream_groups": [],
-    "streams": [
-      {
-        "codec_name": "h264",
-        "width": 1920,
-        "height": 1080
-      }
+    "duration_s": 30.0,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "1b5f2b26980db6aeea3bd662e9d1014c90e9d3accabb7e946f9886881b185330",
+    "reviewed_frames_s": [
+      10
     ],
-    "format": {
-      "duration": "40.000000"
-    }
+    "frame_review": "Large stopped queue behind the signal, with slower approaching followers.",
+    "reviewed_utc": "2026-10-31T19:25:36.506146+00:00"
   },
   {
     "scenario": "capacity_drop",
     "path": "/home/erikf/projects/personal/cars-data/videos/capacity_drop.mp4",
-    "programs": [],
-    "stream_groups": [],
-    "streams": [
-      {
-        "codec_name": "h264",
-        "width": 1920,
-        "height": 1080
-      }
+    "duration_s": 29.633333,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "85ef671f8f39e6782bbb5f0696ca666039590f2d519100901df9aa0f1750b34a",
+    "reviewed_frames_s": [
+      20
     ],
-    "format": {
-      "duration": "40.000000"
-    }
+    "frame_review": "Camera follows the measured upstream stopped-car cluster; dense three-lane queues visible.",
+    "reviewed_utc": "2026-10-31T19:25:36.506798+00:00"
   },
   {
     "scenario": "freeway_fd",
     "path": "/home/erikf/projects/personal/cars-data/videos/freeway_fd.mp4",
-    "programs": [],
-    "stream_groups": [],
-    "streams": [
-      {
-        "codec_name": "h264",
-        "width": 1920,
-        "height": 1080
-      }
+    "duration_s": 28.6,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "82384d29ac7898a6803b0a0ee0e69d1d51b3eeef3c8f9b8db5e607c872306ef5",
+    "reviewed_frames_s": [
+      20
     ],
-    "format": {
-      "duration": "39.733333"
-    }
+    "frame_review": "Whole-ring establishment followed by a close view of the congested fixed-density state.",
+    "reviewed_utc": "2026-10-31T19:25:36.507250+00:00"
   },
   {
     "scenario": "signal_discharge",
     "path": "/home/erikf/projects/personal/cars-data/videos/signal_discharge.mp4",
-    "programs": [],
-    "stream_groups": [],
-    "streams": [
-      {
-        "codec_name": "h264",
-        "width": 1920,
-        "height": 1080
-      }
+    "duration_s": 30.0,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "ab4fba5e99e93f3e333017c6c1d230f1986ade8e7b3bae02ff81d417229db1c9",
+    "reviewed_frames_s": [
+      5,
+      20
     ],
-    "format": {
-      "duration": "30.000000"
-    }
+    "frame_review": "Initial forty-car queue and the subsequent green discharge both inspected.",
+    "reviewed_utc": "2026-10-31T19:25:36.507442+00:00"
   },
   {
     "scenario": "onramp_merge",
     "path": "/home/erikf/projects/personal/cars-data/videos/onramp_merge.mp4",
-    "programs": [],
-    "stream_groups": [],
-    "streams": [
-      {
-        "codec_name": "h264",
-        "width": 1920,
-        "height": 1080
-      }
+    "duration_s": 33.333333,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "16efd99395a742951fb3349dea13276fddb224634d10dd1f1c537e364bdad482",
+    "reviewed_frames_s": [
+      20
     ],
-    "format": {
-      "duration": "40.000000"
-    }
+    "frame_review": "Ramp queue is large and red while mainline traffic passes the merge.",
+    "reviewed_utc": "2026-10-31T19:25:36.508017+00:00"
   },
   {
     "scenario": "spillback",
     "path": "/home/erikf/projects/personal/cars-data/videos/spillback.mp4",
-    "programs": [],
-    "stream_groups": [],
-    "streams": [
-      {
-        "codec_name": "h264",
-        "width": 1920,
-        "height": 1080
-      }
+    "duration_s": 33.333333,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "67578e7f95c2c63f966f9b4d8f05b4f72695181e59bc5a6788f2727b92fae8da",
+    "reviewed_frames_s": [
+      20
     ],
-    "format": {
-      "duration": "40.000000"
-    }
+    "frame_review": "Both junctions and the filled short link are visible; the shared approach queues upstream.",
+    "reviewed_utc": "2026-10-31T19:25:36.508233+00:00"
   },
   {
     "scenario": "gridlock",
     "path": "/home/erikf/projects/personal/cars-data/videos/gridlock.mp4",
-    "programs": [],
-    "stream_groups": [],
-    "streams": [
-      {
-        "codec_name": "h264",
-        "width": 1920,
-        "height": 1080
-      }
+    "duration_s": 30.0,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "33d810e42765e21435b488a7baab3aa29543c4853f74bdac074a18d2b026d534",
+    "reviewed_frames_s": [
+      20
     ],
-    "format": {
-      "duration": "40.000000"
-    }
+    "frame_review": "Grid junctions are blocked by red queues, with zero speed in the HUD.",
+    "reviewed_utc": "2026-10-31T19:25:36.509809+00:00"
   },
   {
     "scenario": "mfd",
     "path": "/home/erikf/projects/personal/cars-data/videos/mfd.mp4",
-    "programs": [],
-    "stream_groups": [],
-    "streams": [
-      {
-        "codec_name": "h264",
-        "width": 1920,
-        "height": 1080
-      }
+    "duration_s": 30.0,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "54ff028139693c5d2b8bc68c794e3df1e9b6ea54cc0f6d935cc7c37eb607226c",
+    "reviewed_frames_s": [
+      20
     ],
-    "format": {
-      "duration": "40.000000"
-    }
+    "frame_review": "Recovery-phase network queues visible; loading and recovery captions match the full run.",
+    "reviewed_utc": "2026-10-31T19:25:36.514247+00:00"
+  },
+  {
+    "scenario": "thesis_ring",
+    "path": "/home/erikf/projects/personal/cars-data/videos/thesis_ring.mp4",
+    "duration_s": 33.333333,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "1453e9fdc99cbf44385e0f4473593279ed9fe15552a4ef4d0ceab4cf0721116c",
+    "reviewed_frames_s": [
+      20
+    ],
+    "frame_review": "Ring establishment and a close view of the human baseline spacing.",
+    "reviewed_utc": "2026-10-31T19:25:36.514828+00:00"
+  },
+  {
+    "scenario": "bologna_rush",
+    "path": "/home/erikf/projects/personal/cars-data/videos/bologna_rush.mp4",
+    "duration_s": 33.333333,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "182fad707247f44bbe9b03246136acf2faeae76eec924d28f8d92b4e934b4005",
+    "reviewed_frames_s": [
+      20
+    ],
+    "frame_review": "City junction queues and connecting streets are clearly framed during rush traffic.",
+    "reviewed_utc": "2026-10-31T19:25:36.516050+00:00"
+  },
+  {
+    "scenario": "i80_day",
+    "path": "/home/erikf/projects/personal/cars-data/videos/i80_day.mp4",
+    "duration_s": 33.333333,
+    "codec_name": "h264",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "sha256": "983db58db7b95a973ee5ac1ef3d96d851fbfca6bae9617f1029fe49f56d5f2eb",
+    "reviewed_frames_s": [
+      20
+    ],
+    "frame_review": "Close freeway view shows individual lanes, a lane drop, and slow traffic.",
+    "reviewed_utc": "2026-10-31T19:25:36.516903+00:00"
   }
 ]

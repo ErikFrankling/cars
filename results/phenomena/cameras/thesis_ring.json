@@ -1,0 +1,37 @@
+{
+  "captions": [
+    {
+      "from": 1800,
+      "to": 1900.0,
+      "text": "Thesis ring human baseline; sweep additionally measures its scripted disturbance."
+    },
+    {
+      "from": 1900.0,
+      "to": 2000.0,
+      "text": "Color shows speed: red vehicles are stopped or slow."
+    },
+    {
+      "from": 2000.0,
+      "to": 2100,
+      "text": "Follow slow red vehicles as traffic evolves."
+    }
+  ],
+  "keyframes": [
+    {
+      "time": 1800,
+      "center": [
+        636.7850000000001,
+        636.7850000000001
+      ],
+      "metres_per_pixel": 1.4186333333333334
+    },
+    {
+      "time": 1900.0,
+      "center": [
+        1275.17,
+        636.84
+      ],
+      "metres_per_pixel": 0.15
+    }
+  ]
+}

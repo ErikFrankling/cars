@@ -1,0 +1,3 @@
+simulator,seed,requested,inserted,running,arrived,teleports
+SUMO,42,260,260,260,0,0
+cars,42,260,22,22,0,0

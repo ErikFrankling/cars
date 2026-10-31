@@ -27,6 +27,8 @@ struct Args {
     /// Write per-interval edge data for these labels (for time-space plots).
     #[arg(long)]
     out: PathBuf,
+    #[arg(long)]
+    edge_out: Option<PathBuf>,
     #[arg(long, default_value_t = 256)]
     block: u32,
 }
@@ -185,7 +187,7 @@ fn main() {
     eprintln!("gpu buffers {:.0} MB", sim.buffers.total_bytes as f64 / 1e6);
     let steps = (end / sp.dt).ceil() as u64;
     let interval = (sp.interval / sp.dt).round() as u64;
-    let mut edges = EdgeLog::new(&world, interval, false);
+    let mut edges = EdgeLog::new(&world, interval, args.edge_out.is_some());
     let t = Instant::now();
     let mut done = 0;
     let mut last = Instant::now();
@@ -216,6 +218,16 @@ fn main() {
     writeln!(f, "scenario,tier,penetration,seed,completed,travel_time,waiting_time,time_loss,speed,running,edge_flow,density").unwrap();
     for m in &metrics {
         writeln!(f, "{},{},{},{},{},{},{},{},{}", m.label, m.completed, m.travel_time, m.waiting_time, m.time_loss, m.speed, m.running, m.edge_flow, m.density).ok();
+    }
+    if let Some(path) = &args.edge_out {
+        let mut f = std::io::BufWriter::new(std::fs::File::create(path).expect("edge output"));
+        writeln!(f, "begin_s,edge,vehicle_seconds,distance_m,entered").unwrap();
+        let normal: Vec<_> = net.edges.iter().filter(|e| world.edge_is_normal[net.edge_index[&e.id] as usize]).collect();
+        for (i, row) in edges.intervals.iter().enumerate() {
+            for (e, a) in normal.iter().zip(row) {
+                writeln!(f, "{},{},{},{},{}", i as f32 * sp.interval, e.id, a[0], a[1], a[2]).unwrap();
+            }
+        }
     }
     println!("wall_seconds={wall:.2} steps={steps} replicas={} peak_vehicles={peak} {:.1} M updates/s", replicas.len(), vehicle_updates as f64 / wall / 1e6);
 }

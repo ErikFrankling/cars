@@ -1,14 +1,13 @@
 {
   "scenario": "thesis_ring",
+  "variant": "",
   "seed": 42,
-  "dt": 0.1,
   "end": 4000,
-  "ring": false,
-  "note": "Thesis ring human baseline; scripted disturbance is not enabled.",
+  "ring": true,
+  "note": "Thesis ring human baseline; sweep additionally measures its scripted disturbance.",
   "inputs": {
     "net.xml": "cacb98211cd4d1ac1a3b2d30d235f91b96b6fd6486e48d1305b609c6a1438719",
     "routes.xml": "235c7a094d66aa4a94e5759f8ca0f87ee6adb3f55322893611ffd0b6a75bbb24"
   },
-  "sumo_version": "Eclipse SUMO sumo 1.28.0\n Build features: Linux-6.18.57 x86_64 GNU 16.2.0 Release FMI Proj GUI Intl SWIG Eigen GDAL FFmpeg OSG GL2PS\n Copyright (C) 2001-2026 German Aerospace Center (DLR) and others; https://sumo.dlr.de\n\nEclipse SUMO sumo 1.28.0 is part of SUMO.\nThis program and the accompanying materials\nare made available under the terms of the Eclipse Public License v2.0\nwhich accompanies this distribution, and is available at\nhttp://www.eclipse.org/legal/epl-v20.html\nThis program may also be made available under the following Secondary\nLicenses when the conditions for such availability set forth in the Eclipse\nPublic License 2.0 are satisfied: GNU General Public License, version 2\nor later which is available at\nhttps://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html\nSPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later\n",
-  "git_commit": "5ba19e98a95c679e231beaa82230e18be032d853"
+  "binary_sha256": "e700938df3f463bc12e33d42c074e4502e80f3eb8fcddba409eafa43614b3fb7"
 }

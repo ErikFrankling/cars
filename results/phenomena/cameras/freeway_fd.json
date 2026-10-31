@@ -2,26 +2,52 @@
   "captions": [
     {
       "from": 0,
-      "to": 8100,
-      "text": "Offered demand increases from 1000 to 2600 vehicles per hour."
+      "to": 200.0,
+      "text": "Closed 2 km ring at 90 vehicles/km; fixed density, no insertion bottleneck."
+    },
+    {
+      "from": 200.0,
+      "to": 400.0,
+      "text": "Color shows speed: red vehicles are stopped or slow."
+    },
+    {
+      "from": 400.0,
+      "to": 600,
+      "text": "Follow slow red vehicles as traffic evolves."
     }
   ],
   "keyframes": [
     {
       "time": 0,
       "center": [
-        2500.0,
-        -1.6
+        318.31,
+        318.31
       ],
-      "metres_per_pixel": 0.6
+      "metres_per_pixel": 0.7073555555555555
     },
     {
-      "time": 8100,
+      "time": 90,
       "center": [
-        2500.0,
-        -1.6
+        318.31,
+        318.31
       ],
-      "metres_per_pixel": 0.35
+      "metres_per_pixel": 0.7073555555555555
+    },
+    {
+      "time": 180,
+      "center": [
+        636.62,
+        318.31
+      ],
+      "metres_per_pixel": 0.15
+    },
+    {
+      "time": 600,
+      "center": [
+        636.62,
+        318.31
+      ],
+      "metres_per_pixel": 0.15
     }
   ]
 }
