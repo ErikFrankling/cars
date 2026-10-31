@@ -1,0 +1,6 @@
+done in 50.2s: arrived 0 teleports 0 collisions 0 overflow 0
+wall_seconds=50.23 steps=40000 replicas=252
+scenario ring
+done in 25.6s: arrived 279881 teleports 0 collisions 0 overflow 34819028
+wall_seconds=25.62 steps=24000 replicas=315
+scenario glosa_two_signal
