@@ -1,7 +1,7 @@
 // LC2013 discrete motivations, after MSLCM_LC2013::_wantsChange. Every vehicle decides at once from
 // the positions after movement; reservations then pick one winner per gap.
-// Omitted: sublanes and lateral dynamics, opposite driving, pedestrians, stops, the roundabout
-// bonus, overtake-right avoidance on fast roads and TraCI. Messages to neighbours arrive one step
+// Omitted: sublanes and lateral dynamics, opposite driving, pedestrians, stops,
+// overtake-right avoidance on fast roads and TraCI. Messages to neighbours arrive one step
 // later than in SUMO's sequential sweep.
 
 const LCA_LEFT: u32 = 1u;
@@ -23,6 +23,13 @@ const LCA_WANTS: u32 = LCA_LEFT | LCA_RIGHT;
 const HELP_OVERTAKE: f32 = 10.0 / 3.6;
 const MIN_FALLBEHIND: f32 = 7.0 / 3.6;
 const TURN_LANE_DIST: f32 = 200.0;
+
+fn nearer_offset(k: u32, lo: u32, hi: u32) -> i32 {
+    let a = i32(lo) - i32(k);
+    let b = i32(hi) - i32(k);
+    if (abs(a) < abs(b)) { return a; }
+    return b;
+}
 
 @compute @workgroup_size(64)
 fn lc_best(@builtin(global_invocation_id) id: vec3u) {
@@ -48,6 +55,10 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
     var b: array<f32, 16>;
     var off: array<i32, 16>;
     var next_off: array<i32, 16>;
+    var whole: array<f32, 16>;
+    var prio: array<i32, 16>;
+    var ok = 0u;
+    var next_ok = 0u;
     var stop = e.route_i;
     var seen = 0.0;
     let brake = lanes[e.lane].length + brake_gap(ty.max_speed, ty.decel, ty.tau) + ty.min_gap;
@@ -57,60 +68,172 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
         let n = stop - e.route_i;
         if (stop >= e.route_end || ((n > 4u && seen >= max(brake, 3000.0)) || (n > 8u && seen >= max(brake, 200.0)))) { break; }
     }
+    // MSVehicle::updateBestLanes, backwards from the last edge looked at.
     var ri = stop;
     loop {
         ri -= 1u;
         let edge = edges[routes[ri]];
         let count = min(edge.lane_count, 16u);
-        var best = 0.0;
-        var best_offset = 1000;
-        var next_best = 0.0;
-        if (ri + 1u < stop) {
-            let ne = edges[routes[ri + 1u]];
-            for (var k = 0u; k < min(ne.lane_count, 16u); k++) { next_best = max(next_best, b[k]); }
-        }
+        let has_next = ri + 1u < e.route_end;
+        ok = 0u;
         for (var k = 0u; k < count; k++) {
             let l = lanes[edge.first_lane + k];
             a[k] = 0.0;
+            if ((l.allow & ty.vclass) == ty.vclass) { a[k] = edge.length; }
+            whole[k] = a[k];
             off[k] = 0;
             occ[k] = 0.0;
-            if ((l.allow & ty.vclass) != ty.vclass) { continue; }
-            a[k] = l.length;
-            if (ri + 1u < stop) {
-                var cont = 0.0;
-                var co = 1000;
-                var co_occ = 0.0;
+            prio[k] = -1;
+            var fits = !has_next;
+            if (has_next) {
                 for (var j = 0u; j < l.links_count; j++) {
                     let lk = links[l.links_start + j];
-                    if (lk.to_edge != routes[ri + 1u] || (lanes[lk.to_lane].allow & ty.vclass) != ty.vclass) { continue; }
-                    let nk = min(lanes[lk.to_lane].index, 15u);
-                    if (b[nk] > cont || (b[nk] == cont && abs(next_off[nk]) < abs(co))) {
-                        cont = b[nk]; co = next_off[nk];
-                        co_occ = next_occ[nk] + f32(lane_load(lk.to_lane)) * len_gap;
+                    if (lk.to_edge == routes[ri + 1u] && (lanes[lk.to_lane].allow & ty.vclass) == ty.vclass) { fits = true; break; }
+                }
+            }
+            if (fits) { ok |= 1u << k; }
+        }
+        var bi = 0u;
+        var bmax = 0u;
+        if (ri + 1u == stop) {
+            var top = -1.0;
+            for (var k = 0u; k < count; k++) {
+                if (a[k] > top) {
+                    top = a[k];
+                    bi = k;
+                    bmax = k;
+                } else if (a[k] == top) {
+                    bmax = k;
+                }
+            }
+            for (var k = 0u; k < count; k++) {
+                if (a[k] < top) { off[k] = nearer_offset(k, bi, bmax); }
+            }
+        } else {
+            var best_connected = -1.0;
+            var best_len = -1.0;
+            let ne = edges[routes[ri + 1u]];
+            var approached = 0u;
+            for (var k = 0u; k < count; k++) {
+                let l = lanes[edge.first_lane + k];
+                for (var j = 0u; j < l.links_count; j++) {
+                    let lk = links[l.links_start + j];
+                    if (lk.to_edge == routes[ri + 1u]) { approached |= 1u << min(lanes[lk.to_lane].index, 15u); }
+                }
+            }
+            for (var m = 0u; m < min(ne.lane_count, 16u); m++) {
+                if (((approached >> m) & 1u) != 0u && best_connected < b[m]) { best_connected = b[m]; }
+                if (best_len < b[m]) { best_len = b[m]; }
+            }
+            if (best_connected > 0.0) {
+                for (var k = 0u; k < count; k++) {
+                    let l = lanes[edge.first_lane + k];
+                    var bn = -1;
+                    var bn_link = NONE;
+                    if (((ok >> k) & 1u) != 0u) {
+                        for (var j = 0u; j < l.links_count; j++) {
+                            let c = l.links_start + j;
+                            let lk = links[c];
+                            if (lk.to_edge != routes[ri + 1u] || (lanes[lk.to_lane].allow & ty.vclass) != ty.vclass) { continue; }
+                            let m = i32(min(lanes[lk.to_lane].index, 15u));
+                            var better = bn < 0;
+                            if (!better) {
+                                let bo = b[bn];
+                                let mo = b[m];
+                                better = bo < mo || (bo == mo && (abs(next_off[bn]) > abs(next_off[m]) || (abs(next_off[bn]) == abs(next_off[m]) && m < bn)));
+                            }
+                            if (better) {
+                                bn = m;
+                                bn_link = c;
+                            }
+                        }
+                        if (bn >= 0) {
+                            if (b[bn] == best_connected && abs(next_off[bn]) < 2) {
+                                a[k] += best_len;
+                            } else {
+                                a[k] += b[bn];
+                            }
+                            off[k] = next_off[bn];
+                            occ[k] = next_occ[bn] + f32(lane_load(links[bn_link].to_lane)) * len_gap;
+                        }
+                    }
+                    if (bn >= 0 && (((next_ok >> u32(bn)) & 1u) != 0u || b[bn] > 0.0)) {
+                        prio[k] = i32(have_priority(link_state(bn_link)));
+                    } else {
+                        ok &= ~(1u << k);
+                    }
+                    if (a[bi] < a[k]
+                        || (a[bi] == a[k] && abs(off[bi]) > abs(off[k]))
+                        || (a[bi] == a[k] && abs(off[bi]) == abs(off[k]) && prio[bi] < prio[k])) {
+                        bi = k;
+                        bmax = k;
+                    } else if (a[bi] == a[k] && abs(off[bi]) == abs(off[k]) && prio[bi] == prio[k]) {
+                        bmax = k;
                     }
                 }
-                occ[k] = co_occ;
-                if (cont > 0.0) {
-                    if (abs(co) < 2 && cont == next_best) { cont = next_best; }
-                    a[k] += cont; off[k] = co;
+            } else {
+                var best_dist = i32(count);
+                var best_next = 0u;
+                for (var k = 0u; k < count; k++) {
+                    if (((ok >> k) & 1u) == 0u) { continue; }
+                    let l = lanes[edge.first_lane + k];
+                    for (var j = 0u; j < l.links_count; j++) {
+                        let lk = links[l.links_start + j];
+                        if (lk.to_edge != routes[ri + 1u]) { continue; }
+                        let m = min(lanes[lk.to_lane].index, 15u);
+                        if (best_dist > abs(next_off[m])) {
+                            best_dist = abs(next_off[m]);
+                            bi = k;
+                            bmax = k;
+                            best_next = m;
+                        }
+                    }
+                }
+                a[bi] += b[best_next];
+            }
+            for (var k = 0u; k < count; k++) {
+                if (a[k] < a[bi] || (a[k] == a[bi] && abs(off[k]) > abs(off[bi])) || prio[k] < prio[bi]) {
+                    off[k] = nearer_offset(k, bi, bmax);
+                    if (prio[k] < prio[bi]) { a[k] = whole[k]; }
+                } else {
+                    off[k] = 0;
                 }
             }
-            if (a[k] > best || (a[k] == best && abs(off[k]) < abs(best_offset))) {
-                best = a[k]; best_offset = off[k];
+        }
+        // Lanes that cannot reach where they must go, because of a lane change ban, count for nothing.
+        var right_banned = false;
+        var left_banned = -1;
+        for (var k = 0u; k < count; k++) {
+            if (off[k] == 0 || ((ok >> k) & 1u) != 0u) { continue; }
+            let l = lanes[edge.first_lane + k];
+            if (off[k] < 0 && ((l.pad1 & ty.vclass) != ty.vclass || (lanes[edge.first_lane + k - 1u].allow & ty.vclass) != ty.vclass || right_banned)) {
+                right_banned = true;
+                if (a[k] == whole[k]) { a[k] = 0.0; }
+            } else if (off[k] > 0 && ((l.pad0 & ty.vclass) != ty.vclass || (lanes[edge.first_lane + k + 1u].allow & ty.vclass) != ty.vclass)) {
+                left_banned = i32(k);
             }
+        }
+        for (var q = left_banned; q >= 0; q--) {
+            if (a[q] == whole[q]) { a[q] = 0.0; }
         }
         for (var k = 0u; k < count; k++) {
-            var nearest = 1000;
-            for (var j = 0u; j < count; j++) {
-                if (a[j] == best && abs(off[j]) == abs(best_offset) && abs(i32(j) - i32(k)) < abs(nearest)) { nearest = i32(j) - i32(k); }
-            }
             b[k] = a[k];
-            next_off[k] = 0;
-            if (a[k] < best || abs(off[k]) > abs(best_offset)) { next_off[k] = nearest; }
+            next_off[k] = off[k];
+            next_occ[k] = occ[k];
         }
-        for (var k = 0u; k < count; k++) { next_occ[k] = occ[k]; }
+        next_ok = ok;
         if (ri == e.route_i) { break; }
     }
+    var near_rb = false;
+    var along = -e.pos;
+    for (var r = e.route_i; r < e.route_end && along <= 300.0; r++) {
+        if ((edges[routes[r]].flags & EDGE_ROUNDABOUT) != 0u) {
+            near_rb = true;
+            break;
+        }
+        along += edges[routes[r]].length;
+    }
+    if (near_rb) { cur[i].flags |= F_NEAR_ROUNDABOUT; } else { cur[i].flags &= ~F_NEAR_ROUNDABOUT; }
     let k = lanes[e.lane].index;
     cur[i].best_cur = b[k];
     cur[i].best_left = 0.0;
@@ -521,6 +644,111 @@ fn lc_ahead_load(l: u32, pos: f32, ego: u32) -> u32 {
 }
 
 // MSLCM_LC2013::_wantsChange. Returns the state for this direction.
+// How many lanes the best continuation from `start` has, as MSVehicle::LaneQ::bestContinuations.
+fn continuation_count(start: u32, route_i: u32, route_end: u32) -> u32 {
+    var n = 1u;
+    var l = start;
+    var r = route_i;
+    var seen = lanes[start].length;
+    for (var h = 0u; h < 12u && seen <= 600.0; h++) {
+        let k = pick_link(l, r, route_end);
+        if (k == NONE) { break; }
+        l = links[k].to_lane;
+        r += 1u;
+        n += 1u;
+        seen += lanes[l].length;
+    }
+    return n;
+}
+
+fn brutto_on(l: u32) -> f32 {
+    if (lane_occupied(l)) { return lane_free[l].brutto; }
+    return 0.0;
+}
+
+// MSLCHelper::getRoundaboutDistBonus: drivers going past the next exit prefer the inner lanes.
+fn roundabout_bonus(e: Veh, neigh: u32, side: i32, best: u32, curr_off: i32) -> f32 {
+    let inner = select(e.lane, neigh, side > 0);
+    let n_curr = continuation_count(e.lane, e.route_i, e.route_end);
+    var n_inner = n_curr;
+    if (side > 0) {
+        n_inner = continuation_count(neigh, e.route_i, e.route_end);
+        if (n_curr < n_inner) { return 0.0; }
+    }
+    let n_best = continuation_count(best, e.route_i, e.route_end);
+    var entered = false;
+    var ahead = 0u;
+    var seen = -e.pos;
+    var l = best;
+    var r = e.route_i;
+    for (var i = 0u; i < n_best; i++) {
+        let on_rb = (lanes[l].flags & LANE_ROUNDABOUT) != 0u;
+        if ((!entered || on_rb) && i >= n_inner) { return 0.0; }
+        if (seen > 300.0) { return 0.0; }
+        if (on_rb) {
+            entered = true;
+            if ((lanes[l].flags & LANE_TO_BIG_JUNCTION) != 0u) { ahead += 1u; }
+        } else if (entered) {
+            break;
+        }
+        seen += lanes[l].length;
+        let k = pick_link(l, r, e.route_end);
+        if (k == NONE) { break; }
+        l = links[k].to_lane;
+        r += 1u;
+    }
+    if (ahead < 2u) { return 0.0; }
+    var outer_occ = 0.0;
+    var inner_occ = 0.0;
+    var distance = 0.0;
+    var ol = best;
+    var il = inner;
+    var via = NONE;
+    var inner_via = NONE;
+    r = e.route_i;
+    entered = false;
+    for (var i = 0u; i < n_best; i++) {
+        if ((lanes[ol].flags & LANE_ROUNDABOUT) != 0u) {
+            entered = true;
+        } else if (entered) {
+            break;
+        }
+        if (entered) {
+            distance += lanes[ol].length;
+            if (via != NONE) { distance += lanes[via].length; }
+        }
+        var discount = 1.0;
+        if (lanes[ol].edge == lanes[e.lane].edge) { discount = (lanes[ol].length - e.pos) / lanes[ol].length; }
+        outer_occ += discount * brutto_on(ol);
+        if (via != NONE) { outer_occ += brutto_on(via); }
+        if (i < n_inner) {
+            inner_occ += discount * brutto_on(il);
+            if (inner_via != NONE) { inner_occ += brutto_on(inner_via); }
+            let ki = pick_link(il, r, e.route_end);
+            if (ki != NONE) {
+                inner_via = NONE;
+                if ((links[ki].flags & L_HAS_VIA) != 0u) { inner_via = links[ki].next_lane; }
+                il = links[ki].to_lane;
+            }
+        }
+        let k = pick_link(ol, r, e.route_end);
+        if (k == NONE) { break; }
+        via = NONE;
+        if ((links[k].flags & L_HAS_VIA) != 0u) { via = links[k].next_lane; }
+        ol = links[k].to_lane;
+        r += 1u;
+    }
+    if (abs(curr_off) > 1 && entered) {
+        let gap = brake_gap(e.speed + ty.accel * dt, ty.decel, dt);
+        let reservation = select(40.0, 20.0, curr_off < 0);
+        if (gap > distance - reservation - e.pos) { return 0.0; }
+    }
+    let extra = f32(ahead) * 7.5;
+    var jam = max(0.0, (outer_occ - inner_occ + extra) / (max(inner_occ, outer_occ) + extra));
+    if ((lanes[e.lane].flags & LANE_ROUNDABOUT) != 0u && side < 0) { jam = 1.0; }
+    return distance * jam * ty.lc_cooperative * 9.0;
+}
+
 fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked: u32, dest: u32, ego: u32) -> u32 {
     let right = side < 0;
     let lca = select(LCA_LEFT, LCA_RIGHT, right);
@@ -543,6 +771,10 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
     if (ty.lc_strategic < 0.0) { la_dist = -1e3; }
 
     let best_lane = u32(i32(e.lane) + clamp(best_offset, -8, 8));
+    var rb_bonus = 0.0;
+    if ((e.flags & F_NEAR_ROUNDABOUT) != 0u) { rb_bonus = roundabout_bonus(e, dest, side, best_lane, curr_offset); }
+    current_dist += rb_bonus;
+    neigh_dist += rb_bonus;
     let best_occ = f32(lc_ahead_load(best_lane, pos, ego)) * len_gap + select(e.occ_best, select(e.occ_left, e.occ_right, right), curr_offset == 0);
     let usable = current_dist - pos - best_occ;
     let cur_occ = f32(lc_ahead_load(e.lane, pos, ego)) * len_gap + e.occ_cur;
@@ -584,7 +816,7 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
             ret |= LCA_STAY | LCA_STRATEGIC;
         } else if (best_offset == 0 && neigh_left * 2.0 < la_dist) {
             ret |= LCA_STAY | LCA_STRATEGIC;
-        } else if (best_offset == 0 && lanes[dest].links_count != 0u
+        } else if (best_offset == 0 && lanes[dest].links_count != 0u && rb_bonus == 0.0
             && ((ty.lc_strategic >= 0.0 && neigh_dist < TURN_LANE_DIST) || (ty.lc_strategic < 0.0 && free_until_end))) {
             ret |= LCA_STAY | LCA_STRATEGIC;
         }
@@ -619,6 +851,10 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
     inconvenience = min(1.0, max(rel, inconvenience));
     let gain_inconvenient = inconvenience > ty.lc_cooperative;
 
+    if (rb_bonus > 0.0) {
+        if (right) { return ret | LCA_STAY | LCA_COOPERATIVE | blocked; }
+        return ret | lca | LCA_COOPERATIVE | blocked;
+    }
     if (right && best_offset == 0 && lane.speed > 80.0 / 3.6 && lc_look > HALT_SPEED) {
         return ret | LCA_STAY | LCA_STRATEGIC | blocked;
     }

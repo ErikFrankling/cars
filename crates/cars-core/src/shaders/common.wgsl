@@ -26,6 +26,7 @@ const F_GLOSA_ACTIVE: u32 = 64u;
 const F_ON_JUNCTION: u32 = 128u;
 const F_HAVE_STOPPED: u32 = 256u; // has stopped for its stop sign
 const F_WILL_PASS: u32 = 512u;     // requested its next link in the last step
+const F_NEAR_ROUNDABOUT: u32 = 8192u; // a roundabout edge lies within 300 m on the route
 const F_HAVE_TO_WAIT: u32 = 2048u; // must stop at its next link, as of the last step
 const F_SCRIPTED: u32 = 1024u;     // gets the speed cap disturbance from Params.script_t0
 
@@ -49,6 +50,8 @@ const C_NO_CROSSING: u32 = 16u;
 // Lane flags.
 const LANE_INTERNAL: u32 = 1u;
 const LANE_ROUNDABOUT: u32 = 2u;
+const LANE_TO_BIG_JUNCTION: u32 = 4u;
+const EDGE_ROUNDABOUT: u32 = 2u;
 
 struct Params {
     dt: f32,

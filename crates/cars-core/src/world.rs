@@ -498,8 +498,15 @@ impl World {
         let tls0 = self.tls.len() as u32;
         self.replica_edge_start.push(edge0);
 
+        let roundabout: Vec<bool> = {
+            let mut r = vec![false; net.edges.len()];
+            for &e in &net.roundabout_edges {
+                r[e as usize] = true;
+            }
+            r
+        };
         // Edges.
-        for e in &net.edges {
+        for (ei, e) in net.edges.iter().enumerate() {
             let mut length = 0.0f32;
             if e.lane_count > 0 {
                 length = net.lanes[e.first_lane as usize].length;
@@ -511,7 +518,7 @@ impl World {
                 first_lane: e.first_lane + lane0,
                 lane_count: e.lane_count,
                 length,
-                flags: u32::from(e.func == EdgeFunc::Internal),
+                flags: u32::from(e.func == EdgeFunc::Internal) | if roundabout[ei] { 2 } else { 0 },
             });
             self.edge_is_normal.push(e.func != EdgeFunc::Internal);
         }
@@ -565,13 +572,11 @@ impl World {
         }
 
         // Lanes.
-        let roundabout: Vec<bool> = {
-            let mut r = vec![false; net.edges.len()];
-            for &e in &net.roundabout_edges {
-                r[e as usize] = true;
-            }
-            r
-        };
+        let mut degree: std::collections::HashMap<&str, u32> = std::collections::HashMap::new();
+        for e in net.edges.iter().filter(|e| e.func != EdgeFunc::Internal) {
+            *degree.entry(e.from.as_str()).or_insert(0) += 1;
+            *degree.entry(e.to.as_str()).or_insert(0) += 1;
+        }
         let mut detector_pos = vec![-1.0f32; net.lanes.len()];
         let mut actuation: Vec<Option<Actuation>> = Vec::new();
         for (id, t) in net.tls.iter().enumerate() {
@@ -603,7 +608,9 @@ impl World {
                 links_count: links.len() as u32,
                 index: l.index,
                 allow: l.allow,
-                flags: u32::from(internal) | if on_roundabout(topo, net, &roundabout, li as u32) { 2 } else { 0 },
+                flags: u32::from(internal)
+                    | if on_roundabout(topo, net, &roundabout, li as u32) { 2 } else { 0 }
+                    | if degree.get(net.edges[l.edge as usize].to.as_str()).copied().unwrap_or(0) > 2 { 4 } else { 0 },
                 key_base: *key_base as u32,
                 key_scale: 1.0 / KEY_METRES,
                 det_pos: detector_pos[li],
