@@ -60,6 +60,55 @@ def chart_data():
     return out
 
 
+TILES = [
+    ("149 s", "Berlin, 24 hours, 2.25M car trips, on one RX 7900 XT"),
+    ("about 7 h", "the same day in SUMO, as published with BeST, 3.4 GHz CPU"),
+    ("343 s", "all 1,134 runs of the thesis sweeps; SUMO needs 8.2 h on the same PC"),
+    ("787.9 s / 789.0 s", "mean trip, Berlin 05:00-10:00, cars / SUMO"),
+]
+
+
+def row(*cells):
+    return "<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>"
+
+
+def tables():
+    out = ["<h2>Same trips, same numbers</h2><p>Mean over all completed trips, then the 95th percentile. Cars has no fitted parameters against these runs.</p>"]
+    out.append("<table><tr><th>Scenario</th><th>Metric</th><th>SUMO</th><th>cars</th><th>SUMO p95</th><th>cars p95</th></tr>")
+    for name, f in (("Berlin 05:00-10:00", "berlin"), ("Mitte, whole day", "mitte"), ("Charlottenburg, whole day", "charlottenburg")):
+        path = ROOT / f"results/{f}_trip_stats.csv"
+        if not path.exists():
+            continue
+        for r in pd.read_csv(path).itertuples():
+            out.append(row(name, r.metric, r.sumo_mean, r.cars_mean, r.sumo_p95, r.cars_p95))
+    out.append("</table>")
+    e = pd.read_csv(ROOT / "results/thesis/errors.csv")
+    out.append("<h2>Thesis sweeps: mean absolute error against SUMO</h2><p>Averaged over all 21 AV shares, 3 seeds each.</p><table><tr><th>Scenario</th><th>Model</th><th>Speed</th><th>Travel time</th><th>Waiting</th><th>Time loss</th></tr>")
+    pct = lambda v: "n/a" if pd.isna(v) else f"{v * 100:.1f}%"
+    for r in e.itertuples():
+        out.append(row(r.scenario, r.tier, pct(r.speed), pct(r.travel_time), pct(r.waiting_time), pct(r.time_loss)))
+    out.append("</table>")
+    out.append("""<h2>Speed</h2><p>SUMO single-threaded on the same PC. Small single scenarios are about even: the GPU wins by running thousands of replicas in one world, and on big networks.</p>
+<table><tr><th>Job</th><th>SUMO</th><th>cars</th><th>Factor</th></tr>""")
+    for a, b, c, d in SPEED:
+        out.append(row(a, b, c, d))
+    out.append("</table>")
+    return "".join(out)
+
+
+SPEED = [
+    ("Bologna sweep, 315 runs", "6.4 h", "196 s", "118x"),
+    ("I-80 sweep, 252 runs", "58 min", "70 s", "49x"),
+    ("Ring sweep, 252 runs", "40 min", "51 s", "47x"),
+    ("Two-signal sweep, 315 runs", "7.5 min", "26 s", "17x"),
+    ("Berlin 05:00-06:00, single run", "177 s", "5.0 s", "35x"),
+    ("Berlin 24 h, single run", "about 7 h (published)", "149 s", "about 170x"),
+    ("Bologna, single run", "73 s", "42 s", "1.8x"),
+    ("I-80, single run", "14 s", "14 s", "1x"),
+    ("Ring, 200 cars, single run", "1.5 s", "2.3 s", "0.6x"),
+]
+
+
 def main():
     data = chart_data()
     tpl = (ROOT / "scripts/report_template.html").read_text()
@@ -69,7 +118,8 @@ def main():
     prefix2 = str(ROOT / "results/phenomena") + "/" if ABS else "../results/phenomena/"
     gallery = "".join(f'<figure><img src="{prefix}{f}" loading="lazy" alt="{f}"><figcaption>{f[:-4]}</figcaption></figure>' for f in figs)
     gallery2 = "".join(f'<figure><img src="{prefix2}{f}" loading="lazy" alt="{f}"><figcaption>{f[:-4]}</figcaption></figure>' for f in ph)
-    html = tpl.replace("__DATA__", json.dumps(data)).replace("__GALLERY__", gallery).replace("__PHENOMENA__", gallery2)
+    tiles = "".join(f'<div class="tile"><b>{a}</b><span>{b}</span></div>' for a, b in TILES)
+    html = tpl.replace("__DATA__", json.dumps(data)).replace("__GALLERY__", gallery).replace("__PHENOMENA__", gallery2).replace("__TILES__", tiles).replace("__MORE__", tables())
     out = Path(sys.argv[1]) if len(sys.argv) > 1 and not sys.argv[1].startswith("--") else ROOT / "report/index.html"
     out.write_text(html)
     print("wrote", out, len(html))

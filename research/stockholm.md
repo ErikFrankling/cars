@@ -121,3 +121,7 @@ covers 07:00–08:00 only; cars covers 24 hours.
 Both final MP4s were probed as 1920×1080, 30 fps, exactly 40 seconds. Frames
 at 20 seconds were extracted and visually inspected: readable titles/captions,
 city-wide congestion in the timelapse and visible Slussen approaches in the zoom.
+
+## Demand scale used for the report
+
+With the final engine the fitted 2.9M trips overload the network from 06:00 on: over 110,000 cars running and a million teleports. `scripts/stockholm/retime.py` keeps 60% of the trips and spreads each source band over a typical weekday profile instead of uniform hours, which removes the jump at 06:00. That profile is an assumption, the source has only three bands. At 60%, 82% of the 10,013 matched edges have daily GEH below 5 and r² is 0.61, against 70% and 0.50 at full demand. The scale was picked for this fit, so the fit is not independent validation. Teleports stay high, about 285,000, and the guessed signals and random route pool are the first things to replace.

@@ -188,7 +188,7 @@ def city(name, title, sumo_dir, cars_summary, cars_edges, cars_trips, sim_start=
         fig, ax = plt.subplots(figsize=(6, 4.6))
         ax.plot(tot.samples_s / step, tot.distance_s / step, color=SUMO, marker="o", markersize=3, linewidth=1, label="SUMO")
         ax.plot(tot.samples_g / step, tot.distance_g / step, color=CARS, marker="o", markersize=3, linewidth=1, label="cars")
-        ax.set_title(f"{title}: macroscopic fundamental diagram")
+        ax.set_title("Macroscopic fundamental diagram", fontsize=11)
         ax.set_xlabel("accumulation, vehicles")
         ax.set_ylabel("production, vehicle-m/s")
         ax.legend()
