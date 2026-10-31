@@ -80,6 +80,10 @@ pub struct GpuVeh {
     pub lc_own: u32,
     pub left_space: f32,
     pub blocker: f32,
+    pub occ_cur: f32,
+    pub occ_left: f32,
+    pub occ_right: f32,
+    pub occ_best: f32,
     pub pad: u32,
 }
 

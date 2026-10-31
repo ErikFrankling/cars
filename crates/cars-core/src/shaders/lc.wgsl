@@ -21,7 +21,7 @@ const LCA_STAY: u32 = 8192u;
 const LCA_DONT_BRAKE: u32 = 16384u;
 const LCA_WANTS: u32 = LCA_LEFT | LCA_RIGHT;
 const HELP_OVERTAKE: f32 = 10.0 / 3.6;
-const MIN_FALLBEHIND: f32 = 0.5;
+const MIN_FALLBEHIND: f32 = 7.0 / 3.6;
 const TURN_LANE_DIST: f32 = 200.0;
 
 @compute @workgroup_size(64)
@@ -29,11 +29,21 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
     let i = id.x;
     if (i >= G.n_active) { return; }
     let e = cur[i];
-    if ((e.flags & (F_BEST_DIRTY | F_REMOVED)) != F_BEST_DIRTY || is_internal(e.lane)) { return; }
+    if ((e.flags & F_REMOVED) != 0u || is_internal(e.lane)) { return; }
+    // SUMO refreshes occupation every step. Every two seconds is close, and much cheaper.
+    let periodic = ((G.step + e.trip) % max(1u, u32(2.0 / P.dt))) == 0u;
+    if ((e.flags & F_BEST_DIRTY) == 0u && !periodic) { return; }
     ty = types[e.vtype];
     dt = P.dt;
     let ed = edges[lanes[e.lane].edge];
     if (ed.lane_count > 16u) { return; }
+    if (ed.lane_count == 1u) {
+        cur[i].flags &= ~F_BEST_DIRTY;
+        return;
+    }
+    let len_gap = ty.length + ty.min_gap;
+    var occ: array<f32, 16>;
+    var next_occ: array<f32, 16>;
     var a: array<f32, 16>;
     var b: array<f32, 16>;
     var off: array<i32, 16>;
@@ -63,19 +73,23 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
             let l = lanes[edge.first_lane + k];
             a[k] = 0.0;
             off[k] = 0;
+            occ[k] = 0.0;
             if ((l.allow & ty.vclass) != ty.vclass) { continue; }
             a[k] = l.length;
             if (ri + 1u < stop) {
                 var cont = 0.0;
                 var co = 1000;
+                var co_occ = 0.0;
                 for (var j = 0u; j < l.links_count; j++) {
                     let lk = links[l.links_start + j];
                     if (lk.to_edge != routes[ri + 1u] || (lanes[lk.to_lane].allow & ty.vclass) != ty.vclass) { continue; }
                     let nk = min(lanes[lk.to_lane].index, 15u);
                     if (b[nk] > cont || (b[nk] == cont && abs(next_off[nk]) < abs(co))) {
                         cont = b[nk]; co = next_off[nk];
+                        co_occ = next_occ[nk] + f32(lane_load(lk.to_lane)) * len_gap;
                     }
                 }
+                occ[k] = co_occ;
                 if (cont > 0.0) {
                     if (abs(co) < 2 && cont == next_best) { cont = next_best; }
                     a[k] += cont; off[k] = co;
@@ -94,19 +108,27 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
             next_off[k] = 0;
             if (a[k] < best || abs(off[k]) > abs(best_offset)) { next_off[k] = nearest; }
         }
+        for (var k = 0u; k < count; k++) { next_occ[k] = occ[k]; }
         if (ri == e.route_i) { break; }
     }
     let k = lanes[e.lane].index;
     cur[i].best_cur = b[k];
     cur[i].best_left = 0.0;
     cur[i].best_right = 0.0;
+    cur[i].occ_cur = occ[k];
+    cur[i].occ_left = 0.0;
+    cur[i].occ_right = 0.0;
+    let best_k = u32(clamp(i32(k) + next_off[k], 0, 15));
+    cur[i].occ_best = occ[best_k];
     var packed = next_off[k] & 255;
     if (k + 1u < ed.lane_count) {
         cur[i].best_left = b[k + 1u];
+        cur[i].occ_left = occ[k + 1u];
         if (next_off[k + 1u] == 0) { packed |= 256; }
     }
     if (k > 0u) {
         cur[i].best_right = b[k - 1u];
+        cur[i].occ_right = occ[k - 1u];
         if (next_off[k - 1u] == 0) { packed |= 512; }
     }
     cur[i].best_off = packed;
@@ -130,6 +152,9 @@ struct LcNeighbors {
     leader_trip: u32,
     leader_wait: f32,
     leader_len: f32,
+    leader_vtype: u32,
+    leader_own: u32,
+    leader_sf: f32,
 }
 
 fn lc_consider_follower(r: ptr<function, LcNeighbors>, k: u32, fp: f32, egoback: f32) {
@@ -170,7 +195,7 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
                 let ot = types[o.vtype];
                 r.leader = k; r.gap = o.pos - ot.length - pos - ty.min_gap;
                 r.speed = o.speed; r.decel = ot.apparent; r.acc = o.acc; r.leader_trip = o.trip;
-                r.leader_wait = o.wait; r.leader_len = ot.length;
+                r.leader_wait = o.wait; r.leader_len = ot.length; r.leader_vtype = o.vtype; r.leader_own = o.lc_own; r.leader_sf = o.sf;
                 break;
             }
         }
@@ -195,7 +220,7 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
             if (o.pos >= pos) {
                 if (g < r.gap) {
                     r.leader = k; r.gap = g; r.speed = o.speed; r.decel = ot.apparent; r.acc = o.acc;
-                    r.leader_trip = o.trip; r.leader_wait = o.wait; r.leader_len = ot.length;
+                    r.leader_trip = o.trip; r.leader_wait = o.wait; r.leader_len = ot.length; r.leader_vtype = o.vtype; r.leader_own = o.lc_own; r.leader_sf = o.sf;
                 }
             } else {
                 lc_consider_follower(&r, k, o.pos, egoback);
@@ -315,26 +340,41 @@ var<private> lc_left_space: f32;
 var<private> lc_blocker: f32;
 var<private> lc_look: f32;
 
+fn overtake_distance(leader_vtype: u32, f_len: f32, gap: f32, leader_speed: f32, follower_speed: f32, f_decel: f32) -> f32 {
+    let self_ty = ty;
+    ty = types[leader_vtype];
+    let sec = secure_gap(leader_speed, follower_speed, f_decel);
+    let lg = ty.length + ty.min_gap;
+    ty = self_ty;
+    return max(gap + lg + f_len + sec, 0.0);
+}
+
+// SUMO avoids overtaking on the right unless congested or on a slow road.
+fn avoid_overtake_right(speed: f32, limit: f32) -> bool {
+    return !(speed < 60.0 / 3.6 || limit < 60.1 / 3.6);
+}
+
 fn inform_leader(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f32, vmax: f32, limit: f32) -> f32 {
     var planned = e.speed;
     planned = min(planned, stop_speed(e.speed, lc_left_space - lc_blocker, ty.decel, true, vmax));
-    if (n.leader == NONE && n.gap > 1e8) { return planned; }
+    if (n.gap > 1e8) { return planned; }
     let nv_next = n.speed - max(1.0, -n.acc) * dt;
     let next_gap = n.gap + (nv_next - planned) * dt;
     if ((blocked & LCA_BLOCK_LEADER) != 0u) {
-        // overtakeDistance: drive past the leader and leave a secure gap ahead of it.
+        var over = max(n.gap, 0.0) + ty.length + n.leader_len + ty.min_gap;
+        if (n.leader_trip != NONE) { over = overtake_distance(n.leader_vtype, ty.length, n.gap, n.speed, e.speed, ty.decel); }
         let dv = planned - n.speed;
-        let over = max(0.0, n.gap + n.leader_len + ty.min_gap + ty.length);
         var ot: f32;
         if (dv > 0.0) { ot = over / dv; }
-        else if (n.leader_wait > 20.0 && ty.length + ty.min_gap + n.leader_len + ty.min_gap <= lc_left_space) { ot = remaining - 1.0; }
+        else if (n.leader_wait > 5.0 && ty.length + ty.min_gap + n.leader_len + ty.min_gap <= lc_left_space) { ot = remaining - 1.0; }
         else { ot = remaining + 1.0; }
         let fall_behind = dv < 0.0
+            || (dir == LCA_M_LEFT && avoid_overtake_right(e.speed, limit))
             || lc_left_space - lc_blocker - brake_gap(e.speed, ty.decel, ty.tau) < over
             || remaining < ot;
         if (fall_behind) {
             if (n.leader_trip != NONE) { atomicOr(&adv_flags[n.leader_trip], dir | LCA_AM_LEADER); }
-            let tgt = max(max(min_next_speed(e.speed), follow_speed(e.speed, next_gap, nv_next, n.decel, false, vmax, limit)), 0.0);
+            let tgt = max(min_next_speed(e.speed), follow_speed(e.speed, next_gap, nv_next, n.decel, false, vmax, limit));
             if (tgt < e.speed) {
                 var decel = ty.decel;
                 if (remaining != 0.0) { decel = min(ty.decel, max(MIN_FALLBEHIND, (e.speed - tgt) / remaining)); }
@@ -346,7 +386,7 @@ fn inform_leader(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f32,
             return planned;
         }
         // Overtake: ask the leader to hold its speed.
-        if (n.leader_trip != NONE && n.leader_wait <= 20.0) {
+        if (n.leader_trip != NONE && n.leader_wait <= 5.0) {
             lc_advice(n.leader_trip, n.speed);
             atomicOr(&adv_flags[n.leader_trip], dir | LCA_AM_LEADER);
         }
@@ -365,6 +405,7 @@ fn inform_follower(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f3
     let f_trip = n.f_trip;
     let v = n.f_speed;
     let gap = n.f_gap;
+    let limit = lanes[e.lane].speed;
     if ((blocked & LCA_BLOCK_FOLLOWER) != 0u) {
         ty = ft;
         if (planned - v >= HELP_OVERTAKE) {
@@ -383,32 +424,52 @@ fn inform_follower(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f3
         let decel_gap = gap + dv;
         let sec = secure_gap(new_1s, planned, self_ty.decel);
         var out = -1.0;
+        var ego_yields = false;
         if (decel_gap > 0.0 && decel_gap >= sec) {
-            let v1 = max(new_v, follow_speed(v, gap + planned * dt, planned, self_ty.decel, false, lanes[e.lane].speed, lanes[e.lane].speed));
-            out = max(new_v, follow_speed(v, gap + (planned - v1) * dt, planned, self_ty.decel, false, lanes[e.lane].speed, lanes[e.lane].speed));
+            let v1 = max(new_v, follow_speed(v, gap + planned * dt, planned, self_ty.decel, false, limit, limit));
+            out = max(new_v, follow_speed(v, gap + (planned - v1) * dt, planned, self_ty.decel, false, limit, limit));
         } else if (dv > 0.0 && dv * remaining > sec - decel_gap + POS_EPS) {
             out = new_v;
+        } else if (dir == LCA_M_RIGHT && avoid_overtake_right(v, limit)) {
+            out = max(new_v, HELP_OVERTAKE);
         } else {
             var vhelp = max(v, e.speed + HELP_OVERTAKE);
-            if (v > e.speed && ((dir == LCA_M_RIGHT && e.wait > 5.0) || (dir == LCA_M_LEFT && planned > 5.0 / 3.6))) {
+            if (v > e.speed && (dir == LCA_M_RIGHT
+                || (dir == LCA_M_LEFT && planned > 27.0)
+                || (dir == LCA_M_LEFT && lanes[e.lane].length > 200.0))) {
                 vhelp = max(new_v, e.speed + HELP_OVERTAKE);
                 if ((v - e.speed) / help_decel < remaining) { out = vhelp; }
             }
-            if (out < 0.0) { out = vhelp; }
+            if (out < 0.0) {
+                out = vhelp;
+                ego_yields = true;
+            }
         }
         ty = self_ty;
         lc_advice(f_trip, out);
         atomicOr(&adv_flags[f_trip], dir | LCA_AM_FOLLOWER);
+        if (ego_yields) {
+            // Let the follower pass: fall back far enough for it to get by in time.
+            let over = overtake_distance(e.vtype, ft.length, gap, planned, out, ft.decel);
+            lc_advice(e.trip, max(out - over / remaining, e.speed - ty.decel * dt));
+        }
     } else if ((blocked & LCA_BLOCK_LEADER) != 0u) {
-        // Keep a secure gap to the vehicle slowing to fall behind its leader.
+        // MSLCHelper::getSpeedPreservingSecureGap
         ty = ft;
-        let vs = max(new_v_min(v), follow_speed(v, gap + planned * dt, planned, self_ty.decel, false, lanes[e.lane].speed, lanes[e.lane].speed));
+        let next_gap = gap + (planned - v) * dt;
+        let sg = secure_gap(v, planned, self_ty.decel);
+        var vs: f32;
+        if (next_gap >= sg) {
+            let vm = follow_speed(v, gap + (planned - max_next_speed(v)) * dt, planned, self_ty.decel, false, limit, limit);
+            vs = max(vm, v);
+        } else {
+            let vm = follow_speed(v, next_gap, planned, self_ty.decel, false, limit, limit);
+            vs = max(vm, min_next_speed(v));
+        }
         ty = self_ty;
         lc_advice(f_trip, vs);
     }
 }
-
-fn new_v_min(v: f32) -> f32 { return min_next_speed(v); }
 
 // MSLCM_LC2013::_wantsChange. Returns the state for this direction.
 fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked: u32, dest: u32) -> u32 {
@@ -433,19 +494,42 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
     if (ty.lc_strategic < 0.0) { la_dist = -1e3; }
 
     let best_lane = u32(i32(e.lane) + clamp(best_offset, -8, 8));
-    let best_occ = f32(lane_load(best_lane)) * len_gap;
+    let best_occ = f32(lane_load(best_lane)) * len_gap + select(e.occ_best, select(e.occ_left, e.occ_right, right), curr_offset == 0);
     let usable = current_dist - pos - best_occ;
-    let cur_occ = f32(lane_load(e.lane)) * len_gap;
-    let neigh_occ = f32(lane_load(dest)) * len_gap;
+    let cur_occ = f32(lane_load(e.lane)) * len_gap + e.occ_cur;
+    let neigh_occ = f32(lane_load(dest)) * len_gap + select(e.occ_left, e.occ_right, right);
     let max_jam = max(cur_occ, neigh_occ);
     let neigh_left = max(0.0, neigh_dist - pos - max_jam);
     let has_own = own.gap < 1e8;
     let has_neigh = neigh.gap < 1e8;
 
     var ret = 0u;
+    var this_limit = vmax;
+    var left_to_avoid = false;
+    let check_otr = avoid_overtake_right(e.speed, lane.speed);
+    let tl = 0.2 / max(1e-6, ty.lc_speed_gain);
+    let tr = tl / max(1e-6, ty.lc_speed_gain_right);
     if (change_to_best && best_offset == curr_offset && usable / f32(abs(best_offset)) < la_dist) {
         ret |= lca | LCA_STRATEGIC | LCA_URGENT;
     } else {
+        if (has_neigh && neigh.leader_trip != NONE && check_otr && !right) {
+            let nv_max = min(lanes[dest].speed * neigh.leader_sf, types[neigh.leader_vtype].max_speed);
+            let dv = max(vmax - nv_max, e.speed - neigh.speed);
+            if (dv > 0.0) {
+                let v_max_decel = max(0.0, e.speed - ty.decel * dt);
+                let v_follow = follow_speed(e.speed, neigh.gap, neigh.speed, neigh.decel, false, vmax, lane.speed);
+                var v_safe = max(v_max_decel, neigh.speed - HELP_OVERTAKE);
+                if (v_follow >= v_max_decel) { v_safe = v_follow; }
+                if (lc_pl < tl) { v_safe = max(v_safe, neigh.speed); }
+                this_limit = min(this_limit, v_safe);
+                if ((lc_own & LCA_RIGHT) == 0u) { lc_advice(e.trip, v_safe); }
+                let future = follow_speed(e.speed, neigh.gap - dv * 8.0, neigh.speed, neigh.decel, false, vmax, lane.speed);
+                if (future < v_safe) {
+                    lc_pl += dt * dv / max(vmax, 10.0);
+                    left_to_avoid = true;
+                }
+            }
+        }
         let free_until_end = !has_own || neigh_dist - pos <= own.gap;
         if (!change_to_best && neigh_left / f32(abs(best_offset) + 2) < la_dist) {
             ret |= LCA_STAY | LCA_STRATEGIC;
@@ -460,12 +544,15 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
     if ((ret & LCA_URGENT) != 0u) {
         lc_left_space = current_dist - pos;
         if (change_to_best && abs(best_offset) > 1 && e.route_i + 1u < e.route_end) {
-            lc_blocker = max(f32(abs(best_offset) - 1) * len_gap, lc_blocker);
+            // getExtraReservation
+            if (neigh_dist - current_dist <= len_gap) { lc_blocker = max(select(40.0, 20.0, best_offset < 0), lc_blocker); }
         }
-        // updateBlockerLength: leave room for the vehicle that blocks us to get ahead.
-        if (neigh.leader_trip != NONE && (neigh.gap < 0.0 || (blocked & LCA_BLOCK_LEADER) != 0u)) {
+        // updateBlockerLength: leave room for a neighbour that wants to come the opposite way.
+        let counter = select(LCA_RIGHT, LCA_LEFT, right);
+        if (neigh.leader_trip != NONE && (neigh.leader_own & counter) != 0u) {
+            let potential = lc_left_space - POS_EPS - brake_gap(e.speed, ty.decel, 0.0);
             let room = neigh.leader_len + ty.min_gap;
-            if (lc_left_space - POS_EPS >= lc_blocker + room) { lc_blocker += room; }
+            if (room <= potential) { lc_blocker = max(room, lc_blocker); }
         }
         let lanes_left = f32(max(1, abs(best_offset)));
         let remaining = max(dt, lc_left_space / max(lc_look, EPS) / lanes_left / 2.0);
@@ -475,10 +562,7 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
     }
     let accelerating = (has_neigh && neigh.acc > 0.0) || (has_own && own.acc > 0.0);
     let neigh_safe = min(neigh_vmax, anticipate(neigh.gap, has_neigh, neigh_dist, neigh_vmax, lanes[dest].speed, e.speed, neigh.speed, neigh.decel, accelerating));
-    let this_safe = min(vmax, anticipate(own.gap, has_own, current_dist, vmax, lane.speed, e.speed, own.speed, own.decel, accelerating));
-    let tl = 0.2 / max(1e-6, ty.lc_speed_gain);
-    let tr = tl / max(1e-6, ty.lc_speed_gain_right);
-    let thr = select(tl, tr, right);
+    let this_safe = min(this_limit, anticipate(own.gap, has_own, current_dist, vmax, lane.speed, e.speed, own.speed, own.decel, accelerating));
     var inconvenience: f32;
     if (right) { inconvenience = lc_pl / tr; } else { inconvenience = lc_pr / tl; }
     var rel = 0.0;
@@ -507,6 +591,10 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
                 full_gap = max(0.0, min(full_gap, neigh.gap - secure_gap(vmax, neigh.speed, neigh.decel)));
                 seconds = min(seconds, full_gap / (vmax - neigh.speed));
             }
+            if (check_otr && has_own && own.leader_trip != NONE && min(lane.speed * own.leader_sf, types[own.leader_vtype].max_speed) < vmax) {
+                full_gap = min(full_gap, own.gap);
+                seconds = min(seconds, full_gap / (vmax - own.speed));
+            }
             if (ty.lc_speed_gain > 0.0) { lc_pk -= dt * tr * (seconds / acceptance) / 5.0; }
             if (lc_pk * ty.lc_keep_right < -tr) { return ret | lca | LCA_KEEPRIGHT | blocked; }
         }
@@ -523,7 +611,7 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
         } else {
             lc_pl += dt * gain;
         }
-        if (lc_pl > tl && gain > EPS && neigh_dist / max(0.1, e.speed) > 20.0) {
+        if (lc_pl > tl && (gain > EPS || left_to_avoid) && neigh_dist / max(0.1, e.speed) > 20.0) {
             var req = ret | lca | LCA_SPEEDGAIN;
             if (lc_pl > 50.0) {
                 req |= LCA_URGENT;

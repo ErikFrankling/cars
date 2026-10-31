@@ -117,6 +117,10 @@ struct Veh {
     lc_own: u32,
     left_space: f32,
     blocker: f32,
+    occ_cur: f32,
+    occ_left: f32,
+    occ_right: f32,
+    occ_best: f32,
     pad: u32,
 }
 
