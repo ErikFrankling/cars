@@ -255,6 +255,8 @@ def macro_compare(name, sumo, cars, d, dt, end):
         st.append({k: float(t.get(k)) for k in ("arrival", "duration") } | {"speed": float(t.get("routeLength"))/float(t.get("duration"))})
     with open(d / "trips.csv") as f:
         ct = [{k: float(v) for k, v in r.items() if k != "trip"} for r in csv.DictReader(f)]
+    for t in ct:
+        t["speed"] = t["route_length"] / t["duration"]
     a, b = stats(sumo, st), stats(cars, ct)
     share_error = max((abs(a["share"].get(l, 0)-b["share"].get(l, 0)) for l in a["share"].keys() | b["share"].keys()), default=0)
     print("scenario | completed S/C | travel S/C | flow S/C | speed S/C | changes S/C | max lane share pp")
