@@ -99,7 +99,7 @@ pub fn run(args: Args) {
     let t = Instant::now();
     let mut fcd = args.fcd.as_ref().map(|p| std::io::BufWriter::new(std::fs::File::create(p).expect("fcd")));
     if let Some(f) = fcd.as_mut() {
-        writeln!(f, "time,trip,lane,pos,speed,acc").unwrap();
+        writeln!(f, "time,trip,lane,pos,speed,acc,wait,own,items,best_off").unwrap();
     }
     let mut summary = args.summary_csv.as_ref().map(|p| std::io::BufWriter::new(std::fs::File::create(p).expect("summary")));
     if let Some(f) = summary.as_mut() {
@@ -163,7 +163,7 @@ pub fn run(args: Args) {
                     if v.flags & 1 != 0 {
                         continue;
                     }
-                    writeln!(f, "{:.2},{},{},{:.4},{:.4},{:.4}", args.begin + (done - 1) as f32 * args.dt, demand.ids[demand.trips[v.trip as usize].id as usize], net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc).unwrap();
+                    writeln!(f, "{:.2},{},{},{:.4},{:.4},{:.4},{:.1},{},{},{}", args.begin + (done - 1) as f32 * args.dt, demand.ids[demand.trips[v.trip as usize].id as usize], net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc, v.wait, v.lc_own, v.n_items, v.best_off).unwrap();
                 }
             }
         } else {
