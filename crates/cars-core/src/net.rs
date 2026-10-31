@@ -65,6 +65,8 @@ pub struct Lane {
     pub length: f32,
     pub width: f32,
     pub allow: u32,
+    pub change_left: u32,
+    pub change_right: u32,
     pub shape: Vec<[f32; 2]>,
 }
 
@@ -282,6 +284,8 @@ impl Net {
             length: attr_f32(e, "length").unwrap_or(0.1),
             width: attr_f32(e, "width").unwrap_or(3.2),
             allow,
+            change_left: attr(e, "changeLeft").map(|s| vclass_mask(&s)).unwrap_or(u32::MAX),
+            change_right: attr(e, "changeRight").map(|s| vclass_mask(&s)).unwrap_or(u32::MAX),
             shape: attr(e, "shape").map(|s| parse_shape(&s)).unwrap_or_default(),
         });
         self.edges[edge as usize].lane_count += 1;

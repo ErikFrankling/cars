@@ -180,6 +180,7 @@ fn clear_lanes(@builtin(global_invocation_id) id: vec3u) {
     atomicStore(&partial_occ[id.x], NONE);
     atomicStore(&tail[id.x], NONE);
     atomicStore(&entrant[id.x], NONE);
+    for (var k = 0u; k < 64u; k++) { atomicStore(&claims[id.x * 64u + k], NONE); }
 }
 
 fn pack_back(back: f32, speed: f32) -> u32 {
@@ -809,6 +810,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     let i = id.x;
     if (i >= G.n_active) { return; }
     var e = cur[i];
+    e.flags &= ~F_LANE_CHANGED;
     ty = types[e.vtype];
     dt = P.dt;
     let base = i * MAX_ITEMS;
@@ -1048,8 +1050,10 @@ fn lane_is_good(l: u32, route_i: u32, route_end: u32) -> bool {
 }
 
 fn lane_load(l: u32) -> u32 {
-    if (!lane_occupied(l)) { return 0u; }
-    return seg[l].end - seg[l].first;
+    var count = 0u;
+    if (lane_occupied(l)) { count = seg[l].end - seg[l].first; }
+    if (atomicLoad(&tail[l]) != NONE) { count += 1u; }
+    return count;
 }
 
 fn choose_lane(ed: Edge, t: Trip, rng: ptr<private, u32>) -> u32 {
@@ -1089,7 +1093,15 @@ fn choose_lane(ed: Edge, t: Trip, rng: ptr<private, u32>) -> u32 {
             let c = ed.first_lane + l;
             if ((lanes[c].allow & ty.vclass) == 0u) { continue; }
             if (round == 0u && mode != -3 && !lane_is_good(c, t.route_start, t.route_end)) { continue; }
-            let load = lane_load(c);
+            var load = lane_load(c);
+            let packed = atomicLoad(&tail[c]);
+            if (packed != NONE) {
+                let vmax = min(lanes[c].speed * t.sf, ty.max_speed);
+                let pos = min(ty.length + POS_EPS, ed.length);
+                let gap = unpack_back(packed) - pos - ty.min_gap;
+                let safe = min(vmax, safe_follow(gap, vmax, unpack_speed(packed), ty.apparent, true));
+                load += u32(max(0.0, vmax - safe) * 1000.0) * 1024u;
+            }
             if (load < best_load) {
                 best_load = load;
                 best = c;
@@ -1163,7 +1175,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
         }
         if (p != NONE) {
             let b = unpack_back(p);
-            if (b >= pos - ty.length && b < lead_back) {
+            if (b >= pos - ty.length - 0.125 && b < lead_back) {
                 lead_back = b;
                 lead_v = unpack_speed(p);
             }
