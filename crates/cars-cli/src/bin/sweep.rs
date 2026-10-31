@@ -189,9 +189,15 @@ fn main() {
     let t = Instant::now();
     let mut done = 0;
     let mut last = Instant::now();
+    let mut vehicle_updates = 0u64;
+    let mut peak = 0u64;
     while done < steps {
         let next_stop = ((done / interval) + 1) * interval;
+        let n0 = sim.globals(&gpu).n_active as u64;
         sim.run(&gpu, next_stop.min(steps) - done);
+        let n1 = sim.globals(&gpu).n_active as u64;
+        vehicle_updates += (n0 + n1) / 2 * (next_stop.min(steps) - done);
+        peak = peak.max(n1);
         done = next_stop.min(steps);
         edges.collect(&gpu, &sim, &world);
         if last.elapsed().as_secs_f64() > 5.0 {
@@ -211,5 +217,5 @@ fn main() {
     for m in &metrics {
         writeln!(f, "{},{},{},{},{},{},{},{},{}", m.label, m.completed, m.travel_time, m.waiting_time, m.time_loss, m.speed, m.running, m.edge_flow, m.density).ok();
     }
-    println!("wall_seconds={wall:.2} steps={steps} replicas={}", replicas.len());
+    println!("wall_seconds={wall:.2} steps={steps} replicas={} peak_vehicles={peak} {:.1} M updates/s", replicas.len(), vehicle_updates as f64 / wall / 1e6);
 }
