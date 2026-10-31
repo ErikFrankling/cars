@@ -1,0 +1,4 @@
+{"keyframes":[{"time":27000,"center":[23500,13000],"metres_per_pixel":32},{"time":27400,"center":[14500,14600],"metres_per_pixel":10},{"time":27900,"center":[13700,14620],"metres_per_pixel":1.6},{"time":29000,"center":[13700,14620],"metres_per_pixel":1.1}],
+ "captions":[{"from":27000,"to":27300,"text":"07:30 in Berlin, the whole city at once"},
+ {"from":27400,"to":27900,"text":"Zooming into Charlottenburg, still simulating all of it"},
+ {"from":27900,"to":29000,"text":"Ernst-Reuter-Platz: each dot is a car, coloured by speed"}]}

@@ -57,7 +57,8 @@ def speed():
         w = csv.writer(f)
         w.writerow(["case", "engine", "sim_seconds", "dt", "wall_total", "wall_sim", "updates_per_s"])
         for name, c in CASES.items():
-            for fn in (lambda x: run_sumo(x, 1), lambda x: run_sumo(x, 4), run_cars):
+            engines = [lambda x: run_sumo(x, 1), run_cars] if name == "berlin_0500" else [lambda x: run_sumo(x, 1), lambda x: run_sumo(x, 4), run_cars]
+            for fn in engines:
                 r = fn(c)
                 w.writerow([name, r["engine"], c["end"] - c["begin"], c["dt"], round(r["wall"], 2), round(r["sim_wall"], 2), round(r["ups"])])
                 f.flush()

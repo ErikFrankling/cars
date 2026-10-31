@@ -1,0 +1,67 @@
+<!doctype html><html><head><meta charset="utf-8"><title>cars: GPU traffic simulator against SUMO</title>
+<style>
+:root{--c-sumo:#eb6834;--c-cars:#2a78d6;--ink:var(--foreground,#0b0b0b);--ink2:var(--muted-foreground,#52514e);--line:var(--border,#e1e0d9)}
+body{font-family:var(--font-sans,system-ui,-apple-system,"Segoe UI",sans-serif);color:var(--ink);margin:0}
+h2{font-size:16px;margin:20px 0 4px}p{color:var(--ink2);font-size:13px;margin:2px 0 10px;line-height:1.45}
+.chart{position:relative;margin-bottom:6px}.chart svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--ink2);margin:0 0 4px}.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.tip{position:absolute;pointer-events:none;background:var(--popover,#fff);color:var(--popover-foreground,#000);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;display:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tile{border:1px solid var(--line);border-radius:var(--radius,8px);padding:10px 12px}.tile b{display:block;font-size:22px;font-weight:600}.tile span{font-size:12px;color:var(--ink2)}
+table{border-collapse:collapse;font-size:12.5px;width:100%;margin:6px 0 10px}th,td{text-align:right;padding:3px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}th:first-child,td:first-child{text-align:left}
+.small{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.small h4{font-size:12px;margin:0;font-weight:600}
+figure{margin:0 0 14px}figure img{width:100%;border:1px solid var(--line);border-radius:6px}figcaption{font-size:11px;color:var(--ink2)}.gal{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:10px}
+</style></head><body>
+<div id="tiles" class="grid">__TILES__</div>
+<h2>Berlin, every car, morning rush: vehicles on the road</h2>
+<p>SUMO 1.28 against cars, same network and demand, 05:00 to 10:00. No calibration between them, the same rules ported.</p>
+<div id="berlin"></div>
+<h2>Charlottenburg cutout, a whole day: vehicles on the road</h2>
+<p>330,000 trips through the district. The lines lie on top of each other.</p>
+<div id="char"></div>
+<h2>Thesis sweeps: mean speed against AV share</h2>
+<p>SUMO numbers come straight from the thesis results. Each small chart is one AV model, cars on the GPU re-ran all 21 penetrations and 3 seeds.</p>
+<div id="sweeps"></div>
+<h2>Whole Berlin, 24 hours, on the GPU</h2>
+<p>No SUMO run to compare after 10:00 (a full SUMO day takes about 7 hours). Peak near 38,000 cars at once.</p>
+<div id="day"></div>
+__MORE__
+<h2>All figures</h2><div class="gal">__GALLERY__</div>
+<h2>Phenomena</h2><div class="gal">__PHENOMENA__</div>
+<script>
+const D=__DATA__;
+const css=v=>v;
+function hhmm(s){const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')}
+function lineChart(el,sets,opt){
+ const W=opt.w||700,H=opt.h||230,L=opt.l??48,R=10,T=8,B=opt.b??24;
+ const names=Object.keys(sets),all=names.flatMap(n=>sets[n]);
+ const xs=all.map(p=>p[0]),ys=all.map(p=>p[1]);
+ const x0=Math.min(...xs),x1=Math.max(...xs),y0=opt.y0??0,y1=Math.max(...ys)*1.05||1;
+ const X=x=>L+(x-x0)/(x1-x0||1)*(W-L-R),Y=y=>H-B-(y-y0)/(y1-y0||1)*(H-T-B);
+ const col={SUMO:'var(--c-sumo)',cars:'var(--c-cars)'};
+ const ticks=opt.ticks||5;let g='';
+ for(let i=0;i<=ticks;i++){const v=y0+(y1-y0)*i/ticks,yy=Y(v);g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${yy+3}" font-size="10" text-anchor="end" fill="currentColor" opacity=".6">${(opt.fy||(v=>Math.round(v).toLocaleString()))(v)}</text>`}
+ const xt=opt.xticks||6;for(let i=0;i<=xt;i++){const v=x0+(x1-x0)*i/xt;g+=`<text x="${X(v)}" y="${H-7}" font-size="10" text-anchor="middle" fill="currentColor" opacity=".6">${(opt.fx||hhmm)(v)}</text>`}
+ const paths=names.map(n=>`<path d="M${sets[n].map(p=>X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)).join('L')}" fill="none" stroke="${col[n]||'var(--c-cars)'}" stroke-width="2"${n==='cars'&&names.length>1?' stroke-dasharray="5 3"':''} stroke-linejoin="round"/>`).join('');
+ const legend=names.length>1?`<div class="legend">${names.map(n=>`<span><i style="background:${col[n]}"></i>${n}</span>`).join('')}</div>`:'';
+ el.innerHTML=`<div class="chart">${legend}<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${opt.label||''}">${g}${paths}<line class="cross" y1="${T}" y2="${H-B}" stroke="currentColor" opacity=".3" style="display:none"/></svg><div class="tip"></div></div>`;
+ const svg=el.querySelector('svg'),tip=el.querySelector('.tip'),cross=el.querySelector('.cross');
+ svg.addEventListener('mousemove',e=>{const r=svg.getBoundingClientRect(),mx=(e.clientX-r.left)/r.width*W;if(mx<L||mx>W-R){tip.style.display='none';cross.style.display='none';return}
+  const xv=x0+(mx-L)/(W-L-R)*(x1-x0);const rows=names.map(n=>{const p=sets[n].reduce((a,b)=>Math.abs(b[0]-xv)<Math.abs(a[0]-xv)?b:a);return{n,p}});
+  cross.setAttribute('x1',X(rows[0].p[0]));cross.setAttribute('x2',X(rows[0].p[0]));cross.style.display='';
+  tip.innerHTML=(opt.fx||hhmm)(rows[0].p[0])+'<br>'+rows.map(o=>`${o.n}: ${(opt.fy||(v=>Math.round(v).toLocaleString()))(o.p[1])}`).join('<br>');
+  tip.style.display='block';const px=(e.clientX-r.left);tip.style.left=Math.min(px+12,r.width-130)+'px';tip.style.top='24px'});
+ svg.addEventListener('mouseleave',()=>{tip.style.display='none';cross.style.display='none'});
+}
+lineChart(document.getElementById('berlin'),D.berlin,{label:'Running vehicles in Berlin, SUMO and cars'});
+lineChart(document.getElementById('char'),D.char,{label:'Running vehicles in Charlottenburg, SUMO and cars'});
+lineChart(document.getElementById('day'),D.day,{label:'Running vehicles over the Berlin day, cars',h:190});
+const names={ring:'Ring road',glosa_two_signal:'Two signals',i80_vsl:'I-80 corridor',bologna:'Bologna'},tn={krauss:'Krauss',idm:'IDM',acc:'ACC',cacc:'CACC',glosa:'GLOSA'};
+const box=document.getElementById('sweeps');
+box.innerHTML='<div class="legend"><span><i style="background:var(--c-sumo)"></i>SUMO</span><span><i style="background:var(--c-cars)"></i>cars</span></div>';
+for(const s of Object.keys(D.sweeps)){const h=document.createElement('div');h.innerHTML=`<p style="margin:8px 0 2px;font-weight:600;color:inherit">${names[s]}, m/s</p>`;const row=document.createElement('div');row.className='small';h.appendChild(row);box.appendChild(h);
+ for(const t of ['krauss','idm','acc','cacc','glosa']){if(!D.sweeps[s][t])continue;const c=document.createElement('div');c.innerHTML=`<h4>${tn[t]}</h4><div></div>`;row.appendChild(c);
+  const vals=[...D.sweeps[s][t].SUMO,...D.sweeps[s][t].cars].map(p=>p[1]);const lo=Math.floor(Math.min(...vals)*.9);
+  lineChart(c.querySelector('div'),D.sweeps[s][t],{w:240,h:120,l:24,b:16,ticks:2,xticks:2,y0:lo,fx:v=>Math.round(v*100)+'%',fy:v=>v.toFixed(1),label:names[s]+' '+t});
+  c.querySelector('.legend')?.remove();}}
+</script></body></html>
