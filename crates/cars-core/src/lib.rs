@@ -11,3 +11,5 @@ pub mod world;
 pub mod xml;
 
 pub use gpu::{Checks, Gpu, GpuOptions};
+
+pub mod render;

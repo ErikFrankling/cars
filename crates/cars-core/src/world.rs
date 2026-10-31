@@ -249,6 +249,7 @@ pub struct SimConfig {
     /// Seconds a stuck lane head waits before teleporting. 0 turns teleporting off.
     pub time_to_teleport: f32,
     pub sample_seconds: f32,
+    pub begin_seconds: f32,
     pub end_seconds: f32,
     pub seed: u64,
     /// Most vehicles on the road at once. 0 means every trip.
@@ -270,6 +271,7 @@ impl Default for SimConfig {
             dt: 1.0,
             time_to_teleport: 300.0,
             sample_seconds: 1.0,
+            begin_seconds: 0.0,
             end_seconds: 3600.0,
             seed: 0,
             capacity: 0,
@@ -415,7 +417,7 @@ impl World {
         let n_trips = w.trips.len() as u32;
         let capacity = if cfg.capacity == 0 { n_trips } else { cfg.capacity.min(n_trips) };
         let sample_steps = ((cfg.sample_seconds / cfg.dt).round() as u32).max(1);
-        let n_steps = (cfg.end_seconds / cfg.dt).ceil() as u32 + 1;
+        let n_steps = ((cfg.end_seconds - cfg.begin_seconds) / cfg.dt).ceil() as u32 + 1;
         w.params = GpuParams {
             dt: cfg.dt,
             n_lanes: w.lanes.len() as u32,
@@ -689,6 +691,9 @@ impl World {
         let mut rng_state = rep.seed.wrapping_mul(0x2545F4914F6CDD1D) ^ (ri as u64 + 1);
         let mut by_edge: Vec<Vec<u32>> = vec![Vec::new(); net.edges.len()];
         for (ti, t) in demand.trips.iter().enumerate() {
+            if t.depart < cfg.begin_seconds as f64 {
+                continue;
+            }
             let route = &demand.routes[t.route as usize];
             let vtype_id = rep.trip_vtype.get(ti).copied().unwrap_or(t.vtype);
             let vt = &demand.vtypes[vtype_id as usize];
@@ -728,7 +733,7 @@ impl World {
             let id = trip0 + ti as u32;
             let start = route_at[t.route as usize];
             self.trips.push(GpuTrip {
-                depart_step: (t.depart / cfg.dt as f64 - 1e-6).ceil().max(0.0) as u32,
+                depart_step: ((t.depart - cfg.begin_seconds as f64) / cfg.dt as f64 - 1e-6).ceil().max(0.0) as u32,
                 route_start: start,
                 route_end: start + route.len() as u32,
                 vtype: vtype_id,
