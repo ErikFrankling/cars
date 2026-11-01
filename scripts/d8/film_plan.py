@@ -23,7 +23,7 @@ def demand(net, d, mix, end, seed=0):
 def record(out, net, rou, begin, end, plan, title, sub, overlay, mpp, w, h, sim_end=None, seed=0):
     cmd = [str(CARS), 'record', '--net', str(net), '--routes', str(rou), '--dt', '0.1', '--sim-end', str(sim_end or end + 2), '--time-to-teleport', '0', '--junction', 'B1',
            '--metres-per-pixel', str(mpp), '--cj', 'B1', '--cj-plan', plan, '--seed', str(seed), '--overlay', overlay, '--color', 'speed', '--width', str(w), '--height', str(h),
-           '--title', title, '--subtitle', sub, '--begin', str(begin), '--end', str(end), '--speed', '1', '--out', str(out)]
+           '--title', title, '--subtitle', sub, '--begin', str(begin), '--end', str(end), '--speed', '1', '--fps', '25', '--out', str(out)]
     GATE.enter()
     r = subprocess.run(cmd, capture_output=True, text=True)
     print(out.name, r.returncode, r.stderr.strip().splitlines()[-1][:160] if r.stderr.strip() else '', flush=True)

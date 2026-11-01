@@ -14,13 +14,15 @@ JUNCTION = 'cluster_1363066780_1363066782_1363066783_1363066785_1363066786_60248
 PLACES = {
     'district': dict(box='22100,15900,23100,16900', cj='all', demands=(1500, 3000, 5000, 8000), meter=150),
     'junction': dict(box='21900,16200,22600,16750', cj=None, demands=(800, 1500, 2500, 4000), meter=120),
+    # Chained OSM nodes merged into one junction by netconvert, so that short lanes inside them no longer refuse a coordinator.
+    'district_joined': dict(box='22100,15900,23100,16900', cj='all', demands=(1500, 3000, 5000, 8000), meter=150, join=True),
 }
 
 
 def net_for(place, work):
     out = work / f'{place}.net.xml'
     if not out.exists():
-        subprocess.run(['netconvert', '-s', NET, '--keep-edges.in-boundary', PLACES[place]['box'], '--keep-edges.components', '1', '--no-warnings', 'true', '-o', str(out)], check=True)
+        subprocess.run(['netconvert', '-s', NET, '--keep-edges.in-boundary', PLACES[place]['box'], '--keep-edges.components', '1', '--no-warnings', 'true', *(['--junctions.join', 'true', '--junctions.join-dist', '25'] if PLACES[place].get('join') else []), '-o', str(out)], check=True)
     return out
 
 
@@ -47,11 +49,14 @@ def main():
         cj = p['cj'] or junction_id(net)
         for d in p['demands']:
             for seed in map(int, a.seeds.split(',')):
-                for name, typ, args in (('krauss_signals', 'krauss', []), ('av_signals', 'av', []),
-                                        ('av_signal_baseline', 'av', ['--cj', cj, '--cj-mode', 'signal', '--cj-sig-max', '30', '--cj-sig-gap', '2']),
-                                        ('av_free', 'av', ['--cj', cj]), ('av_free_b', 'av', ['--cj', cj, '--cj-level-b']),
-                                        ('av_free_meter', 'av', ['--cj', cj, '--cj-meter', str(p['meter'])]),
-                                        ('av_plan', 'av', ['--cj', cj, '--cj-plan', 'full'])):
+                plan = ('av_plan', 'av', ['--cj', cj, '--cj-plan', 'full'])
+                free = ('av_free', 'av', ['--cj', cj])
+                policies = (('krauss_signals', 'krauss', []), free, plan) if p.get('join') else (
+                    ('krauss_signals', 'krauss', []), ('av_signals', 'av', []),
+                    ('av_signal_baseline', 'av', ['--cj', cj, '--cj-mode', 'signal', '--cj-sig-max', '30', '--cj-sig-gap', '2']),
+                    free, ('av_free_b', 'av', ['--cj', cj, '--cj-level-b']),
+                    ('av_free_meter', 'av', ['--cj', cj, '--cj-meter', str(p['meter'])]), plan)
+                for name, typ, args in policies:
                     c = dict(place=place, demand=d, seed=seed, policy=name, end=a.end)
                     k = key(c)
                     if k in done:

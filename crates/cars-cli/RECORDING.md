@@ -56,6 +56,12 @@ For large demand files, `--capacity` bounds the active vehicle buffers (default 
 allocates for every trip). `--time-to-teleport` and `--ignore-junction-blocker`
 accept the same settings as `cars run`, so recordings can use matching dynamics.
 
+Two overlays are for the planned approach (`--cj-plan`, research/truth/09d): `--overlay brake`
+draws brake lights on every car (red over 1 m/s2, bright over 2.5) and running totals of stops,
+hard brakes, speed thrown away and Wh braked away. `--overlay arrivals` puts each car's broadcast
+arrival beside it to the millisecond, amber when planned and green when firm, and a slot chart from
+now to 30 s ahead. `scripts/d8/film_plan.py` makes the clips.
+
 ## Looking closely at intersections
 
 ```sh

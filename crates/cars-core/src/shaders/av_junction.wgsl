@@ -517,8 +517,8 @@ fn cj_propose(@builtin(global_invocation_id) id: vec3u) {
                     stat(cj_junctions[j].replica, S_BYTES_UP, 262u);
                     heard = lossless() || delivered(e.trip, 4u, q.d, cj_junctions[j].p_load, cj_junctions[j].replica);
                 }
-                if (e.cj_rank == NONE && !heard) { break; }
-                q.heard = u32(heard);
+                // Not yet heard: not in the schedule, but the fallback for a dead radio still has to see it.
+                q.heard = u32(heard || e.cj_rank != NONE);
                 q.rank = select(f32(e.cj_rank), INF, e.cj_rank == NONE);
                 q.held = select(ms_rel(e.cj_plan_ms), INF, e.cj_rank == NONE);
             }
@@ -762,6 +762,9 @@ fn plan_exit_ok(mi: u32, k: u32, t: f32) -> bool {
     return true;
 }
 
+// Level B, the tier that promises no contact with a stalled car, takes the wider margin.
+fn plan_slip(v: f32) -> f32 { return select(0.5, 1.0, cfg.level_b != 0u) / max(v, 1.0); }
+
 var<private> plan_wait: f32;
 
 // How much later than free flow this car will get through its approach, in all.
@@ -821,6 +824,8 @@ fn plan_cand(mi: u32, d: f32, v: f32, min_t: f32, kmin: u32, scratch: bool) -> b
         }
         var margin = cfg.m_t;
         if (cfg.level_b != 0u) { margin += cfg.t_r + max(mk.vk, 2.0) / (2.0 * cfg.b_e); }
+        // The slower a car crosses, the more a small slip in position costs in time.
+        margin += plan_slip(mk.vk);
         for (var c = 0u; c < m.conf_count; c++) {
             let ci = m.conf_start + c;
             let ri = cj_conflicts[ci].rel_index;
@@ -1013,7 +1018,7 @@ fn plan_sequence(j: u32) {
             for (var a = J.app_start; a < J.app_start + J.app_count; a++) {
                 if (cj_apps[a].s_cand_state == CAND_STALE) {
                     var ok = false;
-                    if (cj_apps[a].s_ptr < cj_apps[a].n_req) {
+                    if (cj_apps[a].s_ptr < cj_apps[a].n_req && cj_req[cj_apps[a].req_start + cj_apps[a].s_ptr].heard != 0u) {
                         let q = cj_req[cj_apps[a].req_start + cj_apps[a].s_ptr];
                         plan_wait = plan_delay(q.age_t, q.held, q.link);
                         ok = plan_cand(q.link, q.d, q.v, 0.1, 0u, true);
@@ -1046,7 +1051,7 @@ fn plan_sequence(j: u32) {
         for (var c = 0u; c < m.conf_count; c++) {
             let ci = m.conf_start + c;
             let rv = cj_conflicts[ci].rev_index;
-            cj_rel_s[rv] = max(cj_rel_s[rv], t + cj_times[ci * 12u + 6u + k]);
+            cj_rel_s[rv] = max(cj_rel_s[rv], t + cj_times[ci * 12u + 6u + k] + plan_slip(cj_mov_k[q.link * N_CLASS + k].vk));
         }
         cj_apps[best].s_line_ref = q.link * N_CLASS + k;
         cj_apps[best].s_line_t = t;
@@ -1070,7 +1075,7 @@ fn plan_commit_real(j: u32, q: CjReq, mi: u32, k: u32, t: f32, deliver_now: bool
     for (var c = 0u; c < m.conf_count; c++) {
         let ci = m.conf_start + c;
         let rv = cj_conflicts[ci].rev_index;
-        let out = rel_ms(t + cj_times[ci * 12u + 6u + k]);
+        let out = rel_ms(t + cj_times[ci * 12u + 6u + k] + plan_slip(cj_mov_k[mi * N_CLASS + k].vk));
         if (i32(out - cj_rel_ms[rv]) > 0) { cj_rel_ms[rv] = out; }
     }
     cj_apps[m.from_lane].line_ref = mi * N_CLASS + k;
