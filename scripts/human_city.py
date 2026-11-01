@@ -36,6 +36,9 @@ for v in (0, 0.2, 0.8, 1.0):
     CASES[f'coop{v}'] = ('--humans', '--tune', f'cooperation={v}')
 for v in (0.5, 1.0):
     CASES[f'comply{v}'] = ('--humans', '--tune', f'exit_comply={v}')
+CASES['no-arbiter'] = ('--humans', '--tune', 'arbiter=0')
+CASES['no-exit-clear'] = ('--humans', '--tune', 'exit_clear=0')
+CASES['no-cert'] = ('--humans', '--tune', 'certificate=0')
 CASES['frac05'] = ('--humans', '--demand-fraction', '0.5')
 CASES['frac01'] = ('--humans', '--demand-fraction', '0.1')
 
