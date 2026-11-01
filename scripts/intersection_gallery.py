@@ -79,7 +79,7 @@ def roundabout(d, radius=22, arm=220):
     edges = []
     for i, k in enumerate(ring):
         nxt = ring[(i + 1) % 4]
-        arc = ' '.join('%g,%g' % point(angles[k] + 90 * t / 6) for t in range(7))
+        arc = ' '.join('%g,%g' % point(angles[k] + 90 * t / 16) for t in range(17))
         edges.append(dict(id=k + nxt, **{'from': k, 'to': nxt}, priority=3, shape=arc, speed=8.33))
         edges.append(dict(id=outer[k] + k, **{'from': outer[k], 'to': k}))
         edges.append(dict(id=k + outer[k], **{'from': k, 'to': outer[k]}))
@@ -115,7 +115,7 @@ def lane_drop(d):
     return dict(junction='k', metres_per_pixel=0.12)
 
 
-FOLLOW = {'signal': 'f4.6', 'priority': 'f6.5', 'roundabout': 'f0.20'}
+FOLLOW = {'signal': 'f6.6', 'priority': 'f4.7', 'roundabout': 'f0.19'}
 FIXTURES = {
     'signal': lambda d: cross(d, 'traffic_light'),
     'priority': lambda d: cross(d, 'priority'),

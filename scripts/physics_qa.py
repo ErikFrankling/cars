@@ -93,6 +93,12 @@ class Lanes:
         k = np.abs(wrap(heading[hi] - heading[lo])) / span
         return k
 
+    def mean_radius(self, i):
+        """Length of the whole lane over its total turning: what a smooth curve would be."""
+        h = np.arctan2(*np.diff(self.shape[i], axis=0).T[::-1])
+        turn = np.abs(wrap(np.diff(h))).sum() if len(h) > 1 else 0.0
+        return self.s[i][-1] / max(turn, 1e-4)
+
     def place(self, frame):
         """Adds x, y, heading and curvature to rows of one lane."""
         i = frame.name
@@ -117,7 +123,7 @@ class Lanes:
 
 
 def rectangle(r):
-    ux, uy = math.cos(r.heading), math.sin(r.heading)
+    ux, uy = math.cos(r.body), math.sin(r.body)
     cx, cy = r.x - ux * r.length / 2, r.y - uy * r.length / 2
     return np.array([[cx + ux * a - uy * b, cy + uy * a + ux * b]
                      for a, b in ((-r.length / 2, -r.width / 2), (r.length / 2, -r.width / 2), (r.length / 2, r.width / 2), (-r.length / 2, r.width / 2))])
@@ -127,7 +133,7 @@ def penetration(a, b):
     """Separating axis test. Positive depth means the bodies overlap by that many metres."""
     ca, cb = rectangle(a), rectangle(b)
     depth = 1e9
-    for h in (a.heading, a.heading + math.pi / 2, b.heading, b.heading + math.pi / 2):
+    for h in (a.body, a.body + math.pi / 2, b.body, b.body + math.pi / 2):
         axis = np.array([math.cos(h), math.sin(h)])
         pa, pb = ca @ axis, cb @ axis
         depth = min(depth, min(pa.max(), pb.max()) - max(pa.min(), pb.min()))
@@ -184,6 +190,19 @@ def junction_overlaps(df, lanes, limit):
     out = [dict(pair=k[0], junction=k[1], kind=k[2], **v) for k, v in found.items()]
     frame = pd.DataFrame(out, columns=['pair', 'junction', 'kind', 'samples', 'worst', 'first'])
     return frame.sort_values('worst', ascending=False), checked > limit
+
+
+def body_heading(df, lanes):
+    """Heading of the chord from rear to front bumper, the way the renderer places a car."""
+    rear = df[['lane', 'pos']].assign(pos=df['pos'] - df['length'])
+    tail = (rear['pos'] < 0).to_numpy() & df['prev_lane'].isin(lanes.shape).to_numpy()
+    tail &= np.array([b in lanes.next.get(a, ()) for a, b in zip(df['prev_lane'], df['lane'])], dtype=bool)
+    rear.loc[tail, 'lane'] = df.loc[tail, 'prev_lane']
+    rear.loc[tail, 'pos'] = rear.loc[tail, 'pos'] + df.loc[tail, 'prev_lane'].map(lanes.length)
+    at = rear.groupby('lane', sort=False)[['pos']].apply(lanes.place).reset_index(level=0, drop=True).reindex(df.index)
+    dx, dy = (df['x'] - at['x']).to_numpy(), (df['y'] - at['y']).to_numpy()
+    short = np.hypot(dx, dy) < 0.2 * df['length'].to_numpy()
+    return np.where(short, df['heading'].to_numpy(), np.arctan2(dy, dx))
 
 
 def percentiles(values):
@@ -255,6 +274,7 @@ def analyse(a):
     df = df[known].reset_index(drop=True)
     placed = df.groupby('lane', sort=False)[['pos']].apply(lanes.place)
     df = df.join(placed.reset_index(level=0, drop=True))
+    df['body'] = body_heading(df, lanes)
     df['lateral'] = df['speed'] ** 2 * df['kappa']
     df['limit'] = df['lane'].map(lanes.limit)
     df['edge'] = df['lane'].map(lanes.edge)
@@ -278,7 +298,9 @@ def analyse(a):
     residual = d_pos - expected
     backward = steady & same_lane & (d_pos < -0.01)
     longitudinal = steady & same_lane & (residual.abs() > 0.1)
-    connect_jump = connector & (d_xy > expected + 1.0)
+    linked = pd.Series([b in lanes.next.get(a, ()) for a, b in zip(prev['lane'], df['lane'])], index=df.index)
+    connect_jump = connector & linked & (d_xy > expected + 1.0)
+    both_at_once = connector & ~linked
     lateral_step = np.sqrt(np.maximum(d_xy ** 2 - expected ** 2, 0))
     a_speed = (df['speed'] - prev['speed']) / dt
     acc_mismatch = steady & ((a_speed - df['acc']).abs() > 0.05)
@@ -286,12 +308,15 @@ def analyse(a):
     jerk = (df['acc'] - prev_acc) / dt
     jerk = jerk.where(steady)
     head = np.degrees(np.abs(wrap((df['heading'] - prev['heading']).to_numpy())))
-    head = pd.Series(head, index=df.index).where(steady & ~lane_change)
+    head = pd.Series(head, index=df.index).where(steady & ~lane_change & ~both_at_once)
+    body_step = np.degrees(np.abs(wrap((df['body'] - prev['body']).to_numpy())))
+    body_step = pd.Series(body_step, index=df.index).where(steady & ~lane_change & ~both_at_once)
     heading_jump = head > HEADING_STEP
     over_speed = df['speed'] > df['limit'] * 1.3
     administrative = steady & (df['acc'] < TELEPORT_ACCEL)
     # Connectors as driven, geometry only.
-    pairs = df.loc[connector, ['lane']].assign(prev=prev.loc[connector, 'lane'])
+    seam = connector & linked
+    pairs = df.loc[seam, ['lane']].assign(prev=prev.loc[seam, 'lane'])
     driven = pairs.groupby(['prev', 'lane']).size().reset_index(name='crossings')
     kinks = []
     for r in driven.itertuples():
@@ -303,9 +328,11 @@ def analyse(a):
     turn = df.groupby('lane').agg(samples=('lateral', 'size'), peak=('lateral', 'max'), over4=('lateral', lambda s: int((s > 4).sum())), over8=('lateral', lambda s: int((s > 8).sum())),
                                   fastest=('speed', 'max'), kappa=('kappa', 'max'), limit=('limit', 'first')).reset_index()
     turn['radius_m'] = 1 / turn['kappa'].clip(lower=1e-4)
+    turn['mean_radius_m'] = turn['lane'].map(lanes.mean_radius)
+    turn['mean_lateral'] = turn['fastest'] ** 2 / turn['mean_radius_m']
     turn['internal'] = turn['lane'].isin(lanes.internal)
     hot = turn[turn['over4'] > 0].sort_values(['over8', 'peak'], ascending=False)
-    hot_table = hot.assign(speed_kmh=hot['fastest'] * 3.6)[['lane', 'internal', 'samples', 'over4', 'over8', 'peak', 'speed_kmh', 'radius_m']]
+    hot_table = hot.assign(speed_kmh=hot['fastest'] * 3.6)[['lane', 'internal', 'samples', 'over4', 'over8', 'peak', 'speed_kmh', 'radius_m', 'mean_radius_m', 'mean_lateral']]
     gaps = same_lane_gaps(df, lanes)
     overlaps, truncated = junction_overlaps(df, lanes, a.pair_limit)
     # Per vehicle.
@@ -329,8 +356,8 @@ def analyse(a):
         lane_change_step_m=percentiles(lateral_step[lane_change]),
         lane_change_lateral_speed=percentiles((lateral_step / dt)[lane_change]),
         backward_steps=int(backward.sum()), longitudinal_mismatch=int(longitudinal.sum()), longitudinal_residual=percentiles(residual[steady & same_lane]),
-        connector_jumps=int(connect_jump.sum()), acc_field_mismatch=int(acc_mismatch.sum()),
-        heading_jumps=int(heading_jump.sum()), driven_connectors=int(len(kinks)), kinked_connectors=int(len(bad_kinks)),
+        connector_jumps=int(connect_jump.sum()), crossing_and_lane_change_in_one_step=int(both_at_once.sum()), body_heading_step=percentiles(body_step), acc_field_mismatch=int(acc_mismatch.sum()),
+        heading_jumps=int(heading_jump.sum()), body_heading_jumps=int((body_step > HEADING_STEP).sum()), driven_connectors=int(len(kinks)), kinked_connectors=int(len(bad_kinks)),
         crossings_over_kinks=int(bad_kinks['crossings'].sum()) if len(bad_kinks) else 0,
         over_speed_30pct=int(over_speed.sum()),
         acceleration=percentiles(acc), jerk_abs=percentiles(jerk_abs), lateral=percentiles(df['lateral']),
@@ -366,7 +393,8 @@ def analyse(a):
               f'- Missing stretches in a trajectory, teleports or leaving the sampled box: {s["gaps_in_trajectory"]}. Reinsertions: {s["reinsertions"]}. These are excluded below.',
               f'- Backward steps on a lane: {s["backward_steps"]}.',
               f'- Lane position disagreeing with speed by over 0.1 m in a step: {s["longitudinal_mismatch"]} (residual {pct(s["longitudinal_residual"])}).',
-              f'- Jumps over 1 m beyond the distance driven when crossing onto another edge: {s["connector_jumps"]} of {s["connectors_crossed"]} crossings (`connector_jumps.csv`).',
+              f'- Jumps over 1 m beyond the distance driven, crossing between two lanes that connect: {s["connector_jumps"]} of {s["connectors_crossed"]} crossings (`connector_jumps.csv`).',
+              f'- Crossing onto another edge and changing lane within one sample: {s["crossing_and_lane_change_in_one_step"]}. The car moves about a lane sideways as it arrives.',
               f'- Reported acc differs from the speed change by over 0.05 m/s²: {s["acc_field_mismatch"]}.', '',
               '## Acceleration and jerk', '',
               f'- Acceleration, m/s²: {pct(s["acceleration"])}.',
@@ -376,26 +404,26 @@ def analyse(a):
               f'- Jerk magnitude, m/s³: {pct(s["jerk_abs"])}. Above comfort {BOUNDS["jerk_comfort"]:g}: {share(s["jerk_over_comfort"])}. Above {BOUNDS["jerk_suspect"]:g}: {share(s["jerk_over_suspect"])}. At a sample interval of {interval:g} s, jerk is a difference of step accelerations.', '',
               '![Distributions](distributions.png)', '',
               '## Turns', '',
-              f'Implied lateral acceleration is v² times the heading change per metre over a {CURVE_WINDOW:g} m window of lane geometry. Nothing in the engine limits it.', '',
+              f'Implied lateral acceleration is v² times the heading change per metre over a {CURVE_WINDOW:g} m window of lane geometry, a local peak. mean_lateral is the fastest speed squared over the radius of the whole lane, what a smooth curve would demand. The engine limits neither; netconvert caps turn speeds at about 5.5 m/s² on its own average radius.', '',
               f'- m/s²: {pct(s["lateral"])}.',
               f'- Samples over comfort {BOUNDS["lateral_comfort"]:g}: {share(s["lateral_samples_over_comfort"])}; over 4: {share(s["lateral_samples_over_4"])}; over 8: {share(s["lateral_samples_over_8"])}.',
               f'- Lanes with any sample over 4: {s["lanes_over_4"]}; over 8: {s["lanes_over_8"]}. Worst first, all in `lanes_over_lateral.csv`:', '']
     lines += table(hot_table.head(a.top))
     lines += ['## Connectors', '',
-              f'{s["driven_connectors"]} lane-to-lane connections were driven. {s["kinked_connectors"]} have a heading kink over {CONNECTOR_KINK:g} degrees or a gap over {CONNECTOR_GAP:g} m between the two polylines, and took {s["crossings_over_kinks"]} crossings. The body heading snaps there unless the renderer hides it. Samples turning more than {HEADING_STEP:g} degrees in one step: {s["heading_jumps"]}. All in `connector_kinks.csv`:', '']
+              f'{s["driven_connectors"]} lane-to-lane connections were driven. {s["kinked_connectors"]} have a heading kink over {CONNECTOR_KINK:g} degrees or a gap over {CONNECTOR_GAP:g} m between the two polylines, and took {s["crossings_over_kinks"]} crossings. Samples where the lane tangent turns more than {HEADING_STEP:g} degrees in one step: {s["heading_jumps"]}. The body, as a chord from rear to front bumper, does so in {s["body_heading_jumps"]}; per step, degrees: {pct(s["body_heading_step"])}. All in `connector_kinks.csv`:', '']
     lines += table(bad_kinks.head(a.top))
     lines += ['## Lane changes', '',
               f'{s["lane_changes"]} lane changes in the samples, every one instantaneous: the vehicle is on the old lane in one sample and the new lane in the next. Sideways step, m: {pct(s["lane_change_step_m"])}. Implied lateral speed, m/s: {pct(s["lane_change_lateral_speed"])}. Research note 11 gives about 1.26 m/s² peak for a 3.5 m change over 4 s; the engine has no such duration.', '',
               '## Overlaps', '',
               f'Negative bumper gaps on one lane, counting tails hanging back from the next lane: {s["negative_gap_incidents"]} pairs, worst {s["negative_gap_worst"]:.2f} m. Below -0.05 m only (`negative_gaps.csv`):', '']
     lines += table(gaps.head(a.top))
-    lines += [f'Bodies overlapping on different internal lanes of a junction, as rectangles from lane tangent and vehicle size: {s["junction_overlap_incidents"]} pairs, {s["junction_crossing_incidents"]} on crossing paths, the rest diverging from or merging to the same lane; worst {s["junction_overlap_worst"]:.2f} m (`junction_overlaps.csv`):', '']
+    lines += [f'Bodies overlapping on different internal lanes of a junction, as rectangles along the chord from rear to front bumper: {s["junction_overlap_incidents"]} pairs, {s["junction_crossing_incidents"]} on crossing paths, the rest diverging from or merging to the same lane; worst {s["junction_overlap_worst"]:.2f} m (`junction_overlaps.csv`):', '']
     if truncated:
         lines += ['The pair check stopped at its limit; raise `--pair-limit` for the rest.', '']
     lines += table(overlaps.head(a.top))
     lines += ['## What this cannot tell', '',
               '- Samples, not events: a pair counted here may overlap for many samples, and a short window says nothing about a whole run.',
-              '- Width comes from the vehicle type, not the engine. Rectangles use the lane tangent at the front bumper, so on a tight turn a body is placed slightly outside its swept path, in either direction.',
+              '- Width comes from the vehicle type, not the engine. A rectangle on a chord is not a swept path: on a tight turn the real corners differ by some decimetres.',
               '- Polylines are coarse and are not the engine\'s own idea of a curve; the curvature window smooths kinks but cannot recover a true radius. Treat a single lane\'s peak as a pointer to go and look.',
               '- Rows without a lane or on a dummy lane are not in the FCD, so teleports show as gaps. Only the engine counters above count them.', '']
     (out / 'report.md').write_text('\n'.join(lines))
