@@ -737,6 +737,8 @@ def event_study():
                 ctrl.append((rr.speed, rr.gap, 0.0, b.pos - rr.pos, 0.0, rr.lead_v - rr.speed))
         e = pd.DataFrame(rows, columns=['v', 'gap', 'x', 'moved', 'peak', 'dv'])
         c = pd.DataFrame(ctrl, columns=['v', 'gap', 'x', 'moved', 'peak', 'dv'])
+        e = e.dropna(subset=['v', 'gap'])
+        c = c.dropna(subset=['v', 'gap'])
         for d_ in (e, c):
             d_['cell'] = (d_.v // 2.5).astype(int).astype(str) + '_' + (d_.gap.clip(0, 60) // 5).astype(int).astype(str)
         base = c.groupby('cell').moved.median()

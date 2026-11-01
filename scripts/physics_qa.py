@@ -642,7 +642,8 @@ def invariants(a, df, prev, steady, same_lane, lanes, out, interval, gaps, overl
     # On one lane: a car may finish one change and start the next in a step.
     in_change = step_ok & same_lane & (lat_dir != 0) & (prev_dir >= 2 ** 30)
     v_lat = np.where(in_change, np.abs(off - prev_off) / h, 0.0)
-    record('I11 lateral speed', in_change, v_lat - 1.2)
+    # A human's quintic peaks at 1.875 w / D, with D down to 4 s, or less where the lane is running out.
+    record('I11 lateral speed', in_change, v_lat - np.where(t['v_lat'].to_numpy(dtype=float) < 0, 2.0, 1.2))
     record('I11 heading', in_change & (v1 > 0.5), np.degrees(np.arctan2(v_lat, np.maximum(v1, 0.5))) - 13.0, is_hard=False)
     u = ((phys_bits >> 16) & 0x3fff) / 16383.0
     u0 = ((prev['phys'].to_numpy(dtype=float).astype(np.int64) >> 16) & 0x3fff) / 16383.0
