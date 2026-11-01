@@ -1,0 +1,357 @@
+{
+ "human_es_s0": {
+  "train": {
+   "spacing_rmse_5s": 1.9008105993270874,
+   "speed_rmse_5s": 0.8179665803909302,
+   "spacing_rmse_10s": 4.009118556976318,
+   "speed_rmse_10s": 0.8534573316574097,
+   "spacing_rmse_30s": 8.121721267700195,
+   "speed_rmse_30s": 0.8350358009338379,
+   "collision_frac": 0.0006666666666666666
+  },
+  "val": {
+   "spacing_rmse_5s": 2.0805249214172363,
+   "speed_rmse_5s": 0.8992152214050293,
+   "spacing_rmse_10s": 4.5876874923706055,
+   "speed_rmse_10s": 0.9319127798080444,
+   "spacing_rmse_30s": 9.636923789978027,
+   "speed_rmse_30s": 0.897270917892456,
+   "collision_frac": 0.0004420866489832007
+  },
+  "I395_late": {
+   "spacing_rmse_5s": 1.761960506439209,
+   "speed_rmse_5s": 0.7378360033035278,
+   "spacing_rmse_10s": 3.2925920486450195,
+   "speed_rmse_10s": 0.6813496947288513,
+   "spacing_rmse_30s": 5.821585178375244,
+   "speed_rmse_30s": 0.6574944257736206,
+   "collision_frac": 0.0030469226081657527
+  },
+  "I90stat_run6": {
+   "spacing_rmse_5s": 1.3945194482803345,
+   "speed_rmse_5s": 0.6015162467956543,
+   "spacing_rmse_10s": 2.737640619277954,
+   "speed_rmse_10s": 0.6262891292572021,
+   "spacing_rmse_30s": 4.6103434562683105,
+   "speed_rmse_30s": 0.61398845911026,
+   "collision_frac": 0.0020695364238410598
+  },
+  "I90mov": {
+   "spacing_rmse_5s": 1.207261085510254,
+   "speed_rmse_5s": 0.5620617866516113,
+   "spacing_rmse_10s": 2.3595528602600098,
+   "speed_rmse_10s": 0.5981014370918274,
+   "spacing_rmse_30s": 4.682333469390869,
+   "speed_rmse_30s": 0.633660078048706,
+   "collision_frac": 0.0004036326942482341
+  },
+  "I294L1_runs": {
+   "spacing_rmse_5s": 2.731853723526001,
+   "speed_rmse_5s": 1.2369199991226196,
+   "spacing_rmse_10s": 5.632134914398193,
+   "speed_rmse_10s": 1.3336089849472046,
+   "spacing_rmse_30s": 11.204931259155273,
+   "speed_rmse_30s": 1.2675858736038208,
+   "collision_frac": 0.0
+  },
+  "HT_late": {
+   "spacing_rmse_5s": 2.6492807865142822,
+   "speed_rmse_5s": 1.125778079032898,
+   "spacing_rmse_10s": 5.89717960357666,
+   "speed_rmse_10s": 1.189026117324829,
+   "spacing_rmse_30s": 12.694397926330566,
+   "speed_rmse_30s": 1.1201022863388062,
+   "collision_frac": 0.00021593608291945585
+  },
+  "ring": {
+   "survived": 1.0,
+   "speed": 1.8017647570745308,
+   "flow": 548.8452644627032,
+   "sd": 0.22681670782878544
+  }
+ },
+ "human_es_s1": {
+  "train": {
+   "spacing_rmse_5s": 1.8941152095794678,
+   "speed_rmse_5s": 0.8124274611473083,
+   "spacing_rmse_10s": 3.9768521785736084,
+   "speed_rmse_10s": 0.8483646512031555,
+   "spacing_rmse_30s": 8.134456634521484,
+   "speed_rmse_30s": 0.836825430393219,
+   "collision_frac": 0.0005
+  },
+  "val": {
+   "spacing_rmse_5s": 2.074892520904541,
+   "speed_rmse_5s": 0.8934968113899231,
+   "spacing_rmse_10s": 4.540528774261475,
+   "speed_rmse_10s": 0.9236749410629272,
+   "spacing_rmse_30s": 9.563608169555664,
+   "speed_rmse_30s": 0.8972797989845276,
+   "collision_frac": 0.0004420866489832007
+  },
+  "I395_late": {
+   "spacing_rmse_5s": 1.758762001991272,
+   "speed_rmse_5s": 0.737152636051178,
+   "spacing_rmse_10s": 3.27573561668396,
+   "speed_rmse_10s": 0.6824485659599304,
+   "spacing_rmse_30s": 5.8208112716674805,
+   "speed_rmse_30s": 0.6592636108398438,
+   "collision_frac": 0.0018281535648994515
+  },
+  "I90stat_run6": {
+   "spacing_rmse_5s": 1.4060081243515015,
+   "speed_rmse_5s": 0.6042839884757996,
+   "spacing_rmse_10s": 2.7714123725891113,
+   "speed_rmse_10s": 0.628556489944458,
+   "spacing_rmse_30s": 4.7619709968566895,
+   "speed_rmse_30s": 0.617466926574707,
+   "collision_frac": 0.0012417218543046358
+  },
+  "I90mov": {
+   "spacing_rmse_5s": 1.2422033548355103,
+   "speed_rmse_5s": 0.5744533538818359,
+   "spacing_rmse_10s": 2.449296474456787,
+   "speed_rmse_10s": 0.6097707152366638,
+   "spacing_rmse_30s": 4.889484405517578,
+   "speed_rmse_30s": 0.6406484246253967,
+   "collision_frac": 0.0
+  },
+  "I294L1_runs": {
+   "spacing_rmse_5s": 2.6946604251861572,
+   "speed_rmse_5s": 1.222478985786438,
+   "spacing_rmse_10s": 5.541801929473877,
+   "speed_rmse_10s": 1.322043776512146,
+   "spacing_rmse_30s": 11.08512020111084,
+   "speed_rmse_30s": 1.2699933052062988,
+   "collision_frac": 0.0
+  },
+  "HT_late": {
+   "spacing_rmse_5s": 2.596773386001587,
+   "speed_rmse_5s": 1.1005589962005615,
+   "spacing_rmse_10s": 5.741953372955322,
+   "speed_rmse_10s": 1.163358449935913,
+   "spacing_rmse_30s": 12.458100318908691,
+   "speed_rmse_30s": 1.1133841276168823,
+   "collision_frac": 0.00021593608291945585
+  },
+  "ring": {
+   "survived": 1.0,
+   "speed": 0.04397660821316959,
+   "flow": 13.395951424934736,
+   "sd": 0.031723778360367945
+  }
+ },
+ "human_bc_s0": {
+  "train": {
+   "spacing_rmse_5s": 3.005340814590454,
+   "speed_rmse_5s": 1.4525623321533203,
+   "spacing_rmse_10s": 7.779155731201172,
+   "speed_rmse_10s": 1.8570501804351807,
+   "spacing_rmse_30s": 23.726146697998047,
+   "speed_rmse_30s": 2.209521770477295,
+   "collision_frac": 0.4056666666666667
+  },
+  "val": {
+   "spacing_rmse_5s": 3.4098806381225586,
+   "speed_rmse_5s": 1.632464051246643,
+   "spacing_rmse_10s": 9.231576919555664,
+   "speed_rmse_10s": 2.1729228496551514,
+   "spacing_rmse_30s": 30.87544822692871,
+   "speed_rmse_30s": 2.673640012741089,
+   "collision_frac": 0.4345711759504863
+  },
+  "I395_late": {
+   "spacing_rmse_5s": 4.414870262145996,
+   "speed_rmse_5s": 1.9472768306732178,
+   "spacing_rmse_10s": 8.349669456481934,
+   "speed_rmse_10s": 1.7407432794570923,
+   "spacing_rmse_30s": 11.697317123413086,
+   "speed_rmse_30s": 1.4362777471542358,
+   "collision_frac": 0.3717245581962218
+  },
+  "I90stat_run6": {
+   "spacing_rmse_5s": 2.3483808040618896,
+   "speed_rmse_5s": 1.118000864982605,
+   "spacing_rmse_10s": 5.282732009887695,
+   "speed_rmse_10s": 1.204626441001892,
+   "spacing_rmse_30s": 8.986501693725586,
+   "speed_rmse_30s": 1.3145670890808105,
+   "collision_frac": 0.34519867549668876
+  },
+  "I90mov": {
+   "spacing_rmse_5s": 1.9895061254501343,
+   "speed_rmse_5s": 0.9530550241470337,
+   "spacing_rmse_10s": 4.363361358642578,
+   "speed_rmse_10s": 1.0792590379714966,
+   "spacing_rmse_30s": 9.143834114074707,
+   "speed_rmse_30s": 1.2351443767547607,
+   "collision_frac": 0.5031281533804238
+  },
+  "I294L1_runs": {
+   "spacing_rmse_5s": 2.9583842754364014,
+   "speed_rmse_5s": 1.6980749368667603,
+   "spacing_rmse_10s": 8.666038513183594,
+   "speed_rmse_10s": 2.200232744216919,
+   "spacing_rmse_30s": 22.209177017211914,
+   "speed_rmse_30s": 2.6389148235321045,
+   "collision_frac": 0.26170798898071623
+  },
+  "HT_late": {
+   "spacing_rmse_5s": 2.644526243209839,
+   "speed_rmse_5s": 1.5713419914245605,
+   "spacing_rmse_10s": 11.049965858459473,
+   "speed_rmse_10s": 2.7619783878326416,
+   "spacing_rmse_30s": 42.93008804321289,
+   "speed_rmse_30s": 3.596680164337158,
+   "collision_frac": 0.4625350896134744
+  },
+  "ring": {
+   "survived": 0.0,
+   "speed": null,
+   "flow": null,
+   "sd": null
+  }
+ },
+ "human_esv_s0": {
+  "train": {
+   "spacing_rmse_5s": 1.9142802953720093,
+   "speed_rmse_5s": 0.8218152523040771,
+   "spacing_rmse_10s": 4.00398063659668,
+   "speed_rmse_10s": 0.851897656917572,
+   "spacing_rmse_30s": 8.045324325561523,
+   "speed_rmse_30s": 0.8440923690795898,
+   "collision_frac": 0.0013333333333333333
+  },
+  "val": {
+   "spacing_rmse_5s": 2.1160857677459717,
+   "speed_rmse_5s": 0.9073131084442139,
+   "spacing_rmse_10s": 4.610401630401611,
+   "speed_rmse_10s": 0.9326207041740417,
+   "spacing_rmse_30s": 9.551746368408203,
+   "speed_rmse_30s": 0.906140148639679,
+   "collision_frac": 0.0004420866489832007
+  },
+  "I395_late": {
+   "spacing_rmse_5s": 1.843324065208435,
+   "speed_rmse_5s": 0.7514325976371765,
+   "spacing_rmse_10s": 3.395829439163208,
+   "speed_rmse_10s": 0.6836357116699219,
+   "spacing_rmse_30s": 5.843545913696289,
+   "speed_rmse_30s": 0.6645214557647705,
+   "collision_frac": 0.003656307129798903
+  },
+  "I90stat_run6": {
+   "spacing_rmse_5s": 1.429824948310852,
+   "speed_rmse_5s": 0.6117479205131531,
+   "spacing_rmse_10s": 2.766613245010376,
+   "speed_rmse_10s": 0.6319525837898254,
+   "spacing_rmse_30s": 4.663367748260498,
+   "speed_rmse_30s": 0.6242891550064087,
+   "collision_frac": 0.0024834437086092716
+  },
+  "I90mov": {
+   "spacing_rmse_5s": 1.2583138942718506,
+   "speed_rmse_5s": 0.5782432556152344,
+   "spacing_rmse_10s": 2.4259767532348633,
+   "speed_rmse_10s": 0.6073716282844543,
+   "spacing_rmse_30s": 4.776841163635254,
+   "speed_rmse_30s": 0.6448277235031128,
+   "collision_frac": 0.00020181634712411706
+  },
+  "I294L1_runs": {
+   "spacing_rmse_5s": 2.712134599685669,
+   "speed_rmse_5s": 1.2112653255462646,
+   "spacing_rmse_10s": 5.465326309204102,
+   "speed_rmse_10s": 1.3099143505096436,
+   "spacing_rmse_30s": 10.923349380493164,
+   "speed_rmse_30s": 1.2557777166366577,
+   "collision_frac": 0.0
+  },
+  "HT_late": {
+   "spacing_rmse_5s": 2.6392154693603516,
+   "speed_rmse_5s": 1.124308466911316,
+   "spacing_rmse_10s": 5.856971740722656,
+   "speed_rmse_10s": 1.1858290433883667,
+   "spacing_rmse_30s": 12.567793846130371,
+   "speed_rmse_30s": 1.1281917095184326,
+   "collision_frac": 0.00021593608291945585
+  },
+  "ring": {
+   "survived": 1.0,
+   "speed": 0.08247731091463924,
+   "flow": 25.12385778630549,
+   "sd": 0.04380421072082541
+  }
+ },
+ "human_esv_s1": {
+  "train": {
+   "spacing_rmse_5s": 2.0073583126068115,
+   "speed_rmse_5s": 0.855029284954071,
+   "spacing_rmse_10s": 4.170894145965576,
+   "speed_rmse_10s": 0.8765015006065369,
+   "spacing_rmse_30s": 8.261575698852539,
+   "speed_rmse_30s": 0.8515984416007996,
+   "collision_frac": 0.0006666666666666666
+  },
+  "val": {
+   "spacing_rmse_5s": 2.222111701965332,
+   "speed_rmse_5s": 0.9487423896789551,
+   "spacing_rmse_10s": 4.796846866607666,
+   "speed_rmse_10s": 0.9627662301063538,
+   "spacing_rmse_30s": 9.784871101379395,
+   "speed_rmse_30s": 0.9194847941398621,
+   "collision_frac": 0.0004420866489832007
+  },
+  "I395_late": {
+   "spacing_rmse_5s": 1.7635220289230347,
+   "speed_rmse_5s": 0.7438905835151672,
+   "spacing_rmse_10s": 3.306215524673462,
+   "speed_rmse_10s": 0.6860097646713257,
+   "spacing_rmse_30s": 5.839264392852783,
+   "speed_rmse_30s": 0.6618674397468567,
+   "collision_frac": 0.0030469226081657527
+  },
+  "I90stat_run6": {
+   "spacing_rmse_5s": 1.432984709739685,
+   "speed_rmse_5s": 0.6154327392578125,
+   "spacing_rmse_10s": 2.8022472858428955,
+   "speed_rmse_10s": 0.6377531886100769,
+   "spacing_rmse_30s": 4.701018810272217,
+   "speed_rmse_30s": 0.6221665740013123,
+   "collision_frac": 0.0012417218543046358
+  },
+  "I90mov": {
+   "spacing_rmse_5s": 1.2396656274795532,
+   "speed_rmse_5s": 0.5734325051307678,
+   "spacing_rmse_10s": 2.4250898361206055,
+   "speed_rmse_10s": 0.6080498695373535,
+   "spacing_rmse_30s": 4.791403770446777,
+   "speed_rmse_30s": 0.6402854919433594,
+   "collision_frac": 0.0
+  },
+  "I294L1_runs": {
+   "spacing_rmse_5s": 2.756608486175537,
+   "speed_rmse_5s": 1.2336573600769043,
+   "spacing_rmse_10s": 5.663124084472656,
+   "speed_rmse_10s": 1.3222764730453491,
+   "spacing_rmse_30s": 11.171512603759766,
+   "speed_rmse_30s": 1.2505580186843872,
+   "collision_frac": 0.0
+  },
+  "HT_late": {
+   "spacing_rmse_5s": 2.8670012950897217,
+   "speed_rmse_5s": 1.2015039920806885,
+   "spacing_rmse_10s": 6.200542449951172,
+   "speed_rmse_10s": 1.235202670097351,
+   "spacing_rmse_30s": 12.88064193725586,
+   "speed_rmse_30s": 1.155077576637268,
+   "collision_frac": 0.00021593608291945585
+  },
+  "ring": {
+   "survived": 1.0,
+   "speed": 0.6233202124380408,
+   "flow": 189.87292625035704,
+   "sd": 0.3972597407840601
+  }
+ }
+}

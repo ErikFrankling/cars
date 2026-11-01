@@ -1,0 +1,16 @@
+{
+ "v2_full.rou.gz": {
+  "vehicles_0600_1830": 1043693,
+  "cordon_crossings": 331771,
+  "essingeleden": 58833,
+  "total": 390604,
+  "ratio_to_real": 0.9741331151989147
+ },
+ "v2_c3.rou.gz": {
+  "vehicles_0600_1830": 626429,
+  "cordon_crossings": 201946,
+  "essingeleden": 36145,
+  "total": 238091,
+  "ratio_to_real": 0.5937786800207494
+ }
+}

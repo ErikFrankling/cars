@@ -10,6 +10,7 @@ Grades: **FIELD** (real vehicles or operations), **SIMULATION** (assumed behavio
 2. **The field evidence on what automation does to flow points both ways.** Purpose-built damping works locally at 1–5% share. Commercial cruise control amplifies disturbances. Deployed robotaxis follow with a larger time gap than the humans around them, and drive 42–46% of their miles empty.
 3. **What simulated gains depend on is mostly one number: the following time gap the modeller assumes.** The thesis assumed 0.6 s. The best field fit for Waymo is 1.32 s. Putting that fitted value into the thesis's own I-80 turns a 22% travel-time gain into a 90% increase in travel time.
 4. **The strongest real benefit is safety, not flow**, and the strongest numbers there come from Waymo's own employees.
+5. **The thesis needs correcting, on more than collisions.** Its I-80 CACC run has about 33,000 collisions per run at a 1 s step, but at 0.1 s they vanish and a smaller −6% gain remains, while 0.2 s collapses to +119%. So the problem is an unconverged number, not a pure artefact. Separately, its ring "wave dissipation" is arithmetic from the time gap, its "throughput" gain in Bologna is not more trips, and two published figures do not match the data in its repository.
 
 ## 1. What was corrected in the first draft
 
@@ -196,12 +197,12 @@ The pipeline never looked. `run_sweep.py` passes `--no-warnings`, `parse_results
 | `dt` 0.5 s, seed 0 | 12,589 | 22,260 | 1,676 s | not run | collapse |
 | `dt` 0.2 s, seeds 0, 1 | **0** | 23,363; 23,646 | 1,514; 1,479 s | 683 s | **+119%** |
 | `dt` 0.1 s, seeds 0–2 | **0** | 23,835 | 641–646 s | 685 s | **−6%** |
-| `dt` 0.05 s, seed 0 | @@DT05@@ |
+| `dt` 0.05 s, seed 0 | **0** | 23,835 | 655 s | 685 s (0.1 s value) | **−4%** |
 | `dt` 1 s, collisions left in place (`warn`), seed 0, stopped early at 20,973 inserted | 196,778 events | 14,326 | 1,492 s, censored | 698 s | gridlock forming |
 
-The evidence runs are at 0.1 s, the step at which the SUMO CACC model behaves as documented. There CACC keeps a real, smaller gain, with clean trips and no teleports: travel time −6%, time loss −23%, speed +3%. So:
+From 0.1 to 0.05 s the result settles: travel time 642 → 655 s (2%), though time loss still moves about 10%, more than the 1% gate proposed below, and I ran no 0.05 s human baseline. There CACC keeps a real, smaller gain, with clean trips and no teleports: at 0.1 s travel time −6%, time loss −23%, speed +3%. So:
 
-- **The thesis's I-80 CACC number is unreliable, not simply false.** The direct finding that gains coincided with collision teleports holds. The stronger reading, that the gain is *only* an artefact, does not hold at 0.1 s. Roughly half the 1 s travel-time gain goes away.
+- **The thesis's I-80 CACC number is unreliable, not simply false.** The direct finding that gains coincided with collision teleports holds. The stronger reading, that the gain is *only* an artefact, does not hold at small steps. Half or more of the 1 s travel-time gain goes away.
 - **The model is not numerically converged over a range of steps.** A result that swings from −13% to +119% between steps is unfit to report without a convergence test. I do not know why 0.2 s collapses; the controller's constant-gain mode switching at low update rates is my guess, not a finding.
 - **Teleports were doing work.** With collisions left in place at 1 s, the road jams. Teleports were holding the corridor open.
 
@@ -214,7 +215,7 @@ The evidence runs are at 0.1 s, the step at which the SUMO CACC model behaves as
 | CACC | −13.4% | **−6%** | +3% | 0 collisions, all served. |
 | ACC | +29.7% | **+24%** | −8% | 0 collisions. |
 
-Baseline at 0.1 s: 685 s, time loss 177 s (seed 1). One seed per tier except CACC; deterministic demand gives little seed spread here, as the CACC seeds show. A seed 0 baseline at 0.1 s and a Waymo-fit run were cut short by the machine and are excluded. Flagged in the ledger.
+Baseline at 0.1 s: 685 s, time loss 177 s (seed 1). One seed per tier except CACC; deterministic demand gives little seed spread here, as the CACC seeds show. Three local runs were stopped by an outside signal before the end and are excluded: 0.1 s baselines for seeds 0 and 2, and the Waymo-fit run at 0.1 s. I did not establish what stopped them; a CPU watchdog is my guess. They are flagged `truncated` in the ledger.
 
 ### C. The ring gain is arithmetic, not wave dissipation
 
@@ -286,7 +287,7 @@ The human baseline is reasonable by this one measure, though uncalibrated and no
 | Ring, 100% | Mean speed | 12.3 m/s | 20.6 (+67%) | **8.3 (−33%)** |
 | Intersection, 100% | Time loss | 52 s | 42 s (−19%) | 55 s (+4%); demand-limited |
 
-Collisions in all these Waymo-fit runs: zero. The baseline is sensitive too: giving humans the field-fitted δ (τ 1.01, minGap 3.71) raises I-80 travel time from 698 to 759 s and time loss by a third. It also raises Bologna's time loss by 39%, to 285 s. Against that baseline, Waymo fit is still +75% in travel time on I-80 and +15% in time loss in Bologna. I-80 Waymo-fit results are at the thesis's 1 s step, seeds 0 and 1, and IDM is stable there (no collisions, and IDM's own step results are close, above); @@WAYMO01@@ Bologna and the ring are seed 0 at 0.1 s.
+Collisions in all these Waymo-fit runs: zero. The baseline is sensitive too: giving humans the field-fitted δ (τ 1.01, minGap 3.71) raises I-80 travel time from 698 to 759 s and time loss by a third. It also raises Bologna's time loss by 39%, to 285 s. Against that baseline, Waymo fit is still +75% in travel time on I-80 and +15% in time loss in Bologna. I-80 Waymo-fit results are at the thesis's 1 s step, seeds 0 and 1, and IDM is stable there (no collisions, and IDM's own step results are close, above); the one 0.1 s attempt was cut off after 16,341 of 24,242 departures, with 3,854 cars on the road and 543 waiting to enter, so it is excluded and the Waymo-fit I-80 result has no small-step confirmation. Bologna and the ring are seed 0 at 0.1 s.
 
 This is a stress test, not a prediction. The fit stops at 40 mph, and it may not hold on a freeway or behind another AV. It does show that the sign of the thesis's headline result is a modelling input.
 
