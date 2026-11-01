@@ -94,6 +94,12 @@ pub struct CoordArgs {
     /// Leave the point of no return out of the headway table (for comparison).
     #[arg(long)]
     pub cj_no_ponr_table: bool,
+    /// Peak lateral acceleration in a turn, m/s2: caps the corner speed and lets the car speed up after the apex.
+    #[arg(long)]
+    pub cj_plan_peak: Option<f64>,
+    /// Average lateral acceleration behind the corner speed, m/s2; SUMO's own limit is 5.5.
+    #[arg(long)]
+    pub cj_a_lat: Option<f64>,
     /// Measurements start here.
     #[arg(long, default_value_t = 0.0)]
     pub cj_warm: f32,
@@ -181,6 +187,7 @@ impl CoordArgs {
             "full" => coord::PLAN_PROFILE | coord::PLAN_STABLE | coord::PLAN_FOLLOW,
             "cubic" => coord::PLAN_PROFILE | coord::PLAN_STABLE | coord::PLAN_FOLLOW | coord::PLAN_CUBIC,
             "dr" => coord::PLAN_PROFILE | coord::PLAN_STABLE | coord::PLAN_FOLLOW | coord::PLAN_DR,
+            "route" => coord::PLAN_PROFILE | coord::PLAN_STABLE | coord::PLAN_FOLLOW | coord::PLAN_ROUTE,
             other => return Err(format!("unknown --cj-plan {other}")),
         };
         if let Some(m) = self.cj_margin {
@@ -202,6 +209,12 @@ impl CoordArgs {
             c.plan_up = t;
         }
         c.plan_ponr_table = !self.cj_no_ponr_table;
+        if let Some(a) = self.cj_plan_peak {
+            c.plan_peak = a;
+        }
+        if let Some(a) = self.cj_a_lat {
+            c.a_lat = a;
+        }
         c.pos_err = self.cj_pos_err;
         c.clock_err = self.cj_clock_err;
         Ok(Some(c))
@@ -235,6 +248,12 @@ pub struct Args {
     /// Print vehicles that overlap on a lane, at every chunk.
     #[arg(long)]
     debug_lanes: bool,
+    /// Remove a car stuck this long, s, as the city runs do; 0 never.
+    #[arg(long, default_value_t = 0.0)]
+    time_to_teleport: f32,
+    /// Ignore a junction blocker after this long, s, as the city runs do; 0 never.
+    #[arg(long, default_value_t = 0.0)]
+    ignore_junction_blocker: f32,
     /// Print these trips every step between two times: t0,t1,trip,trip... With only t0,t1, every car.
     #[arg(long, value_delimiter = ',')]
     trace: Vec<f32>,
@@ -256,7 +275,8 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
         end_seconds: a.end,
         seed: a.seed,
         capacity: a.capacity,
-        time_to_teleport: 0.0,
+        time_to_teleport: a.time_to_teleport,
+        ignore_blocker: a.ignore_junction_blocker,
         per_lane_queues: true,
         meter_n: a.coord.cj_meter,
         coord: cfg_coord,

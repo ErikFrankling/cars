@@ -378,7 +378,7 @@ impl Overlay {
         }
         let t = &self.brake;
         let n = t.cars.max(1) as f32;
-        let (x, y) = (c.w - 500, 18);
+        let (x, y) = (c.w - 500, if c.w < 1400 { 84 } else { 18 });
         c.rect(x - 10, y - 8, 490, 78, NAVY, 0.72);
         c.text(x, y, &format!("stops {}   hard brakes {}", t.stops, t.hard), 2, if t.hard > 0 { [255, 170, 150] } else { WHITE });
         c.text(x, y + 22, &format!("speed thrown away {:.0} m/s  ({:.1} per car)", t.lost, t.lost / n), 2, WHITE);

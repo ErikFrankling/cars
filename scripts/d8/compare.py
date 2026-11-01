@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""GPU results against the CPU model (research/truth/fig/09b-*.csv): tables on stdout, figures in fig/d8."""
+"""Results of this build against the Python model of report 09 (research/truth/fig/09b-*.csv). Tables on stdout, figures
+in fig/d8. "This build" means the WGSL kernels on CPU Vulkan (llvmpipe) unless a column says GPU: only gpu_cells.jsonl ran on the RX 7900 XT."""
 import csv, json, sys
 from collections import defaultdict
 from pathlib import Path
@@ -50,8 +51,8 @@ def capacity():
     for r in cpu('capacity'):
         if r.get('flow'):
             cp[(r['net'], r['mix'], r['policy'], r['level'])].append(float(r['flow']))
-    print('\n## Capacity, veh/h: GPU against the CPU model')
-    print('| Case | Policy | GPU | CPU | Diff | Overlaps | Invariant | Teleports |')
+    print('\n## Capacity, veh/h: this build (CPU Vulkan) against the Python model')
+    print('| Case | Policy | This build | Python model | Diff | Overlaps | Invariant | Teleports |')
     print('|---|---|---:|---:|---:|---:|---:|---:|')
     names = dict(ges='Earliest start', sig_av='AV signal', sig_h='Human signal')
     out = []
@@ -77,8 +78,8 @@ def capacity():
                     xs.append(j + (i - 1.5) * w)
                     gv.append(m[0][2])
                     cv.append(m[0][3])
-            ax.bar(xs, gv, w * 0.92, label=p + ' (GPU)', color=colors[i])
-            ax.scatter(xs, cv, marker='_', s=120, color='black', zorder=3, label='CPU model' if i == 0 else None)
+            ax.bar(xs, gv, w * 0.92, label=p + ' (this build, CPU Vulkan)', color=colors[i])
+            ax.scatter(xs, cv, marker='_', s=120, color='black', zorder=3, label='Python model' if i == 0 else None)
         ax.set_xticks(range(len(cases)), cases)
         ax.set_ylabel('Saturated flow, veh/h')
         ax.legend(frameon=False, ncols=3, fontsize=8)
@@ -99,7 +100,7 @@ def demand():
     if not gpu:
         return
     print('\n## Delay, s per offered vehicle, and stops per car')
-    print('| Case | veh/h | Policy | GPU delay | CPU delay | GPU stops | CPU stops | Overlaps |')
+    print('| Case | veh/h | Policy | Delay, this build | Delay, Python model | Stops, this build | Stops, Python model | Overlaps |')
     print('|---|---:|---|---:|---:|---:|---:|---:|')
     for k in sorted(gpu):
         g = gpu[k]
@@ -126,7 +127,7 @@ def faults():
             x = r['x']
             cp[(r['fault'], float(x), float(r['demand']), r['chk'])] = r
     print('\n## Faults, 2 lanes, 20% turns')
-    print('| Fault | veh/h | GPU flow | CPU flow | GPU delay | CPU delay | Overlaps | Ungranted crossings | Stopped in box, veh·s |')
+    print('| Fault | veh/h | Flow, this build | Flow, Python model | Delay, this build | Delay, Python model | Overlaps | Ungranted crossings | Stopped in box, veh·s |')
     print('|---|---:|---:|---:|---:|---:|---:|---:|---:|')
     for r in rows('faults'):
         c, g = r['case'], r['result']
@@ -155,9 +156,9 @@ def loss_plot():
     fig, ax = plt.subplots(figsize=(6.5, 3.8))
     for d, col in ((3000, '#3b6fb6'), (5000, '#1b9e77')):
         xs = sorted(gpu[d])
-        ax.plot(xs, [gpu[d][x] for x in xs], 'o-', color=col, label=f'{d} veh/h, GPU')
+        ax.plot(xs, [gpu[d][x] for x in xs], 'o-', color=col, label=f'{d} veh/h, this build')
         xs = sorted(ref[d])
-        ax.plot(xs, [ref[d][x] for x in xs], 'x--', color=col, alpha=0.6, label=f'{d} veh/h, CPU')
+        ax.plot(xs, [ref[d][x] for x in xs], 'x--', color=col, alpha=0.6, label=f'{d} veh/h, Python model')
     ax.set_yscale('log')
     ax.set_xlabel('Message loss')
     ax.set_ylabel('Delay, s per vehicle')
@@ -170,7 +171,7 @@ def loss_plot():
 
 def stalls():
     print('\n## Injected stalls in the box (reported separately)')
-    print('| Case | veh/h | Stalls | Collision events | Per stall | CPU per stall |')
+    print('| Case | veh/h | Stalls | Collision events | Per stall | Python model per stall |')
     print('|---|---:|---:|---:|---:|---:|')
     agg = defaultdict(lambda: [0, 0])
     for r in rows('stalls'):
@@ -216,7 +217,7 @@ def verify():
     if not p.exists():
         return
     print('\n## CPU Vulkan against the RX 7900 XT, same binary, same cases')
-    print('| Part | Case | Flow, CPU | Flow, GPU | Diff | Overlaps, CPU | Overlaps, GPU |')
+    print('| Part | Case | Flow, CPU Vulkan | Flow, GPU | Diff | Overlaps, CPU Vulkan | Overlaps, GPU |')
     print('|---|---|---:|---:|---:|---:|---:|')
     for l in p.read_text().splitlines():
         r = json.loads(l)
@@ -237,7 +238,7 @@ def faults2():
     rs = rows('faults2')
     if not rs:
         return
-    print('\n## Links gone for good (not in the CPU model)')
+    print('\n## Links gone for good (not in the Python model)')
     print('| Case | veh/h | Flow | Delay | Overlaps | Ungranted crossings | Stuck cars at the end |')
     print('|---|---:|---:|---:|---:|---:|---:|')
     for r in rs:
@@ -252,7 +253,8 @@ def meter_table():
     agg = defaultdict(list)
     for r in rs:
         c = r['case']
-        agg[(c['net'], c['demand'], c.get('meter', 0))].append(r['result'])
+        if c.get('meter'):
+            agg[(c['net'], c['demand'], c['meter'])].append(r['result'])
     base = rows('grid') + rows('meter_seeds')
     b = defaultdict(list)
     for r in base:

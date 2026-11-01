@@ -1,5 +1,7 @@
 # D8: the planned approach
 
+Superseded by [09e](09e-d9-first-step.md), where `--cj-plan route` is the design. The result files behind this report are in `fig/d8/plan/09d/`, and the figures in `fig/d8/plan/` now show `route`.
+
 Follows [09c](09c-d8-gpu-build.md). Erik, after watching the clips: "They should perfectly plan, not suddenly brake in front of the intersection." The binding text is "Plan ahead, no unnecessary braking" in [AV-REQUIREMENTS](AV-REQUIREMENTS.md).
 
 `--cj-plan off|profile|stable|full|cubic|dr` switches it, and `full` is the design. `off` is the baseline: on j2 at 5200 veh/h its flow, delay, grants, dropped grants, time lost and rms acceleration match the Job 1 binary to the last digit, on the same arrivals.

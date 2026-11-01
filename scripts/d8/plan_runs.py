@@ -12,10 +12,10 @@ ROOT = Path(__file__).resolve().parents[2]
 NETS = ROOT / 'research/truth/fig/09-nets'
 D8 = ROOT / 'research/truth/fig/d8'
 OUT = D8 / 'plan'
-CARS = ROOT / 'target/release/cars'
+CARS = Path(os.environ.get('CARS_BIN', ROOT / 'target/release/cars'))
 SAT = {'j1': 7000, 'j2': 11000, 'j3': 15000, 't1': 6000, 'j150': 11000, 'j280': 11000, 'j500': 11000, 'j1000': 11000}
 CELLS = (('j1', 'T'), ('j1', 'M'), ('j1', 'H'), ('j2', 'T'), ('j2', 'M'), ('j2', 'H'), ('j3', 'M'))
-MODES = ('off', 'full')
+MODES = ('off', 'route')
 
 
 def case(net, mix='M', demand=3000.0, seed=0, plan='full', end=800.0, warm=200.0, trace=True, **kw):
@@ -51,10 +51,10 @@ def ablation():
     out = []
     for d in (3000, 5200):
         for s in (0, 1, 2):
-            for p in ('off', 'profile', 'stable', 'full', 'cubic', 'dr'):
+            for p in ('off', 'profile', 'stable', 'full', 'route', 'cubic', 'dr'):
                 out.append(case('j2', 'M', d, s, p, end=600.0, warm=150.0))
     for s in (0, 1, 2):
-        for p in ('off', 'profile', 'stable', 'full', 'cubic', 'dr'):
+        for p in ('off', 'profile', 'stable', 'full', 'route', 'cubic', 'dr'):
             out.append(case('j2', 'M', SAT['j2'], s, p, end=500.0, warm=150.0, trace=False))
     return out
 
@@ -134,8 +134,86 @@ def capacity_factors():
     return [case(n, m, SAT[n], s, p, trace=False) for n, m in CELLS for s in (0, 1, 2, 3) for p in ('stable', 'dr')]
 
 
+def route_cap():
+    return [case(n, m, SAT[n], s, 'route', trace=False) for n, m in CELLS for s in (0, 1, 2, 3)]
+
+
+def route_grid():
+    out = []
+    for net, ds in (('grid1', (4000, 9000, 14000)), ('grid2', (8000, 16000, 20000, 24000))):
+        for d in ds:
+            for s in (0, 1, 2, 3, 4, 5):
+                out.append(case(net, 'M', d, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS))
+                out.append(case(net, 'M', d, s, 'off', end=600.0, warm=150.0, trace=False, junctions=GRID_JS))
+    return out
+
+
+def route_faults():
+    # Message loss and stalls on the grid with planning across junctions.
+    out = []
+    for s, plan in ((s, p) for s in (0, 1, 2) for p in ('route', 'off')):
+        for loss in (0.1, 0.3, 0.5, 0.7):
+            out.append(case('grid2', 'M', 16000, s, plan, end=600.0, warm=150.0, trace=False, junctions=GRID_JS, loss=loss, fault=f'loss{loss}'))
+        out.append(case('grid2', 'M', 16000, s, plan, end=600.0, warm=150.0, trace=False, junctions=GRID_JS, stall=120.0, level='B', fault='stallB'))
+        out.append(case('grid2', 'M', 16000, s, plan, end=600.0, warm=150.0, trace=False, junctions=GRID_JS, stall=120.0, fault='stallA'))
+        out.append(case('grid2', 'M', 16000, s, plan, end=600.0, warm=150.0, trace=False, junctions=GRID_JS, chan=1, fault='channel08'))
+        out.append(case('grid2', 'M', 16000, s, plan, end=600.0, warm=150.0, trace=False, junctions=GRID_JS, blackout=(300.0, 330.0), fault='blackout30'))
+    return out
+
+
+def loss_heavy():
+    # Enough seeds at the loss rates where the fallback decides the result.
+    return [case('j2', 'M', d, s, p, end=800.0, warm=200.0, trace=False, loss=l, fault=f'loss{l}') for d in (3000, 5000) for s in range(4) for p in MODES for l in (0.3, 0.5, 0.6, 0.7, 0.8)]
+
+
+def gate_route():
+    # The margin on the final design: every cell, 8 seeds, with and without position error, and loads where a rare contact shows.
+    out = []
+    for s in range(6):
+        for n, m in CELLS:
+            for mg in (0.3, 0.2):
+                for pos in (0.0, 0.3):
+                    out.append(case(n, m, SAT[n], s, 'route', trace=False, margin=mg, pos_err=pos, fault=f'm{mg}p{pos}'))
+        for d in (3000, 5200):
+            for mg in (0.3, 0.2):
+                for pos in (0.0, 0.3, 1.0):
+                    out.append(case('j2', 'M', d, s, 'route', end=600.0, warm=150.0, trace=False, margin=mg, pos_err=pos, fault=f'm{mg}p{pos}'))
+        for net, d in (('grid2', 24000), ('grid2', 16000), ('grid1', 14000)):
+            for mg in (0.3, 0.2):
+                out.append(case(net, 'M', d, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS, margin=mg, fault=f'm{mg}'))
+    return out
+
+
 def capacity_chan():
     return [case(n, m, SAT[n], s, p, trace=False, chan=1, fault='channel08') for n, m in (('j2', 'M'), ('j2', 'H'), ('j2', 'T'), ('j1', 'M'), ('j3', 'M')) for s in (0, 1) for p in MODES]
+
+
+def gate():
+    # Enough seeds to trust a margin: the seven capacity cells and the loads where a rare contact would show.
+    out = []
+    for s in range(8):
+        for n, m in CELLS:
+            out.append(case(n, m, SAT[n], s, 'off', trace=False))
+            for mg in (0.3, 0.2):
+                for pos in (0.0, 0.3):
+                    out.append(case(n, m, SAT[n], s, 'full', trace=False, margin=mg, pos_err=pos, fault=f'm{mg}p{pos}'))
+        for d in (3000, 5200):
+            for mg in (0.3, 0.2):
+                for pos in (0.0, 0.3, 1.0):
+                    out.append(case('j2', 'M', d, s, 'full', end=600.0, warm=150.0, trace=False, margin=mg, pos_err=pos, fault=f'm{mg}p{pos}'))
+    return out
+
+
+def lateral():
+    # What the corner speed buys, safe or not: peak lateral 4.0 with apex release against the old table and the map.
+    out = []
+    for s in (0, 1):
+        for n, m in CELLS:
+            out.append(case(n, m, SAT[n], s, 'route', trace=False, peak=4.0, fault='peak4'))
+            out.append(case(n, m, SAT[n], s, 'route', trace=False, peak=-1.0, fault='old_table'))
+            out.append(case(n, m, SAT[n], s, 'route', trace=False, peak=-1.0, a_lat=3.0, fault='alat3'))
+            out.append(case(n, m, SAT[n], s, 'route', trace=False, peak=-1.0, a_lat=5.5, fault='alat5.5'))
+    return out
 
 
 def grid_meter():
@@ -152,7 +230,7 @@ def smoke():
     return [case('j2', 'M', 3000, 0, 'full', end=200.0, warm=60.0)]
 
 
-PARTS = dict(capacity_factors=capacity_factors, capacity_chan=capacity_chan, smoke=smoke, grid=grid, grid_meter=grid_meter, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
+PARTS = dict(loss_heavy=loss_heavy, gate_route=gate_route, route_cap=route_cap, route_grid=route_grid, route_faults=route_faults, gate=gate, lateral=lateral, capacity_factors=capacity_factors, capacity_chan=capacity_chan, smoke=smoke, grid=grid, grid_meter=grid_meter, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
 
 
 def key(c):
@@ -172,9 +250,11 @@ def run_case(c, work):
                     '--seed', str(c['seed']), '--end', str(c['end'])], check=True)
     args = ['--net', str(net), '--routes', str(routes), '--end', str(c['end']), '--cj', c.get('junctions', 'B1'), '--cj-warm', str(c['warm']), '--seed', str(c['seed']), '--cj-plan', c['plan']]
     for name, flag in (('loss', '--cj-loss'), ('stall', '--cj-stall-rate'), ('chan', '--cj-chan'), ('meter', '--cj-meter'), ('pos_err', '--cj-pos-err'), ('clock_err', '--cj-clock-err'),
-                       ('margin', '--cj-margin'), ('plan_b', '--cj-plan-b'), ('freeze', '--cj-plan-freeze'), ('firm', '--cj-firm'), ('slack', '--cj-plan-slack'), ('up', '--cj-plan-up')):
+                       ('margin', '--cj-margin'), ('plan_b', '--cj-plan-b'), ('freeze', '--cj-plan-freeze'), ('firm', '--cj-firm'), ('slack', '--cj-plan-slack'), ('up', '--cj-plan-up'), ('a_lat', '--cj-a-lat')):
         if c.get(name) is not None and (name in ('margin',) or c.get(name)):
             args += [flag, str(c[name])]
+    if c.get('peak') is not None:
+        args += ['--cj-plan-peak', str(max(c['peak'], 0.0))]
     for name, flag in (('blackout', '--cj-blackout'), ('crash', '--cj-crash')):
         if c.get(name):
             args += [flag, ','.join(map(str, c[name]))]

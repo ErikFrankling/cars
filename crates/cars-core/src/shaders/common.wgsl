@@ -148,6 +148,7 @@ struct Veh {
     cj_yield: f32,     // path position to stop at for a sensed foe
     cj_t_ms: u32,      // the slot this car knows, in ms since start
     cj_plan_ms: u32,   // the slot the coordinator holds for it
+    cj_rx_ms: u32,     // when it last got a slot message, by its own clock
     cj_rank: u32,      // its place in the junction's sequence, NONE before it is heard
 }
 
@@ -441,7 +442,9 @@ struct CjJunction {
     stall_detect: f32,
     stall_until: f32,
     p_load: f32,
-    pad: u32,
+    p_hat: f32,        // message loss the coordinator sees: cars it knows that went quiet
+    fallback: u32,     // loss too high to plan far ahead: this junction runs today's short horizon
+    pad_f: u32,
 }
 
 struct CjLink {
@@ -454,6 +457,8 @@ struct CjLink {
     pair_count: u32,
     path_len: f32,
     v_turn: f32,
+    s_free: f32,
+    pad_l: f32,
     v_lane: f32,
     v_after: f32,
     group: u32,
@@ -509,9 +514,9 @@ struct CjApp {
     s_cand_score: f32,
     box_tail: atomic<u32>,
     line_ms: u32,
-    n_ranked: u32,
+    n_exp: u32,
     box_tail_m: atomic<u32>,
-    pad1: u32,
+    n_rx: u32,
 }
 
 struct CjExit {
@@ -536,6 +541,9 @@ struct CjExit {
     seq: u32,
     exit_ms: u32,
     tail_a: f32,
+    next_app: u32,     // the approach this lane is at the next coordinated junction
+    n_store: u32,      // whole cars this lane can hold
+    s_added: u32,      // cars the schedule has sent into it this tick
 }
 
 struct CjReq {
