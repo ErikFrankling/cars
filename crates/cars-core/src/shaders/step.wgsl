@@ -1858,7 +1858,11 @@ fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32) {
     var u = f32((p >> 16u) & 0x3fffu) / 16383.0;
     if (v_lat <= 0.0) {
         let d = max(f32(((*e).hu_state >> 8u) & 255u) * 0.1, 1.0);
-        u = min(1.0, u + min(1.0, 0.5 * (v0 + v1) * HU_LC_SLOPE * d / (1.875 * w)) * dt / d);
+        var du = min(1.0, 0.5 * (v0 + v1) * HU_LC_SLOPE * d / (1.875 * w)) * dt / d;
+        // Faster than planned if the lane is running out: the body must be across by its end.
+        let left = (lanes[(*e).lane].length - (*e).pos) / max(0.5 * (v0 + v1), 0.1);
+        if (left < (1.0 - u) * d) { du = max(du, (1.0 - u) * dt / max(left, dt)); }
+        u = min(1.0, u + du);
     } else {
         let total = w / v_lat + 1.0;
         u = min(1.0, u + min(1.0, 0.5 * (v0 + v1) * 0.21256 / v_lat) * dt / total);

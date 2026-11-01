@@ -1279,7 +1279,7 @@ fn ph_lc_room(e: Veh, dest: u32) -> bool {
     if ((e.phys >> 30u) != 0u || (e.flags & F_HAS_SHADOW) != 0u || e.pos < min(ty.length, lanes[e.lane].length - 1.0)) { return false; }
     let w = lanes[dest].width;
     let road = ph_lc_road(e, dest);
-    if (ty.v_lat <= 0.0) { return 4.0 * e.speed <= select(road, lanes[e.lane].length - e.pos, road < 0.0); }
+    if (ty.v_lat <= 0.0) { return 4.0 * e.speed <= lanes[e.lane].length - e.pos; }
     if (road < 0.0) {
         let left = lanes[e.lane].length - e.pos;
         return left >= w / 0.21256 && (w / ty.v_lat + 1.0) * e.speed <= left;
@@ -1435,10 +1435,8 @@ fn lc_commit(@builtin(global_invocation_id) id: vec3u) {
         cur[i].flags |= F_HAS_SHADOW;
         let w = lanes[dest].width;
         if (vt.v_lat <= 0.0) {
-            // Measured duration if the road is long enough for it, otherwise as fast as drivers go.
-            ty = vt;
-            var room = ph_lc_road(cur[i], dest);
-            if (room < 0.0) { room = lanes[cur[i].lane].length - cur[i].pos; }
+            // Measured duration if the lane is long enough for it, otherwise as fast as drivers go.
+            let room = lanes[cur[i].lane].length - cur[i].pos;
             let d = clamp(min(hu_persona_d(trips[cur[i].trip].persona), room / max(cur[i].speed, 0.1)), 4.0, 22.0);
             cur[i].hu_state = (cur[i].hu_state & 0xffff00ffu) | (u32(d * 10.0) << 8u);
         } else {
