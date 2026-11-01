@@ -302,9 +302,8 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
         var lo = s.first;
         var hi = s.end;
         // Lower bound on position among entries still on this lane. Those that left wrapped around.
-        loop {
-            if (lo >= hi) { break; }
-            let mid = (lo + hi) / 2u;
+        for (var it = 0u; it < 33u && lo < hi; it++) {
+            let mid = lo + (hi - lo) / 2u;
             var k = mid;
             loop {
                 if (k >= hi || (cur[k].lane == l && (cur[k].flags & F_REMOVED) == 0u)) { break; }
@@ -328,7 +327,7 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
         }
         var k = lo;
         loop {
-            if (k == s.first) { break; }
+            if (k <= s.first) { break; }
             k--;
             let o = cur[k];
             if (k != ego && o.lane == l && (o.flags & F_REMOVED) == 0u && o.pos < pos) {
@@ -396,7 +395,7 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
                     let sg = seg[src];
                     var k = sg.end;
                     loop {
-                        if (k == sg.first) { break; }
+                        if (k <= sg.first) { break; }
                         k--;
                         if (k == ego || cur[k].lane != src || (cur[k].flags & F_REMOVED) != 0u) { continue; }
                         lc_consider_follower(&r, k, cur[k].pos - sl.length - offset, egoback);
@@ -751,18 +750,16 @@ fn lc_ahead_load(l: u32, pos: f32, ego: u32) -> u32 {
         first = s.first;
         var lo = s.first;
         var hi = s.end;
-        loop {
-            if (lo >= hi) { break; }
-            let mid = (lo + hi) / 2u;
+        for (var it = 0u; it < 33u && lo < hi; it++) {
+            let mid = lo + (hi - lo) / 2u;
             if (cur[mid].lane == l && (cur[mid].flags & F_REMOVED) == 0u) { lo = mid + 1u; }
             else { hi = mid; }
         }
         end = lo;
         lo = s.first;
         hi = end;
-        loop {
-            if (lo >= hi) { break; }
-            let mid = (lo + hi) / 2u;
+        for (var it = 0u; it < 33u && lo < hi; it++) {
+            let mid = lo + (hi - lo) / 2u;
             if (cur[mid].pos < pos) { lo = mid + 1u; } else { hi = mid; }
         }
         count = end - lo;
