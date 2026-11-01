@@ -436,8 +436,9 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
     let mut plan: Vec<(f32, u64, f32)> = Vec::new();
     let plan_time = |s: f32| {
         let rel = s - a.sim_begin;
-        let k = ((rel / a.dt).ceil() as u64).max(1);
-        let blend = if interpolate { ((rel - (k - 1) as f32 * a.dt) / a.dt).clamp(0.0, 1.0) } else { 1.0 };
+        // FCD labels the state after step k with time (k-1)*dt, and frames must agree with it.
+        let k = (rel / a.dt).ceil() as u64 + 1;
+        let blend = if interpolate { ((rel - (k as f32 - 2.0) * a.dt) / a.dt).clamp(0.0, 1.0) } else { 1.0 };
         (s, k, blend)
     };
     if videos {
@@ -552,7 +553,7 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
         if any_overlay {
             snapshot.update(&gpu, &sim, &renderer);
         }
-        let clock = a.sim_begin + (sim.step as f32 - 1.0 + blend) * a.dt;
+        let clock = a.sim_begin + (sim.step as f32 - 2.0 + blend) * a.dt;
         for v in &mut views {
             let due: Vec<PathBuf> = v.shots.iter().filter(|s| s.0 <= display + 0.5 * seconds_per_frame).map(|s| s.1.clone()).collect();
             if v.ffmpeg.is_none() && due.is_empty() {

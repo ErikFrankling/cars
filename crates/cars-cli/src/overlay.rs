@@ -511,11 +511,15 @@ pub struct Hud<'a> {
 
 pub fn draw_hud(c: &mut Canvas, hud: &Hud) {
     let (w, h) = (c.w, c.h);
+    let fit = |s: &str, scale: i32| -> String {
+        let room = ((w - 48) / (6 * scale)).max(4) as usize;
+        if s.chars().count() <= room { s.to_string() } else { s.chars().take(room - 3).chain("...".chars()).collect() }
+    };
     if !hud.title.is_empty() {
-        c.label(24, 22, hud.title, 3, WHITE);
+        c.label(24, 22, &fit(hud.title, 3), 3, WHITE);
     }
     if !hud.subtitle.is_empty() {
-        c.label(24, 56, hud.subtitle, 2, [205, 212, 220]);
+        c.label(24, 56, &fit(hud.subtitle, 2), 2, [205, 212, 220]);
     }
     let t = hud.clock.max(0.0);
     let line = format!(

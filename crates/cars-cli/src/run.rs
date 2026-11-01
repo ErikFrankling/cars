@@ -43,7 +43,7 @@ pub struct Args {
     #[arg(long, default_value_t = 0.0)]
     fcd_begin: f32,
     /// Write trajectories only for lanes touching this box: x0,y0,x1,y1.
-    #[arg(long, value_delimiter = ',', num_args = 4)]
+    #[arg(long, value_delimiter = ',', allow_negative_numbers = true)]
     fcd_bbox: Vec<f32>,
     /// Seconds between trajectory snapshots (simulation still advances at dt).
     #[arg(long, default_value_t = 0.1)]

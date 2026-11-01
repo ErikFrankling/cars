@@ -11,7 +11,7 @@ pub struct Args {
     #[arg(long)]
     edge_csv: Option<PathBuf>,
     /// Count only edge data from intervals starting in this range, seconds: from,to.
-    #[arg(long, value_delimiter = ',', num_args = 2)]
+    #[arg(long, value_delimiter = ',')]
     window: Vec<f64>,
     /// signal, priority, roundabout, zipper, ramp, allway or rbl. Every kind by default.
     #[arg(long = "type", value_delimiter = ',')]
