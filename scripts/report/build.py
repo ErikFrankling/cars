@@ -165,12 +165,12 @@ B.append(f'''<section class="panel r"><div class="head">{lamp('r')}<h3>Not worki
 <li><b>Full real traffic still locks Stockholm up.</b> 70,595 teleports by 10:00, and 150,956 on the map closest to the real signal register.</li>
 <li><b>No lights in a real district at peak is worse than signals.</b> 1,846 against 2,659 cars per hour, with signals at their real positions but generated timing, and only 44 of 108 junctions usable.</li>
 <li><b>Overloaded grid.</b> 57 contact events without lights against 0 with them. The zero-collision rule fails there.</li>
-<li><b>New drivers and physics in a city.</b> Berlin morning: 199,380 cars stuck. Neither is merged yet.</li>
+<li><b>New drivers and physics in a city.</b> On the old demand, Berlin morning: 199,380 cars stuck. The test on the fixed Stockholm demand is still queued. Neither is merged yet.</li>
 <li><b>Not done.</b> Most self-driving tiers have only smoke tests. D9 and M4 aren't built. The "remove humans step by step" experiment hasn't been run.</li></ul></section>''')
 B.append('</div></div></div>')
 B.append('<div class="page">')
 B.append(clip('gallery__d8__versus_signal', 'Best single clip: three ways to run one junction', 'Same junction, same arrivals. Left: no signal. Middle: a traffic light with the same self-driving cars. Right: a traffic light with human-like cars. At one moment in this run: 56 cars at 49 km/h, 81 at 29 km/h, 193 at 10 km/h. Simulated, no real vehicles.'))
-B.append(note('Read this before the numbers', 'Almost everything after the speed chapter sits on branches not merged into main yet, and agents are still running, so unfinished numbers can move. This is a snapshot from 1 November 2026, about 19:00.'))
+B.append(note('Read this before the numbers', 'Almost everything after the speed chapter sits on branches not merged into main yet, and agents are still running, so unfinished numbers can move. This is a snapshot from 1 November 2026, about 21:30.'))
 
 # ---- Speed
 B.append(head('How fast is it?', 'Every car in a city, on one graphics card'))
@@ -273,13 +273,14 @@ B.append(facts(
 ))
 B.append(fig('research/truth/fig/14-turn-taking.png', 'Real, random, SUMO and an early prototype: how drivers take turns at a lane end.'))
 B.append(clips(('gallery__humans__courtesy_i80_0', 'Courtesy on the I-80 shape, one', None), ('gallery__humans__courtesy_i80_1', 'Courtesy on the I-80 shape, two', None)))
+B.append(facts(('a', 'A permanent lock is fixed: a car needing the other lane of a very short road stopped back on the junction lane and blocked it for good. Stockholm has 11,015 lanes under 15 m. On a 5 m stub, arrivals went from 7 of 96 to 140 of 140, with 20 of those cars rerouted.', 'GPU code on CPU, not merged')))
 B.append('<h3>Where the new driver still misses</h3>')
 B.append(facts(
-    ('r', 'Roundabout: estimated gap 5.60 s against a real 2.95 s. Follow-up 4.0 s against 3.04 s.'),
-    ('r', 'No capacity drop: flow after a breakdown comes out higher than before. Published guidance asks for this test before any city claim.'),
-    ('r', 'Queue discharge misses most of its bands on the GPU: headway 2.18 to 2.31 s (band 1.8 to 2.2), standing spacing 6.0 to 6.6 m (band 7.0 to 8.2). The Python prototype had passed.'),
-    ('r', 'Too much courtesy: 79 to 84% let in against a real 59%.'),
-    ('r', 'Ring jam: 66 to 76% of cars stopped and a mean speed of 0.36 to 0.48 m/s, against the Python model\'s 25% and 3.9 m/s. The wave speed is close (22 to 25 km/h, real about 20), the depth isn\'t.'),
+    ('r', 'Roundabout: the earlier 5.60 s gap was mostly our own estimator, now fixed. It reads 2.95 s against a real 2.95, but only at 300 cars per hour per arm: 2.40 s at 250 and 4.07 s at 350, twice the real spread.'),
+    ('r', 'No capacity drop: flow after a breakdown comes out 7 to 13% higher than before, because speed falls early and there is no high-flow state to drop from. Published guidance asks for this test before any city claim.'),
+    ('r', 'Queue discharge misses on the GPU: headway 2.29 to 2.36 s (band 1.8 to 2.2). Standing spacing now passes at 0.1 s steps (7.41 m, band 7.0 to 8.2), but not at 0.5 or 1 s. The Python prototype had passed.'),
+    ('r', 'Too much courtesy: 83 to 88% let in against a real 59%. The cause is found: real drivers merge with 0.9 m of lane left, ours about 80 m early, so too few get passed. A setting that fixes it raises the median wait to 38 s, so it stays off.'),
+    ('r', 'Ring jam: 49 to 53% of cars stopped and a mean speed of about 2 km/h, against the Python model\'s 25% and 3.9 m/s. It stays too jammed. Wave speed 29 to 30 km/h at 0.5 s steps, real about 20.'),
     ('r', 'Signal approaches: cars spend longer in the wrong lane than in SUMO. Worst case: 17 of 1,000 cars arrived on a 30 m approach at 2,000 cars per hour with spillback.'),
     ('r', 'Some of this agreement is partly tuned to the same data, and merging only passes after a large shift of the published constants. A blind test needs new data, and the better datasets (highD, SHRP2) need your application.'),
 ))
@@ -308,6 +309,7 @@ B.append(table(['Run, no teleports', 'Cars', 'Stuck', 'Mean speed'], [
     ['Stockholm at 1% demand', '2,757', '39 (was 184 four builds ago)', ''],
     ['Berlin at 1% demand', '22,481', '3,849 (17%)', ''],
 ]))
+B.append(clips(('gallery__humans__gridlock_stockholm_verkstadsgatan', 'A gridlock cycle in Stockholm', 'Verkstadsgatan, with the earlier driver on the old demand. Mostly a lane and its reverse blocking each other.'), ('gallery__humans__gridlock_berlin_cycle', 'A gridlock cycle in Berlin', 'A cycle of waiting cars with the earlier driver on the old demand.')))
 B.append(facts(
     ('r', 'Even at 1% demand cars get stuck, from lane and right-of-way waits, not traffic. That points to faults in the map or the rules. The count is shrinking build by build.'),
     ('r', 'The 2D body check still finds contacts in cities: 3,347 incidents at Stockholm 50%, and "other" is the biggest category, still unexplained.'),
@@ -621,7 +623,7 @@ for src, cap in [('report/figures/bench_realtime.png', 'A Berlin day runs 480 to
                  ('research/truth/fig/stockholm-gridlock.png', 'Old 60% run: cars climb to about 51,000, teleports to about 294,000.'), ('research/truth/fig/stockholm-hourly.png', 'Invented departure curves with a cliff at 06:00. Neither is observed.'), ('research/truth/fig/stockholm-lengths.png', 'Random-walk trips are mostly very short.'), ('research/truth/fig/demand-assignment.png', 'Toy model: rerouting everyone never settles, capped rerouting does.'),
                  ('research/truth/fig/maps07/s09_sveaplan_base.png', 'Sveaplan: 11 simulated controllers against 1 real installation.'), ('research/truth/fig/09b-capacity.png', 'Maximum flow by layout, Python model. Batch polling is a smarter signal.')]:
     fig(src, cap)
-A.append('<footer><p>Built from the research reports and run logs in the cars repo, with sources listed per claim in <code>report/facts/</code>. Built with <code>scripts/report/build.py</code>.</p><p>Snapshot 1 November 2026, about 19:00. Agents are still running, so numbers on unmerged branches can move.</p></footer></div>')
+A.append('<footer><p>Built from the research reports and run logs in the cars repo, with sources listed per claim in <code>report/facts/</code>. Built with <code>scripts/report/build.py</code>.</p><p>Snapshot 1 November 2026, about 21:30. Agents are still running, so numbers on unmerged branches can move.</p></footer></div>')
 fig_html = ''.join(f'<figure style="margin:0"><img loading="lazy" src="figures/{n}" {dims(OUT / "figures" / n)} alt="{esc(c)}"><figcaption>{esc(c)}</figcaption></figure>' for n, c in figs_all)
 BODY_ALL = '\n'.join(A).replace('{{FIGN}}', str(len(figs_all))).replace('{{FIGS}}', fig_html)
 
