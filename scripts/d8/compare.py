@@ -143,9 +143,9 @@ def stalls():
         a = agg[(c['fault'], c['demand'])]
         a[0] += g.get('stalls', 0)
         a[1] += g.get('overlap', 0)
-    ref = {'stallA': 0.23, 'stallB': 0.07, 'stallA_noperc': None}
+    ref = {('stallA', 3000): 0.24, ('stallA', 5000): 0.23, ('stallB', 3000): 0.07, ('stallB', 5000): 0.06, ('stallA_noperc', 3000): 0.38, ('stallA_noperc', 5000): 0.71}
     for (n, d), (s, o) in sorted(agg.items()):
-        print(f"| {n} | {d:.0f} | {s} | {o} | {o / max(s, 1):.2f} | {ref.get(n)} |")
+        print(f"| {n} | {d:.0f} | {s} | {o} | {o / max(s, 1):.2f} | {ref.get((n, d))} |")
 
 
 def generic(part, title):
@@ -160,11 +160,108 @@ def generic(part, title):
         print(f"| {c['net']} {c['mix']} | {c['demand']:.0f} | {pol(c)} {c['level']}{' nocheck' if c.get('no_exit_check') else ''} | {c.get('meter', 0)} | {g.get('flow', -1):.0f} | {g.get('delay', -1):.1f} | {g.get('overlap')} | {g.get('invariant')} | {g.get('pending')} | {g.get('ms_per_step', 0):.2f} | {g.get('mean_active', 0):.0f} |")
 
 
+def headway():
+    rs = rows('headway')
+    if rs:
+        f = mean([r['result']['flow'] for r in rs])
+        print(f"\n## Saturation headway, one through stream each way: {f:.0f} veh/h over 2 streams, {2 * 3600 / f:.3f} s per car; reference 1.304 s")
+
+
+def faults2():
+    rs = rows('faults2')
+    if not rs:
+        return
+    print('\n## Links gone for good (not in the CPU model)')
+    print('| Case | veh/h | Flow | Delay | Overlaps | Ungranted crossings | Stuck cars at the end |')
+    print('|---|---:|---:|---:|---:|---:|---:|')
+    for r in rs:
+        c, g = r['case'], r['result']
+        print(f"| {c['fault']} | {c['demand']:.0f} | {g.get('flow', -1):.0f} | {g.get('delay', -1):.1f} | {g.get('overlap')} | {g.get('cross_ungranted')} | {g.get('stuck')} |")
+
+
+def meter_table():
+    rs = rows('meter') + rows('meter_seeds')
+    if not rs:
+        return
+    agg = defaultdict(list)
+    for r in rs:
+        c = r['case']
+        agg[(c['net'], c['demand'], c.get('meter', 0))].append(r['result'])
+    base = rows('grid') + rows('meter_seeds')
+    b = defaultdict(list)
+    for r in base:
+        c = r['case']
+        if c.get('meter') or c.get('no_exit_check') or c['level'] != 'A' or c['human']:
+            continue
+        if c['net'] in ('grid1', 'grid2'):
+            b[(c['net'], c['demand'], pol(c))].append(r['result'])
+    print('\n## Grid overload: metering at the edge, mean of seeds')
+    print('| Net | Offered | Network held at | Seeds | Flow | Delay incl. waiting outside | Overlap events, total | Stuck |')
+    print('|---|---:|---:|---:|---:|---:|---:|---:|')
+    fig, ax = plt.subplots(figsize=(7, 4))
+    for k in sorted(agg):
+        g = agg[k]
+        print(f"| {k[0]} | {k[1]:.0f} | {k[2]} | {len(g)} | {mean([x['flow'] for x in g]):.0f} | {mean([x['delay'] for x in g]):.0f} | {sum(x['overlap'] for x in g)} | {sum(x.get('stuck', 0) for x in g)} |")
+    for key, v in sorted(b.items()):
+        if key[2] in ('ges', 'sig_av'):
+            print(f"| {key[0]} | {key[1]:.0f} | {'none, signal-free' if key[2] == 'ges' else 'AV signal'} | {len(v)} | {mean([x['flow'] for x in v]):.0f} | {mean([x['delay'] for x in v]):.0f} | {sum(x['overlap'] for x in v)} | {sum(x.get('stuck', 0) for x in v)} |")
+    for net, d, col in (('grid2', 24000, '#1b9e77'), ('grid1', 14000, '#7570b3')):
+        ks = sorted(k[2] for k in agg if k[0] == net and k[1] == d)
+        ax.plot(ks, [mean([x['flow'] for x in agg[(net, d, n)]]) for n in ks], 'o-', color=col, label=f'{net}, {d} veh/h offered, metered')
+        for name, ls in (('ges', ':'), ('sig_av', '--')):
+            v = b.get((net, d, name))
+            if v:
+                ax.axhline(mean([x['flow'] for x in v]), color=col, ls=ls, lw=1, label=f"{net} {'no metering' if name == 'ges' else 'AV signal'}")
+    ax.set_xlabel('Cars allowed on the network')
+    ax.set_ylabel('Flow, veh/h')
+    ax.legend(frameon=False, fontsize=8)
+    ax.spines[['top', 'right']].set_visible(False)
+    fig.tight_layout()
+    fig.savefig(D8 / 'metering.png', dpi=140)
+
+
+def stockholm():
+    rs = rows('stockholm')
+    if not rs:
+        return
+    agg = defaultdict(list)
+    for r in rs:
+        c = r['case']
+        agg[(c['place'], c['demand'], c['policy'])].append(r['result'])
+    print('\n## Stockholm, through traffic, no count data, no pedestrians in the net')
+    print('| Place | Offered | Policy | Coordinated | Refused | Flow | Time lost per trip, s | Overlaps | Lane contacts | Teleports | Invariant | Stuck over 120 s |')
+    print('|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|')
+    for k in sorted(agg):
+        g = [x for x in agg[k] if 'flow' in x]
+        print(f"| {k[0]} | {k[1]} | {k[2]} | {g[0].get('junctions')} | {g[0].get('refused')} | {mean([x['flow'] for x in g]):.0f} | {mean([x['time_loss'] for x in g]):.1f} | {sum(x['overlap'] for x in g)} | {sum(x['collisions'] for x in g)} | {sum(x['teleports'] for x in g)} | {sum(x['invariant'] for x in g)} | {sum(x['stuck'] for x in g)} |")
+
+
+def scale():
+    p = D8 / 'scale.jsonl'
+    if not p.exists():
+        return
+    print('\n## Compute on the RX 7900 XT, bounds checks on')
+    print('| Net | Junctions | Mean vehicles | ms per step | Without coordinator | Coordinator kernels at t=200, ms | Coordinator memory, MB |')
+    print('|---|---:|---:|---:|---:|---:|---:|')
+    rs = [json.loads(l) for l in p.read_text().splitlines()]
+    for r in rs:
+        if not r['cj']:
+            continue
+        g = r['result']
+        other = [x['result'] for x in rs if x['net'] == r['net'] and not x['cj']]
+        kern = sum(m for pr in g.get('profile', []) for n, m in pr['kernels'] if n.startswith('cj_'))
+        print(f"| {r['net']} | {g.get('junctions')} | {g.get('mean_active', 0):.0f} | {g.get('ms_per_step', 0):.2f} | {other[0].get('ms_per_step', 0) if other else float('nan'):.2f} | {kern:.2f} | {g.get('coord_mb', 0):.1f} |")
+
+
 if __name__ == '__main__':
+    headway()
     capacity()
     demand()
     faults()
     stalls()
     generic('t', 'T junction')
     generic('grid', 'Grid of 9 junctions')
-    generic('meter', 'Grid overload with perimeter metering')
+    faults2()
+    meter_table()
+    stockholm()
+    scale()

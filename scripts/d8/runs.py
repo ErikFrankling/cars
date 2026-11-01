@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run coordinated junction cases on the GPU and keep one JSON per case. Usage: runs.py <part>...
 
-Holds /tmp/cars-gpu.lock for at most three minutes of runs, then lets other jobs have a turn. Results land in
+Holds /tmp/cars-gpu.lock for at most five minutes of runs, then lets other jobs have a turn. Results land in
 <out>/<part>.jsonl; finished cases are not rerun. Parts: smoke capacity demand faults stalls crossover t grid
 meter stockholm."""
 import argparse, fcntl, itertools, json, os, subprocess, sys, hashlib, time
@@ -150,7 +150,7 @@ def key(c):
 
 
 class Gate:
-    def __init__(self, budget=180.0):
+    def __init__(self, budget=300.0):
         self.f = open('/tmp/cars-gpu.lock', 'a')
         self.since = None
         self.budget = budget

@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""The D8 clips. Each takes the GPU lock for itself. Usage: film.py [--only name,name] [--preview]
+"""The D8 clips. Shares the GPU lock in five minute turns. Usage: film.py [--only name,name] [--preview]
 Real runs, no hidden teleports: time_to_teleport 0, the auditor on, its count on the HUD."""
-import argparse, fcntl, json, subprocess, sys
+import argparse, subprocess, sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from runs import GATE
 
 ROOT = Path(__file__).resolve().parents[2]
 NETS = ROOT / 'research/truth/fig/09-nets'
@@ -27,11 +30,9 @@ def record(cars, name, net, rou, begin, end, sim_end, title, sub, cj='B1', extra
         cmd += ['--at', f'{begin + 3},{begin + 6}', '--out', str(WORK / f'{name}.png')]
     else:
         cmd += ['--begin', str(begin), '--end', str(end), '--speed', str(speed), '--out', str(out)]
-    f = open('/tmp/cars-gpu.lock', 'a')
     if not preview:
-        fcntl.flock(f, fcntl.LOCK_EX)
+        GATE.enter()
     r = subprocess.run(cmd, capture_output=True, text=True)
-    fcntl.flock(f, fcntl.LOCK_UN)
     print(name, r.returncode, r.stderr.strip().splitlines()[-1][:160] if r.stderr.strip() else '', flush=True)
     if r.returncode:
         print(r.stderr[-1500:])
@@ -104,4 +105,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    finally:
+        GATE.leave()
