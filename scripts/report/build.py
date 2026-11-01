@@ -20,6 +20,12 @@ VIDEOS = {v['slug']: v for v in json.load(open(OUT / 'facts/videos.json'))}
 PHONE = {'berlin_day': 'phone/berlin_day.mp4', 'berlin_zoom': 'phone/berlin_zoom.mp4', 'stockholm_day': 'phone/stockholm_day.mp4',
          'render-samples__bologna': 'phone/bologna.mp4', 'render-samples__ring': 'phone/ring.mp4'}
 SKIP = {'berlin_wait', 'one_av_damped', 'one_av_human', 'tmp__hu__gal__courtesy_i80_0', 'tmp__hu__gal__courtesy_i80_1'}
+FACT = DATA / 'truth/stockholm/factorial'
+METRICS = {r['name']: r for r in (json.loads(l) for l in open(FACT / 'metrics.jsonl') if l.strip())}
+NEW_DAY = DATA / 'videos/stockholm_recipe_day.mp4'
+if NEW_DAY.exists() and (OUT / 'posters/stockholm_recipe_day.jpg').exists():
+    VIDEOS['stockholm_recipe_day'] = dict(path=str(NEW_DAY), slug='stockholm_recipe_day', width=1920, height=1080, title='Stockholm after the fix, one day', caption='Replacement trips at 60% with route feedback.', kind='city', quality='good')
+    PHONE['stockholm_recipe_day'] = 'phone/stockholm_recipe_day.mp4'
 used = set()
 chapters = []
 figs_all = []
@@ -149,6 +155,7 @@ B.append(f'''<section class="panel g"><div class="head">{lamp('g')}<h3>Proven ag
 B.append(f'''<section class="panel a"><div class="head">{lamp('a')}<h3>Works in simulation</h3></div><ul>
 <li><b>Speed.</b> A whole day of the public Berlin scenario, 2.25 million trips, in 147.5 s. One Berlin hour runs 5.4 million car updates per second against SUMO's 0.17 on the same PC, and many copies in one GPU world reach 58 million.</li>
 <li><b>Junctions with no lights.</b> 5,679 cars per hour against 3,888 for a traffic light with the same self-driving cars, one lane each way, straight on. With 2 lanes and 20% turns at 5,200 cars per hour: 4.1 s delay against 20.2 s, and 0.01 stops per car against 0.96.</li>
+<li><b>Stockholm no longer locks up, at 60% demand.</b> 2,449 teleports over a full day against 290,352, and 43 km/h against 9. It carries 60% of the real toll-ring traffic and some real signals are deleted, so it isn't validated Stockholm.</li>
 <li><b>Safety with failing radios.</b> No contacts at a single junction at any message loss, up to 100%. Lost messages only cost time.</li>
 <li><b>The safety rule.</b> 0 contacts in 503,333 attack cases, in a one-dimensional Python test.</li>
 <li><b>A real neural network drives.</b> One trained car removes a stop-and-go wave: 2,049 cars per hour against 1,743, in Python. The same weights give the same flow in GPU code. A simple formula still does slightly better, at 2,097.</li></ul></section>''')
@@ -162,7 +169,7 @@ B.append(f'''<section class="panel r"><div class="head">{lamp('r')}<h3>Not worki
 B.append('</div></div></div>')
 B.append('<div class="page">')
 B.append(clip('gallery__d8__versus_signal', 'Best single clip: three ways to run one junction', 'Same junction, same arrivals. Left: no signal. Middle: a traffic light with the same self-driving cars. Right: a traffic light with human-like cars. At one moment in this run: 56 cars at 49 km/h, 81 at 29 km/h, 193 at 10 km/h. Simulated, no real vehicles.'))
-B.append(note('Read this before the numbers', 'Almost everything after the speed chapter sits on branches not merged into main yet, and agents are still running, so unfinished numbers can move. This is a snapshot from 1 November 2026, about 13:20.'))
+B.append(note('Read this before the numbers', 'Almost everything after the speed chapter sits on branches not merged into main yet, and agents are still running, so unfinished numbers can move. This is a snapshot from 1 November 2026, about 18:30.'))
 
 # ---- Speed
 B.append(head('How fast is it?', 'Every car in a city, on one graphics card'))
@@ -309,7 +316,7 @@ B.append(facts(
 
 # ---- Cities
 B.append(head('Real cities', 'Why Berlin was half empty and Stockholm locks up'))
-B.append('<p class="answer">We ran the public city scenarios against real counters. Berlin holds about half the real traffic. Stockholm\'s trips were nonsense. Better inputs help a lot, but neither city matches reality yet.</p>')
+B.append('<p class="answer">We ran the public city scenarios against real counters. Berlin holds about half the real traffic. Stockholm doesn\'t lock up because of too many cars: it has the wrong trips on a badly converted map. Fixing that stops the lockup at 60% demand, but neither city matches reality yet.</p>')
 B.append('<p>Word you need: a <b>teleport</b> is a stuck car the simulator lifts out and puts down further along. Every simulator has a version of it. A lot of teleports means the city has locked up.</p>')
 B.append('<h3>Berlin: half the traffic is missing</h3>')
 B.append(chart('Berlin: real traffic against the simulation, hour by hour', 'Crossings per hour at 93 real detector sites, September 2024, against the public BeST scenario. Your suspicion was right: too little traffic, a weak morning peak and an empty night.', 'lines',
@@ -329,22 +336,47 @@ B.append(fig('research/truth/fig/berlin-review-evening-cluster.png', 'One connec
 B.append('<h3>Stockholm: why it locks up</h3>')
 B.append(stats(('46%', 'of the old trips contain an immediate U-turn'), ('99.55%', 'of its traffic counts are estimates, last updated 2016'), ('64%', 'of real toll-ring crossings made by the old 2.9 million trips'), ('00:05', 'first teleport, at night, with 793 cars driving')))
 B.append(clip('stockholm_day', 'The old Stockholm day: it never recovers', 'By evening 41,000 cars crawl at 4 km/h. This is the failure we set out to explain, on the old demand.'))
+B.append('<h4>The measured causes, biggest first</h4><p>About 70 controlled runs of the simulator, teleports by 10:00. Differences under about 10% are noise, and effects don\'t add up.</p>')
+B.append(table(['Cause', 'What we changed', 'Effect on teleports'], [
+    ['1. Wandering random routes', 'Same trips on shortest paths', '<b>-94%</b>, 28,253 to 1,721'],
+    ['2. No route response', 'Three rounds of drivers learning routes', '<b>-89%</b>, 8,062 to 849'],
+    ['3. More demand than this map carries', 'Replacement trips at 100, 80, 60, 40%', '70,595, 28,078, 10,131, 3,058'],
+    ['4. Fragmented signals, links shorter than a car', 'Signal flags on the map', '-40% to -71%, but this deletes real signals too'],
+    ['5. On-ramps forced to yield', 'Ramp rule fixed for 70 km/h motorways', '-14%'],
+    ['6. Slow drivers', 'Acceleration 2.6 instead of 1.5', '-8% to -20%'],
+    ['7. U-turns', 'Removed from the trips', '-18%. The first draft got this wrong.'],
+    ['Signal timing type', 'Fixed-time instead of actuated', '+3%, no effect'],
+], wide=(0, 1, 2)))
+B.append(fig('research/truth/fig/stockholm-ladder.png', 'The key result. At the same distance driven, the replacement trips cause about a tenth of the teleports. Route feedback is the near-vertical drop.'))
+B.append(fig('research/truth/fig/stockholm-teleport-map.png', 'Where cars get stuck. Left: at night, under light load, already stuck. Middle: morning on the old demand. Right: shortest paths and signal flags.'))
+B.append(fig('research/truth/fig/stockholm-classfit.png', 'The old fit starved the main roads: motorways got 55% of their target, side streets 108%.'))
 B.append(chart('The biggest single fix is better routes', 'Teleports by 10:00 on the same demand. Log scale. Warning: the best bar uses a map with too few traffic lights, see below.', 'hbars',
                ['Fixed-time signals', 'Baseline', 'U-turns removed', 'Better acceleration', 'Signal flags on map', 'Same km, thinned', 'Shortest paths + no turnarounds', 'Shortest paths + turn lanes', 'Shortest paths', 'Shortest paths + signal flags'],
                [('Teleports', 'ours', [29080, 28253, 23159, 22704, 16827, 5907, 6829, 4202, 1721, 498])], log=True))
 B.append(chart('More trips did not mean more real traffic', 'Planned toll-ring crossings as a share of the real 400,976 per charge day.', 'hbars', ['Old 2.9 M trips', 'Old 60% file', 'Replacement: 1.32 M longer trips', 'Same on the register map', 'Learned routes at 60%', 'Learned routes at 80%'], [('Share of real', 'ours', [0.644, 0.395, 0.974, 1.015, 0.600, 0.789])], ref=dict(v=1, l='Real')))
 B.append(chart('Route feedback works at reduced load, not at full load', 'Teleports by 10:00 after each round of drivers learning better routes. Log scale.', 'lines', ['Start', 'Round 1', 'Round 2', 'Round 3'], [('60%, low-signal map', 'ours', [8062, 1226, 948, 849]), ('60%, register map', 'human', [52249, 47323, 34203, 25119]), ('Full demand, low-signal map', 'alt', [72120, 117148, 111082, 114071])], log=True))
-B.append(chart('A much better full day against the old one', 'Teleports per hour, log scale. 5,687 against 290,352 over the day, about 50 times fewer. The evening is still weakest, and this run has about half the vehicles.', 'lines', list(range(24)),
-               [('Old 60% day', 'human', [61, 42, 14, 11, 14, 15, 566, 3301, 8610, 14580, 11128, 8486, 14061, 11366, 12781, 11191, 25672, 20413, 40065, 24415, 33628, 21164, 16296, 12472]),
-                ('Route feedback, 60%', 'ours', [3, 7, 6, 2, 4, 5, 29, 213, 493, 154, 115, 124, 122, 147, 150, 154, 382, 1166, 933, 595, 405, 241, 149, 88])], log=True, xn=True, xl='hour of day', xu=':00'))
+B.append('<h3>A Stockholm that doesn\'t lock up</h3><p>The recipe: real paths instead of random walks, fitted to the counts, on a repaired map, at 60%, with drivers learning routes from a day that isn\'t jammed. It isn\'t real Stockholm yet, but for the first time a whole day runs.</p>')
+B.append(table(['Full day', 'Old scenario', 'Recipe'], [['Teleports', '290,352', '<b>2,449</b>'], ['Teleports per 1,000 trips', '177.6', '<b>3.1</b>'], ['Mean speed', '8.9 km/h', '<b>42.8 km/h</b>'], ['Mean time lost', '760 s', '<b>114 s</b>'], ['Still driving at midnight', '18,491', '2,235'], ['Never got on the road', '115,961', '1'], ['Collisions', '35,342', '51'], ['Trips arrived', '1,616,859', '788,725'], ['Distance driven', '3.90 M km', '6.44 M km'], ['Share of real toll-ring traffic (planned)', '40%', '60%']]))
+if 'stockholm_recipe_day' in VIDEOS:
+    B.append(clip('stockholm_recipe_day', 'Stockholm after the fix, one day', 'Same camera and speed as the old clip above. Replacement trips at 60% with route feedback, teleports still on. Not validated Stockholm.'))
+_h = range(24)
+_tp = lambda n: [int(METRICS[n]['by_hour'].get(str(i), {}).get('tp', 0)) for i in _h]
+_sp = lambda n: [round(METRICS[n]['speed_by_hour'].get(str(i), 0), 1) for i in _h]
+B.append(chart('Mean speed, hour by hour', 'km/h. The old day collapses from morning on. The recipe holds steady all day.', 'lines', list(_h), [('Old 60% day', 'human', _sp('base60')), ('Recipe', 'ours', _sp('v2_day2'))], xn=True, xl='hour of day', xu=':00', ymin=0))
+B.append(chart('Teleports, hour by hour', 'Log scale. About 120 times fewer over the day, and this run has about half the vehicles, so compare per trip: 177.6 against 3.1 per 1,000.', 'lines', list(_h), [('Old 60% day', 'human', _tp('base60')), ('Recipe', 'ours', _tp('v2_day2'))], log=True, xn=True, xl='hour of day', xu=':00'))
+B.append(fig('research/truth/fig/stockholm-running.png', 'Vehicles on the road: the old day never empties.'))
 B.append(facts(
-    ('a', 'It isn\'t our engine: SUMO locks up on the same old demand at nearly the same rate. At 07:30, 14,001 cars and 1,991 teleports in SUMO against 14,316 and 2,689 in cars. Its first teleport was at 00:06:44, on the same road where cars has the most in the first hour.', 'run cut at 07:30'),
+    ('a', 'It isn\'t our engine: SUMO locks up on the same old demand too. Running and inserted cars match within 2%, though cars has 35 to 64% more teleports. Its first teleport was at 00:06:44, on the same road where cars has the most in the first hour.', 'runs cut under 10 min'),
     ('a', 'Volume alone isn\'t the cause. Lockup rises smoothly with no safe level: 712 teleports at 15% demand, 124,345 at 100%.'),
     ('a', 'Same trips on shortest paths: 94% fewer teleports. U-turn removal only cuts 18%. Fixed-time signals change nothing outside noise.'),
-    ('a', 'Best full day: 3,323 teleports against 290,352 before. But that is at 60% demand and still breaks the gate of under 1 per 1,000 trips (4.2 on the best day).'),
+    ('a', 'It isn\'t too many cars. Real Stockholm carries 2.5 times the toll-ring traffic of the old 60% file. The counts never needed 2.9 million trips: fitted on real paths, they need 1.32 million.'),
+    ('a', 'The old trips were mostly short fragments: only 15,079 of 79,013 routes carried anyone, and 1,284 of 1,922 signals control no crossing road movement.'),
+    ('r', 'At 100% the recipe still locks up, and that is only partly explained. Only 19% of counted roads match their counts (GEH under 5), and motorway distance is 32% of target. So this answers whether a day can run, not whether it is right.'),
+    ('r', 'Engine bug found: cars ignores turn bans on connections, so cars drive through them. Being fixed on its own branch. The recipe\'s routes already respect them.'),
+    ('r', 'The recipe leaves bus lanes open to cars, which is wrong. Closing them raises teleports by 10:00 from 849 to 1,934.'),
     ('g', 'A replacement with fewer, longer trips (1.32 million, mean 8 km) matches the real toll ring at 0.974 without being fitted to it directly, though its trip-length setting was varied, so it isn\'t fully blind. It\'s still fitted to the old estimated street counts, not the measured ones.'),
 ))
-B.append(note('Three warnings about those wins', '<p><b>Too few signals.</b> The map with the best results has 457 traffic lights, while the real register has 519 installations in the city alone. On the map closest to the register (903 controllers), the same recipe does far worse: 150,956 against 70,595 teleports at full demand, and 25,119 against 849 after route feedback. Those runs are still finishing, and the cause isn\'t separated yet.</p><p><b>Teleports carry every good result.</b> With teleports off, Stockholm stalls with 64 to 67% of trips unfinished.</p><p><b>Real signal timing isn\'t public.</b> Every generated signal uses the same default 90 s cycle, and no map here has real timing.</p>', True))
+B.append(note('Three warnings about those wins', '<p><b>Too few signals.</b> The map with the best results has 457 traffic lights, while the real register has 519 installations in the city alone. On the map closest to the register (903 controllers), the same demand does far worse: 631,888 teleports over a day. That map runs generated signal programs, so without the real plans we can\'t tell how much of this is the programs. That makes real signal plans the most valuable missing data.</p><p><b>Teleports carry every good result.</b> With teleports off, Stockholm stalls with 64 to 67% of trips unfinished.</p><p><b>Real signal timing isn\'t public.</b> Every generated signal uses the same default 90 s cycle, and no map here has real timing.</p>', True))
 B.append('<h3>The honest test against real sensors</h3>')
 B.append(vs('12.4%', 'normal year-to-year change at real Stockholm sensors', '77.3%', 'our error at sensors the model never fitted, best demand so far, uncalibrated'))
 B.append(chart('Lockup falls fast, the fit to reality barely moves', 'Stockholm route-choice loop with teleports on, still running. Teleports per day, in thousands, by iteration. Over the same iterations, error at the held-out sensors only goes from 79.5% to 77.3% and flow stays about a third of real (0.283 to 0.34).', 'bars', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [('Teleports, thousands', 'ours', [284, 261, 180, 160, 123, 118, 127, 142, 138, 54])]))
@@ -504,13 +536,13 @@ B.append(facts(
 B.append(head('What is still wrong', 'The short list, in order of what it blocks'))
 B.append('<ol class="steps">'
          '<li><b>Real-city accuracy isn\'t proven.</b> No city passes its real sensors. The calibrated Stockholm test is queued.</li>'
-         '<li><b>Nothing can run a real city at full demand without teleports.</b> Good runs use 60% demand and teleports. On the map closest to the real register, it\'s much worse. That is the current focus, and the Stockholm agent\'s report is due.</li>'
+         '<li><b>Nothing can run a real city at full demand without teleports.</b> Good runs use 60% demand and teleports. At full demand it still locks up, for reasons only partly explained, and on the map closest to the real register it\'s much worse.</li>'
          '<li><b>Almost nothing new is merged.</b> Physics, humans, D8, tiers, neural and route choice all sit on branches. Main is the old baseline.</li>'
          '<li><b>Contacts remain</b> on overloaded grids, in the tier smoke runs, and in city runs with the new drivers. "Zero" is your hard requirement and it isn\'t met outside single junctions.</li>'
          '<li><b>Measurements you asked for are missing:</b> every feature on and off, at every message loss and every share of automated cars, with energy. They depend on 2 and 3.</li>'
          '<li><b>Everything is simulation.</b> No real vehicle is involved in any AV result. Position and clock error, pedestrians and buses aren\'t modelled.</li>'
          '<li><b>GPU queue.</b> One card, many agents: jobs wait over an hour, which is why some results ran on the CPU or are stale.</li></ol>')
-B.append('<p>Still needs you: the Trafikverket, Trafiklab and Lastkajen keys and Stockholm\'s signal plans (both on your to-do list), and the choice of safety level for stalled cars.</p>')
+B.append('<p>Still needs you: Stockholm\'s signal plans, now the most valuable missing data. Also the Lastkajen and Trafikverket keys, tax passages per station from Transportstyrelsen, access to the regional demand models, and a Trafiklab key (all on your to-do list). And the choice of safety level for stalled cars.</p>')
 
 B.append('</div>')
 BODY_MAIN = '\n'.join(B)
@@ -565,7 +597,7 @@ for src, cap in [('report/figures/bench_realtime.png', 'A Berlin day runs 480 to
                  ('research/truth/fig/stockholm-gridlock.png', 'Old 60% run: cars climb to about 51,000, teleports to about 294,000.'), ('research/truth/fig/stockholm-hourly.png', 'Invented departure curves with a cliff at 06:00. Neither is observed.'), ('research/truth/fig/stockholm-lengths.png', 'Random-walk trips are mostly very short.'), ('research/truth/fig/demand-assignment.png', 'Toy model: rerouting everyone never settles, capped rerouting does.'),
                  ('research/truth/fig/maps07/s09_sveaplan_base.png', 'Sveaplan: 11 simulated controllers against 1 real installation.'), ('research/truth/fig/09b-capacity.png', 'Maximum flow by layout, Python model. Batch polling is a smarter signal.')]:
     fig(src, cap)
-A.append('<footer><p>Built from the research reports and run logs in the cars repo, with sources listed per claim in <code>report/facts/</code>. Built with <code>scripts/report/build.py</code>.</p><p>Snapshot 1 November 2026, about 13:20. Agents are still running, so numbers on unmerged branches can move.</p></footer></div>')
+A.append('<footer><p>Built from the research reports and run logs in the cars repo, with sources listed per claim in <code>report/facts/</code>. Built with <code>scripts/report/build.py</code>.</p><p>Snapshot 1 November 2026, about 18:30. Agents are still running, so numbers on unmerged branches can move.</p></footer></div>')
 fig_html = ''.join(f'<figure style="margin:0"><img loading="lazy" src="figures/{n}" {dims(OUT / "figures" / n)} alt="{esc(c)}"><figcaption>{esc(c)}</figcaption></figure>' for n, c in figs_all)
 BODY_ALL = '\n'.join(A).replace('{{FIGN}}', str(len(figs_all))).replace('{{FIGS}}', fig_html)
 

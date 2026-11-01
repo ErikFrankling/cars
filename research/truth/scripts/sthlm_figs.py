@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 T=Path('/home/erikf/projects/personal/cars-data/truth/stockholm/factorial');F=Path('research/truth/fig')
 INK='#0b0b0b';MUT='#52514e';GRID='#e6e5e0';C=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300']
-plt.rcParams.update({'font.size':10,'axes.edgecolor':GRID,'axes.labelcolor':MUT,'xtick.color':MUT,'ytick.color':MUT,'axes.grid':True,'grid.color':GRID,'grid.linewidth':.6,'axes.spines.top':False,'axes.spines.right':False,'figure.facecolor':'#fcfcfb','axes.facecolor':'#fcfcfb','savefig.dpi':170,'legend.frameon':False})
+plt.rcParams.update({'font.size':10,'axes.edgecolor':GRID,'axes.labelcolor':MUT,'xtick.color':MUT,'ytick.color':MUT,'axes.grid':True,'grid.color':GRID,'grid.linewidth':.6,'axes.spines.top':False,'axes.spines.right':False,'figure.facecolor':'#fcfcfb','axes.facecolor':'#fcfcfb','savefig.dpi':170,'savefig.bbox':'tight','savefig.pad_inches':.15,'legend.frameon':False})
 M={}
 for l in open(T/'metrics.jsonl'):
     r=json.loads(l);M[r['name']]=r
@@ -25,20 +25,20 @@ h=[plt.Rectangle((0,0),1,1,color=C[i]) for i in range(3)];ax.legend(h,['Random r
 fig.tight_layout();fig.savefig(F/'stockholm-ablations.png');plt.close(fig)
 # 2 ladder: same distance driven, different route quality
 fig,ax=plt.subplots(figsize=(8,4.6))
-for name,runs,c in [('Random route pool, original net',['w_r0_d15','w_r0_d30','w_r0_d37','w_r0_d45','w_r0_n0','w_r0_d100'],C[0]),('Count-fitted long trips, ramp-fixed net',['w_r4n7_s40','w_r4n7_s60','w_r4n7_s80','w_r4_n7'],C[1]),('Same, accel 2.6 and route feedback',[x for x in ['w_c_due3','w_c_s80','w_c_s100'] if x in M],C[2])]:
+for name,runs,c in [('Random route pool, original net',['w_r0_d15','w_r0_d30','w_r0_d37','w_r0_d45','w_r0_n0','w_r0_d100'],C[0]),('Long count-fitted trips, ramp-fixed net',['v2_s40','v2_s60','v2_s80','v2_s100'],C[1]),('Same at 60%, accel 2.6: before and after route feedback',['v2_c3','v2_c0'],C[2])]:
     xs=[M[r]['vkm']/1e6 for r in runs];ys=[M[r]['teleports'] for r in runs]
     ax.plot(xs,ys,color=c,lw=2,marker='o',ms=6,label=name)
-ax.set_yscale('log');ax.set_xlabel('Vehicle-km actually driven 00:00-10:00 (million)');ax.set_ylabel('Teleports by 10:00, log scale');ax.legend(loc='lower right')
+ax.set_yscale('log');ax.set_xlabel('Vehicle-km actually driven 00:00-10:00 (million)');ax.set_ylabel('Teleports by 10:00, log scale');ax.legend(loc='upper left')
 fig.tight_layout();fig.savefig(F/'stockholm-ladder.png');plt.close(fig)
 # 3 running vehicles by time
 fig,ax=plt.subplots(figsize=(8,4.2))
-for n,l,c in [('w_r0_n0','Baseline 60% file',C[0]),('w_r2_n2_tlsrec','Shortest paths + signal flags, 60% file',C[1]),('w_r4_n7','Count-fitted long trips, ramp-fixed net',C[2]),('w_c_due3','Same at 60%, accel 2.6, route feedback',C[3])]:
+for n,l,c in [('w_r0_n0','Baseline 60% file',C[0]),('w_r2_n2_tlsrec','Shortest paths + signal flags, 60% file',C[1]),('v2_s100','Long count-fitted trips, ramp-fixed net',C[2]),('v2_c3','Same at 60%, accel 2.6, route feedback',C[3])]:
     if (T/n/'summary.csv').exists():
         s=summ(n);ax.plot([r['time']/3600 for r in s],[r['running'] for r in s],color=c,lw=2,label=l)
 ax.set_xlabel('Hour');ax.set_ylabel('Running vehicles');ax.legend(loc='upper left');ax.set_xlim(0,10)
 fig.tight_layout();fig.savefig(F/'stockholm-running.png');plt.close(fig)
 # 4 class fit
-cf=json.load(open('research/truth/stockholm-classfit.json'))['stockholm.rou.gz']['classes'];rp=json.load(open(T/'r4_n7_ramps.json'))['by_class']
+cf=json.load(open('research/truth/stockholm-classfit.json'))['stockholm.rou.gz']['classes'];rp=json.load(open(T/'v2_fit.json'))['by_class']
 cl=['motorway','trunk','primary','secondary','tertiary','unclassified','residential']
 fig,ax=plt.subplots(figsize=(8,4));x=np.arange(len(cl));w=.36
 ax.bar(x-w/2-.01,[cf[k]['ratio'] for k in cl],w,color=C[0],label='Current pool, 2.92M trips, 2.43 km')

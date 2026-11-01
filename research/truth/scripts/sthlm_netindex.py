@@ -10,7 +10,7 @@ for _,el in ET.iterparse(net,events=['end']):
         el.clear()
     elif el.tag=='connection':
         k=el.get('from')
-        C.setdefault(k,[]).append({a:el.get(a) for a in('fromLane','to','toLane','via','tl','linkIndex','dir','state')})
+        C.setdefault(k,[]).append({a:el.get(a) for a in('fromLane','to','toLane','via','tl','linkIndex','dir','state','allow','disallow')})
         el.clear()
     elif el.tag=='junction':
         J[el.get('id')]=dict(type=el.get('type'),x=float(el.get('x')),y=float(el.get('y')),inc=el.get('incLanes'),req=len(el.findall('request')))

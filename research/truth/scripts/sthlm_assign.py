@@ -6,7 +6,7 @@ import sys,pickle,gzip,re,random,collections,csv,json
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import dijkstra
-def allowed(l): return 'passenger' in (l['allow'] or 'passenger') and 'passenger' not in (l['disallow'] or '')
+def allowed(l): return 'passenger' in (l.get('allow') or 'passenger') and 'passenger' not in (l.get('disallow') or '')
 PEN=dict(tls=15.0,m=4.0,eq=4.0,left=2.0,M=0.0)
 class G:
     def __init__(s,idx):
@@ -18,7 +18,7 @@ class G:
         for e in s.ids:
             for c in s.C.get(e,[]):
                 t=c['to']
-                if t not in s.ix or not allowed(s.E[e]['lanes'][int(c['fromLane'])]) or not allowed(s.E[t]['lanes'][int(c['toLane'])]): continue
+                if t not in s.ix or not allowed(c) or not allowed(s.E[e]['lanes'][int(c['fromLane'])]) or not allowed(s.E[t]['lanes'][int(c['toLane'])]): continue
                 p=PEN['tls'] if c['tl'] else PEN['m'] if c['state'] in 'ms' else PEN['eq'] if c['state']=='=' else 0
                 if c['dir'] in('l','L'): p+=PEN['left']
                 k=(s.ix[e],s.ix[t]);arcs[k]=(min(arcs[k][0],p) if k in arcs else p,c['dir'])
