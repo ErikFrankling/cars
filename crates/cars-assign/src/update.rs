@@ -27,17 +27,17 @@ pub struct Graphs {
 
 impl Graphs {
     pub fn new(net: &Net, supply: &Supply, pop: &Population, landmarks: usize) -> Self {
-        Self::with_turnaround(net, supply, pop, landmarks, crate::route::TURNAROUND_S)
+        Self::with_options(net, supply, pop, landmarks, crate::route::TURNAROUND_S, &Default::default())
     }
 
-    pub fn with_turnaround(net: &Net, supply: &Supply, pop: &Population, landmarks: usize, turnaround_s: f32) -> Self {
+    pub fn with_options(net: &Net, supply: &Supply, pop: &Population, landmarks: usize, turnaround_s: f32, conn: &crate::route::ConnectionMasks) -> Self {
         let mut masks: Vec<u32> = pop.travellers.iter().map(|t| pop.demand.vtypes[t.vtype as usize].vclass).collect();
         masks.sort_unstable();
         masks.dedup();
         let by_mask = masks
             .par_iter()
             .map(|&m| {
-                let mut g = Graph::new(net, supply, m, landmarks);
+                let mut g = Graph::with_connections(net, supply, m, landmarks, conn);
                 g.turnaround_s = turnaround_s;
                 (m, g)
             })

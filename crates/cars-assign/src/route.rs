@@ -3,13 +3,42 @@
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
-use cars_core::net::Net;
-use rustc_hash::FxHashSet;
+use cars_core::net::{Net, vclass_mask};
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::costs::{CostTable, NONE, Supply};
 
 pub const LANDMARKS: usize = 16;
 pub const TURNAROUND_S: f32 = 10.0;
+
+/// Classes a connection itself allows, where the net says: `(from edge, from lane, to edge, to lane) -> mask`.
+pub type ConnectionMasks = FxHashMap<(u32, u32, u32, u32), u32>;
+
+/// Read `allow` and `disallow` on connections. `Net` does not keep them, and routes must respect turn bans.
+pub fn connection_masks(path: &std::path::Path, net: &Net) -> Result<ConnectionMasks, String> {
+    use std::io::BufRead;
+    let f = std::fs::File::open(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let mut out = ConnectionMasks::default();
+    fn attr<'a>(line: &'a str, key: &str) -> Option<&'a str> {
+        let at = line.find(&format!(" {key}=\""))? + key.len() + 3;
+        Some(&line[at..at + line[at..].find('"')?])
+    }
+    for line in std::io::BufReader::with_capacity(1 << 20, f).lines() {
+        let line = line.map_err(|e| e.to_string())?;
+        if !line.trim_start().starts_with("<connection ") || !line.contains("allow=\"") {
+            continue;
+        }
+        let (Some(from), Some(to), Some(fl), Some(tl)) = (attr(&line, "from"), attr(&line, "to"), attr(&line, "fromLane"), attr(&line, "toLane")) else { continue };
+        let (Some(&a), Some(&b)) = (net.edge_index.get(from), net.edge_index.get(to)) else { continue };
+        let mask = match (attr(&line, "allow"), attr(&line, "disallow")) {
+            (Some(x), _) => vclass_mask(x),
+            (None, Some(x)) => !vclass_mask(x),
+            _ => continue,
+        };
+        out.insert((a, fl.parse().unwrap_or(0), b, tl.parse().unwrap_or(0)), mask);
+    }
+    Ok(out)
+}
 
 /// The turns one vehicle class may make, as compressed rows over dense edges.
 pub struct Graph {
@@ -68,6 +97,10 @@ fn sssp(first: &[u32], to: &[u32], ff: &[f32], src: usize, reversed: bool) -> Ve
 
 impl Graph {
     pub fn new(net: &Net, supply: &Supply, mask: u32, landmarks: usize) -> Self {
+        Self::with_connections(net, supply, mask, landmarks, &ConnectionMasks::default())
+    }
+
+    pub fn with_connections(net: &Net, supply: &Supply, mask: u32, landmarks: usize, conn: &ConnectionMasks) -> Self {
         let n = supply.n();
         let mut usable = vec![false; n];
         for (d, &e) in supply.normal.iter().enumerate() {
@@ -81,7 +114,8 @@ impl Graph {
             if a == NONE || b == NONE || !usable[a as usize] || !usable[b as usize] {
                 continue;
             }
-            let ok = net.lane_of(c.from_edge, c.from_lane).zip(net.lane_of(c.to_edge, c.to_lane)).is_some_and(|(x, y)| net.lanes[x as usize].allow & mask != 0 && net.lanes[y as usize].allow & mask != 0);
+            let ok = net.lane_of(c.from_edge, c.from_lane).zip(net.lane_of(c.to_edge, c.to_lane)).is_some_and(|(x, y)| net.lanes[x as usize].allow & mask != 0 && net.lanes[y as usize].allow & mask != 0)
+                && conn.get(&(c.from_edge, c.from_lane, c.to_edge, c.to_lane)).is_none_or(|m| m & mask != 0);
             if ok && seen.insert((a, b)) {
                 arcs.push((a, b));
             }

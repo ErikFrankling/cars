@@ -171,6 +171,31 @@ fn a_reversal_is_only_taken_when_nothing_else_works() {
 }
 
 #[test]
+fn routes_respect_a_ban_on_the_connection_itself() {
+    let (net, supply) = setup();
+    let dir = std::env::temp_dir().join(format!("assign-conn-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let f = dir.join("net.xml");
+    // Every connection out of B2 onto B3 is closed to passenger cars, and one elsewhere names another class.
+    std::fs::write(&f, "    <connection from=\"B2\" to=\"B3\" fromLane=\"0\" toLane=\"0\"/>\n".replace("B2", "B1B2").replace("B3", "B2B3").replace("/>", " disallow=\"passenger\"/>") + "    <connection from=\"C1C2\" to=\"C2C3\" fromLane=\"0\" toLane=\"0\" disallow=\"tram\"/>\n").unwrap();
+    let m = cars_assign::route::connection_masks(&f, &net).unwrap();
+    assert_eq!(m.len(), 2);
+    let banned = Graph::with_connections(&net, &supply, PASSENGER, 8, &m);
+    let open = Graph::new(&net, &supply, PASSENGER, 8);
+    let (a, b) = (supply.dense[net.edge_index["B1B2"] as usize], supply.dense[net.edge_index["B2B3"] as usize]);
+    let has = |g: &Graph, x: u32, y: u32| g.to[g.first[x as usize] as usize..g.first[x as usize + 1] as usize].contains(&y);
+    assert!(has(&open, a, b));
+    assert!(!has(&banned, a, b));
+    let (c, d) = (supply.dense[net.edge_index["C1C2"] as usize], supply.dense[net.edge_index["C2C3"] as usize]);
+    assert!(has(&banned, c, d), "a ban on trams does not stop cars");
+    let costs = CostTable::free_flow(&supply, 2);
+    let mut w = Work::new(supply.n());
+    let (p, _) = banned.path(&costs, &mut w, a, b, 0.0, true).unwrap();
+    assert!(p.len() > 2 && !p.windows(2).any(|q| q == [a, b]));
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
 fn capped_share_only_routes_its_sample_and_switches_no_more() {
     let (net, supply) = setup();
     let (mut pop, graphs) = population(&net, &supply, 4000);
@@ -540,6 +565,7 @@ fn gpu_scenario() -> (Scenario, Net, Supply) {
         fixed_prefixes: vec![],
         fixed_vtypes: vec![],
         counts: None,
+        blind_test: false,
         noise_floor: None,
         cuts: None,
         discharge: None,

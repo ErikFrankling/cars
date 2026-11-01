@@ -41,6 +41,9 @@ pub struct Scenario {
     #[serde(default)]
     pub fixed_vtypes: Vec<String>,
     pub counts: Option<PathBuf>,
+    /// Test rows stay out of everything until `eval --open-test`, which works once.
+    #[serde(default)]
+    pub blind_test: bool,
     /// Count WAPE between comparable days at the same sites, from real data.
     pub noise_floor: Option<f64>,
     pub cuts: Option<PathBuf>,

@@ -65,6 +65,9 @@ enum Cmd {
         /// Seeds per world. Sequential unless replicas pay.
         #[arg(long, default_value_t = 1)]
         per_world: usize,
+        /// Read the blind test rows. Works once per run directory.
+        #[arg(long)]
+        open_test: bool,
     },
     /// The verdict ladder.
     Verdict {
@@ -169,8 +172,8 @@ fn run(args: Args) -> Result<(), String> {
             let done = driver::assignment(&mut x, &args.out, &LoopOpts { iters, chunk, rule, memory, target_gap, replicas })?;
             println!("{}", if done { "done" } else { "more" });
         }
-        Cmd::Eval { seeds, tag, per_world } => {
-            let r = driver::evaluate(&mut x, &args.out, &seeds, &tag, per_world)?;
+        Cmd::Eval { seeds, tag, per_world, open_test } => {
+            let r = driver::evaluate(&mut x, &args.out, &seeds, &tag, per_world, open_test)?;
             println!("{}", serde_json::to_string_pretty(&r).unwrap());
         }
         Cmd::Verdict { seed } => {

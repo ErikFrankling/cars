@@ -115,11 +115,14 @@ def bearing_vec(coords_xy):
 def main():
     new, loc = read_net(NET)
     print("net passenger edges", len(new), loc)
-    old, _ = read_net(OLD_NET)
-    print("old edges", len(old))
-    trav = write_travellers(new, old, f"{OUT}/travellers.csv.gz")
-    print(trav)
-    del old
+    # With OLD_NET "-" the demand is left alone and only the counts are matched to this net.
+    trav = None
+    if OLD_NET != "-":
+        old, _ = read_net(OLD_NET)
+        print("old edges", len(old))
+        trav = write_travellers(new, old, f"{OUT}/travellers.csv.gz")
+        print(trav)
+        del old
     offset = [float(v) for v in loc["netOffset"].split(",")]
     proj = Transformer.from_crs("EPSG:4326", loc["projParameter"], always_xy=True)
     roles = {r["site"]: r for r in csv.DictReader(open(HOLDOUT, encoding="utf-8"))}

@@ -77,10 +77,17 @@ pub fn setup(path: &Path) -> Result<Setup, String> {
     eprintln!("population in {:.1}s: {} travellers", t.elapsed().as_secs_f64(), pop.travellers.len());
     let supply = Supply::new(&net, &pop.demand.vtypes, pop.travellers.iter().map(|t| t.vtype));
     let t = Instant::now();
-    let graphs = Graphs::with_turnaround(&net, &supply, &pop, s.landmarks, s.turnaround_s);
-    eprintln!("graphs in {:.1}s for {} classes", t.elapsed().as_secs_f64(), graphs.by_mask.len());
+    let conn = crate::route::connection_masks(&s.net, &net)?;
+    let graphs = Graphs::with_options(&net, &supply, &pop, s.landmarks, s.turnaround_s, &conn);
+    eprintln!("graphs in {:.1}s for {} classes, {} connections with their own permissions", t.elapsed().as_secs_f64(), graphs.by_mask.len(), conn.len());
     let counts = match &s.counts {
-        Some(p) => Some(Counts::load(p, &net, &supply)?),
+        Some(p) => {
+            let mut c = Counts::load(p, &net, &supply)?;
+            if s.blind_test {
+                c.rows.retain(|r| !matches!(r.role, Role::Test | Role::TestOther));
+            }
+            Some(c)
+        }
         None => None,
     };
     Ok(Setup { s, net, supply, pop, graphs, counts, checks: serde_json::Value::Null })
@@ -389,9 +396,19 @@ pub struct EvalSeed {
     pub errors: FxHashMap<&'static str, CountError>,
 }
 
-/// Frozen routes on seeds the loop never used. This is the number to quote.
-pub fn evaluate(x: &mut Setup, out: &Path, seeds: &[u64], tag: &str, per_world: usize) -> Result<serde_json::Value, String> {
+/// Frozen routes on seeds the loop never used. This is the number to quote. With `open_test` the blind test
+/// rows are read, once per run.
+pub fn evaluate(x: &mut Setup, out: &Path, seeds: &[u64], tag: &str, per_world: usize, open_test: bool) -> Result<serde_json::Value, String> {
     prepare_routes(x, out)?;
+    if open_test {
+        let marker = out.join("test_opened.json");
+        if marker.exists() {
+            return Err(format!("{} exists: the test rows were opened already", marker.display()));
+        }
+        let p = x.s.counts.clone().ok_or("no counts to open")?;
+        x.counts = Some(Counts::load(&p, &x.net, &x.supply)?);
+        std::fs::write(&marker, serde_json::json!({"tag": tag, "seeds": seeds}).to_string()).map_err(|e| e.to_string())?;
+    }
     let mut results = Vec::new();
     let mut engine: Option<Engine> = None;
     let mut combined: Option<crate::costs::DayCounts> = None;
