@@ -4,6 +4,8 @@
 set -u
 scenario=$1; out=$2; iters=$3; chunk=$4; shift 4
 bin=${ASSIGN_BIN:-target/release/assign}
+# Under the lag-guard, which kills agents that hold four cores for minutes.
+export RAYON_NUM_THREADS=${RAYON_NUM_THREADS:-3}
 fails=0
 while :; do
     if ! msg=$(flock /tmp/cars-gpu.lock "$bin" --scenario "$scenario" --out "$out" loop --iters "$iters" --chunk "$chunk" "$@" 2>>"$out.log"); then
