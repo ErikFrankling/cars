@@ -622,7 +622,8 @@ def invariants(a, df, prev, steady, same_lane, lanes, out, interval, gaps, overl
     # I8
     prev_acc = prev['acc'].to_numpy(dtype=float)
     if step < 0.5:
-        record('I8 brake build-up', step_ok, (prev_acc - step * arr('b_hi') / (arr('t_r') + step) - 0.05) - a_real)
+        # Coming off the throttle is not brake build-up: the bound runs from zero or the braking under way.
+        record('I8 brake build-up', step_ok & ~stop_tick, (np.minimum(prev_acc, 0.0) - step * arr('b_hi') / (arr('t_r') + step) - 0.05) - a_real)
     # I9, I10
     kappa = np.zeros(len(df))
     for lane, idx in df.groupby('lane', sort=False).indices.items():
@@ -638,7 +639,8 @@ def invariants(a, df, prev, steady, same_lane, lanes, out, interval, gaps, overl
     prev_off = prev['offset'].to_numpy(dtype=float)
     lat_dir = phys_bits >> 30
     prev_dir = prev['phys'].to_numpy(dtype=float)
-    in_change = step_ok & (lat_dir != 0) & (prev_dir >= 2 ** 30)
+    # On one lane: a car may finish one change and start the next in a step.
+    in_change = step_ok & same_lane & (lat_dir != 0) & (prev_dir >= 2 ** 30)
     v_lat = np.where(in_change, np.abs(off - prev_off) / h, 0.0)
     record('I11 lateral speed', in_change, v_lat - 1.2)
     record('I11 heading', in_change & (v1 > 0.5), np.degrees(np.arctan2(v_lat, np.maximum(v1, 0.5))) - 13.0, is_hard=False)

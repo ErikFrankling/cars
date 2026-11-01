@@ -34,8 +34,9 @@ const F_SHADOW: u32 = 16384u;      // the old-lane image of a vehicle in a lane 
 const F_HAS_SHADOW: u32 = 32768u;
 const F_LAT_FAST: u32 = 65536u;    // this lane change runs at the raised lateral speed
 const F_DENIED: u32 = 131072u;     // held at a junction lane in the last step: not coming for now
-const F_REROUTE: u32 = 262144u;    // asked for a new route, waiting for route_patch
-const F_YELLOW_GO: u32 = 524288u;  // decided at yellow to carry on through the junction
+const F_GRANTED: u32 = 262144u;    // won a junction lane in the last step, and goes on holding it
+const F_REROUTE: u32 = 524288u;    // asked for a new route, waiting for route_patch
+const F_YELLOW_GO: u32 = 1048576u;  // decided at yellow to carry on through the junction
 
 // Human lane change rules, each one switchable: P.hu_flags.
 const HS_COURTESY: u32 = 1u;
@@ -45,7 +46,6 @@ const HS_ANTICIPATE: u32 = 8u; // two-leader car following before a change
 const HS_MISS: u32 = 16u;
 const HS_GATE: u32 = 32u;
 const HS_YELLOW: u32 = 64u;
-const HS_EXIT_CLEAR: u32 = 128u;
 
 // Link flags.
 const L_CONT: u32 = 1u;
@@ -95,6 +95,10 @@ struct Params {
     detect_every: u32,
     grid_mask: u32,
     trace_len: u32,
+    safety: u32,
+    width_margin: f32,
+    claim_scale: f32,
+    queue_speed: f32,
     hu_k: f32,        // response lag factor over one step
     hu_rho: f32,      // noise correlation over one step
     hu_nscale: f32,
@@ -203,6 +207,7 @@ struct Zone {
     own_out: f32,
     foe_in: f32,
     foe_out: f32,
+    dist: f32,
 }
 
 struct Mirror {
@@ -309,6 +314,7 @@ struct VType {
     lc_look_left: f32,
     lc_speed_gain_right: f32,
     collision_factor: f32,
+    exit_comply: f32,
     pw_kg: f32,
     road_a: f32,
     road_c: f32,
@@ -325,8 +331,7 @@ struct VType {
     width: f32,
     ph_tau: f32,
     m_ref: f32,
-    pad1: f32,
-    pad2: f32,
+    b_assume: f32,
 }
 
 struct Trip {
@@ -434,6 +439,7 @@ var<private> mode_done: bool;
 const G_ACC: f32 = 9.81;
 const STOP_NOW: f32 = -0.001;     // a safe speed of zero or less: brake as hard as possible
 var<private> mu: f32;
+var<private> cert_on: bool;
 var<private> ph_gz: f32;
 var<private> ph_gz_lead: f32;
 var<private> ph_load: f32;
@@ -525,6 +531,7 @@ fn ph_v_insert(gap_bumper: f32, vl: f32, b_hi: f32) -> f32 {
 }
 
 fn ph_limit(driver: f32, cert: f32) -> f32 {
+    if (!cert_on) { return max(driver, 0.0); }
     if (cert <= 0.0) { return STOP_NOW; }
     if (cert < driver) { ph_cert_bound = min(ph_cert_bound, cert); }
     return min(max(driver, 0.0), cert);
@@ -548,6 +555,13 @@ fn ph_floor(v: f32, a_prev: f32) -> f32 {
         return v - (d * t1 + 0.5 * (b / ty.t_r) * t1 * t1 + b * (dt - t1));
     }
     return v - min(b, d + b * dt / (ty.t_r + dt)) * dt;
+}
+
+// How far hard braking from here takes to stop.
+fn ph_stop_distance(v: f32, a_prev: f32) -> f32 {
+    let f = ph_floor(v, a_prev);
+    if (f <= 0.0) { return v * v * dt / (2.0 * max(v - f, 1e-3)); }
+    return 0.5 * (v + f) * dt + f * f / (2.0 * ph_b_follower());
 }
 
 fn ph_release(v: f32, a_prev: f32) -> f32 {
@@ -739,7 +753,7 @@ fn safe_stop(gap: f32, decel: f32, v: f32, headway: f32, relax: bool) -> f32 {
 }
 
 fn safe_follow(gap: f32, v: f32, vp: f32, bp: f32, on_insertion: bool) -> f32 {
-    if (mu > 0.0) { return ph_stop_driver(max(gap, 0.0) + vp * vp / (2.0 * ty.decel), v, ty.decel, ty.ph_tau); }
+    if (mu > 0.0) { return ph_stop_driver(max(gap, 0.0) + vp * vp / (2.0 * ty.b_assume), v, ty.decel, ty.ph_tau); }
     var x: f32;
     if (gap >= 0.0) {
         x = safe_stop(gap + brake_gap(vp, max(ty.decel, bp), 0.0), ty.decel, v, ty.tau, false);

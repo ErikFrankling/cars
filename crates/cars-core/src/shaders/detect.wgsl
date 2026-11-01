@@ -1,7 +1,6 @@
 // A collision detector that shares nothing with the planner: where the bodies are, in the plane,
 // from lane geometry alone. Reports, never repairs. Runs on every vehicle at each step it is on.
 
-const CONTACT_LOG: u32 = 65536u;
 const GRID_CELL: f32 = 20.0;
 
 fn shape_at(lane: u32, s: f32) -> vec2f {

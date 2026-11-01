@@ -37,6 +37,15 @@ struct Incident {
     y: f32,
 }
 
+#[derive(Clone, Debug)]
+struct StuckLane {
+    first: f32,
+    last: f32,
+    wait: f32,
+    cars: usize,
+    cause: String,
+}
+
 pub struct Physics {
     begin: f32,
     dt: f32,
@@ -49,6 +58,8 @@ pub struct Physics {
     gridlocks: Vec<serde_json::Value>,
     worst_stuck: usize,
     last_gridlock: Option<serde_json::Value>,
+    /// Every lane whose head was ever stuck, for the low-demand check.
+    stuck_lanes: HashMap<u32, StuckLane>,
 }
 
 pub struct Finished {
@@ -72,6 +83,7 @@ impl Physics {
             gridlocks: Vec::new(),
             worst_stuck: 0,
             last_gridlock: None,
+            stuck_lanes: HashMap::new(),
         }
     }
 
@@ -93,7 +105,7 @@ impl Physics {
                 i.samples += 1;
                 i.first = i.first.min(e.step);
                 i.last = i.last.max(e.step);
-                if e.depth > i.worst {
+                if e.depth > i.worst || e.kind as usize >= world::CONTACT_BODIES {
                     i.worst = e.depth;
                     i.kind = e.kind;
                     i.lane_a = e.lane_a;
@@ -149,13 +161,28 @@ impl Physics {
             }
             places.push((v.wait, lane));
             let link = items[i * 8][0];
-            if link == u32::MAX || v.n_items == 0 {
-                *causes.entry(if v.lc_own & 3 != 0 { "wants another lane" } else { "no link ahead" }).or_insert(0) += 1;
-                continue;
-            }
             let denied = items[i * 8][9] == 1;
-            *causes.entry(if denied { "junction lane occupied or exit full" } else { "next lane or right of way" }).or_insert(0) += 1;
-            next.insert(lane, world.links[link as usize].to_lane);
+            let cause = if link == u32::MAX || v.n_items == 0 {
+                if v.lc_own & 3 != 0 { "wants another lane" } else { "no link ahead" }
+            } else if denied {
+                "junction lane occupied or exit full"
+            } else {
+                "next lane or right of way"
+            };
+            *causes.entry(cause).or_insert(0) += 1;
+            let cars = vs.iter().filter(|o| o.lane == lane && o.flags & (F_REMOVED | F_SHADOW) == 0).count();
+            let state = if link == u32::MAX { '-' } else {
+                let k = &world.links[link as usize];
+                if k.tl == u32::MAX { k.state as u8 as char } else { 's' }
+            };
+            let s = self.stuck_lanes.entry(lane).or_insert(StuckLane { first: now, last: now, wait: 0.0, cars: 0, cause: String::new() });
+            s.last = now;
+            s.wait = s.wait.max(v.wait);
+            s.cars = s.cars.max(cars);
+            s.cause = format!("{cause}; link {state}, tl {}", link != u32::MAX && world.links[link as usize].tl != u32::MAX);
+            if link != u32::MAX && v.n_items != 0 {
+                next.insert(lane, world.links[link as usize].to_lane);
+            }
         }
         let mut cycles = Vec::new();
         let mut done: HashMap<u32, bool> = HashMap::new();
@@ -204,6 +231,13 @@ impl Physics {
             "kind": world::CONTACT_NAMES[i.kind as usize], "t": self.begin + i.first as f32 * self.dt, "last": self.begin + i.last as f32 * self.dt, "samples": i.samples, "depth": i.worst,
             "lane_a": net.lanes[i.lane_a as usize].id, "lane_b": net.lanes[i.lane_b as usize].id, "x": i.x, "y": i.y,
         });
+        let mut stuck: Vec<_> = self.stuck_lanes.iter().collect();
+        stuck.sort_by(|a, b| b.1.wait.total_cmp(&a.1.wait));
+        let stuck_list: Vec<_> = stuck.iter().take(5000).map(|(l, s)| {
+            let l = **l;
+            let xy = self.lane_xy[l as usize];
+            json!({"lane": net.lanes[l as usize].id, "x": xy[0], "y": xy[1], "first": s.first, "last": s.last, "wait": s.wait, "cars": s.cars, "cause": s.cause})
+        }).collect();
         let energy = sim.trip_energy(gpu);
         let out = sim.trip_outputs(gpu);
         let (mut wheel, mut brake, mut road, mut pe, mut ke, mut fuel, mut ev, mut km, mut worst_balance, mut trips) = (0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f32, 0u32);
@@ -224,7 +258,7 @@ impl Physics {
             trips += 1;
         }
         let per_km = |x: f64| if km > 0.0 { x * 1000.0 / km } else { 0.0 };
-        let collisions: u32 = by_kind.iter().sum();
+        let collisions: u32 = by_kind[..world::CONTACT_BODIES].iter().sum();
         let kinds: Vec<String> = world::CONTACT_NAMES.iter().zip(&by_kind).map(|(n, k)| format!("{n} {k}")).collect();
         let stuck_now = last.as_ref().map_or(0, |g| g["stuck"].as_u64().unwrap_or(0));
         let cycles_now = last.as_ref().and_then(|g| g["cycles"].as_array().map(|a| a.len())).unwrap_or(0);
@@ -246,7 +280,7 @@ impl Physics {
             "teleports": c[4], "lane_changes": c[6], "cert_floor": c[world::C_CERT_FLOOR], "no_brake": c[world::C_NO_BRAKE], "dead_end": c[world::C_DEAD_END], "ungranted": c[world::C_UNGRANTED],
             "shadows": c[world::C_SHADOWS], "shadow_refused": c[world::C_SHADOW_REFUSED], "lc_refused_room": c[world::C_LC_REFUSED_ROOM], "denied": c[world::C_DENIED], "overflow": c[5], "items_full": c[8],
             "inserted": c[3], "arrived": c[2], "m_updates_per_s": m_updates, "wall_s": wall, "steps": done,
-            "gridlock_end": last, "gridlock_series": self.gridlocks, "gridlock_worst_stuck": self.worst_stuck,
+            "stuck_lanes": stuck_list, "gridlock_end": last, "gridlock_series": self.gridlocks, "gridlock_worst_stuck": self.worst_stuck,
             "energy": {"trips": trips, "km": km, "wheel_wh_km": per_km(wheel), "brake_wh_km": per_km(brake), "road_wh_km": per_km(road), "pe_wh_km": per_km(pe), "ke_wh_km": per_km(ke), "fuel_l_100km": if km > 0.0 { fuel * 100.0 / km } else { 0.0 }, "ev_wh_km": per_km(ev), "balance_worst": worst_balance},
         });
         Finished { text, json }

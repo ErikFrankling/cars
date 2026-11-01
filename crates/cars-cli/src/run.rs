@@ -49,18 +49,24 @@ pub struct Args {
     /// Vehicle types and lanes as the kernel sees them, for physics_qa.py.
     #[arg(long)]
     phys_json: Option<PathBuf>,
+    /// Keep this share of trips, for the low-demand check.
+    #[arg(long, default_value_t = 1.0)]
+    demand_fraction: f32,
+    /// Move a physical parameter for a sensitivity test: name=value. Names in research/physics-provenance.md.
+    #[arg(long)]
+    tune: Vec<String>,
+    /// Build the world, print its sizes and stop. Needs no GPU.
+    #[arg(long)]
+    world_only: bool,
     /// One desired speed per step in m/s, one per line, for every vehicle: drive a cycle.
     #[arg(long)]
     speed_trace: Option<PathBuf>,
     /// Every vehicle type drives as a human: the model of research/truth/05, the rules of research/truth/14.
     #[arg(long)]
     humans: bool,
-    /// Human rules to switch off, for measuring each one: courtesy, shrink, offset, anticipate, miss, gate, yellow, exit_clear.
+    /// Human rules to switch off, for measuring each one: courtesy, shrink, offset, anticipate, miss, gate, yellow.
     #[arg(long, value_delimiter = ',')]
     human_off: Vec<String>,
-    /// Human numbers, name=value, comma separated. See crates/cars-core/src/shaders/HUMAN.md.
-    #[arg(long, default_value = "")]
-    human_param: String,
     /// Reference values of a place. sweden: Trafikverket's jam spacing, saturation flow and critical gaps.
     #[arg(long)]
     region: Option<String>,
@@ -153,6 +159,16 @@ pub fn run(args: Args) {
     let mut demand = Demand::load(&net, &args.routes, &args.additional, args.seed, Some(args.end as f64)).expect("demand");
     eprintln!("demand loaded in {:.2}s: {}", t.elapsed().as_secs_f64(), demand.summary());
     let mu = if args.sumo_compat { 0.0 } else { surface_friction(&args.surface) };
+    if args.demand_fraction < 1.0 {
+        // The same trips stay at every fraction, so that a lower one is a subset of a higher one.
+        let before = demand.trips.len();
+        demand.trips.retain(|t| (u64::from(t.id).wrapping_add(1).wrapping_mul(0x9E3779B97F4A7C15) >> 32) as f64 / 4294967296.0 < args.demand_fraction as f64);
+        eprintln!("demand fraction {}: {} of {before} trips", args.demand_fraction, demand.trips.len());
+    }
+    let tune: Vec<(String, f32)> = args.tune.iter().map(|t| {
+        let (k, v) = t.split_once('=').expect("--tune name=value");
+        (k.to_string(), v.parse().expect("--tune name=value"))
+    }).collect();
     let speed_trace: Vec<f32> = args.speed_trace.as_ref().map(|p| {
         std::fs::read_to_string(p).expect("speed trace").lines().filter_map(|l| l.trim().parse().ok()).collect()
     }).unwrap_or_default();
@@ -164,6 +180,7 @@ pub fn run(args: Args) {
         mu,
         detect_every: args.detect_every,
         speed_trace: speed_trace.clone(),
+        tune,
         time_to_teleport: args.time_to_teleport.unwrap_or(if args.sumo_compat { 300.0 } else { 0.0 }),
         ignore_blocker: args.ignore_junction_blocker,
         capacity: args.capacity,
@@ -172,13 +189,11 @@ pub fn run(args: Args) {
         route_arena: if !args.sumo_compat && (args.humans || demand.vtypes.iter().any(|t| matches!(t.model, cars_core::demand::CfModel::Human))) { 4_000_000 } else { 0 },
         human_flags: cars_core::world::human_flags(&args.human_off),
         human: {
-            let mut h = match args.region.as_deref() {
+            match args.region.as_deref() {
                 Some("sweden") => cars_core::world::HumanParams::sweden(),
                 Some(other) => panic!("no region {other}"),
                 None => cars_core::world::HumanParams::default(),
-            };
-            h.apply(&args.human_param);
-            h
+            }
         },
         ..Default::default()
     };
@@ -198,6 +213,12 @@ pub fn run(args: Args) {
         t.elapsed().as_secs_f64(), world.lanes.len(), world.links.len(), world.foes.len(), world.conflicts.len(),
         world.tls.len(), world.trips.len(), world.params.capacity, world.params.key_bits
     );
+    if mu > 0.0 {
+        eprintln!("physics: {} conflict zones, mu {mu}", world.zones.len());
+    }
+    if args.world_only {
+        return;
+    }
     let checks = if args.trusted { Checks::Trusted } else { Checks::Safe };
     let gpu = pollster::block_on(Gpu::headless(GpuOptions { adapter_name: Some("7900".into()), checks })).expect("gpu");
     let mut sim = Sim::new(&gpu, &world).expect("sim");
@@ -211,16 +232,16 @@ pub fn run(args: Args) {
         })
         .collect();
     let widths: Vec<f32> = demand.vtypes.iter().map(|t| t.width).collect();
-    let mut tracer = args.trace.as_ref().map(|p| {
-        let options = crate::trace::Options { begin: args.trace_begin.unwrap_or(args.begin), end: args.trace_end.unwrap_or(args.end), stride: args.trace_stride, bbox: args.trace_bbox.clone() };
-        crate::trace::Tracer::new(p, options, &net, &mut world, &demand, &widths, args.begin, cfg.time_to_teleport, &gpu).expect("trace")
-    });
     let mut physics = report::Physics::new(&net, &world, args.begin, args.dt, args.gridlock_after);
     if let Some(p) = &args.phys_json {
         report::write_phys_json(p, &net, &world, &demand).expect("phys json");
     }
     let heavy: Vec<bool> = demand.vtypes.iter().map(|t| matches!(cars_core::net::VCLASSES.get(t.vclass.trailing_zeros() as usize).copied(), Some("bus" | "coach" | "truck" | "trailer"))).collect();
     let mut rerouter = (cfg.route_arena > 0).then(|| cars_core::reroute::Rerouter::new(&net, demand.vtypes.iter().map(|t| t.vclass), &sim));
+    let mut tracer = args.trace.as_ref().map(|p| {
+        let options = crate::trace::Options { begin: args.trace_begin.unwrap_or(args.begin), end: args.trace_end.unwrap_or(args.end), stride: args.trace_stride, bbox: args.trace_bbox.clone() };
+        crate::trace::Tracer::new(p, options, &net, &mut world, &demand, &widths, args.begin, cfg.time_to_teleport, &gpu).expect("trace")
+    });
     // The GPU has its copies now. A day of Berlin would otherwise keep gigabytes in RAM.
     demand.routes = Vec::new();
     world.routes = Vec::new();
@@ -497,7 +518,7 @@ pub fn run(args: Args) {
         finished.json["stuck_like_teleports"] = serde_json::json!({"jam": c[13], "yield": c[14], "waiting_for_a_gap": c[15]});
         if let Some(r) = &rerouter {
             let h = serde_json::json!({
-                "yield_steps": c[cars_core::world::C_HU_YIELD], "blocking_entries": c[cars_core::world::C_HU_BLOCKING],
+                "yield_steps": c[cars_core::world::C_HU_YIELD],
                 "missed_turns": c[cars_core::world::C_HU_REROUTE], "lost_inside": r.patched, "lost_outside": r.lost_outside, "lost_stuck": r.failed, "lost_cars": r.lost_cars(),
                 "lost_per_1000_trips": 1000.0 * r.lost_cars() as f64 / (c[2] as f64).max(1.0), "arena_edges": r.arena_used(),
                 "guard_steps": c[cars_core::world::C_HU_GUARD], "human_steps": c[cars_core::world::C_HU_STEPS], "rules_off": args.human_off,

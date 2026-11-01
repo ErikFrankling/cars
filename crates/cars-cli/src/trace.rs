@@ -543,7 +543,7 @@ impl Writer {
         let mut running = 0u32;
         let mut speed_sum = 0f64;
         for v in vehicles {
-            if v.replica != 0 {
+            if v.replica != 0 || v.flags & crate::report::F_SHADOW != 0 {
                 continue;
             }
             let t = v.trip as usize;

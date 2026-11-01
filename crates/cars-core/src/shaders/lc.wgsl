@@ -43,6 +43,7 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
     ty = types[e.vtype];
     dt = P.dt;
     mu = P.mu;
+    cert_on = (P.safety & 1u) != 0u;
     let ed = edges[lanes[e.lane].edge];
     if (ed.lane_count > 16u) { return; }
     if (ed.lane_count == 1u) {
@@ -1265,6 +1266,7 @@ fn lc_decide_helpers(@builtin(global_invocation_id) id: vec3u) {
 // A change takes forward travel: at 12 degrees, some 12 m to get a car's body off the old lane. The
 // leaders on both lanes have to leave that much, or the change would stop halfway across both.
 fn ph_lc_path(e: Veh, own: LcNeighbors, n: LcNeighbors, dest: u32) -> bool {
+    if ((P.safety & 8u) == 0u) { return true; }
     let half = 0.5 * (lanes[dest].width + ty.width);
     let travel = half / select(0.21256, HU_LC_SLOPE, ty.v_lat <= 0.0);
     let t = half / select(ty.v_lat, 0.7, ty.v_lat <= 0.0);
@@ -1292,6 +1294,7 @@ fn lc_evaluate(i: u32) {
     ty = types[e.vtype];
     dt = P.dt;
     mu = P.mu;
+    cert_on = (P.safety & 1u) != 0u;
     ego_flags = e.flags;
     ego_acc = e.acc;
     mode_done = true;

@@ -8,8 +8,6 @@ use crate::topology::Topology;
 use crate::world::{GpuTripEnergy, GpuZone};
 
 pub const G: f32 = 9.81;
-/// Closer than this, in metres between centre lines, two wide vehicles touch.
-const ZONE_DISTANCE: f32 = 2.6;
 const CHORD: f32 = 10.0;
 const STRAIGHT_RADIUS: f32 = 500.0;
 
@@ -64,11 +62,11 @@ fn radius(a: [f32; 2], b: [f32; 2], c: [f32; 2]) -> f32 {
 }
 
 /// Lateral acceleration drivers accept at a radius: Xu et al., capped at Bosetti's measured comfort.
-fn driver_lateral(r: f32) -> f32 {
-    (20.5 * r.powf(-0.46) - 0.35).min(3.0)
+fn driver_lateral(r: f32, cap: f32) -> f32 {
+    (20.5 * r.powf(-0.46) - 0.35).min(cap)
 }
 
-pub fn lanes(net: &Net) -> Vec<LanePhys> {
+pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
     net.lanes
         .iter()
         .map(|l| {
@@ -100,7 +98,7 @@ pub fn lanes(net: &Net) -> Vec<LanePhys> {
                 if r >= STRAIGHT_RADIUS {
                     continue;
                 }
-                let v = (driver_lateral(r) * r).sqrt();
+                let v = (driver_lateral(r, lateral_cap) * r).sqrt();
                 *lim = v;
                 *ra = r;
                 tightest = tightest.min(r);
@@ -130,7 +128,7 @@ pub fn lanes(net: &Net) -> Vec<LanePhys> {
 
 /// Every pair of internal lanes of a junction that come within body reach of each other, and where.
 /// Symmetric by construction, from geometry alone, independent of the right-of-way tables.
-pub fn zones(net: &Net, topo: &Topology) -> Vec<Vec<GpuZone>> {
+pub fn zones(net: &Net, topo: &Topology, reach: f32) -> Vec<Vec<GpuZone>> {
     let mut by_junction: FxHashMap<&str, Vec<u32>> = FxHashMap::default();
     for (li, l) in net.lanes.iter().enumerate() {
         if net.edges[l.edge as usize].func == EdgeFunc::Internal && l.shape.len() >= 2 {
@@ -159,16 +157,17 @@ pub fn zones(net: &Net, topo: &Topology) -> Vec<Vec<GpuZone>> {
         for (ia, &a) in list.iter().enumerate() {
             for (ib, &b) in list.iter().enumerate().skip(ia + 1) {
                 let (ba, bb) = (boxes[ia], boxes[ib]);
-                if ba[0] > bb[2] + ZONE_DISTANCE || bb[0] > ba[2] + ZONE_DISTANCE || ba[1] > bb[3] + ZONE_DISTANCE || bb[1] > ba[3] + ZONE_DISTANCE {
+                if ba[0] > bb[2] + reach || bb[0] > ba[2] + reach || ba[1] > bb[3] + reach || bb[1] > ba[3] + reach {
                     continue;
                 }
                 if successive(a, b) {
                     continue;
                 }
-                let Some((a_in, a_out)) = interval(net, &cum, a, b) else { continue };
-                let Some((b_in, b_out)) = interval(net, &cum, b, a) else { continue };
-                out[a as usize].push(GpuZone { foe_lane: b, own_in: a_in, own_out: a_out, foe_in: b_in, foe_out: b_out });
-                out[b as usize].push(GpuZone { foe_lane: a, own_in: b_in, own_out: b_out, foe_in: a_in, foe_out: a_out });
+                let Some((a_in, a_out, d1)) = interval(net, &cum, a, b, reach) else { continue };
+                let Some((b_in, b_out, d2)) = interval(net, &cum, b, a, reach) else { continue };
+                let dist = d1.min(d2);
+                out[a as usize].push(GpuZone { foe_lane: b, own_in: a_in, own_out: a_out, foe_in: b_in, foe_out: b_out, dist });
+                out[b as usize].push(GpuZone { foe_lane: a, own_in: b_in, own_out: b_out, foe_in: a_in, foe_out: a_out, dist });
             }
         }
     }
@@ -176,26 +175,27 @@ pub fn zones(net: &Net, topo: &Topology) -> Vec<Vec<GpuZone>> {
 }
 
 /// Where along `a`, in lane positions, its centre line is within reach of `b`.
-fn interval(net: &Net, cum: &[Vec<f32>], a: u32, b: u32) -> Option<(f32, f32)> {
+fn interval(net: &Net, cum: &[Vec<f32>], a: u32, b: u32, reach: f32) -> Option<(f32, f32, f32)> {
     let (la, lb) = (&net.lanes[a as usize], &net.lanes[b as usize]);
     let ca = &cum[a as usize];
     let geom = *ca.last()?;
     let n = (geom.ceil() as usize).max(1);
-    let (mut first, mut last) = (f32::MAX, f32::MIN);
+    let (mut first, mut last, mut least) = (f32::MAX, f32::MIN, f32::MAX);
     for i in 0..=n {
         let s = geom * i as f32 / n as f32;
         let p = point_at(&la.shape, ca, s);
-        let close = lb.shape.windows(2).any(|w| segment_dist2(p, w[0], w[1]) < ZONE_DISTANCE * ZONE_DISTANCE);
-        if close {
+        let d2 = lb.shape.windows(2).map(|w| segment_dist2(p, w[0], w[1])).fold(f32::MAX, f32::min);
+        if d2 < reach * reach {
             first = first.min(s);
             last = last.max(s);
+            least = least.min(d2);
         }
     }
     if first > last {
         return None;
     }
     let scale = la.length / geom.max(1e-3);
-    Some((first * scale, last * scale))
+    Some((first * scale, last * scale, least.sqrt()))
 }
 
 fn segment_dist2(p: [f32; 2], a: [f32; 2], b: [f32; 2]) -> f32 {

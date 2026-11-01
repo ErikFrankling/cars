@@ -36,6 +36,11 @@ pub struct GpuParams {
     pub detect_every: u32,
     pub grid_mask: u32,
     pub trace_len: u32,
+    /// Bit 0 certificate, bit 1 junction arbiter, bit 2 exit-clear. All on unless a test turns one off.
+    pub safety: u32,
+    pub width_margin: f32,
+    pub claim_scale: f32,
+    pub queue_speed: f32,
     pub hu_k: f32,
     pub hu_rho: f32,
     pub hu_nscale: f32,
@@ -154,6 +159,8 @@ pub struct GpuZone {
     pub own_out: f32,
     pub foe_in: f32,
     pub foe_out: f32,
+    /// Least distance between the two centre lines.
+    pub dist: f32,
 }
 
 #[repr(C)]
@@ -226,6 +233,8 @@ pub struct GpuVType {
     pub lc_look_left: f32,
     pub lc_speed_gain_right: f32,
     pub collision_factor: f32,
+    /// Share of drivers of this type who keep the junction clear.
+    pub exit_comply: f32,
     pub pw_kg: f32,
     pub road_a: f32,
     pub road_c: f32,
@@ -242,7 +251,8 @@ pub struct GpuVType {
     pub width: f32,
     pub ph_tau: f32,
     pub m_ref: f32,
-    pub pad: [f32; 2],
+    /// How hard a driver assumes the leader will brake, Gipps' b-hat.
+    pub b_assume: f32,
 }
 
 #[repr(C)]
@@ -349,7 +359,7 @@ pub const SEG_BYTES: u64 = 16;
 pub const LCPLAN_BYTES: u64 = 16;
 pub const MAX_ITEMS: u64 = 8;
 pub const SLOTS: u64 = 8;
-pub const CONTACT_LOG: u64 = 4096;
+pub const CONTACT_LOG: u64 = 65536;
 pub const COUNTERS: u64 = 64;
 pub const MIRROR_BYTES: u64 = 16;
 pub const POSE_BYTES: u64 = 32;
@@ -366,8 +376,6 @@ pub const C_CONTACT: usize = 24;
 pub const C_CONTACT_KINDS: usize = 25;
 /// Human lane change rules, counted after the contact kinds.
 pub const C_HU_YIELD: usize = 32;
-pub const C_HU_LOST_REQ: usize = 33;
-pub const C_HU_BLOCKING: usize = 34;
 pub const C_HU_REROUTE: usize = 35;
 pub const C_HU_LC_URGENT: usize = 36;
 pub const C_HU_GUARD: usize = 37;
@@ -384,7 +392,7 @@ pub fn human_flags(off: &[String]) -> u32 {
 }
 
 /// Rules of `research/truth/14-human-courtesy.md`, as bits of `GpuParams::hu_flags`.
-pub const HUMAN_RULES: [(&str, u32); 8] = [("courtesy", 1), ("shrink", 2), ("offset", 4), ("anticipate", 8), ("miss", 16), ("gate", 32), ("yellow", 64), ("exit_clear", 128)];
+pub const HUMAN_RULES: [(&str, u32); 7] = [("courtesy", 1), ("shrink", 2), ("offset", 4), ("anticipate", 8), ("miss", 16), ("gate", 32), ("yellow", 64)];
 
 /// The human driver's numbers that are ours to choose. Provenance of each: `shaders/HUMAN.md`.
 #[derive(Clone, Copy, Debug)]
@@ -393,8 +401,6 @@ pub struct HumanParams {
     pub cooperation: f32,
     /// Mean seconds at a standstill before giving up on a turn. Each driver draws 0.5 to 1.5 times this.
     pub t_miss: f32,
-    /// Vissim's "avoid blocking" percentage, as a share.
-    pub compliance: f32,
     /// Stop short of the end of a lane: Trafikverket's minimum 5 m, 7 m more on every second lane.
     pub stop_base: f32,
     pub stop_offset: f32,
@@ -419,7 +425,7 @@ pub struct HumanParams {
 
 impl Default for HumanParams {
     fn default() -> Self {
-        Self { cooperation: 0.4, t_miss: 120.0, compliance: 1.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 1.0, gap_roundabout: 1.0, t_scale: 1.0, s0_scale: 1.0, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6 }
+        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 1.0, gap_roundabout: 1.0, t_scale: 1.0, s0_scale: 1.0, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6 }
     }
 }
 
@@ -429,15 +435,13 @@ impl HumanParams {
         Self { s0_scale: 2.43 / 2.8, ..Self::default() }
     }
 
-    /// `name=value`, comma separated.
-    pub fn apply(&mut self, text: &str) {
-        for pair in text.split(',').filter(|s| !s.is_empty()) {
-            let (k, v) = pair.split_once('=').unwrap_or_else(|| panic!("human parameter {pair}: want name=value"));
-            let v: f32 = v.parse().unwrap_or_else(|_| panic!("human parameter {pair}: not a number"));
-            match k {
+    /// With what `--tune` names. Names that are not this driver's belong to the physics.
+    pub fn tuned(mut self, tune: &[(String, f32)]) -> Self {
+        for (k, v) in tune {
+            let v = *v;
+            match k.as_str() {
                 "cooperation" => self.cooperation = v,
                 "t_miss" => self.t_miss = v,
-                "compliance" => self.compliance = v,
                 "stop_base" => self.stop_base = v,
                 "stop_offset" => self.stop_offset = v,
                 "sig_react" => self.sig_react = v,
@@ -454,13 +458,16 @@ impl HumanParams {
                 "lead_shift" => self.lead_shift = v,
                 "lag_shift" => self.lag_shift = v,
                 "lc_safety" => self.lc_safety = v,
-                _ => panic!("no human parameter {k}"),
+                _ => {}
             }
         }
+        self
     }
 }
 /// Contact kinds, as counted from `C_CONTACT_KINDS`.
-pub const CONTACT_NAMES: [&str; 7] = ["same lane", "neighbour lane", "junction crossing", "junction merge", "junction diverge", "lane start", "other"];
+pub const CONTACT_NAMES: [&str; 8] = ["same lane", "neighbour lane", "junction crossing", "junction merge", "junction diverge", "lane start", "other", "crossed without grant"];
+/// Kinds from here on are protocol breaches, not bodies touching.
+pub const CONTACT_BODIES: usize = 7;
 /// Sort key resolution: two vehicles on a lane are always further apart than this.
 const KEY_METRES: f32 = 2.5;
 
@@ -497,6 +504,14 @@ pub struct SimConfig {
     pub human: HumanParams,
     /// Room in the routes buffer for routes handed out during the run, in edges.
     pub route_arena: u32,
+    /// Physical parameters a sensitivity test wants to move. See `tune`.
+    pub tune: Vec<(String, f32)>,
+}
+
+impl SimConfig {
+    pub fn tune(&self, name: &str, default: f32) -> f32 {
+        self.tune.iter().rev().find(|(k, _)| k == name).map_or(default, |(_, v)| *v)
+    }
 }
 
 impl Default for SimConfig {
@@ -519,9 +534,10 @@ impl Default for SimConfig {
             detect_every: 0,
             speed_trace: Vec::new(),
             humans: false,
-            human_flags: 255,
+            human_flags: 127,
             human: HumanParams::default(),
             route_arena: 0,
+            tune: Vec::new(),
         }
     }
 }
@@ -644,7 +660,7 @@ const G: f32 = 9.81;
 const RHO: f32 = 1.225;
 
 /// Fills in the physical half of a type. `phys.*` parameters on the vType override the table.
-fn physical_type(g: &mut GpuVType, t: &VType) {
+fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     let r = phys_row(t.vclass);
     let num = |key: &str, default: f32| t.params.get(key).and_then(|v| v.parse().ok()).unwrap_or(default);
     let m = num("phys.mass", r.m_ref);
@@ -656,7 +672,7 @@ fn physical_type(g: &mut GpuVType, t: &VType) {
     g.i_inv = 1.0 / (1.0 + num("phys.eps", r.eps));
     g.trac = num("phys.f_d", r.f_d) * G;
     g.v_corner = num("phys.v_corner", r.v_corner);
-    g.b_lo = num("phys.b_lo", r.b_lo);
+    g.b_lo = num("phys.b_lo", if r.m_ref == 1650.0 { cfg.tune("car_b_lo", r.b_lo) } else { r.b_lo });
     g.b_hi = num("phys.b_hi", r.b_hi);
     g.t_r = num("phys.t_r", r.t_r);
     // A type that asks for less than the measured driver keeps its own acceleration.
@@ -665,7 +681,12 @@ fn physical_type(g: &mut GpuVType, t: &VType) {
     g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
     g.v_lat = num("phys.v_lat", 0.6);
     g.width = t.width;
-    g.ph_tau = num("phys.tau", 1.35);
+    g.ph_tau = num("phys.tau", cfg.tune("tau", 1.35));
+    let automated = matches!(t.model, CfModel::Acc | CfModel::Cacc);
+    g.exit_comply = num("phys.exit_comply", if automated { 1.0 } else { cfg.tune("exit_comply", 0.9) });
+    // Gipps' two decelerations: what the driver plans with, and what it expects of the leader.
+    g.decel = num("phys.b_plan", cfg.tune("driver_b", t.decel));
+    g.b_assume = num("phys.b_assume", cfg.tune("leader_b", g.decel));
     // Leaders and tails are judged by their hardest possible stop.
     g.apparent = g.b_hi;
 }
@@ -748,7 +769,7 @@ fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
 /// A nominal car, as the replay kernel needs it.
 pub fn human_replay_type(t: &VType) -> GpuVType {
     let mut g = gpu_vtype(t, 0.1);
-    physical_type(&mut g, t);
+    physical_type(&mut g, t, &SimConfig::default());
     g.model = 4;
     g.v_lat = -1.0;
     g
@@ -763,11 +784,11 @@ impl World {
             route_arena: cfg.route_arena,
             ..Default::default()
         };
-        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net), crate::physics::zones(net, &topo)));
+        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 3.0)), crate::physics::zones(net, &topo, cfg.tune("zone_distance", 2.6))));
         w.vtypes = demand.vtypes.iter().map(|t| gpu_vtype(t, cfg.dt)).collect();
         if cfg.mu > 0.0 {
             for (g, t) in w.vtypes.iter_mut().zip(&demand.vtypes) {
-                physical_type(g, t);
+                physical_type(g, t, cfg);
                 if cfg.humans || matches!(t.model, CfModel::Human) {
                     g.model = 4;
                     // Below zero: lateral motion is a human's quintic, not a fixed speed.
@@ -810,6 +831,7 @@ impl World {
         let capacity = capacity + shadow_reserve;
         let sample_steps = ((cfg.sample_seconds / cfg.dt).round() as u32).max(1);
         let n_steps = ((cfg.end_seconds - cfg.begin_seconds) / cfg.dt).ceil() as u32 + 1;
+        let human = cfg.human.tuned(&cfg.tune);
         w.params = GpuParams {
             dt: cfg.dt,
             n_lanes: w.lanes.len() as u32,
@@ -835,15 +857,19 @@ impl World {
             detect_every: if cfg.mu > 0.0 { cfg.detect_every } else { 0 },
             grid_mask: (capacity.max(16) as u64 * 2).next_power_of_two() as u32 - 1,
             trace_len: cfg.speed_trace.len() as u32,
+            safety: (cfg.tune("certificate", 1.0) as u32) | ((cfg.tune("arbiter", 1.0) as u32) << 1) | ((cfg.tune("exit_clear", 1.0) as u32) << 2) | ((cfg.tune("lc_path", 1.0) as u32) << 3),
+            width_margin: cfg.tune("width_margin", 0.1),
+            claim_scale: cfg.tune("claim_scale", 1.0),
+            queue_speed: cfg.tune("queue_speed", 5.0),
             hu_k: 1.0 - (-cfg.dt / 1.0).exp(),
             hu_rho: (-cfg.dt / 3.0).exp(),
             hu_nscale: 0.20 * (1.0 - (-2.0 * cfg.dt / 3.0).exp()).sqrt(),
             hu_flags: cfg.human_flags,
-            hu_a: [cfg.human.cooperation, cfg.human.t_miss, cfg.human.compliance, cfg.human.stop_base],
-            hu_b: [cfg.human.stop_offset, cfg.human.sig_react, cfg.human.r_urg, cfg.human.coop_decel],
-            hu_c: [cfg.human.tau_gate, cfg.human.tau_min, cfg.human.b_em, cfg.human.gap_model],
-            hu_d: [cfg.human.gap_junction, cfg.human.gap_roundabout, cfg.human.t_scale, cfg.human.s0_scale],
-            hu_e: [cfg.human.lead_shift, cfg.human.lag_shift, cfg.human.lc_safety, 0.0],
+            hu_a: [human.cooperation, human.t_miss, 0.0, human.stop_base],
+            hu_b: [human.stop_offset, human.sig_react, human.r_urg, human.coop_decel],
+            hu_c: [human.tau_gate, human.tau_min, human.b_em, human.gap_model],
+            hu_d: [human.gap_junction, human.gap_roundabout, human.t_scale, human.s0_scale],
+            hu_e: [human.lead_shift, human.lag_shift, human.lc_safety, 0.0],
         };
         w
     }

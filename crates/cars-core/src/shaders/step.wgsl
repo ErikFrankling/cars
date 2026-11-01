@@ -72,15 +72,15 @@ const C_DENIED: u32 = 23u;
 const C_CONTACT: u32 = 24u;
 const C_CONTACT_KINDS: u32 = 25u;
 const C_HU_YIELD: u32 = 32u;
-const C_HU_LOST_REQ: u32 = 33u;
-const C_HU_BLOCKING: u32 = 34u;
 const C_HU_REROUTE: u32 = 35u;
 const C_HU_LC_URGENT: u32 = 36u;
 const C_HU_GUARD: u32 = 37u;
 const C_HU_STEPS: u32 = 39u;
 const REROUTE_LOG: u32 = 65536u;
 const STUCK_AFTER: f32 = 300.0;   // SUMO's time to teleport, for counting what would have
-const F_STUCK_COUNTED: u32 = 1048576u;
+const F_STUCK_COUNTED: u32 = 2097152u;
+const CONTACT_LOG: u32 = 65536u;
+const WIDEST: f32 = 2.55;
 
 struct Queue {
     edge: u32,
@@ -264,11 +264,13 @@ fn clear_lanes(@builtin(global_invocation_id) id: vec3u) {
         atomicStore(&entrant[P.n_lanes + id.x], 0u);
         atomicStore(&junction_bid[id.x], NONE);
         atomicStore(&inbound[id.x], 0u);
+        atomicStore(&inbound[P.n_lanes + id.x], 0u);
     }
 }
 
 // Back position in 1/8 m, then a CACC bit and the speed in 1/256 m/s.
 fn pack_back(back: f32, speed: f32, cacc: u32) -> u32 {
+    if (P.mu > 0.0) { return (u32(clamp(back, 0.0, 8000.0) * 8.0 + 0.5) << 16u) | (cacc << 15u) | u32(clamp(speed, 0.0, 127.0) * 256.0); }
     return (u32(clamp(back, 0.0, 8000.0) * 8.0) << 16u) | (cacc << 15u) | u32(clamp(speed, 0.0, 127.0) * 256.0);
 }
 fn is_cacc(t: VType) -> u32 { return u32(t.model == MODEL_CACC); }
@@ -612,6 +614,7 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     ty = types[ego.vtype];
     dt = P.dt;
     mu = P.mu;
+    cert_on = (P.safety & 1u) != 0u;
     ego_flags = ego.flags;
     ego_acc = ego.acc;
     mode_done = false;
@@ -826,7 +829,8 @@ fn lane_free_scan(@builtin(global_invocation_id) id: vec3u) {
         for (var k = i; k < end; k++) {
             let vt = types[cur[k].vtype];
             speed_sum += cur[k].speed;
-            if (!stopped && cur[k].speed < 1.0 && !roundabout) {
+            // As Vissim's avoid-blocking test: a blocker under 5 m/s and under 75% of what it wants.
+            if (!stopped && cur[k].speed < P.queue_speed && cur[k].speed < 0.75 * min(lanes[lane].speed * cur[k].sf, vt.max_speed)) {
                 stopped = true;
                 f.flags |= FREE_STOPPED;
                 f.space = cur[k].pos - vt.length - lengths;
@@ -999,6 +1003,7 @@ fn approach(@builtin(global_invocation_id) id: vec3u) {
     ty = types[ego.vtype];
     dt = P.dt;
     mu = P.mu;
+    cert_on = (P.safety & 1u) != 0u;
     let base = i * MAX_ITEMS;
     let n = ego.n_items;
     let s = seg[ego.lane];
@@ -1286,6 +1291,7 @@ fn walk_links(e: ptr<function, Veh>, base: u32, n: u32, speed: f32, vmax_lane: f
                 (*e).flags |= F_DENIED;
                 break;
             }
+            if (it.grant > 1u) { (*e).flags |= F_GRANTED; }
             let state = link_state(it.link);
             let yellow = have_yellow(state);
             if (hu_on && ((*e).flags & F_YELLOW_GO) != 0u && links[it.link].tl != NONE && (yellow || have_red(state))) {
@@ -1391,7 +1397,9 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
     let v = e.speed;
     dt = P.dt;
     mu = P.mu;
-    let claim = v * dt * 2.0 + v * v / (2.0 * ty.decel) + v * ty.ph_tau + 2.0;
+    cert_on = (P.safety & 1u) != 0u;
+    if ((P.safety & 2u) == 0u) { return; }
+    let claim = (v * dt * 2.0 + v * v / (2.0 * ty.decel) + v * ty.ph_tau + 2.0) * P.claim_scale;
     if (items[base].dist > claim) { return; }
     ego_acc = e.acc;
     ph_setup(e);
@@ -1415,13 +1423,14 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
         }
         if (!chained && it.dist > claim) { break; }
         let la = lanes[next];
-        let committed = ph_v_cert(it.dist, v, 0.0, 0.0, e.acc) < floor_v;
+        let committed = ph_v_cert(it.dist, v, 0.0, 0.0, e.acc) < floor_v || ph_stop_distance(v, e.acc) + 0.1 > it.dist;
         var ok = true;
         if (!committed) {
             for (var z = 0u; z < la.zone_count; z++) {
                 let zn = zones[la.zone_start + z];
                 let p = atomicLoad(&tail[zn.foe_lane]);
-                if (p != NONE && unpack_back(p) < zn.foe_out) {
+                if (p != NONE && unpack_back(p) < zn.foe_out
+                    && zn.dist < 0.5 * (ty.width + f32(atomicLoad(&inbound[P.n_lanes + zn.foe_lane])) / 16.0) + P.width_margin) {
                     ok = false;
                     break;
                 }
@@ -1441,8 +1450,11 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
                             break;
                         }
                     }
-                    let wanted = in_front + need_own + f32(atomicLoad(&inbound[to])) / 8.0;
-                    if (wanted > ph_exit_room(to, next_link) && !hu_blocks_anyway(e.trip, to)) { ok = false; }
+                    // Vissim wants room for the length plus 0.5 m, from the share of drivers who bother.
+                    let wanted = in_front + ty.length + 0.5 + f32(atomicLoad(&inbound[to])) / 8.0;
+                    // Nobody fills a roundabout: its ring would lock whole.
+                    let keeps_clear = (P.safety & 4u) != 0u && (f32(pcg(e.trip ^ 0x51ed270bu) >> 8u) / 16777216.0 < ty.exit_comply || (lanes[to].flags & LANE_ROUNDABOUT) != 0u);
+                    if (keeps_clear && wanted > ph_exit_room(to, next_link)) { ok = false; }
                 }
             }
         }
@@ -1451,21 +1463,14 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
             atomicAdd(&C[C_DENIED], 1u);
             break;
         }
+        // Whoever started goes on: without this a car that won a gap loses it again before it reaches the line.
         var rank = 2u;
-        if (committed) { rank = 0u; } else if (have_priority(link_state(it.link))) { rank = 1u; }
+        if (committed || ((e.flags & F_GRANTED) != 0u && v > HALT_SPEED)) { rank = 0u; } else if (have_priority(link_state(it.link))) { rank = 1u; }
         let hash = (pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u;
         let bid = (rank << 30u) | (min(u32(max(it.arrival, 0.0) * 8.0), 16383u) << 16u) | hash;
         items[base + j].grant = bid;
         atomicMin(&junction_bid[next], bid);
     }
-}
-
-// Vissim's "avoid blocking" holds for a percentage of drivers. The rest enter and sit in the junction.
-fn hu_blocks_anyway(trip: u32, to: u32) -> bool {
-    if (!hu_on || (P.hu_flags & HS_EXIT_CLEAR) == 0u) { return false; }
-    let blocks = f32(pcg(trip * 2654435761u ^ pcg(to)) >> 8u) / 16777216.0 >= P.hu_a.z;
-    if (blocks) { atomicAdd(&C[C_HU_BLOCKING], 1u); }
-    return blocks;
 }
 
 @compute @workgroup_size(64)
@@ -1479,8 +1484,10 @@ fn ph_grant(@builtin(global_invocation_id) id: vec3u) {
         if (bid == 1u) { return; }
         if (bid == 0u) { continue; }
         let la = lanes[links[items[base + j].link].next_lane];
+        let reach = 0.5 * (types[cur[i].vtype].width + WIDEST) + P.width_margin;
         for (var z = 0u; z < la.zone_count; z++) {
-            if (atomicLoad(&junction_bid[zones[la.zone_start + z].foe_lane]) < bid) {
+            let zn = zones[la.zone_start + z];
+            if (zn.dist < reach && atomicLoad(&junction_bid[zn.foe_lane]) < bid) {
                 items[base + j].grant = 1u;
                 atomicAdd(&C[C_DENIED], 1u);
                 return;
@@ -1540,12 +1547,13 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     if (i >= G.n_active) { return; }
     var e = cur[i];
     if ((e.flags & F_SHADOW) != 0u) { return; }
-    e.flags &= ~(4096u | F_HAVE_TO_WAIT | F_DENIED);
+    e.flags &= ~(4096u | F_HAVE_TO_WAIT | F_DENIED | F_GRANTED);
     if ((e.flags & F_LANE_CHANGED) != 0u) { e.flags |= 4096u; }
     e.flags &= ~F_LANE_CHANGED;
     ty = types[e.vtype];
     dt = P.dt;
     mu = P.mu;
+    cert_on = (P.safety & 1u) != 0u;
     if (e.lane == P.dummy_lane) {
         teleporting_step(&e, i);
         cur[i] = e;
@@ -1591,7 +1599,8 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         var nv = max(chosen, floor_v);
         if (v_safe < 0.0) {
             nv = floor_v;
-        } else if (max(v_safe, 0.0) < floor_v) {
+        } else if (max(v_safe, 0.0) < floor_v && speed > 2.0 && speed - v_safe > (ty.decel + 0.1) * dt) {
+            // Asked for more than a driver ever asks, and more than the brakes give.
             atomicAdd(&C[C_CERT_FLOOR], 1u);
         }
         if (ph_b_follower() <= 0.05) { atomicAdd(&C[C_NO_BRAKE], 1u); }
@@ -1657,7 +1666,11 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
             break;
         }
         let k = links[link];
-        if (mu > 0.0 && items[base + j].grant == 1u) { atomicAdd(&C[C_UNGRANTED], 1u); }
+        if (mu > 0.0 && items[base + j].grant == 1u) {
+            atomicAdd(&C[C_UNGRANTED], 1u);
+            let at = atomicAdd(&C[C_CONTACT], 1u) % CONTACT_LOG;
+            contacts[at] = Contact(G.step, e.trip, e.trip, e.lane, k.next_lane, 7u, e.speed, e.pos, len, 0.0, 0.0, 0.0);
+        }
         // A loop on a lane left in this step was crossed, however short the lane.
         let crossed = lanes[e.lane].det_pos;
         if (crossed >= 0.0 && (j > 0u || old_pos < crossed)) { last_detect[e.lane] = G.step; }
@@ -1764,6 +1777,14 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     let s = seg[first_lane];
     if (mu > 0.0 || e.lane != first_lane || i == s.first) {
         atomicMin(&tail[e.lane], pack_back(back, e.speed, is_cacc(ty)));
+    }
+    if (mu > 0.0) {
+        let w = u32(ty.width * 16.0);
+        atomicMax(&inbound[P.n_lanes + e.lane], w);
+        if (back < 0.0 && e.prev_lane != NONE) {
+            atomicMax(&inbound[P.n_lanes + e.prev_lane], w);
+            if (e.prev2_lane != NONE && lanes[e.prev_lane].length + back < 0.0) { atomicMax(&inbound[P.n_lanes + e.prev2_lane], w); }
+        }
     }
     if (e.lane != first_lane) {
         atomicMin(&entrant[e.lane], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
@@ -1989,6 +2010,7 @@ fn collide(@builtin(global_invocation_id) id: vec3u) {
     ty = types[a.vtype];
     dt = P.dt;
     mu = P.mu;
+    cert_on = (P.safety & 1u) != 0u;
     let gap = b.pos - types[b.vtype].length - a.pos - ty.collision_factor * ty.min_gap;
     if (gap < -EPS) {
         var e = a;
@@ -2031,6 +2053,7 @@ fn glosa(@builtin(global_invocation_id) id: vec3u) {
     ty = types[vt];
     dt = P.dt;
     mu = P.mu;
+    cert_on = (P.safety & 1u) != 0u;
     let orig = trips[e.trip].sf;
     var lane = e.lane;
     var r = e.route_i;
@@ -2277,6 +2300,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     ty = types[t.vtype];
     dt = P.dt;
     mu = P.mu;
+    cert_on = (P.safety & 1u) != 0u;
     mode_done = true;
     ins_rng = t.rng;
     let ed = edges[queues[q].edge];

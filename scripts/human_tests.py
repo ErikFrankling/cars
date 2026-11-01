@@ -140,7 +140,7 @@ def queue(seeds=None, n=15, dt=None, region=None, param=None):
     for seed in range(seeds):
         veh = ''.join(f'<vehicle id="v{k:02d}" type="h" depart="{k*2}" departSpeed="max" route="r"/>' for k in range(n))
         (d / 'r.xml').write_text(f'<routes>{VTYPE}<route id="r" edges="in out"/>{veh}</routes>')
-        extra = (['--region', region] if region else []) + (['--human-param', param] if param else [])
+        extra = (['--region', region] if region else []) + ([x for t in param.split(',') for x in ('--tune', t)] if param else [])
         rep, fc = cars(d, '--dt', dt or A.dt, '--end', 150, '--seed', seed, '--additional', d / 'tl.xml', *extra, tag=f's{seed}', interval=dt or A.dt)
         f = pd.read_csv(fc, usecols=['time', 'trip', 'lane', 'pos', 'speed'], dtype={'trip': str, 'lane': str})
         green = float(_first_green(d))
@@ -311,7 +311,7 @@ def merge(main=1180, ramp=920, vb=5.0, dur=1800, off=(), tag='', seeds=None, dt=
     (d / 'r.xml').write_text(f'''<routes>{VTYPE}<route id="rr" edges="on merge down neck out"/><route id="rm" edges="up merge down neck out"/>
 <flow id="ramp" type="h" route="rr" begin="0" end="{dur}" vehsPerHour="{ramp}" departLane="0" departSpeed="max"/>
 <flow id="main" type="h" route="rm" begin="0" end="{dur}" vehsPerHour="{main}" departLane="0" departSpeed="max"/></routes>''')
-    extra = (['--human-off', ','.join(off)] if off else []) + (['--human-param', param] if param else [])
+    extra = (['--human-off', ','.join(off)] if off else []) + ([x for t in param.split(',') for x in ('--tune', t)] if param else [])
     out = []
     for seed in range(seeds or A.seeds):
         rep, fc = cars(d, '--dt', dt or A.dt, '--end', dur + 900, '--seed', seed, *extra, tag=f's{seed}', interval=1.0)
@@ -490,7 +490,7 @@ def merge_one(tag, vb, param, dur=1200, main=1000, ramp=800, seed=1, off=()):
     merge_net(d, vb)
     (d / 'r.xml').write_text(f'''<routes>{VTYPE}<route id="rr" edges="on merge down neck out"/><route id="rm" edges="up merge down neck out"/><flow id="ramp" type="h" route="rr" begin="0" end="{dur}" vehsPerHour="{ramp}" departLane="0" departSpeed="max"/><flow id="main" type="h" route="rm" begin="0" end="{dur}" vehsPerHour="{main}" departLane="0" departSpeed="max"/></routes>''')
     extra = ['--human-off', ','.join(off)] if off else []
-    rep, fc = cars(d, '--dt', A.dt, '--end', dur + 600, '--seed', seed, '--human-param', param, *extra, tag=f's{seed}', interval=1.0)
+    rep, fc = cars(d, '--dt', A.dt, '--end', dur + 600, '--seed', seed, *[x for t in param.split(',') for x in ('--tune', t)], *extra, tag=f's{seed}', interval=1.0)
     s_ = score_merge(fc, dur)
     row = dict(tag=tag, n=s_['n'], never=s_['never'], p50=s_['p50'], p90=s_['p90'], p99=s_['p99'], max=s_['max'], ks=s_['ks'], b0=s_['between'][0], b1=s_['between'][1], bm=s_['between_mean'], ramp=s_['ramp_share'], flow=s_['flow'], pass0=s_['pass0'], pmax=s_['pass_max'], letin=s_['letin'], stop=s_['stopped'], vc=s_['v_cross'], rem=s_['rem_cross'], coll=rep['collision_incidents'], floor=rep['cert_floor'], lost=rep['humans']['lost_cars'], by=s_['letin_by_closing'])
     print(' '.join(f'{k}={v:.2f}' if isinstance(v, float) else f'{k}={v}' for k, v in row.items() if k != 'by'), flush=True)
@@ -508,7 +508,7 @@ def lee_grid():
     record('lee_grid', rows)
 
 
-HUMAN_I80 = 'gap_model=1,lead_shift=-6,lag_shift=-2'
+HUMAN_I80 = 'gap_model=1'
 
 
 def cooperation_sweep():

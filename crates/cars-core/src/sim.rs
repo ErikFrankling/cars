@@ -236,7 +236,8 @@ impl Sim {
         let mirror = empty("mirror", when(physical, p.n_trips as u64 * MIRROR_BYTES));
         let energy = empty("energy", when(physical, p.n_trips as u64 * std::mem::size_of::<GpuTripEnergy>() as u64));
         let junction_bid = empty("junction_bid", when(physical, p.n_lanes as u64 * 4));
-        let inbound = empty("inbound", when(physical, p.n_lanes as u64 * 4));
+        // Per lane what is heading there, then the widest body on it.
+        let inbound = empty("inbound", when(physical, p.n_lanes as u64 * 8));
         let hard_limit_init = vec![0xffu8; when(physical, p.n_trips as u64 * 4) as usize];
         let hard_limit = init("hard_limit", &hard_limit_init, storage);
         let zones = init("zones", bytemuck::cast_slice(&world.zones), storage);
@@ -246,7 +247,7 @@ impl Sim {
         // The grid's heads, then each vehicle's next in its cell.
         let grid_head = empty("grid_head", when(detecting, (p.grid_mask as u64 + 1 + cap) * 4));
         let shape_points = init("shape_points", bytemuck::cast_slice(&world.shape_points), storage);
-        let contacts = empty("contacts", when(detecting, CONTACT_LOG * std::mem::size_of::<GpuContact>() as u64));
+        let contacts = empty("contacts", when(physical, CONTACT_LOG * std::mem::size_of::<GpuContact>() as u64));
 
         // Layouts.
         let main_layout = {
@@ -701,7 +702,7 @@ impl Sim {
 
     /// The contact log, as far as it was written.
     pub fn contacts(&self, gpu: &Gpu) -> Vec<GpuContact> {
-        if self.world_params.detect_every == 0 {
+        if self.world_params.mu <= 0.0 {
             return Vec::new();
         }
         self.read(gpu, &self.buffers.contacts, CONTACT_LOG)
