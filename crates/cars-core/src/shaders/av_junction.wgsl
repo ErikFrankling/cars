@@ -41,6 +41,7 @@ const AUD_MAX: u32 = 32u;
 const STATS_PER_REPLICA: u32 = 32u;
 const EVENTS_MAX: u32 = 4095u;
 const INF: f32 = 1e30;
+const HEARD_NOTHING: f32 = 20.0;
 
 const S_LOSS: u32 = 0u;
 const S_STOPS: u32 = 1u;
@@ -654,7 +655,7 @@ fn firm_time(mi: u32, d: f32, v: f32, min_t: f32) -> bool {
 }
 
 // All-way stop, by V2V or sensing: the oldest head car at its line has the whole box to itself.
-fn awsc(j: u32) {
+fn awsc(j: u32, min_wait: f32) {
     let J = cj_junctions[j];
     if (now < J.awsc_free) { return; }
     var best_age = INF;
@@ -666,7 +667,7 @@ fn awsc(j: u32) {
         let state = head.cj_state & CJ_STATE_MASK;
         if (state == CJ_FIRM || state == CJ_PENDING) { continue; }
         let q = cj_req[cj_apps[a].req_start];
-        if (q.d < 3.0 && q.v < 0.5 && q.age_t < best_age) {
+        if (q.d < 3.0 && q.v < 0.5 && head.wait >= min_wait && q.age_t < best_age) {
             best_age = q.age_t;
             best = a;
         }
@@ -751,10 +752,8 @@ fn cj_commit(@builtin(global_invocation_id) id: vec3u) {
     let J = cj_junctions[j];
     if (J.mode == MODE_SUMO || J.frozen != 0u) { return; }
     now = f32(G.step) * P.dt;
-    // With no coordinator, or no radio for a while, sensing alone still moves one car at a time.
-    let silent = !radio_up() && now - cfg.blackout_t0 > 10.0;
-    if (!coordinator_up() || silent) {
-        if (cfg.fallback != 0u) { awsc(j); }
+    if (!coordinator_up()) {
+        if (cfg.fallback != 0u) { awsc(j, 0.0); }
         return;
     }
     if (J.mode == MODE_SIGNAL) {
@@ -790,6 +789,9 @@ fn cj_commit(@builtin(global_invocation_id) id: vec3u) {
         }
         commit_real(j, q, q.link, cand_k, cand_t, free);
     }
+    // A car cannot tell a dead radio from bad luck. Parked at the line this long with no grant, it
+    // goes by sensing alone, one car at a time with the box to itself.
+    if (cfg.fallback != 0u) { awsc(j, HEARD_NOTHING); }
 }
 
 // ---------------------------------------------------------------- stage 5: sensing, independent of the schedule

@@ -67,14 +67,16 @@ def faults():
 
 
 def faults2():
-    # Radio gone for good, every message dropped from one tick on. Past 10 s of silence cars use sensing alone.
+    # Radio gone for good, every message dropped from one tick on. Parked 20 s at the line, a car goes on sensing alone.
     out = []
     for d in (3000, 5000):
         b = dict(net='j2', mix='M', demand=d)
         out.append(case(**b, blackout=(400.0, 400.0 + 30.0), fault='blackout30_fallback'))
         out.append(case(**b, blackout=(400.0, 1e9), fault='radio_off'))
         out.append(case(**b, blackout=(400.0, 1e9), no_fallback=True, fault='radio_off_wait'))
-        out.append(case(**b, loss=1.0, fault='loss1.0_from_start'))
+        out.append(case(**b, loss=0.9, fault='loss0.9_fallback'))
+        out.append(case(**b, loss=1.0, fault='loss1.0_fallback'))
+        out.append(case(**b, loss=1.0, no_fallback=True, fault='loss1.0_wait'))
     return out
 
 
