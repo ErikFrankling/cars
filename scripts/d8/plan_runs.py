@@ -204,10 +204,10 @@ def lateral():
     out = []
     for s in (0, 1, 2, 3):
         for n, m in CELLS:
-            out.append(case(n, m, SAT[n], s, 'full', trace=False, peak=4.0, fault='peak4'))
-            out.append(case(n, m, SAT[n], s, 'full', trace=False, peak=-1.0, fault='old_table'))
-            out.append(case(n, m, SAT[n], s, 'full', trace=False, peak=-1.0, a_lat=3.0, fault='alat3'))
-            out.append(case(n, m, SAT[n], s, 'full', trace=False, peak=-1.0, a_lat=5.5, fault='alat5.5'))
+            out.append(case(n, m, SAT[n], s, 'route', trace=False, peak=4.0, fault='peak4'))
+            out.append(case(n, m, SAT[n], s, 'route', trace=False, peak=-1.0, fault='old_table'))
+            out.append(case(n, m, SAT[n], s, 'route', trace=False, peak=-1.0, a_lat=3.0, fault='alat3'))
+            out.append(case(n, m, SAT[n], s, 'route', trace=False, peak=-1.0, a_lat=5.5, fault='alat5.5'))
     return out
 
 
