@@ -171,6 +171,7 @@ dependencies = [
  "bytemuck",
  "flate2",
  "log",
+ "naga",
  "pollster",
  "quick-xml",
  "rayon",

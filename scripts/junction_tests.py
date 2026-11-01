@@ -74,7 +74,7 @@ def one(name, vt, keep=False):
     run(["sumo", "-n", d / "net.xml", "-r", d / "r.rou.xml", "--end", "1500", "--no-step-log", "true", "--no-warnings", "true", "--tripinfo-output", trip, "--seed", "1"])
     rows = [(t.get("id").split(".")[0], float(t.get("duration")), float(t.get("waitingTime")), float(t.get("timeLoss"))) for t in ET.parse(trip).getroot().findall("tripinfo")]
     s = pd.DataFrame(rows, columns=["r", "dur", "wait", "loss"])
-    run([CARS, "run", "--net", d / "net.xml", "--routes", d / "r.rou.xml", "--dt", "1", "--end", "1500", "--trip-csv", d / "g.csv", "--seed", "1"])
+    run([CARS, "run", "--sumo-compat", "--net", d / "net.xml", "--routes", d / "r.rou.xml", "--dt", "1", "--end", "1500", "--trip-csv", d / "g.csv", "--seed", "1"])
     g = pd.read_csv(d / "g.csv").rename(columns={"duration": "dur", "waiting": "wait", "time_loss": "loss"})
     g["r"] = g.trip.str.split(".").str[0]
     a = s.groupby("r").agg(n=("dur", "size"), dur=("dur", "mean"), wait=("wait", "mean"), loss=("loss", "mean"))

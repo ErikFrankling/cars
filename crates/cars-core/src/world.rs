@@ -30,7 +30,12 @@ pub struct GpuParams {
     pub ignore_blocker: f32,
     pub script_t0: f32,
     pub dummy_lane: u32,
-    pub pad: f32,
+    /// Road friction. 0 keeps the SUMO-parity kernel, anything else is physical mode.
+    pub mu: f32,
+    pub shadow_reserve: u32,
+    pub detect_every: u32,
+    pub grid_mask: u32,
+    pub trace_len: u32,
 }
 
 #[repr(C)]
@@ -86,7 +91,8 @@ pub struct GpuVeh {
     pub occ_left: f32,
     pub occ_right: f32,
     pub occ_best: f32,
-    pub pad: u32,
+    /// Bits 0-7 load, 8-15 power, 16-29 lateral phase, 30-31 lateral direction. See `phys_bits`.
+    pub phys: u32,
 }
 
 #[repr(C)]
@@ -109,6 +115,32 @@ pub struct GpuLane {
     pub pad: [u32; 2],
     pub in_start: u32,
     pub in_count: u32,
+    /// sin(theta) times g, uphill positive.
+    pub gz: f32,
+    /// Speed the curve asks of a driver, 0 when straight.
+    pub curve_v: f32,
+    /// Square root of the tightest radius, 0 when straight.
+    pub sqrt_r: f32,
+    pub s_curve: f32,
+    pub s_curve_end: f32,
+    pub width: f32,
+    pub zone_start: u32,
+    pub zone_count: u32,
+    pub shape_count: u32,
+    pub from_node: u32,
+    pub to_node: u32,
+    pub geom_scale: f32,
+}
+
+/// Where a junction lane and another one come too close for two bodies. Positions along each lane.
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable, Debug, Default)]
+pub struct GpuZone {
+    pub foe_lane: u32,
+    pub own_in: f32,
+    pub own_out: f32,
+    pub foe_in: f32,
+    pub foe_out: f32,
 }
 
 #[repr(C)]
@@ -180,7 +212,24 @@ pub struct GpuVType {
     pub lc_assertive: f32,
     pub lc_look_left: f32,
     pub lc_speed_gain_right: f32,
-    pub pad: [f32; 3],
+    pub collision_factor: f32,
+    pub pw_kg: f32,
+    pub road_a: f32,
+    pub road_c: f32,
+    pub i_inv: f32,
+    pub trac: f32,
+    pub v_corner: f32,
+    pub b_lo: f32,
+    pub b_hi: f32,
+    pub t_r: f32,
+    pub a0: f32,
+    pub a1: f32,
+    pub a_floor: f32,
+    pub v_lat: f32,
+    pub width: f32,
+    pub ph_tau: f32,
+    pub m_ref: f32,
+    pub pad: [f32; 2],
 }
 
 #[repr(C)]
@@ -213,6 +262,37 @@ pub struct GpuTripOut {
     pub wait_count: u32,
     pub flags: u32,
     pub pad: u32,
+}
+
+/// Work done on one trip, in joules. Wheel work balances the rest by construction of `exec`.
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable, Debug, Default)]
+pub struct GpuTripEnergy {
+    pub wheel: f32,
+    pub brake: f32,
+    pub road: f32,
+    pub pe: f32,
+    pub ke: f32,
+    pub idle_s: f32,
+    pub moving_s: f32,
+    pub dist: f32,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable, Debug, Default)]
+pub struct GpuContact {
+    pub step: u32,
+    pub trip_a: u32,
+    pub trip_b: u32,
+    pub lane_a: u32,
+    pub lane_b: u32,
+    pub kind: u32,
+    pub depth: f32,
+    pub pos_a: f32,
+    pub pos_b: f32,
+    pub x: f32,
+    pub y: f32,
+    pub pad: f32,
 }
 
 #[repr(C)]
@@ -254,6 +334,23 @@ pub const SEG_BYTES: u64 = 16;
 pub const LCPLAN_BYTES: u64 = 16;
 pub const MAX_ITEMS: u64 = 8;
 pub const SLOTS: u64 = 8;
+pub const CONTACT_LOG: u64 = 4096;
+pub const COUNTERS: u64 = 64;
+pub const MIRROR_BYTES: u64 = 16;
+pub const POSE_BYTES: u64 = 32;
+/// Counters of the physical kernel, after those shared with SUMO-parity mode.
+pub const C_CERT_FLOOR: usize = 16;
+pub const C_NO_BRAKE: usize = 17;
+pub const C_DEAD_END: usize = 18;
+pub const C_SHADOWS: usize = 19;
+pub const C_SHADOW_REFUSED: usize = 20;
+pub const C_UNGRANTED: usize = 21;
+pub const C_LC_REFUSED_ROOM: usize = 22;
+pub const C_DENIED: usize = 23;
+pub const C_CONTACT: usize = 24;
+pub const C_CONTACT_KINDS: usize = 25;
+/// Contact kinds, as counted from `C_CONTACT_KINDS`.
+pub const CONTACT_NAMES: [&str; 7] = ["same lane", "neighbour lane", "junction crossing", "junction merge", "junction diverge", "lane start", "other"];
 /// Sort key resolution: two vehicles on a lane are always further apart than this.
 const KEY_METRES: f32 = 2.5;
 
@@ -277,6 +374,12 @@ pub struct SimConfig {
     pub ignore_blocker: f32,
     /// When the ring disturbance starts, in seconds. 0 turns it off.
     pub script_t0: f32,
+    /// Road friction. 0 keeps SUMO parity: Euler positions, no physics, no arbitration.
+    pub mu: f32,
+    /// Steps between 2D collision checks. 0 turns the detector off.
+    pub detect_every: u32,
+    /// Desired speed per step for scripted vehicles, for driving-cycle checks.
+    pub speed_trace: Vec<f32>,
 }
 
 impl Default for SimConfig {
@@ -295,6 +398,9 @@ impl Default for SimConfig {
             use_actuation: true,
             ignore_blocker: 1e9,
             script_t0: 0.0,
+            mu: 0.0,
+            detect_every: 0,
+            speed_trace: Vec::new(),
         }
     }
 }
@@ -336,6 +442,10 @@ pub struct World {
     pub n_edges_per_replica: u32,
     pub edge_is_normal: Vec<bool>,
     pub total_cells: u64,
+    pub zones: Vec<GpuZone>,
+    pub speed_trace: Vec<f32>,
+    /// Lane geometry for the detector: x, y, distance along, per point.
+    pub shape_points: Vec<[f32; 4]>,
 }
 
 fn splitmix(state: &mut u64) -> u64 {
@@ -370,6 +480,85 @@ fn speed_factor(t: &VType, state: &mut u64) -> f32 {
     }
     mean as f32
 }
+
+/// Vehicle parameters of `research/truth/11-vehicle-physics.md`, build spec. All design values until
+/// fitted to fleet data, except those the report grades as measured.
+struct PhysRow {
+    m_ref: f32,
+    p_kw: f32,
+    kappa: f32,
+    cda: f32,
+    crr: f32,
+    v_corner: f32,
+    f_d: f32,
+    eps: f32,
+    b_lo: f32,
+    b_hi: f32,
+    t_r: f32,
+    a0: f32,
+    a1: f32,
+    a_floor: f32,
+    /// Load range and power spread for drawing each vehicle.
+    load: (f32, f32),
+    power_sd: f32,
+}
+
+fn phys_row(vclass: u32) -> PhysRow {
+    let car = PhysRow { m_ref: 1650., p_kw: 90., kappa: 0.775, cda: 0.68, crr: 0.0105, v_corner: 10., f_d: 0.55, eps: 0.05, b_lo: 7.0, b_hi: 11.3, t_r: 0.30, a0: 2.02, a1: 0.125, a_floor: 0.7, load: (0.9, 1.15), power_sd: 0.35 };
+    let name = crate::net::VCLASSES.get(vclass.trailing_zeros() as usize).copied().unwrap_or("passenger");
+    match name {
+        "delivery" | "emergency" => PhysRow { m_ref: 2800., p_kw: 95., cda: 1.6, crr: 0.012, b_lo: 6.0, b_hi: 8.5, t_r: 0.47, load: (0.75, 1.15), power_sd: 0.2, ..car },
+        "bus" | "coach" | "tram" => PhysRow { m_ref: 16000., p_kw: 170., kappa: 0.85, cda: 5.0, crr: 0.007, v_corner: 3., f_d: 0.30, eps: 0.08, b_lo: 4.5, b_hi: 7.5, t_r: 0.45, a0: 1.0, a1: 0.0, a_floor: 1.0, load: (0.8, 1.15), power_sd: 0.1, ..car },
+        "truck" => PhysRow { m_ref: 18000., p_kw: 220., kappa: 0.85, cda: 5.0, crr: 0.006, v_corner: 3., f_d: 0.40, eps: 0.08, b_lo: 4.4, b_hi: 7.7, t_r: 0.45, a0: 0.76, a1: 0.0, a_floor: 0.76, load: (0.45, 1.05), power_sd: 0.1, ..car },
+        "trailer" => PhysRow { m_ref: 40000., p_kw: 300., kappa: 0.85, cda: 6.0, crr: 0.006, v_corner: 3., f_d: 0.275, eps: 0.08, b_lo: 4.4, b_hi: 7.7, t_r: 0.45, a0: 0.6, a1: 0.0, a_floor: 0.6, load: (0.35, 1.0), power_sd: 0.1, ..car },
+        "motorcycle" | "moped" => PhysRow { m_ref: 300., p_kw: 35., cda: 0.5, crr: 0.015, f_d: 0.5, b_lo: 6.0, b_hi: 9.0, load: (0.9, 1.1), power_sd: 0.2, ..car },
+        "bicycle" | "scooter" => PhysRow { m_ref: 95., p_kw: 0.25, kappa: 1.0, cda: 0.5, crr: 0.006, v_corner: 3., f_d: 0.5, eps: 0.0, b_lo: 3.0, b_hi: 5.0, t_r: 0.3, a0: 1.0, a1: 0.05, a_floor: 0.2, load: (0.9, 1.1), power_sd: 0.2, ..car },
+        _ => car,
+    }
+}
+
+const G: f32 = 9.81;
+const RHO: f32 = 1.225;
+
+/// Fills in the physical half of a type. `phys.*` parameters on the vType override the table.
+fn physical_type(g: &mut GpuVType, t: &VType) {
+    let r = phys_row(t.vclass);
+    let num = |key: &str, default: f32| t.params.get(key).and_then(|v| v.parse().ok()).unwrap_or(default);
+    let m = num("phys.mass", r.m_ref);
+    let p = num("phys.power_kw", r.p_kw) * 1e3;
+    g.m_ref = m;
+    g.pw_kg = num("phys.kappa", r.kappa) * p / m;
+    g.road_a = num("phys.crr", r.crr) * G;
+    g.road_c = 0.5 * RHO * num("phys.cda", r.cda) / m;
+    g.i_inv = 1.0 / (1.0 + num("phys.eps", r.eps));
+    g.trac = num("phys.f_d", r.f_d) * G;
+    g.v_corner = num("phys.v_corner", r.v_corner);
+    g.b_lo = num("phys.b_lo", r.b_lo);
+    g.b_hi = num("phys.b_hi", r.b_hi);
+    g.t_r = num("phys.t_r", r.t_r);
+    // A type that asks for less than the measured driver keeps its own acceleration.
+    g.a0 = num("phys.a0", r.a0.min(t.accel));
+    g.a1 = num("phys.a1", r.a1);
+    g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
+    g.v_lat = num("phys.v_lat", 0.6);
+    g.width = t.width;
+    g.ph_tau = num("phys.tau", 1.35);
+    // Leaders and tails are judged by their hardest possible stop.
+    g.apparent = g.b_hi;
+}
+
+/// Load and power of one vehicle, packed for `GpuVeh::phys`.
+fn draw_phys(vclass: u32, state: &mut u64) -> u32 {
+    let r = phys_row(vclass);
+    let load = (r.load.0 + (r.load.1 - r.load.0) * uniform(state) as f32).clamp(0.25, 2.0);
+    let power = (normal(state) as f32 * r.power_sd).exp().clamp(0.5, 2.5);
+    let lq = (((load - 0.25) * 146.0).round() as u32).min(255);
+    let pq = (((power - 0.5) * 127.5).round() as u32).min(255);
+    lq | (pq << 8)
+}
+
+/// Default vehicle, nominal load and power, for tests that want exact table values.
+const PHYS_NOMINAL: u32 = 110 | (64 << 8);
 
 fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
     let model = match t.model {
@@ -406,14 +595,11 @@ fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
         lc_assertive: t.lc_assertive,
         lc_look_left: t.lc_lookahead_left,
         lc_speed_gain_right: t.lc_speed_gain_right,
-        pad: [
-            t.params.get("collisionMinGapFactor").and_then(|v| v.parse().ok()).unwrap_or(match t.model {
-                CfModel::Krauss | CfModel::Eidm => 1.0,
-                CfModel::Idm | CfModel::Acc | CfModel::Cacc => 0.1,
-            }),
-            0.0,
-            0.0,
-        ],
+        collision_factor: t.params.get("collisionMinGapFactor").and_then(|v| v.parse().ok()).unwrap_or(match t.model {
+            CfModel::Krauss | CfModel::Eidm => 1.0,
+            CfModel::Idm | CfModel::Acc | CfModel::Cacc => 0.1,
+        }),
+        ..Default::default()
     }
 }
 
@@ -422,9 +608,16 @@ impl World {
         let topo = Topology::build(net);
         let mut w = World {
             bounds: net.bounds,
+            speed_trace: cfg.speed_trace.clone(),
             ..Default::default()
         };
+        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net), crate::physics::zones(net, &topo)));
         w.vtypes = demand.vtypes.iter().map(|t| gpu_vtype(t, cfg.dt)).collect();
+        if cfg.mu > 0.0 {
+            for (g, t) in w.vtypes.iter_mut().zip(&demand.vtypes) {
+                physical_type(g, t);
+            }
+        }
         w.n_edges_per_replica = net.edges.len() as u32;
         let single = [Replica {
             seed: cfg.seed,
@@ -433,7 +626,7 @@ impl World {
         let reps: &[Replica] = if replicas.is_empty() { &single } else { replicas };
         let mut key_base = 0u64;
         for (ri, rep) in reps.iter().enumerate() {
-            w.append_replica(net, &topo, demand, cfg, rep, ri as u32, &mut key_base);
+            w.append_replica(net, &topo, demand, cfg, rep, ri as u32, &mut key_base, phys.as_ref());
         }
         // Teleporting vehicles wait on one extra lane that nothing connects to.
         w.lanes.push(GpuLane {
@@ -454,6 +647,9 @@ impl World {
         assert!(key_bits < 32, "too many sort cells: {key_base}");
         let n_trips = w.trips.len() as u32;
         let capacity = if cfg.capacity == 0 { n_trips } else { cfg.capacity.min(n_trips) };
+        // Shadows of lane changes share the vehicle array and get their own slice of it.
+        let shadow_reserve = if cfg.mu > 0.0 { capacity / 20 + 64 } else { 0 };
+        let capacity = capacity + shadow_reserve;
         let sample_steps = ((cfg.sample_seconds / cfg.dt).round() as u32).max(1);
         let n_steps = ((cfg.end_seconds - cfg.begin_seconds) / cfg.dt).ceil() as u32 + 1;
         w.params = GpuParams {
@@ -476,7 +672,11 @@ impl World {
             ignore_blocker: cfg.ignore_blocker,
             script_t0: cfg.script_t0,
             dummy_lane: w.lanes.len() as u32 - 1,
-            pad: 0.0,
+            mu: cfg.mu,
+            shadow_reserve,
+            detect_every: if cfg.mu > 0.0 { cfg.detect_every } else { 0 },
+            grid_mask: (capacity.max(16) as u64 * 2).next_power_of_two() as u32 - 1,
+            trace_len: cfg.speed_trace.len() as u32,
         };
         w
     }
@@ -491,8 +691,10 @@ impl World {
         rep: &Replica,
         ri: u32,
         key_base: &mut u64,
+        phys: Option<&(Vec<crate::physics::LanePhys>, Vec<Vec<GpuZone>>)>,
     ) {
         let lane0 = self.lanes.len() as u32;
+        let node_ids: std::collections::HashMap<&str, u32> = net.junctions.iter().enumerate().map(|(i, j)| (j.id.as_str(), i as u32)).collect();
         let edge0 = self.edges.len() as u32;
         let link0 = self.links.len() as u32;
         let tls0 = self.tls.len() as u32;
@@ -624,8 +826,51 @@ impl World {
                 pad: [l.change_left, l.change_right],
                 in_start: 0,
                 in_count: 0,
+                ..Default::default()
             });
+            if let Some((ph, _)) = phys {
+                let g = self.lanes.last_mut().unwrap();
+                let lp = &ph[li];
+                g.gz = lp.gz;
+                g.curve_v = lp.curve_v;
+                g.sqrt_r = lp.sqrt_r;
+                g.s_curve = lp.s_curve;
+                g.s_curve_end = lp.s_curve_end;
+                g.width = l.width.max(1.0);
+                let e = &net.edges[l.edge as usize];
+                let node = |id: &str| node_ids.get(id).copied().unwrap_or(NONE);
+                if e.func == EdgeFunc::Internal {
+                    let j = l.id[1..].rsplitn(3, '_').last().unwrap_or("");
+                    let n = node(j);
+                    g.from_node = n;
+                    g.to_node = n;
+                } else {
+                    g.from_node = node(&e.from);
+                    g.to_node = node(&e.to);
+                }
+                g.geom_scale = lp.geom_length / l.length.max(1e-3);
+                if ri == 0 {
+                    g.shape_start = self.shape_points.len() as u32;
+                    g.shape_count = l.shape.len() as u32;
+                    let mut at = 0.0f32;
+                    let mut last = l.shape.first().copied().unwrap_or([0.0, 0.0]);
+                    for q in &l.shape {
+                        at += ((q[0] - last[0]).powi(2) + (q[1] - last[1]).powi(2)).sqrt();
+                        self.shape_points.push([q[0], q[1], at, 0.0]);
+                        last = *q;
+                    }
+                }
+            }
             *key_base += cells;
+        }
+
+        if let Some((_, zones)) = phys {
+            for (li, list) in zones.iter().enumerate() {
+                let g = &mut self.lanes[lane0 as usize + li];
+                g.zone_start = self.zones.len() as u32;
+                g.zone_count = list.len() as u32;
+                self.zones.extend(list.iter().map(|z| GpuZone { foe_lane: z.foe_lane + lane0, ..*z }));
+            }
         }
 
         // Links must sit contiguously per lane: rebuild them lane by lane.
@@ -829,7 +1074,9 @@ impl World {
                 sf,
                 rng: splitmix(&mut rng_state) as u32,
                 replica: ri,
-                pad: [0, mask, 0],
+                pad: [0, mask, if cfg.mu > 0.0 {
+                    if vt.params.contains_key("phys.nominal") { PHYS_NOMINAL } else { draw_phys(vt.vclass, &mut rng_state) }
+                } else { 0 }],
             });
             by_edge[route[0] as usize].push(id);
         }

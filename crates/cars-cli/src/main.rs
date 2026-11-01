@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 mod junctions;
 mod overlay;
 mod record;
+mod report;
 mod run;
 #[derive(Parser)]
 struct Args {

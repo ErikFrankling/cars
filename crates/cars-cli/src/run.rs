@@ -12,6 +12,8 @@ use cars_core::{
 };
 use clap::Parser;
 
+use crate::report;
+
 #[derive(Parser)]
 pub struct Args {
     #[arg(long)]
@@ -28,9 +30,31 @@ pub struct Args {
     end: f32,
     #[arg(long, default_value_t = 0)]
     seed: u64,
-    /// Seconds before a stuck lane head teleports. 0 turns it off.
+    /// SUMO's kernel and parameters, unchanged: Euler positions, instant lane changes, collisions
+    /// resolved by teleport. Everything else runs in physical mode.
+    #[arg(long)]
+    sumo_compat: bool,
+    /// Road surface in physical mode: dry, wet, snow, ice, or a friction value.
+    #[arg(long, default_value = "dry")]
+    surface: String,
+    /// Steps between 2D collision checks in physical mode. 0 turns the detector off.
+    #[arg(long, default_value_t = 1)]
+    detect_every: u32,
+    /// A stuck vehicle this long, in seconds, counts towards the gridlock report.
     #[arg(long, default_value_t = 300.0)]
-    time_to_teleport: f32,
+    gridlock_after: f32,
+    /// Everything this run measured, as JSON.
+    #[arg(long)]
+    report_json: Option<PathBuf>,
+    /// Vehicle types and lanes as the kernel sees them, for physics_qa.py.
+    #[arg(long)]
+    phys_json: Option<PathBuf>,
+    /// One desired speed per step in m/s, one per line, for every vehicle: drive a cycle.
+    #[arg(long)]
+    speed_trace: Option<PathBuf>,
+    /// Seconds before a stuck lane head teleports. 0 turns it off. Default 300 under --sumo-compat, else off.
+    #[arg(long)]
+    time_to_teleport: Option<f32>,
     #[arg(long, default_value_t = 1e9)]
     ignore_junction_blocker: f32,
     #[arg(long, default_value_t = 0)]
@@ -87,6 +111,10 @@ pub struct Args {
     profile_at: Vec<f32>,
 }
 
+fn surface_friction(name: &str) -> f32 {
+    cars_core::physics::surface_mu(name).or_else(|| name.parse().ok()).expect("surface: dry, wet, snow, ice or a friction value")
+}
+
 pub fn run(args: Args) {
     let t = Instant::now();
     let mut net = Net::load(&args.net).expect("net");
@@ -97,12 +125,19 @@ pub fn run(args: Args) {
     let t = Instant::now();
     let mut demand = Demand::load(&net, &args.routes, &args.additional, args.seed, Some(args.end as f64)).expect("demand");
     eprintln!("demand loaded in {:.2}s: {}", t.elapsed().as_secs_f64(), demand.summary());
+    let mu = if args.sumo_compat { 0.0 } else { surface_friction(&args.surface) };
+    let speed_trace: Vec<f32> = args.speed_trace.as_ref().map(|p| {
+        std::fs::read_to_string(p).expect("speed trace").lines().filter_map(|l| l.trim().parse().ok()).collect()
+    }).unwrap_or_default();
     let cfg = SimConfig {
         dt: args.dt,
         begin_seconds: args.begin,
         end_seconds: args.end,
         seed: args.seed,
-        time_to_teleport: args.time_to_teleport,
+        mu,
+        detect_every: args.detect_every,
+        speed_trace: speed_trace.clone(),
+        time_to_teleport: args.time_to_teleport.unwrap_or(if args.sumo_compat { 300.0 } else { 0.0 }),
         ignore_blocker: args.ignore_junction_blocker,
         capacity: args.capacity,
         use_actuation: !args.static_tls,
@@ -110,6 +145,15 @@ pub fn run(args: Args) {
     };
     let t = Instant::now();
     let mut world = World::build(&net, &demand, &cfg, &[]);
+    if !speed_trace.is_empty() {
+        // Only the types marked phys.trace follow it, or everyone if none is marked.
+        let any = demand.vtypes.iter().any(|t| t.params.contains_key("phys.trace"));
+        for t in &mut world.trips {
+            if !any || demand.vtypes[t.vtype as usize].params.contains_key("phys.trace") {
+                t.pad[0] = 1;
+            }
+        }
+    }
     eprintln!(
         "world in {:.2}s: {} lanes, {} links, {} foes, {} conflicts, {} tls, {} trips, capacity {}, key bits {}",
         t.elapsed().as_secs_f64(), world.lanes.len(), world.links.len(), world.foes.len(), world.conflicts.len(),
@@ -128,6 +172,11 @@ pub fn run(args: Args) {
         })
         .collect();
     let widths: Vec<f32> = demand.vtypes.iter().map(|t| t.width).collect();
+    let mut physics = report::Physics::new(&net, &world, args.begin, args.dt, args.gridlock_after);
+    if let Some(p) = &args.phys_json {
+        report::write_phys_json(p, &net, &world, &demand).expect("phys json");
+    }
+    let heavy: Vec<bool> = demand.vtypes.iter().map(|t| matches!(cars_core::net::VCLASSES.get(t.vclass.trailing_zeros() as usize).copied(), Some("bus" | "coach" | "truck" | "trailer"))).collect();
     // The GPU has its copies now. A day of Berlin would otherwise keep gigabytes in RAM.
     demand.routes = Vec::new();
     world.routes = Vec::new();
@@ -148,7 +197,8 @@ pub fn run(args: Args) {
     let t = Instant::now();
     let mut fcd = args.fcd.as_ref().map(|p| std::io::BufWriter::new(std::fs::File::create(p).expect("fcd")));
     if let Some(f) = fcd.as_mut() {
-        writeln!(f, "time,trip,lane,pos,speed,acc,wait,own,items,best_off,length,width,flags,prev_lane,depart_step").unwrap();
+        let extra = if mu > 0.0 { ",vtype,phys,offset" } else { "" };
+        writeln!(f, "time,trip,lane,pos,speed,acc,wait,own,items,best_off,length,width,flags,prev_lane,depart_step{extra}").unwrap();
     }
     let mut summary = args.summary_csv.as_ref().map(|p| std::io::BufWriter::new(std::fs::File::create(p).expect("summary")));
     if let Some(f) = summary.as_mut() {
@@ -234,13 +284,21 @@ pub fn run(args: Args) {
                             }
                             format!("{}->{} flags {:#x} tl {} ph {phase} state {st} foes {} confs {}", net.lanes[l.from_lane as usize].id, net.lanes[l.next_lane as usize].id, l.flags, l.tl as i32, l.foe_count, l.conf_count)
                         };
-                        println!("   item {j}: {desc} pass {:.2} wait {:.2} req {} arr {:.2} arrv {:.2} dist {:.1} leave {:.2}", it[1], it[2], it[3].to_bits(), it[4], it[5], it[7], it[8]);
+                        println!("   item {j}: {desc} pass {:.2} wait {:.2} req {} arr {:.2} arrv {:.2} dist {:.1} leave {:.2} grant {:#x}", it[1], it[2], it[3].to_bits(), it[4], it[5], it[7], it[8], it[9].to_bits());
                         if link != u32::MAX && j == 0 {
                             let l = world.links[link as usize];
                             let on = |lane: u32| -> String {
                                 vs.iter().filter(|o| o.lane == lane && o.flags & 1 == 0).map(|o| format!("{:.1}/{:.1}w{:.0}", o.pos, o.speed, o.wait)).collect::<Vec<_>>().join(" ")
                             };
                             println!("      next lane {} [{}], to lane {} [{}]", net.lanes[l.next_lane as usize].id, on(l.next_lane), net.lanes[l.to_lane as usize].id, on(l.to_lane));
+                            let zl = &world.lanes[l.next_lane as usize];
+                            for z in 0..zl.zone_count {
+                                let zn = world.zones[(zl.zone_start + z) as usize];
+                                let txt = on(zn.foe_lane);
+                                if !txt.is_empty() {
+                                    println!("      zone {} own {:.1}-{:.1} foe {:.1}-{:.1}: {}", net.lanes[zn.foe_lane as usize].id, zn.own_in, zn.own_out, zn.foe_in, zn.foe_out, txt);
+                                }
+                            }
                             for c in 0..l.conf_count {
                                 let cf = world.conflicts[(l.conf_start + c) as usize];
                                 let txt = on(cf.foe_lane);
@@ -265,11 +323,15 @@ pub fn run(args: Args) {
             }
             if let Some(f) = fcd.as_mut() {
                 for v in vs.iter() {
-                    if v.flags & 1 != 0 || v.lane == world.params.dummy_lane || !in_box[v.lane as usize] {
+                    if v.flags & 1 != 0 || v.flags & report::F_SHADOW != 0 || v.lane == world.params.dummy_lane || !in_box[v.lane as usize] {
                         continue;
                     }
                     let prev = if v.prev_lane == u32::MAX { "" } else { net.lanes[v.prev_lane as usize].id.as_str() };
-                    writeln!(f, "{:.2},{},{},{:.4},{:.4},{:.4},{:.1},{},{},{},{},{},{},{},{}", args.begin + (done - 1) as f32 * args.dt, demand.ids[demand.trips[world.trip_source[v.trip as usize] as usize].id as usize], net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc, v.wait, v.lc_own, v.n_items, v.best_off, world.vtypes[v.vtype as usize].length, widths[v.vtype as usize], v.flags, prev, v.depart_step).unwrap();
+                    write!(f, "{:.2},{},{},{:.4},{:.4},{:.4},{:.1},{},{},{},{},{},{},{},{}", args.begin + (done - 1) as f32 * args.dt, demand.ids[demand.trips[world.trip_source[v.trip as usize] as usize].id as usize], net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc, v.wait, v.lc_own, v.n_items, v.best_off, world.vtypes[v.vtype as usize].length, widths[v.vtype as usize], v.flags, prev, v.depart_step).unwrap();
+                    if mu > 0.0 {
+                        write!(f, ",{},{},{:.4}", v.vtype, v.phys, report::offset_of(v, &world)).unwrap();
+                    }
+                    writeln!(f).unwrap();
                 }
             }
         } else {
@@ -325,6 +387,9 @@ pub fn run(args: Args) {
                 last_print = Instant::now();
             }
         }
+        if mu > 0.0 {
+            physics.collect(&sim, &gpu, &net, &world, done);
+        }
         if done % interval == 0 || done >= steps {
             let begin = args.begin + ((done - 1) / interval * interval) as f32 * args.dt;
             if let Some(f) = edges_out.as_mut() {
@@ -346,17 +411,33 @@ pub fn run(args: Args) {
     let out = sim.trip_outputs(&gpu);
     if let Some(path) = &args.trip_csv {
         let mut f = std::io::BufWriter::new(std::fs::File::create(path).expect("trip csv"));
-        writeln!(f, "trip,depart,arrival,duration,waiting,time_loss,route_length").unwrap();
+        let energy = sim.trip_energy(&gpu);
+        let extra = if mu > 0.0 { ",wheel_kwh,brake_kwh,road_kwh,pe_kwh,ke_kwh,idle_s,fuel_l,fuel_kwh,ev_kwh,dist_m,balance" } else { "" };
+        writeln!(f, "trip,depart,arrival,duration,waiting,time_loss,route_length{extra}").unwrap();
         for (i, o) in out.iter().enumerate().filter(|(_, o)| o.flags & 1 != 0) {
             let duration = (o.arrive_step - o.depart_step) as f32 * args.dt;
-            writeln!(
+            write!(
                 f, "{},{},{},{},{},{},{}",
                 demand.ids[demand.trips[world.trip_source[i] as usize].id as usize], args.begin + o.depart_step as f32 * args.dt, args.begin + o.arrive_step as f32 * args.dt,
                 duration, o.wait, o.time_loss, o.route_len
             ).unwrap();
+            if mu > 0.0 {
+                let e = &energy[i];
+                let vt = world.trips[i].vtype as usize;
+                let t = cars_core::physics::trip_energy(e, heavy[vt]);
+                write!(f, ",{:.5},{:.5},{:.5},{:.5},{:.5},{:.1},{:.4},{:.4},{:.5},{:.1},{:.5}", t.wheel_kwh, t.brake_kwh, t.road_kwh, t.pe_kwh, t.ke_kwh, e.idle_s, t.fuel_l, t.fuel_kwh, t.ev_kwh, e.dist, t.residual).unwrap();
+            }
+            writeln!(f).unwrap();
         }
     }
     eprintln!("time: encode {:.2}s, gpu submit+wait {:.2}s, total {wall:.2}s", sim.encode_ms / 1000.0, sim.gpu_ms / 1000.0);
+    if mu > 0.0 {
+        let finished = physics.finish(&sim, &gpu, &net, &world, &heavy, &c, done, vehicle_updates as f64 / wall / 1e6, wall);
+        eprintln!("{}", finished.text);
+        if let Some(p) = &args.report_json {
+            std::fs::write(p, serde_json::to_string_pretty(&finished.json).unwrap()).expect("report json");
+        }
+    }
     let m = &replica_metrics(&gpu, &sim, &world, &[String::new()], &edge_log)[0];
     println!(
         "wall {wall:.2}s, {:.1} M updates/s, speed {:.2}, running {:.1}, trips done {}, duration {:.2}, wait {:.2}, loss {:.2}, flow {:.1}, density {:.2}",

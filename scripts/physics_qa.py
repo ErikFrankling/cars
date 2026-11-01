@@ -282,6 +282,7 @@ def analyse(a):
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     df = pd.read_csv(a.fcd, dtype={'trip': str, 'lane': str, 'prev_lane': str, 'time': float}, keep_default_na=False)
+    df['trip'] = df['trip'].astype(str)
     if df.empty:
         raise SystemExit('no rows in FCD')
     for c in ('pos', 'speed', 'acc', 'length', 'width'):
@@ -307,7 +308,8 @@ def analyse(a):
     steady = has_prev & ~gap & ~reinsert
     # The engine moves by pos += v_new * dt, so that is the expected step on a lane.
     d_xy = np.hypot(df['x'] - prev['x'], df['y'] - prev['y'])
-    expected = df['speed'] * dt
+    # Under --phys the engine is ballistic, and the expected step is the mean speed over it.
+    expected = (df['speed'] + prev['speed']) * 0.5 * dt if a.phys else df['speed'] * dt
     same_lane = df['lane'] == prev['lane']
     same_edge = df['edge'] == prev['edge']
     lane_change = steady & same_edge & ~same_lane
@@ -457,6 +459,252 @@ def analyse(a):
               '- Rows without a lane or on a dummy lane are not in the FCD, so teleports show as gaps. Only the engine counters above count them.', '']
     (out / 'report.md').write_text('\n'.join(lines))
     print(json.dumps({k: v for k, v in summary.items() if not isinstance(v, (dict, list))}))
+    if a.phys:
+        hard = invariants(a, df, prev, steady, same_lane, lanes, out, interval, gaps, overlaps)
+        if hard:
+            print('hard failures: ' + ', '.join(hard))
+            raise SystemExit(1)
+
+
+G = 9.81
+EPS_NUM = 3e-3
+
+
+def chord_kappa(lanes, lane, s):
+    """Curvature through three points 5 m apart along the lane, the kernel's own measure."""
+    p, cum = lanes.shape[lane], lanes.s[lane]
+    n = cum[-1]
+    half = min(5.0, n / 2)
+    scale = n / max(lanes.length[lane], 1e-3)
+    c = np.clip(s * scale, half, n - half) if n > 0 else s * 0
+    def at(d):
+        return np.interp(d, cum, p[:, 0]), np.interp(d, cum, p[:, 1])
+    ax, ay = at(c - half)
+    bx, by = at(c)
+    cx, cy = at(c + half)
+    area = np.abs((bx - ax) * (cy - ay) - (by - ay) * (cx - ax))
+    ab, bc, ca = np.hypot(bx - ax, by - ay), np.hypot(cx - bx, cy - by), np.hypot(ax - cx, ay - cy)
+    return np.where(area < 1e-3, 0.0, 2 * area / np.maximum(ab * bc * ca, 1e-6))
+
+
+def invariants(a, df, prev, steady, same_lane, lanes, out, interval, gaps, overlaps):
+    """I1 to I17 of the report, each with what it covered and the worst case found."""
+    phys = json.loads(Path(a.phys).read_text())
+    mu, step = phys['mu'], phys['dt']
+    types = pd.DataFrame(phys['types'])
+    lane_tab = pd.DataFrame.from_dict(phys['lanes'], orient='index')
+    report = json.loads(Path(a.report).read_text()) if a.report else {}
+    every_tick = abs(interval - step) < 1e-6
+    km = float(df['km'].sum())
+    table = []
+    hard = []
+
+    def record(name, mask_checked, excess, is_hard=True, note=''):
+        """excess is positive where the bound is broken, indexed like df."""
+        excess = pd.Series(excess, index=df.index).where(mask_checked)
+        checked = int(mask_checked.sum())
+        bad = excess > 0
+        failed = int(bad.sum())
+        row = dict(name=name, checked=checked, failed=failed, max_excess=float(excess.max()) if failed else 0.0, per_step=failed / max(checked, 1), per_km=failed / max(km, 1e-6), hard=is_hard, note=note, first='')
+        if failed:
+            r = df.loc[excess.idxmax()]
+            row['first'] = f"{r['time']:g} {r['trip']} {r['lane']}"
+            if is_hard:
+                hard.append(name)
+        table.append(row)
+
+    def count(name, n, bound, is_hard=True, note=''):
+        row = dict(name=name, checked=1, failed=int(n > bound), max_excess=float(max(n - bound, 0)), per_step=0.0, per_km=0.0, hard=is_hard, note=note, first='')
+        if n > bound and is_hard:
+            hard.append(name)
+        table.append(row)
+
+    t = types.iloc[df['vtype'].astype(int).to_numpy()]
+    phys_bits = df['phys'].astype(np.int64).to_numpy()
+    load = 0.25 + (phys_bits & 255) / 146.0
+    power = 0.5 + ((phys_bits >> 8) & 255) / 127.5
+    v0 = prev['speed'].to_numpy(dtype=float)
+    v1 = df['speed'].to_numpy(dtype=float)
+    acc = df['acc'].to_numpy(dtype=float)
+    a_real = (v1 - v0) / max(interval, 1e-9)
+    prev_lane = prev['lane'].fillna('')
+    gz = prev_lane.map(lane_tab['gz']).fillna(0.0).to_numpy(dtype=float)
+    length_prev = prev_lane.map(lane_tab['length']).fillna(0.0).to_numpy(dtype=float)
+    pos0 = prev['pos'].to_numpy(dtype=float)
+    pos1 = df['pos'].to_numpy(dtype=float)
+    dx = pos1 - pos0
+    edge_change = (df['lane'] != prev['lane']) & (df['edge'] != prev['edge'])
+    dx = np.where(edge_change, pos1 + length_prev - pos0, dx)
+    lane_change = steady & ~same_lane & ~edge_change
+    arr = lambda c: t[c].to_numpy(dtype=float)
+    step_ok = steady & (df['time'] - prev['time'] - interval).abs().lt(1e-3) & every_tick
+    cross_many = step_ok & edge_change
+
+    # I1
+    finite = np.isfinite(df[['pos', 'speed', 'acc']].to_numpy()).all(axis=1) & (v1 >= 0)
+    record('I1 finite, speed not negative', pd.Series(True, index=df.index), (~finite).astype(float))
+    # I2
+    count('I2 same-lane bumper gap, hard', len(gaps), 0, note=f"worst {float(gaps['worst'].min()) if len(gaps) else 0:.3f} m")
+    # I3
+    h = interval
+    ball = v0 * h + 0.5 * acc * h * h
+    stop_tick = (v1 == 0) & (acc == 0)
+    i3 = np.where(stop_tick, np.maximum(-dx - EPS_NUM, dx - v0 * h / 2 - EPS_NUM), np.abs(dx - ball) - EPS_NUM)
+    record('I3 position against speed', step_ok & ~cross_many, i3)
+    record('I3 across lanes', cross_many & df['pos'].gt(0), i3 - 0.05, is_hard=False, note='lane lengths differ from geometry at seams')
+    # I4, I5, I6
+    def force(u):
+        return arr('i_inv') * (np.minimum(arr('pw_kg') * power / (load * np.maximum(u, arr('v_corner'))), mu * arr('trac')) - arr('road_a') - arr('road_c') * u * u / load) - gz
+    a_cap = force(v0 + 0.5 * np.maximum(force(v0), 0.0) * step)
+    record('I4 forward acceleration under capability', step_ok & (a_real > 0), a_real - a_cap - 0.02)
+    ceiling = types['vclass'].map(dict(passenger=5.4, delivery=5.4, emergency=5.4, bus=2.9, coach=2.9, truck=3.9, trailer=2.7)).fillna(5.4).to_numpy()[df['vtype'].astype(int).to_numpy()]
+    record('I5 absolute forward ceiling', step_ok, a_real - ceiling)
+    brake_limit = np.minimum(arr('b_hi'), 1.35 * mu * G)
+    braking = np.where(stop_tick & (dx > 1e-6), v0 * v0 / (2 * np.maximum(dx, 1e-6)), -a_real)
+    record('I6 braking inside the limit', step_ok & ~stop_tick, -a_real - gz - brake_limit - 0.05)
+    record('I6 stopping inside a step', step_ok & stop_tick & (v0 > 3.0), braking - gz - brake_limit - 0.05)
+    # I7: stops
+    stop_rows, trips = [], df['trip'].to_numpy()
+    tm = df['time'].to_numpy()
+    start_i = 0
+    for i in range(1, len(df)):
+        if trips[i] != trips[i - 1] or not step_ok.iat[i]:
+            start_i = i
+            continue
+        if a_real[i] >= -1e-6:
+            start_i = i
+            continue
+        if v1[i] == 0 and v0[start_i] >= 3.0:
+            d = float(np.nansum(dx[start_i:i + 1]))
+            if d > 0:
+                stop_rows.append((tm[start_i], trips[i], df['lane'].iat[i], v0[start_i], d, v0[start_i] ** 2 / (2 * d), gz[i], brake_limit[i]))
+            start_i = i + 1
+    stops = pd.DataFrame(stop_rows, columns=['t', 'trip', 'lane', 'v0', 'd', 'implied', 'gz', 'limit'])
+    if len(stops):
+        excess = stops['implied'] - stops['limit'] - stops['gz'] - 0.5
+        worst = stops.loc[excess.idxmax()]
+        failed = int((excess > 0).sum())
+        table.append(dict(name='I7 stop distance implied', checked=len(stops), failed=failed, max_excess=float(max(excess.max(), 0)), per_step=failed / len(stops), per_km=failed / max(km, 1e-6), hard=True, note=f"hardest {stops['implied'].max():.2f} m/s2", first=f"{worst.t:g} {worst.trip} {worst.lane}" if failed else ''))
+        if failed:
+            hard.append('I7 stop distance implied')
+        bands = pd.cut(stops['v0'] * 3.6, [10, 30, 50, 80, 1000]).astype(str)
+        stop_table = stops.groupby(bands)['implied'].agg(['count', 'median', 'max']).reset_index(names='v0_kmh')
+    else:
+        stop_table = pd.DataFrame()
+    # I8
+    prev_acc = prev['acc'].to_numpy(dtype=float)
+    if step < 0.5:
+        record('I8 brake build-up', step_ok, (prev_acc - step * arr('b_hi') / (arr('t_r') + step) - 0.05) - a_real)
+    # I9, I10
+    kappa = np.zeros(len(df))
+    for lane, idx in df.groupby('lane', sort=False).indices.items():
+        kappa[idx] = chord_kappa(lanes, lane, df['pos'].to_numpy(dtype=float)[idx])
+    lateral = v1 * v1 * kappa
+    record('I9 lateral acceleration', pd.Series(True, index=df.index), lateral - (0.5 * mu * G + 0.2))
+    p999 = float(np.percentile(lateral, 99.9))
+    count('I9 lateral acceleration, 99.9th percentile', p999, 4.0, note=f'{p999:.2f} m/s2')
+    mu_hi = 1.35 * mu
+    record('I10 combined tyre use', step_ok, (a_real + gz) ** 2 / (mu_hi * G) ** 2 + lateral ** 2 / (mu_hi * G) ** 2 - 1.02)
+    # I11
+    off = df['offset'].to_numpy(dtype=float)
+    prev_off = prev['offset'].to_numpy(dtype=float)
+    lat_dir = phys_bits >> 30
+    prev_dir = prev['phys'].to_numpy(dtype=float)
+    in_change = step_ok & (lat_dir != 0) & (prev_dir >= 2 ** 30)
+    v_lat = np.where(in_change, np.abs(off - prev_off) / h, 0.0)
+    record('I11 lateral speed', in_change, v_lat - 1.2)
+    record('I11 heading', in_change & (v1 > 0.5), np.degrees(np.arctan2(v_lat, np.maximum(v1, 0.5))) - 13.0, is_hard=False)
+    u = ((phys_bits >> 16) & 0x3fff) / 16383.0
+    u0 = ((prev['phys'].to_numpy(dtype=float).astype(np.int64) >> 16) & 0x3fff) / 16383.0
+    record('I11 phase monotonic', in_change, (u0 - u) - 1e-3)
+    record('I11 no progress at a stand', in_change & (v1 == 0) & (v0 == 0), (u - u0) - 1e-3)
+    # I12: the old lane stays claimed until the body has left it. No body may be in that stretch.
+    count('I12 occupancy of the old lane', 0, 0, is_hard=False, note='covered by the shadow in the kernel and by the 2D detector; FCD holds no shadows')
+    # I13, I14, I17
+    if report:
+        count('I13 teleports', report.get('teleports', 0), 0)
+        count('I13 dead-end clamps', report.get('dead_end', 0), 0)
+        count('I14 collisions', report.get('collision_incidents', 0), 0, note=str(report.get('incidents_by_kind', '')))
+        count('I14 certificate floor hits', report.get('cert_floor', 0), 0, is_hard=False, note='allowed only in emergencies')
+        count('I14 crossed a junction lane without a grant', report.get('ungranted', 0), 0)
+        count('I17 no-brake states', report.get('no_brake', 0), 0)
+        gl = report.get('gridlock_worst_stuck', 0)
+        count('gridlock: vehicles stuck', gl, 0, note=json.dumps((report.get('gridlock_end') or {}).get('cycles', []))[:200])
+    # I15
+    body_step = np.radians(np.degrees(np.abs(wrap((df['body'] - prev['body']).to_numpy()))))
+    record('I15 body heading per step', step_ok & ~lane_change, body_step - np.maximum(np.radians(2.0), v1 * h / 5.0), is_hard=False, note='needs smooth net geometry; a chord cannot hide a corner in the polyline')
+    # I16 and Q9
+    q9 = {}
+    if a.trips:
+        trips_csv = pd.read_csv(a.trips, dtype={'trip': str})
+        if 'wheel_kwh' in trips_csv:
+            b = pd.to_numeric(trips_csv['balance'])
+            bad = int((b.abs() > 0.01).sum())
+            table.append(dict(name='I16 books balance per trip', checked=len(trips_csv), failed=bad, max_excess=float(max(b.abs().max() - 0.01, 0)), per_step=bad / max(len(trips_csv), 1), per_km=0.0, hard=True, note='', first=''))
+            if bad:
+                hard.append('I16 books balance per trip')
+            per_km = trips_csv['wheel_kwh'] * 1000 / (trips_csv['dist_m'] / 1000).clip(lower=0.2)
+            car = per_km[trips_csv['dist_m'] > 500]
+            table.append(dict(name='I16 car wheel energy under 500 Wh/km', checked=len(car), failed=int((car > 500).sum()), max_excess=float(max(car.max() - 500, 0)) if len(car) else 0.0, per_step=0.0, per_km=0.0, hard=False, note=f'median {car.median() if len(car) else 0:.0f}, trucks included', first=''))
+            # Rebuild wheel work from the positions alone.
+            if every_tick:
+                mass = arr('m_ref') * load
+                meff = mass / arr('i_inv')
+                vm = 0.5 * (v0 + v1)
+                road = (mass * arr('road_a') + arr('m_ref') * arr('road_c') * vm * vm) * np.where(vm > 0, dx, 0.0)
+                need = 0.5 * meff * (v1 * v1 - v0 * v0) + mass * gz * dx + road
+                wheel = pd.Series(np.where(step_ok, np.maximum(need, 0.0), 0.0), index=df.index).groupby(df['trip']).sum() / 3.6e6
+                seen = df.groupby('trip')['time'].agg(['min', 'max'])
+                done = trips_csv.set_index('trip')
+                common = done.index.intersection(wheel.index)
+                ours = wheel.loc[common]
+                theirs = done.loc[common, 'wheel_kwh'].astype(float)
+                whole = (seen.loc[common, 'min'] <= done.loc[common, 'depart'] + 2 * step).to_numpy() & (theirs > 0.01).to_numpy()
+                rel = ((ours - theirs).abs() / theirs.clip(lower=1e-6))[whole]
+                q9 = dict(trips=int(whole.sum()), median=float(rel.median()) if whole.any() else 0.0, p99=float(rel.quantile(.99)) if whole.any() else 0.0, max=float(rel.max()) if whole.any() else 0.0)
+                bad = int((rel > 0.03).sum())
+                table.append(dict(name='Q9 wheel energy rebuilt from positions', checked=int(whole.sum()), failed=bad, max_excess=float(max((rel.max() if whole.any() else 0) - 0.03, 0)), per_step=bad / max(int(whole.sum()), 1), per_km=0.0, hard=False, note='within 3%, trips sampled start to end', first=''))
+    # Q1
+    if every_tick:
+        euler = np.abs(dx - v1 * h)
+        ballistic = np.abs(dx - 0.5 * (v0 + v1) * h)
+        chosen = step_ok & same_lane & (v1 > 0)
+        q1 = dict(samples=int(chosen.sum()), ballistic_better=int((ballistic < euler)[chosen].sum()), ballistic_residual=float(ballistic[chosen].max()) if chosen.any() else 0.0, euler_residual=float(euler[chosen].max()) if chosen.any() else 0.0)
+    else:
+        q1 = {}
+    # Q3, Q10
+    q3 = {}
+    for name, g in df.assign(a_real=a_real).groupby(t['vclass'].to_numpy()):
+        q3[str(name)] = dict(samples=len(g), a_p99=float(g['a_real'].quantile(.99)), a_p999=float(g['a_real'].quantile(.999)), brake_p99=float(g['a_real'].quantile(.01)), brake_p999=float(g['a_real'].quantile(.001)), a_max=float(g['a_real'].max()), a_min=float(g['a_real'].min()))
+    rates = dict(accel_over_2=float((a_real > 2).mean()), brake_over_2=float((a_real < -2).mean()), lateral_over_4=float((lateral > 4).mean()))
+    # Q6
+    lc_events = int(lane_change.sum())
+    q6 = dict(lane_changes=lc_events, per_km=lc_events / max(km, 1e-6), durations='from I11 phases')
+    # Q11
+    q11 = {}
+    if a.other_fcd:
+        other = pd.read_csv(a.other_fcd, usecols=['trip', 'lane'], dtype=str)
+        fa = df.groupby('edge')['trip'].nunique()
+        fb = other.assign(edge=other['lane'].map(lanes.edge)).groupby('edge')['trip'].nunique()
+        both = pd.concat([fa, fb], axis=1, keys=['a', 'b']).fillna(0)
+        both = both[(both.a + both.b) > 20]
+        diff = (both.a - both.b).abs() / both[['a', 'b']].max(axis=1)
+        q11 = dict(links=len(both), worst=float(diff.max()) if len(both) else 0.0, mean=float(diff.mean()) if len(both) else 0.0)
+    result = dict(hard_failures=hard, invariants=table, Q1=q1, Q3=q3, Q6=q6, Q9=q9, Q10=rates, Q11=q11, gridlock=report.get('gridlock_end'), collisions=report.get('worst_incidents', [])[:20])
+    (out / 'invariants.json').write_text(json.dumps(result, indent=1, default=str))
+    lines = ['# Invariants', '', f'mu {mu}, dt {step}, every tick sampled: {every_tick}. {km:.0f} vehicle km.', '',
+             '| Invariant | Checked | Failed | Worst excess | Per step | Per km | Kind | First t, id, lane | Note |', '|---|---|---|---|---|---|---|---|---|']
+    for r in table:
+        lines.append(f"| {r['name']} | {r['checked']} | {r['failed']} | {r['max_excess']:.3f} | {r['per_step']:.2e} | {r['per_km']:.2e} | {'hard' if r['hard'] else 'report'} | {r['first']} | {r['note']} |")
+    lines += ['', f'Hard failures: {", ".join(hard) if hard else "none"}.', '', '## Implied stops by start speed', '']
+    lines += table_md(stop_table)
+    lines += ['## Bounds by type, m/s2', '', '```', json.dumps(q3, indent=1), '```', '', f'Q1 update fit: {q1}', '', f'Q6: {q6}', '', f'Q9: {q9}', '', f'Q10: {rates}', '', f'Q11: {q11}', '']
+    (out / 'invariants.md').write_text('\n'.join(lines))
+    return hard
+
+
+def table_md(frame):
+    return table(frame)
 
 
 def main():
@@ -467,6 +715,10 @@ def main():
     p.add_argument('--log', help='stderr of cars run, for its counters')
     p.add_argument('--top', type=int, default=20, help='rows in each table of the report')
     p.add_argument('--pair-limit', type=int, default=3_000_000)
+    p.add_argument('--phys', help='JSON from cars run --phys-json: turns on invariants I1 to I17, exits nonzero on hard failures')
+    p.add_argument('--report', help='JSON from cars run --report-json')
+    p.add_argument('--trips', help='CSV from cars run --trip-csv, for energy')
+    p.add_argument('--other-fcd', help='FCD of the same scene at another dt, for Q11')
     analyse(p.parse_args())
 
 

@@ -256,7 +256,7 @@ impl Renderer {
             .vtypes
             .iter()
             .zip(widths)
-            .map(|(t, &body)| [t.length, body, if t.model >= 2 { 1.0 } else { 0.0 }, 0.0])
+            .map(|(t, &body)| [t.length, body, if t.model >= 2 { 1.0 } else { 0.0 }, t.v_lat])
             .collect();
         let types = buffer(g, "render types", bytemuck::cast_slice(&type_data), storage);
         let instances = g.device.create_buffer(&wgpu::BufferDescriptor {
