@@ -1161,6 +1161,21 @@ mod tests {
         }
     }
 
+    #[test]
+    fn saturation_headway_is_the_reference_value() {
+        let p = concat!(env!("CARGO_MANIFEST_DIR"), "/../../research/truth/fig/09-nets/j1.net.xml");
+        let net = Net::load(std::path::Path::new(p)).unwrap();
+        let topo = Topology::build(&net);
+        let c = CoordConfig { select: Select::Ids(vec!["B1".into()]), ..Default::default() };
+        let w = build(&net, &topo, &c, 0.1, 0);
+        // Through movements run at the lane's speed; the follower of one, at full speed, on the same movement.
+        let (mi, m) = w.links.iter().enumerate().find(|(_, m)| m.v_turn > 13.0).unwrap();
+        let pair = w.pairs[m.pair_start as usize..(m.pair_start + m.pair_count) as usize].iter().find(|x| x.other == mi as u32 && x.is_exit == 0).unwrap();
+        let h = w.head[pair.table as usize];
+        assert!((h - 1.304).abs() < 0.02, "headway {h}");
+        eprintln!("through-through headway {h:.3} s, reference 1.304");
+    }
+
     // The closed forms as the coordinator kernels run them, on whatever Vulkan device is at hand.
     #[test]
     fn earliest_and_latest_match_python() {

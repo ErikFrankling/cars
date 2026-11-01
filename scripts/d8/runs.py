@@ -90,12 +90,31 @@ def stalls():
     return out
 
 
+SIG_GRID = ((20.0, 1.0), (30.0, 1.0), (30.0, 2.0), (45.0, 1.0), (60.0, 1.0), (60.0, 2.0))
+T_DEMANDS = (1500, 3000, 4500, SAT['t1'])
+
+
+def t_tune():
+    # As the report does: six signal settings on a training seed that the evaluation never uses.
+    return [case('t1', 'M', d, 101, end=350.0, warm=100.0, mode='signal', human=h, sig=g) for d in T_DEMANDS for h in (False, True) for g in SIG_GRID]
+
+
 def t_junction():
+    best = {}
+    path = D8 / 't_tune.jsonl'
+    if path.exists():
+        for line in path.read_text().splitlines():
+            r = json.loads(line)
+            c = r['case']
+            k = (c['demand'], c['human'])
+            if k not in best or r['result']['delay'] < best[k][0]:
+                best[k] = (r['result']['delay'], tuple(c['sig']))
     out = []
-    for d in (1500, 3000, 4500, SAT['t1']):
-        for mode, human in (('free', False), ('signal', False), ('signal', True)):
-            for seed in (0, 1):
-                out.append(case('t1', 'M', d, seed, mode=mode, human=human))
+    for d in T_DEMANDS:
+        for seed in (0, 1):
+            out.append(case('t1', 'M', d, seed))
+            for h in (False, True):
+                out.append(case('t1', 'M', d, seed, mode='signal', human=h, sig=best[(d, h)][1] if (d, h) in best else (60.0, 1.0)))
     return out
 
 
@@ -142,7 +161,7 @@ def smoke():
     return [case('j1', 'T', 150.0, end=300.0, warm=50.0), case('j2', 'M', 3000.0)]
 
 
-PARTS = dict(smoke=smoke, capacity=capacity, demand=demand, faults=faults, stalls=stalls, t=t_junction, grid=grid, meter=meter, meter_seeds=meter_seeds, headway=headway, faults2=faults2)
+PARTS = dict(smoke=smoke, capacity=capacity, demand=demand, faults=faults, stalls=stalls, t=t_junction, grid=grid, meter=meter, meter_seeds=meter_seeds, headway=headway, faults2=faults2, t_tune=t_tune)
 
 
 def key(c):
