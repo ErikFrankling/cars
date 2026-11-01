@@ -166,12 +166,32 @@ pub fn zones(net: &Net, topo: &Topology, reach: f32) -> Vec<Vec<GpuZone>> {
                 let Some((a_in, a_out, d1)) = interval(net, &cum, a, b, reach) else { continue };
                 let Some((b_in, b_out, d2)) = interval(net, &cum, b, a, reach) else { continue };
                 let dist = d1.min(d2);
+                if keeps_apart(net, a, b, dist) {
+                    continue;
+                }
                 out[a as usize].push(GpuZone { foe_lane: b, own_in: a_in, own_out: a_out, foe_in: b_in, foe_out: b_out, dist });
                 out[b as usize].push(GpuZone { foe_lane: a, own_in: b_in, own_out: b_out, foe_in: a_in, foe_out: a_out, dist });
             }
         }
     }
     out
+}
+
+/// Opposite directions that never touch, or lanes side by side by their own widths. On a narrow two-way street a
+/// zone would be a head-on standoff; drivers squeeze past there, and SUMO has no foe either.
+fn keeps_apart(net: &Net, a: u32, b: u32, dist: f32) -> bool {
+    let (la, lb) = (&net.lanes[a as usize], &net.lanes[b as usize]);
+    if dist >= 0.5 * (la.width + lb.width) - 0.05 {
+        return true;
+    }
+    let chord = |s: &[[f32; 2]]| {
+        let (p, q) = (s[0], s[s.len() - 1]);
+        let (dx, dy) = (q[0] - p[0], q[1] - p[1]);
+        let n = (dx * dx + dy * dy).sqrt().max(1e-3);
+        (dx / n, dy / n)
+    };
+    let (ca, cb) = (chord(&la.shape), chord(&lb.shape));
+    dist > 0.3 && ca.0 * cb.0 + ca.1 * cb.1 < -0.7
 }
 
 /// Where along `a`, in lane positions, its centre line is within reach of `b`.

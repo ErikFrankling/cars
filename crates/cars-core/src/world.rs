@@ -49,7 +49,11 @@ pub struct GpuParams {
     /// A body about to leave a zone holds it not: 0 never, 1 at merges, 2 everywhere.
     pub zone_time: u32,
     pub lat_standing: f32,
-    pub pad: [f32; 3],
+    /// Under this speed a change is not held to the heading limit: steering at a crawl can take any angle, and
+    /// a car held to it stays across two lanes for good.
+    pub lc_crawl: f32,
+    pub lat_floor: f32,
+    pub pad: [f32; 1],
 }
 
 #[repr(C)]
@@ -726,7 +730,9 @@ impl World {
             lc_gap: cfg.tune("lc_gap", 0.6),
             zone_time: cfg.tune("zone_time", 1.0) as u32,
             lat_standing: cfg.tune("lat_standing", 0.1),
-            pad: [0.0; 3],
+            lc_crawl: cfg.tune("lc_crawl", 0.5),
+            lat_floor: cfg.tune("lat_floor", 0.005),
+            pad: [0.0; 1],
         };
         w
     }

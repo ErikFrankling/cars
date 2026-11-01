@@ -1843,7 +1843,9 @@ fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32, lane_ends: bool) {
     if (((*e).flags & F_LAT_FAST) != 0u) { v_lat = 1.1; }
     let w = lanes[(*e).lane].width;
     let total = w / v_lat + 1.0;
-    var rate = min(1.0, 0.5 * (v0 + v1) * 0.21256 / v_lat);
+    let vbar = 0.5 * (v0 + v1);
+    var rate = min(1.0, vbar * 0.21256 / v_lat);
+    if (vbar < P.lc_crawl && vbar > P.lat_floor) { rate = 1.0; }
     // Held at the end of a lane with no way on, a driver edges across. SUMO has lcMaxSpeedLatStanding for this.
     if (lane_ends) { rate = max(rate, P.lat_standing / v_lat); }
     var u = f32((p >> 16u) & 0x3fffu) / 16383.0;
