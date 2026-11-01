@@ -18,7 +18,6 @@ const F_REMOVED: u32 = 1;
 const C_NEW: usize = 0;
 const C_ARRIVED: usize = 2;
 const C_INSERTED: usize = 3;
-const C_TELEPORTS: usize = 4;
 const C_COLLISIONS: usize = 7;
 
 pub fn open_gpu(trusted: bool) -> Result<Gpu, String> {
@@ -161,6 +160,7 @@ pub fn run_day(engine: &mut Engine, supply: &Supply, pop: &Population, s: &Scena
     let mut vehicle_steps = 0u64;
     let mut peak_active = 0u32;
     let mut inserted_by_replica = vec![0u64; k];
+    let mut teleports_by_replica = vec![0u64; k];
     let mut speed_by_bin = vec![0.0f32; n_bins];
     let mut end_s = s.horizon;
     let mut bin = begin_bin;
@@ -179,6 +179,7 @@ pub fn run_day(engine: &mut Engine, supply: &Supply, pop: &Population, s: &Scena
         for (id, a) in acc.iter().enumerate() {
             let (r, e) = (id / per, id % per);
             inserted_by_replica[r] += a[5] as u64;
+            teleports_by_replica[r] += a[3] as u64;
             let d = supply.dense[e];
             if d == NONE {
                 continue;
@@ -289,8 +290,9 @@ pub fn run_day(engine: &mut Engine, supply: &Supply, pop: &Population, s: &Scena
             active,
             waiting_to_insert: due - inserted,
             not_yet_due: st.requested - due.min(st.requested),
-            teleports: c[C_TELEPORTS] as u64,
-            collisions: c[C_COLLISIONS] as u64,
+            teleports: teleports_by_replica[r],
+            // Only counted per world, so a replica's share.
+            collisions: c[C_COLLISIONS] as u64 / k as u64,
             imbalance: imb,
         });
     }
