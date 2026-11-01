@@ -20,6 +20,9 @@ pub struct CoordArgs {
     /// free, signal or mixed. Signal is the baseline with the same cars and conflict table.
     #[arg(long, default_value = "free")]
     pub cj_mode: String,
+    /// Exceptions per junction, id=free or id=signal, separated by commas.
+    #[arg(long, value_delimiter = ',')]
+    pub cj_junction_mode: Vec<String>,
     /// The stall-tolerant stricter margin instead of the specified rule.
     #[arg(long)]
     pub cj_level_b: bool,
@@ -105,9 +108,20 @@ impl CoordArgs {
             "mixed" => return Err("mixed mode is reserved: this build runs automated cars only".into()),
             other => return Err(format!("unknown --cj-mode {other}")),
         };
+        let mut modes = rustc_hash::FxHashMap::default();
+        for m in &self.cj_junction_mode {
+            let (id, name) = m.split_once('=').ok_or("--cj-junction-mode id=free|signal")?;
+            let value = match name {
+                "free" => coord::MODE_FREE,
+                "signal" => coord::MODE_SIGNAL,
+                other => return Err(format!("unknown mode {other} for {id}")),
+            };
+            modes.insert(id.to_string(), value);
+        }
         let mut c = CoordConfig {
             select,
             mode,
+            modes,
             level_b: self.cj_level_b,
             exit_check: !self.cj_no_exit_check,
             ponr: !self.cj_no_exit_check,
@@ -157,8 +171,6 @@ pub struct Args {
     /// Keep going past overlaps quietly; list at most this many in the output.
     #[arg(long, default_value_t = 12)]
     list_overlaps: usize,
-    #[arg(long)]
-    trusted: bool,
     /// Print vehicles that overlap on a lane, at every chunk.
     #[arg(long)]
     debug_lanes: bool,
@@ -203,7 +215,7 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("  refused {id}: {why}");
         }
     }
-    let checks = if a.trusted { cars_core::Checks::Trusted } else { cars_core::Checks::Safe };
+    let checks = cars_core::Checks::Safe;
     let gpu = pollster::block_on(Gpu::headless(GpuOptions { adapter_name: Some(std::env::var("CARS_ADAPTER").unwrap_or("7900".into())), checks }))?;
     let mut sim = Sim::new(&gpu, &world)?;
     let setup_s = wall0.elapsed().as_secs_f64();

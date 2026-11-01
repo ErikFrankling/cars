@@ -335,6 +335,8 @@ pub struct ExitFault {
 pub struct CoordConfig {
     pub select: Select,
     pub mode: u32,
+    /// Per junction exceptions to `mode`: one junction can run a signal among signal-free ones.
+    pub modes: FxHashMap<String, u32>,
     pub level_b: bool,
     pub length: f64,
     pub width: f64,
@@ -380,6 +382,7 @@ impl Default for CoordConfig {
         Self {
             select: Select::All,
             mode: MODE_FREE,
+            modes: FxHashMap::default(),
             level_b: false,
             length: 5.0,
             width: 1.8,
@@ -1030,7 +1033,7 @@ pub fn build(net: &Net, topo: &Topology, c: &CoordConfig, dt: f32, seed: u64) ->
             plan_start: w.n_plan,
             aud_start: w.n_aud,
             tick_phase: order as u32 % w.cfg.tick_steps,
-            mode: c.mode,
+            mode: c.modes.get(&jn.id).copied().unwrap_or(c.mode),
             cx: jn.x,
             cy: jn.y,
             awsc_free: -1e9,

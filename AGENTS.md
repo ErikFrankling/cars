@@ -8,6 +8,7 @@ The GPU also drives Erik's desktop. Scale every experiment from small to big, ke
 - `scripts/golden.py` compares trajectories with SUMO. `scripts/junction_tests.py` compares junctions route by route. `scripts/cmp_thesis.py`, `cmp_edges.py`, `cmp_lanes.py` compare runs. `target/release/sweep` runs a thesis sweep as replicas in one GPU world; thesis SUMO results are in `/home/erikf/projects/personal/thesis-src/bachelor/results/processed/metrics.csv`.
 - `research/sumo-0*.md` are the implementation specs, transcribed from SUMO 1.28. The SUMO source is at `/home/erikf/projects/personal/thesis-src/sumo/src`.
 
+- `shaders/av_junction.wgsl` and `coord.rs` are the signal-free coordinator (D8, research/truth/09). `cars av` runs it and prints JSON; `scripts/d8/` holds demand, sweeps, plots and clips; `--cj` works on `cars record` too. Set `CARS_ADAPTER=llvmpipe` for debugging without the GPU lock, `CARS_SHADER_DIR` to load shaders without rebuilding.
 - `cars record`, `cars shot` and `cars junctions` look at intersections up close, `scripts/intersection_gallery.py` and `scripts/physics_qa.py` build on them; see `crates/cars-cli/RECORDING.md`.
 
 No GPU kernel may use function-local arrays outside `lc_best`. Comments stay sparse.

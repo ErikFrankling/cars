@@ -157,3 +157,10 @@ changes the simulation. Small nets then replay the same run. City runs do not re
 `cars run` commands on Stockholm differed by about 200 vehicles an hour in, so an incident in an FCD
 file will not be there in a later clip of the same command. Record with `--overlay events` and read
 that run's log instead.
+
+## Coordinated junctions
+
+`--cj <ids|all|box:x0,y0,x1,y1>` runs those junctions with the signal-free coordinator (`cars av --help` lists the
+fault flags, which work here too). Overlays `grants` (firm slots, speed advice, lost grants, the slot chart and, for
+`--cj-mode signal`, stop bars from the coordinator's own phase), `paths` (planned paths, wide where a crossing foe also
+needs the road) and `channel` (the coordinator and who talks to it). `scripts/d8/film.py` makes the clips.

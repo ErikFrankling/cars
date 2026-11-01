@@ -57,7 +57,7 @@ def main():
                     routes = work / f'{k}.rou.xml'
                     subprocess.run([sys.executable, str(ROOT / 'scripts/d8/demand_net.py'), '--net', str(net), '--out', str(routes), '--demand', str(d), '--seed', str(seed), '--end', str(a.end), '--type', typ], check=True, capture_output=True)
                     GATE.enter()
-                    r = subprocess.run([a.cars, 'av', '--net', str(net), '--routes', str(routes), '--end', str(a.end), '--cj-warm', '200', '--seed', str(seed), '--trusted'] + args, capture_output=True, text=True)
+                    r = subprocess.run([a.cars, 'av', '--net', str(net), '--routes', str(routes), '--end', str(a.end), '--cj-warm', '200', '--seed', str(seed)] + args, capture_output=True, text=True)
                     routes.unlink(missing_ok=True)
                     out = json.loads(r.stdout.strip().splitlines()[-1]) if r.returncode == 0 else dict(error=r.stderr[-800:])
                     out.pop('profile', None)

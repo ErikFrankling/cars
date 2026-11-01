@@ -124,6 +124,8 @@ class Gate:
         self.budget = budget
 
     def enter(self):
+        if os.environ.get('CARS_ADAPTER') == 'llvmpipe':
+            return
         if self.since is not None and time.time() - self.since > self.budget:
             self.leave()
             time.sleep(1.0)
@@ -154,7 +156,7 @@ def run_case(c, work, cars):
         js = ','.join(f'{x}{y}' for x in 'BCD' for y in '123')
     else:
         js = 'B1'
-    args = ['--net', str(net), '--routes', str(routes), '--end', str(c['end']), '--cj', js, '--cj-warm', str(c['warm']), '--cj-mode', c['mode'], '--trusted',
+    args = ['--net', str(net), '--routes', str(routes), '--end', str(c['end']), '--cj', js, '--cj-warm', str(c['warm']), '--cj-mode', c['mode'],
             '--cj-sig-max', str(c['sig'][0]), '--cj-sig-gap', str(c['sig'][1]), '--seed', str(c['seed'])]
     if c['level'] == 'B':
         args.append('--cj-level-b')
