@@ -398,9 +398,10 @@ impl Sim {
                 empty("cj_events", (cd::EVENTS_MAX as u64 + 1) * 32),
                 init("cj_path", bytemuck::cast_slice(&cw.path), storage),
                 empty("cj_aud", cw.n_aud as u64 * std::mem::size_of::<cd::GpuCjAud>() as u64),
+                empty("cj_rel_ms", cw.rel_init.len() as u64 * 4),
             ];
-            const RO: [bool; 20] = [
-                true, false, true, true, true, true, true, true, false, false, false, false, false, false, false, true, false, false, true, false,
+            const RO: [bool; 21] = [
+                true, false, true, true, true, true, true, true, false, false, false, false, false, false, false, true, false, false, true, false, false,
             ];
             let entries: Vec<_> = RO
                 .iter()

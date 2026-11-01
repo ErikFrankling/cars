@@ -63,6 +63,37 @@ pub struct CoordArgs {
     /// Hold new cars outside the network while this many are on it. 0 for no metering.
     #[arg(long, default_value_t = 0)]
     pub cj_meter: u32,
+    /// Plan the approach: off, profile (smooth speed only), stable (profile and a stable far-out
+    /// schedule), full (stable, and followers plan from their leader's plan).
+    #[arg(long, default_value = "off")]
+    pub cj_plan: String,
+    /// Time margin between conflicting cars, s.
+    #[arg(long)]
+    pub cj_margin: Option<f64>,
+    /// Sigma of each car's position bias, m.
+    #[arg(long, default_value_t = 0.0)]
+    pub cj_pos_err: f32,
+    /// Sigma of each car's clock bias, s.
+    #[arg(long, default_value_t = 0.0)]
+    pub cj_clock_err: f32,
+    /// Braking a planned slot assumes, m/s².
+    #[arg(long)]
+    pub cj_plan_b: Option<f64>,
+    /// Firm horizon, s.
+    #[arg(long)]
+    pub cj_firm: Option<f64>,
+    /// How long before its slot a car's place in the order is fixed, s.
+    #[arg(long)]
+    pub cj_plan_freeze: Option<f64>,
+    /// A wait up to this long is planned at the gentle rate; longer waits brake firmer, s.
+    #[arg(long)]
+    pub cj_plan_slack: Option<f64>,
+    /// A held slot moves earlier only for this gain, s.
+    #[arg(long)]
+    pub cj_plan_up: Option<f64>,
+    /// Leave the point of no return out of the headway table (for comparison).
+    #[arg(long)]
+    pub cj_no_ponr_table: bool,
     /// Measurements start here.
     #[arg(long, default_value_t = 0.0)]
     pub cj_warm: f32,
@@ -143,6 +174,36 @@ impl CoordArgs {
         if self.cj_human {
             c = c.human();
         }
+        c.plan = match self.cj_plan.as_str() {
+            "off" => 0,
+            "profile" => coord::PLAN_PROFILE,
+            "stable" => coord::PLAN_PROFILE | coord::PLAN_STABLE,
+            "full" => coord::PLAN_PROFILE | coord::PLAN_STABLE | coord::PLAN_FOLLOW,
+            "cubic" => coord::PLAN_PROFILE | coord::PLAN_STABLE | coord::PLAN_FOLLOW | coord::PLAN_CUBIC,
+            "dr" => coord::PLAN_PROFILE | coord::PLAN_STABLE | coord::PLAN_FOLLOW | coord::PLAN_DR,
+            other => return Err(format!("unknown --cj-plan {other}")),
+        };
+        if let Some(m) = self.cj_margin {
+            c.m_t = m;
+        }
+        if let Some(b) = self.cj_plan_b {
+            c.plan_b = b;
+        }
+        if let Some(t) = self.cj_firm {
+            c.t_firm = t;
+        }
+        if let Some(t) = self.cj_plan_freeze {
+            c.plan_freeze = t;
+        }
+        if let Some(t) = self.cj_plan_slack {
+            c.plan_slack = t;
+        }
+        if let Some(t) = self.cj_plan_up {
+            c.plan_up = t;
+        }
+        c.plan_ponr_table = !self.cj_no_ponr_table;
+        c.pos_err = self.cj_pos_err;
+        c.clock_err = self.cj_clock_err;
         Ok(Some(c))
     }
 }
@@ -174,7 +235,7 @@ pub struct Args {
     /// Print vehicles that overlap on a lane, at every chunk.
     #[arg(long)]
     debug_lanes: bool,
-    /// Print these trips every step between two times: t0,t1,trip,trip...
+    /// Print these trips every step between two times: t0,t1,trip,trip... With only t0,t1, every car.
     #[arg(long, value_delimiter = ',')]
     trace: Vec<f32>,
     #[command(flatten)]
@@ -241,12 +302,12 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
     let (mut step_n, mut active_steps) = (0u64, 0u64);
     while step_n < steps {
         let t_now = step_n as f32 * a.dt;
-        let tracing = a.trace.len() > 2 && t_now >= a.trace[0] && t_now < a.trace[1];
+        let tracing = a.trace.len() >= 2 && t_now >= a.trace[0] && t_now < a.trace[1];
         let n = if tracing { 1 } else { chunk.min(steps - step_n).min(if step_n < warm_step { warm_step - step_n } else { u64::MAX }) };
         if tracing {
             for v in sim.vehicles(&gpu) {
-                if a.trace[2..].contains(&(v.trip as f32)) {
-                    eprintln!("tr t={:.1} trip {} lane {} pos {:.2} v {:.2} a {:.2} st {:#x} link {} seq {} tl {:.2} vl {:.2} cmd {:.2} flags {:#x}", t_now, v.trip, net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc, v.cj_state, v.cj_link as i32, v.cj_seq, v.cj_t_line, v.cj_v_line, v.cj_v_cmd, v.flags);
+                if v.flags & 1 == 0 && v.lane != world.params.dummy_lane && (a.trace.len() == 2 || a.trace[2..].contains(&(v.trip as f32))) {
+                    eprintln!("tr t={:.1} trip {} lane {} pos {:.2} v {:.2} a {:.2} st {:#x} link {} seq {} tl {:.2} vl {:.2} cmd {:.2} flags {:#x} cr {:.1}", t_now, v.trip, net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc, v.cj_state, v.cj_link as i32, v.cj_seq, v.cj_t_line, v.cj_v_line, v.cj_v_cmd, v.flags, v.cj_v_cruise);
                 }
             }
         }
@@ -396,6 +457,21 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
         "stalls": stats[stat::STALLS],
         "box_block": stats[stat::BOX_BLOCK] as f64 * a.dt as f64,
         "yields": stats[stat::YIELDS],
+        "speed_lost": stats[stat::SPEED_LOST] as f64 / 1000.0,
+        "wh_lost": stats[stat::KE_LOST] as f64 * 1500.0 / 2.0 / 3600.0 / 100.0,
+        "hard_stop_curve": stats[stat::HARD_STOP_CURVE],
+        "hard_leader": stats[stat::HARD_LEADER],
+        "hard_yield": stats[stat::HARD_YIELD],
+        "hard_hold": stats[stat::HARD_HOLD],
+        "hard_plan": stats[stat::HARD_PLAN],
+        "hard_stall": stats[stat::HARD_STALL],
+        "moved_later": stats[stat::MOVED_LATER],
+        "moved_earlier": stats[stat::MOVED_EARLIER],
+        "slots_full": stats[stat::SLOTS_FULL],
+        "exit_refused": stats[stat::EXIT_REFUSED],
+        "bytes_up": stats[stat::BYTES_UP],
+        "bytes_down": stats[stat::BYTES_DOWN],
+        "err_hist": (0..10).map(|i| stats[stat::ERR_HIST + i]).collect::<Vec<_>>(),
         "holds": stats[stat::HOLDS],
         "msg_sent": stats[stat::MSG_SENT],
         "msg_lost": stats[stat::MSG_LOST],

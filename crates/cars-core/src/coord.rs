@@ -13,7 +13,14 @@ pub const K_BOX: u32 = 16;
 pub const N_CLASS: u32 = 6;
 pub const PLAN_MAX: u32 = 32;
 pub const AUD_MAX: u32 = 32;
-pub const STATS_PER_REPLICA: u32 = 32;
+pub const STATS_PER_REPLICA: u32 = 64;
+pub const K_LANE_PLAN: u32 = 48;
+pub const PLAN_MAX_PLAN: u32 = 256;
+pub const PLAN_PROFILE: u32 = 1;
+pub const PLAN_STABLE: u32 = 2;
+pub const PLAN_FOLLOW: u32 = 4;
+pub const PLAN_CUBIC: u32 = 8;
+pub const PLAN_DR: u32 = 16;
 pub const EVENTS_MAX: u32 = 4095;
 const DS: f64 = 0.25;
 const MIN_LANE: f32 = 25.0;
@@ -65,6 +72,22 @@ pub mod stat {
     pub const STALL_BOX: usize = 24;
     pub const YIELDS: usize = 25;
     pub const HOLDS: usize = 26;
+    pub const SPEED_LOST: usize = 27;
+    pub const KE_LOST: usize = 28;
+    pub const HARD_STOP_CURVE: usize = 29;
+    pub const HARD_LEADER: usize = 30;
+    pub const HARD_YIELD: usize = 31;
+    pub const HARD_HOLD: usize = 32;
+    pub const HARD_PLAN: usize = 33;
+    pub const HARD_STALL: usize = 34;
+    pub const MOVED_LATER: usize = 35;
+    pub const MOVED_EARLIER: usize = 36;
+    pub const SLOTS_FULL: usize = 38;
+    pub const EXIT_REFUSED: usize = 39;
+    pub const BYTES_UP: usize = 40;
+    pub const BYTES_DOWN: usize = 41;
+    /// Arrival error against the slot: 42 up to 1 ms, then 2, 5, 10, 20, 50, 100, 200, 500, and beyond.
+    pub const ERR_HIST: usize = 42;
 }
 
 #[repr(C)]
@@ -111,7 +134,22 @@ pub struct GpuCjCfg {
     pub n_junctions: u32,
     pub n_apps: u32,
     pub n_exits: u32,
-    pub pad: [u32; 1],
+    pub plan: u32,
+    pub k_lane: u32,
+    pub plan_max: u32,
+    pub plan_b: f32,
+    pub plan_bc: f32,
+    pub plan_j: f32,
+    pub pos_err: f32,
+    pub clock_err: f32,
+    pub dt_ms: u32,
+    pub plan_up: f32,
+    pub plan_range: f32,
+    pub plan_freeze: f32,
+    pub plan_slack: f32,
+    pub pad_a: u32,
+    pub pad_b: u32,
+    pub pad_c: u32,
 }
 
 #[repr(C)]
@@ -225,7 +263,9 @@ pub struct GpuCjApp {
     pub s_cand_t: f32,
     pub s_cand_score: f32,
     pub box_tail: u32,
-    pub pad: u32,
+    pub line_ms: u32,
+    pub n_ranked: u32,
+    pub pad: [u32; 2],
 }
 
 #[repr(C)]
@@ -250,7 +290,8 @@ pub struct GpuCjExit {
     pub cap_interval: f32,
     pub sink_ready: f32,
     pub seq: u32,
-    pub pad: u32,
+    pub exit_ms: u32,
+    pub tail_a: f32,
 }
 
 #[repr(C)]
@@ -264,6 +305,10 @@ pub struct GpuCjReq {
     pub trip: u32,
     pub t_plan: f32,
     pub k_plan: u32,
+    pub held: f32,
+    pub rank: f32,
+    pub heard: u32,
+    pub pad: u32,
 }
 
 #[repr(C)]
@@ -376,6 +421,17 @@ pub struct CoordConfig {
     pub sig_lost: f32,
     pub sig_start: f32,
     pub exit_faults: Vec<ExitFault>,
+    /// PLAN_* bits. 0 is the reference behaviour, bit for bit.
+    pub plan: u32,
+    pub plan_b: f64,
+    pub plan_bc: f64,
+    pub plan_j: f64,
+    pub plan_up: f64,
+    pub plan_freeze: f64,
+    pub plan_slack: f64,
+    pub plan_ponr_table: bool,
+    pub pos_err: f32,
+    pub clock_err: f32,
 }
 
 impl Default for CoordConfig {
@@ -421,6 +477,16 @@ impl Default for CoordConfig {
             sig_lost: 0.0,
             sig_start: 0.0,
             exit_faults: Vec::new(),
+            plan: 0,
+            plan_b: 0.9,
+            plan_bc: 2.0,
+            plan_j: 2.0,
+            plan_up: 0.5,
+            plan_freeze: 5.0,
+            plan_slack: 8.0,
+            plan_ponr_table: true,
+            pos_err: 0.0,
+            clock_err: 0.0,
         }
     }
 }
@@ -508,6 +574,24 @@ fn pair_headway(p: &Mov, kp: usize, m: &Mov, k: usize, x0: f64, end: f64, is_exi
         x += 1.0;
     }
     h
+}
+
+/// A slot that the point of no return will refuse is a plan to brake: m stays behind p far enough that
+/// p's rear has room for m, with p braking at b_plan, by the moment m has to decide.
+fn ponr_headway(p: &Mov, kp: usize, m: &Mov, k: usize, c: &CoordConfig) -> f64 {
+    let clear = |x: f64| {
+        let v = p.speed_along(p.vk[kp], p.p + x, c.accel);
+        x - c.length + v * v / (2.0 * c.b_plan) >= c.length + c.s0 + 1.0
+    };
+    if clear(0.0) {
+        return -1e9;
+    }
+    let mut x = 0.0f64;
+    while x < 100.0 && !clear(x) {
+        x += 0.5;
+    }
+    let vm = m.vk[k].max(0.5);
+    p.time(p.vk[kp], p.p + x, c.accel) + c.t_r + vm / (2.0 * c.b_s) + 2.0 / vm + 0.4
 }
 
 fn sample_lane(net: &Net, lane: u32, base: f64, s: &mut Vec<f64>, xy: &mut Vec<[f64; 2]>) -> f64 {
@@ -718,6 +802,10 @@ pub fn build(net: &Net, topo: &Topology, c: &CoordConfig, dt: f32, seed: u64) ->
         let e = &net.edges[net.lanes[lane as usize].edge as usize];
         net.junction_index.get(&e.to).copied()
     };
+    // A signal baseline keeps today's schedule whatever is asked of the signal-free one.
+    let plan = if c.mode == MODE_SIGNAL { 0 } else { c.plan };
+    let stable = plan & PLAN_STABLE != 0;
+    let (k_lane, plan_max) = if stable { (K_LANE_PLAN, PLAN_MAX_PLAN) } else { (K_LANE, PLAN_MAX) };
     w.cfg = GpuCjCfg {
         length: c.length as f32,
         width: c.width as f32,
@@ -757,6 +845,22 @@ pub fn build(net: &Net, topo: &Topology, c: &CoordConfig, dt: f32, seed: u64) ->
         sig_gap: c.sig_gap,
         sig_lost: c.sig_lost,
         sig_start: c.sig_start,
+        plan,
+        k_lane,
+        plan_max,
+        plan_b: c.plan_b as f32,
+        plan_bc: c.plan_bc as f32,
+        plan_j: c.plan_j as f32,
+        pos_err: c.pos_err,
+        clock_err: c.clock_err,
+        dt_ms: (dt * 1000.0).round() as u32,
+        plan_up: c.plan_up as f32,
+        plan_freeze: c.plan_freeze as f32,
+        plan_slack: c.plan_slack as f32,
+        pad_a: 0,
+        pad_b: 0,
+        pad_c: 0,
+        plan_range: c.r50,
         ..Default::default()
     };
     let _ = seed;
@@ -848,10 +952,11 @@ pub fn build(net: &Net, topo: &Topology, c: &CoordConfig, dt: f32, seed: u64) ->
                 s_line_ref: NONE,
                 line_t: -1e9,
                 s_line_t: -1e9,
+                line_ms: 0,
                 box_tail: NONE,
                 ..Default::default()
             });
-            w.n_req += K_LANE;
+            w.n_req += k_lane;
             w.lane_info[lane as usize].app = at;
         }
         let mut exit_of: FxHashMap<u32, u32> = FxHashMap::default();
@@ -967,7 +1072,11 @@ pub fn build(net: &Net, topo: &Topology, c: &CoordConfig, dt: f32, seed: u64) ->
                     let table = w.head.len() as u32;
                     for kp in 0..N_CLASS as usize {
                         for kk in 0..N_CLASS as usize {
-                            w.head.push(pair_headway(p, kp, m, kk, x0, 60.0, true, c) as f32);
+                            let mut h = pair_headway(p, kp, m, kk, x0, 60.0, true, c);
+                            if c.plan != 0 && c.plan_ponr_table {
+                                h = h.max(ponr_headway(p, kp, m, kk, c));
+                            }
+                            w.head.push(h as f32);
                         }
                     }
                     w.pairs.push(GpuCjPair { other: mov0 + pi as u32, is_exit: 1, table, s_end: -x0 as f32 });
@@ -1043,7 +1152,7 @@ pub fn build(net: &Net, topo: &Topology, c: &CoordConfig, dt: f32, seed: u64) ->
             switch_t: -1e9,
             ..Default::default()
         });
-        w.n_plan += PLAN_MAX;
+        w.n_plan += plan_max;
         w.n_aud += AUD_MAX;
         w.ids.push(jn.id.clone());
     }

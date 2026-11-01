@@ -1887,6 +1887,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     e.best_left = 0.0;
     e.best_right = 0.0;
     e.cj_link = NONE;
+    e.cj_rank = NONE;
     e.cj_zone_t = f32(G.step) * dt;
     e.cj_hold = 1e30;
     e.cj_yield = 1e30;

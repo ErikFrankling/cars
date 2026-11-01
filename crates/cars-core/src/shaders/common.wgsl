@@ -146,6 +146,9 @@ struct Veh {
     cj_hold: f32,      // path position to stop at during a fault
     cj_v_cmd: f32,     // this step's speed from cj_apply
     cj_yield: f32,     // path position to stop at for a sensed foe
+    cj_t_ms: u32,      // the slot this car knows, in ms since start
+    cj_plan_ms: u32,   // the slot the coordinator holds for it
+    cj_rank: u32,      // its place in the junction's sequence, NONE before it is heard
 }
 
 struct Lane {
@@ -338,7 +341,8 @@ const CJ_LATE: u32 = 32u;
 const CJ_STALLED: u32 = 64u;      // injected failure
 const CJ_WAS_MOVING: u32 = 128u;
 const CJ_K_SHIFT: u32 = 8u;       // speed class of the grant
-const CJ_KEEP: u32 = CJ_STALLED | CJ_WAS_MOVING;
+const CJ_HARD: u32 = 2048u;       // in a hard braking episode, for counting them
+const CJ_KEEP: u32 = CJ_STALLED | CJ_WAS_MOVING | CJ_HARD;
 
 const MODE_SUMO: u32 = 0u;
 const MODE_FREE: u32 = 1u;
@@ -387,7 +391,22 @@ struct CjCfg {
     n_junctions: u32,
     n_apps: u32,
     n_exits: u32,
-    pad: u32,
+    plan: u32,         // bit 0 smooth profile, bit 1 stable far-out schedule, bit 2 followers read the leader's plan
+    k_lane: u32,
+    plan_max: u32,
+    plan_b: f32,       // braking the plan assumes when it can choose
+    plan_bc: f32,      // comfort limit of any planned braking
+    plan_j: f32,       // jerk limit of planned control
+    pos_err: f32,      // sigma of each car's position bias, m
+    clock_err: f32,    // sigma of each car's clock bias, s
+    dt_ms: u32,
+    plan_up: f32,      // a held slot moves earlier only for this gain, s
+    plan_range: f32,
+    plan_freeze: f32,  // the order is fixed this long before the slot, s
+    plan_slack: f32,   // a wait up to this long is planned at plan_b; longer, firmer up to plan_bc, s
+    pad_a: u32,
+    pad_b: u32,
+    pad_c: u32,
 }
 
 struct CjJunction {
@@ -489,7 +508,10 @@ struct CjApp {
     s_cand_t: f32,
     s_cand_score: f32,
     box_tail: atomic<u32>,
-    pad: u32,
+    line_ms: u32,
+    n_ranked: u32,
+    box_tail_m: atomic<u32>,
+    pad1: u32,
 }
 
 struct CjExit {
@@ -512,7 +534,8 @@ struct CjExit {
     cap_interval: f32,
     sink_ready: f32,
     seq: u32,
-    pad1: u32,
+    exit_ms: u32,
+    tail_a: f32,
 }
 
 struct CjReq {
@@ -524,6 +547,10 @@ struct CjReq {
     trip: u32,
     t_plan: f32,
     k_plan: u32,
+    held: f32,      // seconds from now to its held slot, INF for none
+    rank: f32,
+    heard: u32,
+    pad: u32,
 }
 
 struct CjBox {
