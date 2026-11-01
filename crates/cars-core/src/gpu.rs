@@ -33,7 +33,9 @@ impl Gpu {
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn headless(opts: GpuOptions) -> Result<Self, String> {
         let instance = instance();
-        let adapter = match &opts.adapter_name {
+        // CARS_ADAPTER=llvmpipe runs on the CPU: for a kernel that might hang, which must not reach the GPU.
+        let named = std::env::var("CARS_ADAPTER").ok().or(opts.adapter_name.clone());
+        let adapter = match &named {
             Some(name) => {
                 let want = name.to_lowercase();
                 instance

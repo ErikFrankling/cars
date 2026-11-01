@@ -39,21 +39,18 @@
 @group(0) @binding(34) var<storage, read_write> last_detect: array<u32>;
 @group(0) @binding(19) var<storage, read_write> lane_free: array<LaneFree>;
 @group(0) @binding(35) var<storage, read_write> lc_plan: array<LcPlan>;
+// Five words per lane in physical mode: junction bid, length heading there, front-most entrant, widest body, reach.
+@group(0) @binding(30) var<storage, read_write> ph_lane: array<atomic<u32>>;
 @group(0) @binding(36) var<storage, read_write> mirror: array<Mirror>;
 @group(0) @binding(37) var<storage, read_write> energy: array<TripEnergy>;
-@group(0) @binding(38) var<storage, read_write> junction_bid: array<atomic<u32>>;
-@group(0) @binding(39) var<storage, read_write> inbound: array<atomic<u32>>;
-@group(0) @binding(40) var<storage, read_write> hard_limit: array<atomic<u32>>;
-@group(0) @binding(41) var<storage, read> zones: array<Zone>;
-@group(0) @binding(42) var<storage, read> speed_trace: array<f32>;
-@group(0) @binding(43) var<storage, read_write> entrant_front: array<atomic<u32>>;
-@group(0) @binding(44) var<storage, read_write> poses: array<Pose>;
-@group(0) @binding(45) var<storage, read_write> grid_head: array<atomic<u32>>;
-@group(0) @binding(46) var<storage, read_write> grid_next: array<u32>;
-@group(0) @binding(47) var<storage, read> shape_points: array<vec4f>;
-@group(0) @binding(48) var<storage, read_write> contacts: array<Contact>;
-@group(0) @binding(49) var<storage, read_write> occ_width: array<atomic<u32>>;
-@group(0) @binding(50) var<storage, read_write> occ_reach: array<atomic<u32>>;
+@group(0) @binding(38) var<storage, read_write> hard_limit: array<atomic<u32>>;
+@group(0) @binding(39) var<storage, read> zones: array<Zone>;
+@group(0) @binding(40) var<storage, read> speed_trace: array<f32>;
+@group(0) @binding(41) var<storage, read_write> poses: array<Pose>;
+@group(0) @binding(42) var<storage, read_write> grid_head: array<atomic<u32>>;
+@group(0) @binding(43) var<storage, read_write> grid_next: array<u32>;
+@group(0) @binding(44) var<storage, read> shape_points: array<vec4f>;
+@group(0) @binding(45) var<storage, read_write> contacts: array<Contact>;
 
 const C_NEW: u32 = 0u;
 const C_REMOVED: u32 = 1u;
@@ -229,11 +226,11 @@ fn clear_lanes(@builtin(global_invocation_id) id: vec3u) {
     atomicStore(&tail[id.x], NONE);
     atomicStore(&entrant[id.x], NONE);
     if (P.mu > 0.0) {
-        atomicStore(&entrant_front[id.x], 0u);
-        atomicStore(&junction_bid[id.x], NONE);
-        atomicStore(&inbound[id.x], 0u);
-        atomicStore(&occ_width[id.x], 0u);
-        atomicStore(&occ_reach[id.x], 0u);
+        atomicStore(&ph_lane[(id.x) * 5u + 2u], 0u);
+        atomicStore(&ph_lane[(id.x) * 5u + 0u], NONE);
+        atomicStore(&ph_lane[(id.x) * 5u + 1u], 0u);
+        atomicStore(&ph_lane[(id.x) * 5u + 3u], 0u);
+        atomicStore(&ph_lane[(id.x) * 5u + 4u], 0u);
     }
 }
 
@@ -798,7 +795,7 @@ fn lane_free_scan(@builtin(global_invocation_id) id: vec3u) {
         f.mean_speed = speed_sum / f32(max(end - i, 1u));
         lane_free[lane] = f;
         if ((lanes[lane].flags & LANE_INTERNAL) != 0u && lanes[lane].links_count != 0u) {
-            atomicAdd(&inbound[links[lanes[lane].links_start].to_lane], u32(lengths * 8.0));
+            atomicAdd(&ph_lane[(links[lanes[lane].links_start].to_lane) * 5u + 1u], u32(lengths * 8.0));
         }
         return;
     }
@@ -1338,8 +1335,8 @@ fn ph_exit_room(to: u32, next_item_link: u32) -> f32 {
 fn zone_taken(zn: Zone) -> bool {
     let p = atomicLoad(&tail[zn.foe_lane]);
     if (p == NONE || unpack_back(p) >= zn.foe_out) { return false; }
-    if (P.zones_ahead != 0u && f32(atomicLoad(&occ_reach[zn.foe_lane])) / 8.0 < zn.foe_in) { return false; }
-    return zn.dist < 0.5 * (ty.width + f32(atomicLoad(&occ_width[zn.foe_lane])) / 16.0) + P.width_margin;
+    if (P.zones_ahead != 0u && f32(atomicLoad(&ph_lane[(zn.foe_lane) * 5u + 4u])) / 8.0 < zn.foe_in) { return false; }
+    return zn.dist < 0.5 * (ty.width + f32(atomicLoad(&ph_lane[(zn.foe_lane) * 5u + 3u])) / 16.0) + P.width_margin;
 }
 
 // Vissim's rear gap: a body that will have left the zone 0.5 s before we reach it does not hold it. Merges only
@@ -1370,7 +1367,7 @@ fn zones_ahead_bid(i: u32, e: Veh, claim: f32) {
     if (hold < 1e8) { atomicMin(&hard_limit[e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
     if (near) {
         let bid = (1u << 30u) | ((pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u);
-        atomicMin(&junction_bid[e.lane], bid);
+        atomicMin(&ph_lane[(e.lane) * 5u + 0u], bid);
         cur[i].best_off = i32(bid);
     } else {
         cur[i].best_off = 0;
@@ -1443,7 +1440,7 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
                         }
                     }
                     // Vissim wants room for the length plus 0.5 m, from the share of drivers who bother.
-                    let wanted = in_front + ty.length + 0.5 + f32(atomicLoad(&inbound[to])) / 8.0;
+                    let wanted = in_front + ty.length + 0.5 + f32(atomicLoad(&ph_lane[(to) * 5u + 1u])) / 8.0;
                     // Nobody enters a full roundabout, or its ring locks whole. Whoever is on the ring keeps going, or the
                     // ring waits for itself.
                     let on_ring = (lanes[e.lane].flags & LANE_ROUNDABOUT) != 0u;
@@ -1463,7 +1460,7 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
         let hash = (pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u;
         let bid = (rank << 30u) | (min(u32(max(it.arrival, 0.0) * 8.0), 16383u) << 16u) | hash;
         items[base + j].grant = bid;
-        atomicMin(&junction_bid[next], bid);
+        atomicMin(&ph_lane[(next) * 5u + 0u], bid);
     }
 }
 
@@ -1491,7 +1488,7 @@ fn ph_grant(@builtin(global_invocation_id) id: vec3u) {
             let zn = zones[la.zone_start + z];
             let ahead = zn.own_in - e.pos;
             if (ahead <= 0.0 || ahead > claim || ahead < committed_at) { continue; }
-            if (atomicLoad(&junction_bid[zn.foe_lane]) < bid) { hold = min(hold, ahead); }
+            if (atomicLoad(&ph_lane[(zn.foe_lane) * 5u + 0u]) < bid) { hold = min(hold, ahead); }
         }
         if (hold < 1e8) { atomicMin(&hard_limit[e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
     }
@@ -1503,7 +1500,7 @@ fn ph_grant(@builtin(global_invocation_id) id: vec3u) {
         let reach = 0.5 * (types[cur[i].vtype].width + WIDEST) + P.width_margin;
         for (var z = 0u; z < la.zone_count; z++) {
             let zn = zones[la.zone_start + z];
-            if (zn.dist < reach && atomicLoad(&junction_bid[zn.foe_lane]) < bid) {
+            if (zn.dist < reach && atomicLoad(&ph_lane[(zn.foe_lane) * 5u + 0u]) < bid) {
                 items[base + j].grant = 1u;
                 atomicAdd(&C[C_DENIED], 1u);
                 return;
@@ -1788,21 +1785,21 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     }
     if (mu > 0.0) {
         let w = u32(ty.width * 16.0);
-        atomicMax(&occ_width[e.lane], w);
-        atomicMax(&occ_reach[e.lane], u32((e.pos + ph_stop_distance(e.speed, e.acc) + 0.5) * 8.0));
+        atomicMax(&ph_lane[(e.lane) * 5u + 3u], w);
+        atomicMax(&ph_lane[(e.lane) * 5u + 4u], u32((e.pos + ph_stop_distance(e.speed, e.acc) + 0.5) * 8.0));
         if (back < 0.0 && e.prev_lane != NONE) {
-            atomicMax(&occ_width[e.prev_lane], w);
-            atomicMax(&occ_reach[e.prev_lane], u32(lanes[e.prev_lane].length * 8.0 + 8.0));
+            atomicMax(&ph_lane[(e.prev_lane) * 5u + 3u], w);
+            atomicMax(&ph_lane[(e.prev_lane) * 5u + 4u], u32(lanes[e.prev_lane].length * 8.0 + 8.0));
             if (e.prev2_lane != NONE && lanes[e.prev_lane].length + back < 0.0) {
-                atomicMax(&occ_width[e.prev2_lane], w);
-                atomicMax(&occ_reach[e.prev2_lane], u32(lanes[e.prev2_lane].length * 8.0 + 8.0));
+                atomicMax(&ph_lane[(e.prev2_lane) * 5u + 3u], w);
+                atomicMax(&ph_lane[(e.prev2_lane) * 5u + 4u], u32(lanes[e.prev2_lane].length * 8.0 + 8.0));
             }
         }
     }
     if (e.lane != first_lane) {
         atomicMin(&entrant[e.lane], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
         if (mu > 0.0) {
-            atomicMax(&entrant_front[e.lane], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
+            atomicMax(&ph_lane[(e.lane) * 5u + 2u], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
         }
     }
     ph_mirror(&e, false);

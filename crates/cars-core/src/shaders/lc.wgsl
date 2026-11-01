@@ -357,7 +357,7 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
     }
     if (mu > 0.0) {
         // Several vehicles can cross onto a lane in one step. The front-most is the other end of them.
-        let ef = atomicLoad(&entrant_front[l]);
+        let ef = atomicLoad(&ph_lane[(l) * 5u + 2u]);
         if (ef != 0u) {
             let k = ef & 0x3fffffu;
             let o = cur[k];

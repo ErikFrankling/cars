@@ -23,12 +23,11 @@ const MAIN_BINDINGS: &[bool] = &[
     /*15 prev*/ true, /*16 cur*/ false, /*17 incoming*/ true, /*18 adv_flags*/ false, /*19 lane_free*/ false,
     /*20 seg*/ false, /*21 items*/ false, /*22 slots*/ false, /*23 link_count*/ false,
     /*24 partial*/ false, /*25 tail*/ false, /*26 entrant*/ false, /*27 trip_out*/ false,
-    /*28 series*/ false, /*29 edge_acc*/ false, /*30 unused*/ true, /*31 advice*/ false,
+    /*28 series*/ false, /*29 edge_acc*/ false, /*30 ph_lane*/ false, /*31 advice*/ false,
     /*32 queue_trips*/ true, /*33 claims*/ false, /*34 last_detect*/ false, /*35 lc_plan*/ false,
-    /*36 mirror*/ false, /*37 energy*/ false, /*38 junction_bid*/ false, /*39 inbound*/ false,
-    /*40 hard_limit*/ false, /*41 zones*/ true, /*42 speed_trace*/ true, /*43 entrant_front*/ false,
-    /*44 poses*/ false, /*45 grid_head*/ false, /*46 grid_next*/ false, /*47 shape_points*/ true,
-    /*48 contacts*/ false, /*49 occ_width*/ false, /*50 occ_reach*/ false,
+    /*36 mirror*/ false, /*37 energy*/ false, /*38 hard_limit*/ false, /*39 zones*/ true,
+    /*40 speed_trace*/ true, /*41 poses*/ false, /*42 grid_head*/ false, /*43 grid_next*/ false,
+    /*44 shape_points*/ true, /*45 contacts*/ false,
 ];
 
 pub struct Sim {
@@ -220,21 +219,16 @@ impl Sim {
         let claims = init("claims", &claims_init, storage);
         let last_detect = empty("last_detect", p.n_lanes as u64 * 4);
         let lc_plan = empty("lc_plan", cap * LCPLAN_BYTES);
-        let unused = empty("unused", 16);
         let lane_free = empty("lane_free", p.n_lanes as u64 * 16);
         let physical = p.mu > 0.0;
         let when = |on: bool, bytes: u64| if on { bytes } else { 16 };
         let mirror = empty("mirror", when(physical, p.n_trips as u64 * MIRROR_BYTES));
         let energy = empty("energy", when(physical, p.n_trips as u64 * std::mem::size_of::<GpuTripEnergy>() as u64));
-        let junction_bid = empty("junction_bid", when(physical, p.n_lanes as u64 * 4));
-        let inbound = empty("inbound", when(physical, p.n_lanes as u64 * 4));
-        let occ_width = empty("occ_width", when(physical, p.n_lanes as u64 * 4));
-        let occ_reach = empty("occ_reach", when(physical, p.n_lanes as u64 * 4));
+        let ph_lane = empty("ph_lane", when(physical, p.n_lanes as u64 * 20));
         let hard_limit_init = vec![0xffu8; when(physical, p.n_trips as u64 * 4) as usize];
         let hard_limit = init("hard_limit", &hard_limit_init, storage);
         let zones = init("zones", bytemuck::cast_slice(&world.zones), storage);
         let speed_trace = init("speed_trace", bytemuck::cast_slice(&world.speed_trace), storage);
-        let entrant_front = empty("entrant_front", when(physical, p.n_lanes as u64 * 4));
         let detecting = p.detect_every > 0;
         let poses = empty("poses", when(detecting, cap * POSE_BYTES));
         let grid_head = empty("grid_head", when(detecting, (p.grid_mask as u64 + 1) * 4));
@@ -312,9 +306,9 @@ impl Sim {
                 &params, &globals, &counters, &lanes, &edges, &links, &foes, &conflicts, &types, &routes,
                 &trips, &queues, &tls, &phases, &states, prev, cur, &incoming_links, &adv_flags, &lane_free, &seg,
                 &items, &slots, &link_count, &partial, &tail, &entrant, &trip_out, &series, &edge_acc,
-                &unused, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
-                &mirror, &energy, &junction_bid, &inbound, &hard_limit, &zones, &speed_trace, &entrant_front,
-                &poses, &grid_head, &grid_next, &shape_points, &contacts, &occ_width, &occ_reach,
+                &ph_lane, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
+                &mirror, &energy, &hard_limit, &zones, &speed_trace,
+                &poses, &grid_head, &grid_next, &shape_points, &contacts,
             ];
             let entries: Vec<_> = list
                 .iter()
