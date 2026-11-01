@@ -1,0 +1,171 @@
+{
+ "params": {
+  "w99": {
+   "cc0": 1.8455585394241187,
+   "cc1": 1.2489683648590992,
+   "cc2": 3.8654841350348366,
+   "cc3": -16.719628367773407,
+   "cc4": -0.07807623016480192,
+   "cc5": 0.41995235740982895,
+   "cc6": 1.215192245910071,
+   "cc7": 0.05501764908566531,
+   "gamma": 1.189093986666659
+  },
+  "gipps": {
+   "a": 1.9914220592385081,
+   "b": 1.028709499348003,
+   "T": 0.7110339660195246,
+   "s0": 4.466139531894738,
+   "gamma": 1.1561407458221424
+  }
+ },
+ "objective": {
+  "w99": 3.6171725901399725,
+  "gipps": 3.3410529342116257
+ },
+ "I395_late": {
+  "w99_vissim_defaults": {
+   "spacing_rmse_5s": 2.194981255198577,
+   "speed_rmse_5s": 0.9761116819701691,
+   "spacing_rmse_10s": 4.725353634561104,
+   "speed_rmse_10s": 0.972460769570003,
+   "spacing_rmse_30s": 7.706801807214006,
+   "speed_rmse_30s": 0.850135625974911,
+   "collision_frac": 0.001218769043266301
+  },
+  "w99_calibrated": {
+   "spacing_rmse_5s": 1.6942835951901816,
+   "speed_rmse_5s": 0.7598495038117122,
+   "spacing_rmse_10s": 3.490052860520737,
+   "speed_rmse_10s": 0.754329179001934,
+   "spacing_rmse_30s": 6.389039129848488,
+   "speed_rmse_30s": 0.7220815905910187,
+   "collision_frac": 0.001218769043266301
+  },
+  "gipps_calibrated": {
+   "spacing_rmse_5s": 1.9348351794480694,
+   "speed_rmse_5s": 0.8003895420597801,
+   "spacing_rmse_10s": 3.494703695009095,
+   "speed_rmse_10s": 0.723917514297099,
+   "spacing_rmse_30s": 6.157425975779338,
+   "speed_rmse_30s": 0.6827735494495282,
+   "collision_frac": 0.0006093845216331506
+  }
+ },
+ "I90stat_run6": {
+  "w99_vissim_defaults": {
+   "spacing_rmse_5s": 2.259290254980596,
+   "speed_rmse_5s": 0.921513870247279,
+   "spacing_rmse_10s": 4.492976784349085,
+   "speed_rmse_10s": 0.8962259223649054,
+   "spacing_rmse_30s": 6.524411673723503,
+   "speed_rmse_30s": 0.7830291494338164,
+   "collision_frac": 0.0
+  },
+  "w99_calibrated": {
+   "spacing_rmse_5s": 1.6179633556665318,
+   "speed_rmse_5s": 0.6895125990636831,
+   "spacing_rmse_10s": 3.2272550351159386,
+   "speed_rmse_10s": 0.7089541536251321,
+   "spacing_rmse_30s": 5.247003759660483,
+   "speed_rmse_30s": 0.6766924945205158,
+   "collision_frac": 0.0
+  },
+  "gipps_calibrated": {
+   "spacing_rmse_5s": 1.8760246622598808,
+   "speed_rmse_5s": 0.7347165829392,
+   "spacing_rmse_10s": 3.2384757690408663,
+   "speed_rmse_10s": 0.7298364781752603,
+   "spacing_rmse_30s": 5.037808560589947,
+   "speed_rmse_30s": 0.7054262691085935,
+   "collision_frac": 0.0
+  }
+ },
+ "I90mov": {
+  "w99_vissim_defaults": {
+   "spacing_rmse_5s": 2.0144430936168454,
+   "speed_rmse_5s": 0.845664200607651,
+   "spacing_rmse_10s": 3.9355277961020625,
+   "speed_rmse_10s": 0.8254668368071088,
+   "spacing_rmse_30s": 6.358685074803506,
+   "speed_rmse_30s": 0.7719447045633171,
+   "collision_frac": 0.0
+  },
+  "w99_calibrated": {
+   "spacing_rmse_5s": 1.4837737754185059,
+   "speed_rmse_5s": 0.6601462282156091,
+   "spacing_rmse_10s": 2.9562838834385476,
+   "speed_rmse_10s": 0.6894285642591342,
+   "spacing_rmse_30s": 5.364444978941117,
+   "speed_rmse_30s": 0.6951165002682792,
+   "collision_frac": 0.0
+  },
+  "gipps_calibrated": {
+   "spacing_rmse_5s": 1.736338600373418,
+   "speed_rmse_5s": 0.7110154687039673,
+   "spacing_rmse_10s": 2.912091305555908,
+   "speed_rmse_10s": 0.6937034940264716,
+   "spacing_rmse_30s": 5.054500902702638,
+   "speed_rmse_30s": 0.7026871274014596,
+   "collision_frac": 0.0
+  }
+ },
+ "I294L1_runs": {
+  "w99_vissim_defaults": {
+   "spacing_rmse_5s": 3.344679695509042,
+   "speed_rmse_5s": 1.560316421594852,
+   "spacing_rmse_10s": 7.938338462005489,
+   "speed_rmse_10s": 1.7742330902958,
+   "spacing_rmse_30s": 14.827913477208227,
+   "speed_rmse_30s": 1.6466633575085192,
+   "collision_frac": 0.0
+  },
+  "w99_calibrated": {
+   "spacing_rmse_5s": 2.565652902816346,
+   "speed_rmse_5s": 1.2598702611886818,
+   "spacing_rmse_10s": 6.256488720100081,
+   "speed_rmse_10s": 1.4988116844100259,
+   "spacing_rmse_30s": 13.29712910490308,
+   "speed_rmse_30s": 1.4888961536230916,
+   "collision_frac": 0.0
+  },
+  "gipps_calibrated": {
+   "spacing_rmse_5s": 3.141016083566374,
+   "speed_rmse_5s": 1.334952988287199,
+   "spacing_rmse_10s": 6.174822803861999,
+   "speed_rmse_10s": 1.3905886425253848,
+   "spacing_rmse_30s": 11.545091923356333,
+   "speed_rmse_30s": 1.3051211296637546,
+   "collision_frac": 0.0
+  }
+ },
+ "HT_late": {
+  "w99_vissim_defaults": {
+   "spacing_rmse_5s": 3.071746935273987,
+   "speed_rmse_5s": 1.4148348485963256,
+   "spacing_rmse_10s": 7.896939462370981,
+   "speed_rmse_10s": 1.6903490721833812,
+   "spacing_rmse_30s": 16.28545866672881,
+   "speed_rmse_30s": 1.576128814348536,
+   "collision_frac": 0.00021593608291945585
+  },
+  "w99_calibrated": {
+   "spacing_rmse_5s": 2.2523748215656565,
+   "speed_rmse_5s": 1.0265252009329708,
+   "spacing_rmse_10s": 5.559274679298432,
+   "speed_rmse_10s": 1.2344751843417299,
+   "spacing_rmse_30s": 13.34350891884118,
+   "speed_rmse_30s": 1.2922477044046887,
+   "collision_frac": 0.00021593608291945585
+  },
+  "gipps_calibrated": {
+   "spacing_rmse_5s": 4.050458633271778,
+   "speed_rmse_5s": 1.5120715872578192,
+   "spacing_rmse_10s": 7.19521574260427,
+   "speed_rmse_10s": 1.396082016213865,
+   "spacing_rmse_30s": 12.921732805372763,
+   "speed_rmse_30s": 1.253787289214523,
+   "collision_frac": 0.00021593608291945585
+  }
+ }
+}

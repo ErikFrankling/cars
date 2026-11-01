@@ -107,7 +107,7 @@ struct Params {
     hu_b: vec4f,      // stop offset, blinker reaction, urgency distance, cooperative deceleration
     hu_c: vec4f,      // gate tau, minimum tau, urgent braking, gap model
     hu_d: vec4f,      // time gap minor at junctions, in roundabouts, T scale, s0 scale
-    hu_e: vec4f,      // critical gap constant shift: lead, lag; safety factor during a change; spare
+    hu_e: vec4f,      // critical gap constant shift: lead, lag; safety factor during a change; lowest speed in a corner
 }
 
 struct Globals {
@@ -580,11 +580,9 @@ fn tail_b() -> f32 {
 const HU_K1: f32 = 0.011;
 const HU_K2: f32 = 0.52;
 const HU_BMAX: f32 = 4.5;
-const HU_K_LOW: f32 = 0.15;
-const HU_V_LOW: f32 = 1.0;
-const HU_CLOSE_K: f32 = 1.2;
-const HU_CLOSE_MIN: f32 = 0.8;
-const HU_STANDING: f32 = 1.5;
+const HU_STANDING: f32 = 0.5;
+const HU_TAU_APPROACH: f32 = 2.0;
+const HU_OVERSHOOT: f32 = 1.4;    // what the response lag adds to a stop, measured in queues
 const HU_B_APPROACH: f32 = 1.2;
 const HU_COMFORT: f32 = 1.5;      // slowing for a lower limit ahead
 const HU_T_START: f32 = 0.6;
@@ -625,25 +623,17 @@ fn hu_a_up(v: f32, v0: f32) -> f32 {
 
 // What the driver wants for a leader `g` ahead by bumper.
 fn hu_target(v: f32, g: f32, vl: f32, v0: f32, s0: f32) -> f32 {
+    if (vl < HU_STANDING) {
+        // Report 05's feedback was fitted on following moving cars. Up to a queue or a stop line it would
+        // crawl the last few hundred metres and stop short. Gipps' rule for a stopped obstacle does neither.
+        let b = HU_B_APPROACH * HU_TAU_APPROACH;
+        let vs = -b + sqrt(b * b + max(HU_B_APPROACH * (2.0 * max(g - s0 - HU_OVERSHOOT, 0.0) - v * HU_TAU_APPROACH) + vl * vl, 0.0));
+        return clamp(vs - v, -HU_BMAX, hu_a_up(v, v0));
+    }
     let dv = vl - v;
     let k2e = HU_K2 * sqrt(15.0 / max(g, 2.0));
-    let e = g - s0 - hu_t * v;
-    // Report 05's gain was fitted on moving cars and leaves a stopped car 4.5 m short of its place in a
-    // queue. Drivers roll up to the car in front: a stronger pull, fading out by a walking pace.
-    let k1 = select(HU_K1, max(HU_K1, HU_K_LOW * (1.0 - v / HU_V_LOW)), e > 0.0);
-    var a = clamp(k1 * e + k2e * dv, -HU_BMAX, hu_a_up(v, v0));
-    if (dv < 0.0) {
-        if (vl < HU_STANDING) {
-            // Both terms were fitted on following moving cars. Up to a queue or a stop line they would crawl
-            // the last few hundred metres. Drivers keep going and then brake at about the same rate.
-            let kin = dv * dv / (2.0 * max(g - s0, 0.3));
-            let following = exp(-max(e, 0.0) / (hu_t * v + s0));
-            a = max(a, -max(HU_CLOSE_K * kin, HU_CLOSE_MIN * following));
-            if (kin >= HU_B_APPROACH) { a = min(a, -kin); }
-        } else {
-            a = min(a, -dv * dv / (2.0 * max(g - 0.5, 0.3)));
-        }
-    }
+    var a = clamp(HU_K1 * (g - s0 - hu_t * v) + k2e * dv, -HU_BMAX, hu_a_up(v, v0));
+    if (dv < 0.0) { a = min(a, -dv * dv / (2.0 * max(g - 0.5, 0.3))); }
     return a;
 }
 

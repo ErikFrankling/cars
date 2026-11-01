@@ -421,18 +421,20 @@ pub struct HumanParams {
     pub lag_shift: f32,
     /// Vissim's 0.6 on the safety distance during a lane change.
     pub lc_safety: f32,
+    /// A driver's lowest speed through a junction corner, however tight the lane's shape.
+    pub turn_min: f32,
 }
 
 impl Default for HumanParams {
     fn default() -> Self {
-        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 1.0, gap_roundabout: 1.0, t_scale: 1.0, s0_scale: 1.0, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6 }
+        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 1.0, gap_roundabout: 2.95, t_scale: 1.0, s0_scale: 1.2, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6, turn_min: 6.0 }
     }
 }
 
 impl HumanParams {
     /// Sweden: Trafikverket's jam spacing and through saturation flow, from `TRVMB Kapacitet`.
     pub fn sweden() -> Self {
-        Self { s0_scale: 2.43 / 2.8, ..Self::default() }
+        Self { t_scale: 0.55, s0_scale: 0.47, ..Self::default() }
     }
 
     /// With what `--tune` names. Names that are not this driver's belong to the physics.
@@ -458,6 +460,7 @@ impl HumanParams {
                 "lead_shift" => self.lead_shift = v,
                 "lag_shift" => self.lag_shift = v,
                 "lc_safety" => self.lc_safety = v,
+                "turn_min" => self.turn_min = v,
                 _ => {}
             }
         }
@@ -869,7 +872,7 @@ impl World {
             hu_b: [human.stop_offset, human.sig_react, human.r_urg, human.coop_decel],
             hu_c: [human.tau_gate, human.tau_min, human.b_em, human.gap_model],
             hu_d: [human.gap_junction, human.gap_roundabout, human.t_scale, human.s0_scale],
-            hu_e: [human.lead_shift, human.lag_shift, human.lc_safety, 0.0],
+            hu_e: [human.lead_shift, human.lag_shift, human.lc_safety, human.turn_min],
         };
         w
     }

@@ -77,6 +77,7 @@ const C_HU_LC_URGENT: u32 = 36u;
 const C_HU_GUARD: u32 = 37u;
 const C_HU_STEPS: u32 = 39u;
 const REROUTE_LOG: u32 = 65536u;
+const HU_SEE: f32 = 30.0;         // how far back a driver sees that a give-way line is clear. Not measured
 const STUCK_AFTER: f32 = 300.0;   // SUMO's time to teleport, for counting what would have
 const F_STUCK_COUNTED: u32 = 2097152u;
 const CONTACT_LOG: u32 = 65536u;
@@ -117,10 +118,18 @@ fn hu_setup(e: Veh) {
     hu_v0 = lane_vmax(e.lane, e.sf);
 }
 
-// Roundabouts and other junctions have their own measured critical gaps, and each driver sits around them.
-fn hu_set_gap(to_lane: u32, trip: u32) {
-    let base = select(P.hu_d.x, P.hu_d.y, (lanes[to_lane].flags & LANE_ROUNDABOUT) != 0u);
-    hu_gap = base * hu_critical(trips[trip].persona2);
+// A driver's critical gap at this link. Roundabouts from the Swiss measurement in report 05, the rest from
+// TRVMB Kapacitet table 3: by movement and sign at 50 km/h on the major road, with 0.45 s per 10 km/h above.
+fn hu_set_gap(link: u32, trip: u32) {
+    let k = links[link];
+    var tc = P.hu_d.y;
+    if ((lanes[k.to_lane].flags & LANE_ROUNDABOUT) == 0u) {
+        let dir = (k.flags >> 8u) & 255u;
+        let stop = link_state(link) == CH_s;
+        tc = select(select(5.1, 5.8, stop), select(select(5.3, 6.0, stop), select(5.0, 5.7, stop), dir == 114u), dir == 108u || dir == 114u);
+        tc = P.hu_d.x * (tc + 0.45 * max(lanes[k.to_lane].speed * 3.6 - 50.0, 0.0) / 10.0);
+    }
+    hu_gap = tc * hu_critical(trips[trip].persona2);
 }
 
 // Half of drivers stop only when 5.1 s from the line, and those who go keep going into the red.
@@ -663,7 +672,9 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     loop {
         if (mu > 0.0 && lanes[lane].curve_v > 0.0) {
             let la = lanes[lane];
-            let vc = ph_curve_limit(la);
+            // netconvert's corners are tighter than the paths drivers take through them. Calibrated on the
+            // turning saturation flow of TRVMB, and a parameter.
+            let vc = select(ph_curve_limit(la), max(ph_curve_limit(la), P.hu_e.w), hu_on);
             let start = seen - la.length + la.s_curve;
             if (seen - la.length + la.s_curve_end >= 0.0) {
                 var va = vc;
@@ -750,7 +761,7 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
         if (pl_n > 0u) { adapt_leave(pl_base + pl_n - 1u, lane_max); }
         var arr_speed = pl_pass;
         let vis = lk.visibility;
-        let determined = seen <= vis;
+        let determined = seen <= select(vis, max(vis, HU_SEE), hu_on);
         let could_brake_minor = !have_priority(state) && brake_dist < seen && !last_was_cont_major(link);
         if (could_brake_minor && !determined) {
             let at_vis = safe_stop(vis, ty.decel, speed, 0.0, false);
@@ -886,7 +897,7 @@ fn keep_clear(k: Link) -> bool {
 // MSLink::opened for a link further ahead, at planning time: what foes announced in the last step.
 fn foe_on_last_approach(link: u32, a: f32, va: f32, vl: f32, ego: Veh) -> bool {
     let k = links[link];
-    if (hu_on) { hu_set_gap(k.to_lane, ego.trip); }
+    if (hu_on) { hu_set_gap(link, ego.trip); }
     let l = a + (k.length + ty.length) / max((va + vl) * 0.5, EPS);
     let impat = clamp(ty.impatience + ego.wait / P.time_to_impatience, 0.0, 1.0);
     for (var f = 0u; f < k.foe_count; f++) {
@@ -1095,13 +1106,18 @@ fn foe_arrival(a: f32, r: Approach, impatience: f32) -> f32 {
 fn blocked_by_foe(r: Approach, a: f32, l: f32, va: f32, vl: f32, same_target: bool, impatience: f32, decel: f32, wait: f32, foe_state: u32) -> bool {
     if (r.will_pass == 0u) { return false; }
     var h = ty.timegap_minor;
-    if (hu_on) { h = hu_gap; }
     if (foe_state == CH_Z) { h = 16.0; }
     if (foe_state == CH_w) {
         if (wait > r.wait) { return false; }
         if (wait == r.wait && a < r.arrival) { return false; }
     }
     let fa = foe_arrival(a, r, impatience);
+    // A human judges one thing: is the next car far enough off, from when I would go. Gap acceptance as in
+    // TRVMB, Aimsun and the critical gap literature, in place of SUMO's arrival windows.
+    if (hu_on && foe_state != CH_Z) {
+        if (r.leave < a) { return same_target && a - r.leave < 1.0; }
+        return fa <= max(a, 0.0) + hu_gap;
+    }
     if (r.leave < a) {
         return same_target && (a - r.leave < h || unsafe_merge(r.leave_speed, va, r.decel, decel));
     } else if (fa > l + h) {
@@ -1112,7 +1128,7 @@ fn blocked_by_foe(r: Approach, a: f32, l: f32, va: f32, vl: f32, same_target: bo
 
 fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f32, decel: f32, wait: f32, trip: u32) -> bool {
     let k = links[link];
-    if (hu_on) { hu_set_gap(k.to_lane, trip); }
+    if (hu_on) { hu_set_gap(link, trip); }
     let state = link_state(link);
     if (have_red(state)) { return false; }
     if ((k.flags & L_CONT) != 0u) { return true; }
@@ -1313,7 +1329,7 @@ fn walk_links(e: ptr<function, Veh>, base: u32, n: u32, speed: f32, vmax_lane: f
             if (((*e).flags & F_HAVE_STOPPED) != 0u) { my_wait = 1e9; }
             let opened = yellow || link_opened(it.link, it.arrival, it.arr_speed, leave, ty.length, imp, ty.decel, my_wait, (*e).trip);
             let k = links[it.link];
-            let determined = it.dist <= k.visibility;
+            let determined = it.dist <= select(k.visibility, max(k.visibility, HU_SEE), hu_on);
             if (opened && (state == CH_s || state == CH_w) && determined) { (*e).flags |= F_HAVE_STOPPED; }
             if (opened && !have_priority(state) && !last_was_cont_major(it.link) && (k.flags & L_CONT) == 0u) {
                 if (!determined && (can_brake || !yellow)) {
@@ -1827,7 +1843,11 @@ fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32) {
     var u = f32((p >> 16u) & 0x3fffu) / 16383.0;
     if (v_lat <= 0.0) {
         let d = max(f32(((*e).hu_state >> 8u) & 255u) * 0.1, 1.0);
-        u = min(1.0, u + min(1.0, 0.5 * (v0 + v1) * HU_LC_SLOPE * d / (1.875 * w)) * dt / d);
+        var du = min(1.0, 0.5 * (v0 + v1) * HU_LC_SLOPE * d / (1.875 * w)) * dt / d;
+        // Faster than planned if the lane is running out: the body must be across by its end.
+        let left = (lanes[(*e).lane].length - (*e).pos) / max(0.5 * (v0 + v1), 0.1);
+        if (left < (1.0 - u) * d) { du = max(du, (1.0 - u) * dt / max(left, dt)); }
+        u = min(1.0, u + du);
     } else {
         let total = w / v_lat + 1.0;
         u = min(1.0, u + min(1.0, 0.5 * (v0 + v1) * 0.21256 / v_lat) * dt / total);
