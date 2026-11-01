@@ -183,6 +183,18 @@ def grid():
     return table(('Net', 'veh/h', 'Flow today / planned', 'Delay s', 'Overlaps, 3 seeds', 'Hard brakes'), rows)
 
 
+def grid_meter():
+    g = group(load('grid_meter'), 'net', 'demand', 'meter', 'plan')
+    rows = []
+    for k in sorted(g):
+        if k[3] != 'off':
+            continue
+        a, b = g[k], g.get(k[:3] + ('full',), [])
+        if b:
+            rows.append((k[0], k[1], k[2], f"{m(a, lambda x: x['flow']):.0f} / {m(b, lambda x: x['flow']):.0f}", f"{m(a, lambda x: x['delay']):.1f} / {m(b, lambda x: x['delay']):.1f}", f"{sum(x['overlap'] for x in a)} / {sum(x['overlap'] for x in b)}", f"{m(a, hard):.0f} / {m(b, hard):.0f}"))
+    return table(('Net', 'veh/h', 'Held at', 'Flow today / planned', 'Delay s', 'Overlaps, 3 seeds', 'Hard brakes'), rows)
+
+
 def stockholm():
     g = collections.defaultdict(list)
     for l in (D8 / 'stockholm.jsonl').read_text().splitlines():
@@ -201,7 +213,7 @@ def stockholm():
 
 
 def main():
-    parts = dict(capacity=capacity, tiers=tiers, demand=demand, where=where, ablation=ablation, length=length, loss=loss, timing=timing, faults=faults, grid=grid, stockholm=stockholm)
+    parts = dict(capacity=capacity, tiers=tiers, demand=demand, where=where, ablation=ablation, length=length, loss=loss, timing=timing, faults=faults, grid=grid, grid_meter=grid_meter, stockholm=stockholm)
     out = []
     for name, f in parts.items():
         try:

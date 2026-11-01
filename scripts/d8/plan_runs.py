@@ -130,11 +130,21 @@ def grid():
     return out
 
 
+def grid_meter():
+    out = []
+    for net, d, ns in (('grid2', 24000, (200, 240)), ('grid1', 14000, (140,))):
+        for n in ns:
+            for s in (0, 1, 2):
+                for p in MODES:
+                    out.append(case(net, 'M', d, s, p, end=600.0, warm=150.0, trace=False, junctions=GRID_JS, meter=n))
+    return out
+
+
 def smoke():
     return [case('j2', 'M', 3000, 0, 'full', end=200.0, warm=60.0)]
 
 
-PARTS = dict(smoke=smoke, grid=grid, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
+PARTS = dict(smoke=smoke, grid=grid, grid_meter=grid_meter, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
 
 
 def key(c):
@@ -153,7 +163,7 @@ def run_case(c, work):
     subprocess.run([sys.executable, str(ROOT / 'scripts/d8/demand.py'), '--net', str(net), '--out', str(routes), '--demand', str(c['demand']), '--mix', c['mix'],
                     '--seed', str(c['seed']), '--end', str(c['end'])], check=True)
     args = ['--net', str(net), '--routes', str(routes), '--end', str(c['end']), '--cj', c.get('junctions', 'B1'), '--cj-warm', str(c['warm']), '--seed', str(c['seed']), '--cj-plan', c['plan']]
-    for name, flag in (('loss', '--cj-loss'), ('stall', '--cj-stall-rate'), ('chan', '--cj-chan'), ('pos_err', '--cj-pos-err'), ('clock_err', '--cj-clock-err'),
+    for name, flag in (('loss', '--cj-loss'), ('stall', '--cj-stall-rate'), ('chan', '--cj-chan'), ('meter', '--cj-meter'), ('pos_err', '--cj-pos-err'), ('clock_err', '--cj-clock-err'),
                        ('margin', '--cj-margin'), ('plan_b', '--cj-plan-b'), ('freeze', '--cj-plan-freeze'), ('firm', '--cj-firm'), ('slack', '--cj-plan-slack'), ('up', '--cj-plan-up')):
         if c.get(name) is not None and (name in ('margin',) or c.get(name)):
             args += [flag, str(c[name])]
