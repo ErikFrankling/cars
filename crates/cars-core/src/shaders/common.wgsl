@@ -88,7 +88,7 @@ struct Params {
     claim_scale: f32,
     queue_speed: f32,
     lost_after: f32,
-    pad_a: f32,
+    zones_ahead: u32,
     pad_b: f32,
     pad_c: f32,
 }

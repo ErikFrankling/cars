@@ -1337,7 +1337,7 @@ fn ph_exit_room(to: u32, next_item_link: u32) -> f32 {
 fn zone_taken(zn: Zone) -> bool {
     let p = atomicLoad(&tail[zn.foe_lane]);
     if (p == NONE || unpack_back(p) >= zn.foe_out) { return false; }
-    if (f32(atomicLoad(&occ_reach[zn.foe_lane])) / 8.0 < zn.foe_in) { return false; }
+    if (P.zones_ahead != 0u && f32(atomicLoad(&occ_reach[zn.foe_lane])) / 8.0 < zn.foe_in) { return false; }
     return zn.dist < 0.5 * (ty.width + f32(atomicLoad(&occ_width[zn.foe_lane])) / 16.0) + P.width_margin;
 }
 
@@ -1383,7 +1383,7 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
     let claim = (v * dt * 0.5 + v * v / (2.0 * ty.decel) + v * ty.ph_tau + 2.0) * P.claim_scale;
     ego_acc = e.acc;
     ph_setup(e);
-    if (is_internal(e.lane) && lanes[e.lane].zone_count != 0u) { zones_ahead_bid(i, e, claim); }
+    if (P.zones_ahead != 0u && is_internal(e.lane) && lanes[e.lane].zone_count != 0u) { zones_ahead_bid(i, e, claim); }
     if (items[base].dist > claim) { return; }
     var walker = e;
     walk_links(&walker, base, n, v, lane_vmax(e.lane, e.sf));
@@ -1459,7 +1459,7 @@ fn ph_grant(@builtin(global_invocation_id) id: vec3u) {
     if (i >= G.n_active) { return; }
     let n = cur[i].n_items;
     let base = i * MAX_ITEMS;
-    if (P.mu > 0.0 && (P.safety & 2u) != 0u && is_internal(cur[i].lane) && cur[i].best_off != 0) {
+    if (P.mu > 0.0 && P.zones_ahead != 0u && (P.safety & 2u) != 0u && is_internal(cur[i].lane) && cur[i].best_off != 0) {
         // Lost a zone ahead on its own lane to a better claim: stop short of that zone.
         let e = cur[i];
         let bid = u32(e.best_off);
