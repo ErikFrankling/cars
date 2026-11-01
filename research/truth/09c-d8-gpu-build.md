@@ -111,7 +111,18 @@ Metering at a level with no contacts on 1 lane beats the signal by 5% with less 
 
 ## Compute
 
-COMPUTE_PLACEHOLDER
+Bounds checks on, 0.1 s steps, and the desktop and other agents sharing the GPU, so treat these as upper bounds.
+
+| Net | Junctions | Vehicles | ms per step | Device |
+|---|---:|---:|---:|---|
+| 1 lane 4-way, saturated | 1 | 120 | 0.48 | RX 7900 XT |
+| 2 lanes, 20% turns, saturated | 1 | 250 | 0.71 | RX 7900 XT |
+| 3 lanes, 20% turns, saturated | 1 | 370 | 0.85 | RX 7900 XT |
+| 9-junction grid, 2 lanes | 9 | 208 to 387 | 0.98 to 1.33 | RX 7900 XT |
+| Grid of 400 | 400 | 462 | 1.16, without coordinator 0.84 | CPU Vulkan, 2 threads |
+| Grid of 2500 | 2500 | 355 | 2.15, without coordinator 0.92 | CPU Vulkan, 2 threads |
+
+At 2500 junctions the coordinator kernels take 1.26 ms of a step on CPU Vulkan, and most of that is per-junction overhead in audit and perceive, not vehicles. Memory is 57.7 MB for 2500 junctions, 23 KB each, and 40 bytes per vehicle in each of two buffers. **The 400 and 2500 runs did not get a GPU turn:** `scripts/d8/scale.py` measures them on the RX 7900 XT, and it waited over an hour and a half in the lock queue before I stopped it. A thousand-junction measurement on the GPU is still open. With the audit off the coordinator should be cheaper, and that was not measured either.
 
 ## Clips
 
