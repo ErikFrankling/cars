@@ -772,6 +772,7 @@ fn plan_slip(v: f32) -> f32 {
 }
 
 var<private> plan_wait: f32;
+var<private> plan_vmax: f32;
 
 // How much later than free flow this car will get through its approach, in all.
 fn plan_delay(age_t: f32, t: f32, mi: u32) -> f32 {
@@ -1251,16 +1252,17 @@ fn plan_accel(d: f32, v: f32, t: f32, ve: f32, vcap: f32, bc: f32) -> f32 {
 
 // Where a planned car will be in tau seconds, as the plan it broadcasts says.
 fn plan_x(d: f32, v: f32, t: f32, ve: f32, a_now: f32, tau: f32) -> f32 {
-    // Holds its speed, then the last ramp to the class speed, as plan_accel drives it.
+    // Takes up the speed that arrives on time, then the last ramp to the class speed, as plan_accel drives it.
     if (t > 0.2 && (cfg.plan & PLAN_CUBIC) == 0u) {
         let up = 0.8 * cfg.accel;
-        let rate = select(cfg.plan_b, up, ve > v);
-        let tr = min(abs(ve - v) / rate, t);
+        let vc = plan_vc_ab(v, d, t, ve, max(max(v, ve), plan_vmax), up, cfg.plan_b);
+        let rate = select(cfg.plan_b, up, ve > vc);
+        let tr = min(abs(ve - vc) / rate, t);
         let tc = t - tr;
-        if (tau <= tc) { return v * tau; }
-        let u = select(-rate, rate, ve > v);
+        if (tau <= tc) { return vc * tau; }
+        let u = select(-rate, rate, ve > vc);
         let dt_r = min(tau - tc, tr);
-        return v * tc + v * dt_r + 0.5 * u * dt_r * dt_r + max(tau - t, 0.0) * ve;
+        return vc * tc + vc * dt_r + 0.5 * u * dt_r * dt_r + max(tau - t, 0.0) * ve;
     }
     if (t > 0.2) {
         let aa = ve - v;
@@ -1980,6 +1982,7 @@ fn cj_apply(@builtin(global_invocation_id) id: vec3u) {
             } else if ((cfg.plan & PLAN_FOLLOW) != 0u) {
                 // The leader says where it will be, so slow now for what it plans, not for what it did.
                 let vm = lanes[e.lane].speed;
+                plan_vmax = vm;
                 var x1 = lead_x(vl, lead_rem, lead_a, vm, 1.0);
                 var x2 = lead_x(vl, lead_rem, lead_a, vm, 2.0);
                 var x4 = lead_x(vl, lead_rem, lead_a, vm, 4.0);
