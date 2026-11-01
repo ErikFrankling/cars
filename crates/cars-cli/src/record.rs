@@ -14,46 +14,78 @@ use std::{
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
-#[derive(Parser)]
-pub struct Args {
+/// Cameras, overlays and output, the same for a simulation being drawn and for a trace.
+#[derive(clap::Args)]
+pub struct Common {
     #[arg(long)]
-    net: PathBuf,
+    pub net: PathBuf,
     /// Centre on this junction, at a zoom that fits it unless --metres-per-pixel says otherwise.
     #[arg(long)]
-    junction: Option<String>,
+    pub junction: Option<String>,
     /// Follow this trip or flow vehicle id.
     #[arg(long)]
-    follow: Option<String>,
+    pub follow: Option<String>,
+    /// Look at this point, in net coordinates.
+    #[arg(long, value_delimiter = ',', allow_negative_numbers = true)]
+    pub center: Vec<f32>,
     #[arg(long)]
-    metres_per_pixel: Option<f32>,
+    pub metres_per_pixel: Option<f32>,
     /// One simulated second per video second, interpolating between steps. Close cameras
     /// do this unless --steps-per-frame is given.
     #[arg(long)]
-    realtime: bool,
+    pub realtime: bool,
     /// Simulated seconds per video second, for slow motion or a faster look.
     #[arg(long, default_value_t = 1.0)]
-    speed: f32,
+    pub speed: f32,
     /// Show steps as they are, instead of interpolating between them.
     #[arg(long)]
-    raw_steps: bool,
+    pub raw_steps: bool,
     /// Simulation times of stills. With `cars shot` these are the point of the run.
     #[arg(long, value_delimiter = ',')]
-    at: Vec<f32>,
+    pub at: Vec<f32>,
     #[arg(long,value_delimiter=',',value_parser=["all","leader","braking","speed","state","foes","events"])]
-    overlay: Vec<String>,
-    /// JSON with many cameras over one simulation run, see RECORDING.md. Replaces --out.
+    pub overlay: Vec<String>,
+    /// JSON with many cameras over one run, see RECORDING.md. Replaces --out.
     #[arg(long)]
-    views: Option<PathBuf>,
+    pub views: Option<PathBuf>,
+    #[arg(long, value_delimiter = ',')]
+    pub additional: Vec<PathBuf>,
+    /// Defaults to 0, or to the start of a trace.
+    #[arg(long)]
+    pub begin: Option<f32>,
+    /// Defaults to 3600, or to the end of a trace.
+    #[arg(long)]
+    pub end: Option<f32>,
+    #[arg(long)]
+    pub steps_per_frame: Option<u32>,
+    #[arg(long, default_value_t = 30)]
+    pub fps: u32,
+    #[arg(long, default_value_t = 1920)]
+    pub width: u32,
+    #[arg(long, default_value_t = 1080)]
+    pub height: u32,
+    #[arg(long)]
+    pub camera: Option<PathBuf>,
+    #[arg(long)]
+    pub fit: bool,
+    #[arg(long)]
+    pub out: Option<PathBuf>,
+    #[arg(long, default_value = "")]
+    pub title: String,
+    #[arg(long, default_value = "")]
+    pub subtitle: String,
+    /// Colour by speed, type, waiting time, or give each car its own paint.
+    #[arg(long,value_parser=["speed","type","wait","paint"])]
+    pub color: Option<String>,
+}
+#[derive(Parser)]
+pub struct Args {
+    #[command(flatten)]
+    common: Common,
     #[arg(long,num_args=1..,value_delimiter=',')]
     routes: Vec<PathBuf>,
-    #[arg(long, value_delimiter = ',')]
-    additional: Vec<PathBuf>,
     #[arg(long, default_value_t = 1.0)]
     dt: f32,
-    #[arg(long, default_value_t = 0.0)]
-    begin: f32,
-    #[arg(long, default_value_t = 3600.0)]
-    end: f32,
     /// The --end of a `cars run` to reproduce. Demand is cut there, so the same value gives the
     /// same simulation; pictures stop at --end regardless.
     #[arg(long)]
@@ -66,27 +98,6 @@ pub struct Args {
     time_to_teleport: f32,
     #[arg(long, default_value_t = 1e9)]
     ignore_junction_blocker: f32,
-    #[arg(long)]
-    steps_per_frame: Option<u32>,
-    #[arg(long, default_value_t = 30)]
-    fps: u32,
-    #[arg(long, default_value_t = 1920)]
-    width: u32,
-    #[arg(long, default_value_t = 1080)]
-    height: u32,
-    #[arg(long)]
-    camera: Option<PathBuf>,
-    #[arg(long)]
-    fit: bool,
-    #[arg(long)]
-    out: Option<PathBuf>,
-    #[arg(long, default_value = "")]
-    title: String,
-    #[arg(long, default_value = "")]
-    subtitle: String,
-    /// Colour by speed, type, waiting time, or give each car its own paint.
-    #[arg(long,value_parser=["speed","type","wait","paint"])]
-    color: Option<String>,
     /// Where the simulation starts; the part before --begin runs without rendering.
     #[arg(long, default_value_t = 0.0)]
     sim_begin: f32,
@@ -211,7 +222,7 @@ enum Target {
     Follow { trip: u32, mpp: f32, center: Option<[f32; 2]>, start: [f32; 2] },
     Script,
 }
-struct View {
+pub struct View {
     target: Target,
     out: Option<PathBuf>,
     partial: Option<PathBuf>,
@@ -267,10 +278,70 @@ fn shot_path(base: &Path, time: f32, many: bool) -> PathBuf {
     let stem = base.file_stem().and_then(|s| s.to_str()).unwrap_or("shot");
     base.with_file_name(format!("{stem}-{time:.1}.png"))
 }
-pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error>> {
-    if !a.sim_begin.is_finite() || a.sim_begin < 0. || a.sim_begin > a.begin {
-        return Err("sim-begin must be <= begin".into());
+/// What each frame needs from whatever is behind the pictures.
+pub trait Source {
+    /// Get ready to reach `step` soon, before anything is shown.
+    fn warm(&mut self, g: &Gpu, step: u64) -> Result<(), String>;
+    /// Make `renderer` show the moment at `display`, the state after step `k`, `blend` of the way
+    /// from the step before. Returns the vehicle count, mean speed and clock.
+    #[allow(clippy::too_many_arguments)]
+    fn show(&mut self, g: &Gpu, renderer: &mut Renderer, display: f32, k: u64, blend: f32, mode: u32, lead: u64) -> Result<(u32, f32, f32), String>;
+    /// Bring overlay data up to date with the moment shown.
+    fn snapshot(&mut self, g: &Gpu, renderer: &Renderer, snapshot: &mut Snapshot);
+    /// Where this trip was last drawn, if it has been on the road at all.
+    fn position(&self, g: &Gpu, renderer: &Renderer, trip: u32) -> Option<[f32; 2]>;
+}
+struct SimSource {
+    sim: Sim,
+    sim_begin: f32,
+    dt: f32,
+}
+impl Source for SimSource {
+    fn warm(&mut self, g: &Gpu, step: u64) -> Result<(), String> {
+        self.sim.run(g, step);
+        Ok(())
     }
+    fn show(&mut self, g: &Gpu, renderer: &mut Renderer, _display: f32, k: u64, blend: f32, mode: u32, lead: u64) -> Result<(u32, f32, f32), String> {
+        let sim = &mut self.sim;
+        // Pose history has to see the last seconds, or a lane change in progress would be lost.
+        while sim.step + 1 < k {
+            let silent = k - sim.step - 1;
+            if silent > lead {
+                sim.run(g, silent - lead);
+            } else {
+                sim.run(g, 1);
+                renderer.prepare(g, sim, 1.0, mode);
+            }
+        }
+        if sim.step < k {
+            sim.run(g, 1);
+        }
+        let (count, speed) = renderer.prepare(g, sim, blend, mode);
+        Ok((count, speed, self.sim_begin + (sim.step as f32 - 2.0 + blend) * self.dt))
+    }
+    fn snapshot(&mut self, g: &Gpu, renderer: &Renderer, snapshot: &mut Snapshot) {
+        snapshot.update(g, &self.sim, renderer);
+    }
+    fn position(&self, g: &Gpu, renderer: &Renderer, trip: u32) -> Option<[f32; 2]> {
+        renderer.trip_position(g, trip).map(|t| t.0)
+    }
+}
+/// Everything decided from the arguments alone, before any data is loaded.
+pub struct Job {
+    specs: Vec<ViewSpec>,
+    script: Script,
+    videos: bool,
+    close: bool,
+    realtime: bool,
+    pub interpolate: bool,
+    spf: u32,
+    pub demand_end: f32,
+}
+pub fn job(a: &mut Common, begin: f32, end: f32, dt: f32, sim_end: Option<f32>, shot_only: bool) -> Result<Job, Box<dyn std::error::Error>> {
+    if !a.center.is_empty() && a.center.len() != 2 {
+        return Err("--center takes x,y".into());
+    }
+    let center = (a.center.len() == 2).then(|| [a.center[0], a.center[1]]);
     let mut specs: Vec<ViewSpec> = match &a.views {
         Some(p) => serde_json::from_slice::<ViewFile>(&std::fs::read(p)?)?.views,
         None => {
@@ -282,7 +353,7 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
                 shots: a.at.clone(),
                 junction: a.junction.clone(),
                 follow: a.follow.clone(),
-                center: None,
+                center,
                 metres_per_pixel: a.metres_per_pixel,
                 overlay: a.overlay.clone(),
                 title: a.title.clone(),
@@ -290,9 +361,10 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
             }]
         }
     };
+    a.begin = Some(begin);
     for s in &mut specs {
         if s.png.is_some() && s.shots.is_empty() {
-            s.shots.push(a.begin);
+            s.shots.push(begin);
         }
         s.shots.retain(|t| t.is_finite());
     }
@@ -301,23 +373,24 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
     if !videos && last_shot == f32::MIN {
         return Err("nothing to do: give --at".into());
     }
-    let frames_end = a.end;
-    a.end = a.end.max(last_shot + 2.0 * a.dt);
-    let demand_end = a.sim_end.unwrap_or(if videos { frames_end } else { last_shot + 2.0 * a.dt }).max(a.end);
+    let frames_end = end;
+    let end = end.max(last_shot + 2.0 * dt);
+    a.end = Some(end);
+    let demand_end = sim_end.unwrap_or(if videos { frames_end } else { last_shot + 2.0 * dt }).max(end);
     let spf = a.steps_per_frame.unwrap_or(1);
-    let close = a.views.is_some() || a.junction.is_some() || a.follow.is_some() || !videos;
+    let close = a.views.is_some() || a.junction.is_some() || a.follow.is_some() || center.is_some() || !videos;
     if !close && a.title.is_empty() {
         a.title = "Traffic in motion".into();
     }
     // Close cameras watch in real time unless told how many steps to take per frame.
     let realtime = a.realtime || (close && a.steps_per_frame.is_none());
     let interpolate = realtime && !a.raw_steps;
-    if !a.dt.is_finite()
-        || a.dt <= 0.0
-        || !a.begin.is_finite()
-        || !a.end.is_finite()
-        || a.begin < 0.0
-        || a.end <= a.begin
+    if !dt.is_finite()
+        || dt <= 0.0
+        || !begin.is_finite()
+        || !end.is_finite()
+        || begin < 0.0
+        || end <= begin
         || spf == 0
         || a.fps == 0
         || a.width < 2
@@ -348,42 +421,25 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
             );
         }
     }
-    let seconds_per_frame = if realtime { a.speed / a.fps as f32 } else { a.dt * spf as f32 };
-    let key_time = |k: &Key| k.time.unwrap_or(a.begin + k.frame.unwrap_or(0) as f32 * seconds_per_frame);
+    let seconds_per_frame = if realtime { a.speed / a.fps as f32 } else { dt * spf as f32 };
+    let key_time = |k: &Key| k.time.unwrap_or(begin + k.frame.unwrap_or(0) as f32 * seconds_per_frame);
     script
         .keyframes
         .sort_by(|x, y| key_time(x).total_cmp(&key_time(y)));
-    let mut net = Net::load(&a.net)?;
-    for p in &a.additional {
-        net.load_additional(p)?;
-    }
-    let mut demand = Demand::load(&net, &a.routes, &a.additional, a.seed, Some(demand_end as f64))?;
-    let mut world = World::build(
-        &net,
-        &demand,
-        &SimConfig {
-            dt: a.dt,
-            begin_seconds: a.sim_begin,
-            end_seconds: demand_end,
-            seed: a.seed,
-            capacity: a.capacity,
-            time_to_teleport: a.time_to_teleport,
-            ignore_blocker: a.ignore_junction_blocker,
-            ..Default::default()
-        },
-        &[],
-    );
-    let threads = if specs.iter().filter(|s| s.out.is_some()).count() > 1 { 1 } else { 2 };
+    Ok(Job { specs, script, videos, close, realtime, interpolate, spf, demand_end })
+}
+/// Cameras from the specs. `resolve` turns a follow id into a trip and where to look before it departs.
+pub fn make_views(a: &Common, job: &Job, net: &Net, resolve: impl Fn(&str) -> Result<(u32, [f32; 2]), String>) -> Result<(Vec<View>, bool), Box<dyn std::error::Error>> {
     let mut views = Vec::new();
     let mut far_roads = false;
-    for s in &specs {
+    for s in &job.specs {
         let target = if let Some(id) = &s.follow {
-            let trip = trip_index(&world, &demand, id)?;
+            let (trip, start) = resolve(id)?;
             let mpp = s.metres_per_pixel.unwrap_or(0.12);
             far_roads |= mpp > 0.35;
-            Target::Follow { trip, mpp, center: None, start: trip_start(&net, &world, trip) }
+            Target::Follow { trip, mpp, center: None, start }
         } else if let Some(id) = &s.junction {
-            let cam = junction_camera(&net, id, a.height, s.metres_per_pixel)?;
+            let cam = junction_camera(net, id, a.height, s.metres_per_pixel)?;
             far_roads |= cam.metres_per_pixel > 0.35;
             Target::Fixed(cam)
         } else if let Some(center) = s.center {
@@ -411,15 +467,60 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
             subtitle: s.subtitle.clone(),
         });
     }
+    Ok((views, far_roads))
+}
+pub fn run(mut r: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let begin = r.common.begin.unwrap_or(0.0);
+    let end = r.common.end.unwrap_or(3600.0);
+    if !r.sim_begin.is_finite() || r.sim_begin < 0. || r.sim_begin > begin {
+        return Err("sim-begin must be <= begin".into());
+    }
+    let job = job(&mut r.common, begin, end, r.dt, r.sim_end, shot_only)?;
+    let a = &r.common;
+    let mut net = Net::load(&a.net)?;
+    for p in &a.additional {
+        net.load_additional(p)?;
+    }
+    let mut demand = Demand::load(&net, &r.routes, &a.additional, r.seed, Some(job.demand_end as f64))?;
+    let mut world = World::build(
+        &net,
+        &demand,
+        &SimConfig {
+            dt: r.dt,
+            begin_seconds: r.sim_begin,
+            end_seconds: job.demand_end,
+            seed: r.seed,
+            capacity: r.capacity,
+            time_to_teleport: r.time_to_teleport,
+            ignore_blocker: r.ignore_junction_blocker,
+            ..Default::default()
+        },
+        &[],
+    );
+    let (views, far_roads) = make_views(a, &job, &net, |id| {
+        let trip = trip_index(&world, &demand, id)?;
+        Ok((trip, trip_start(&net, &world, trip)))
+    })?;
     let widths: Vec<f32> = demand.vtypes.iter().map(|t| t.width).collect();
     demand.routes = Vec::new();
     let gpu = pollster::block_on(Gpu::headless(GpuOptions {
         adapter_name: Some("7900".into()),
         ..Default::default()
     }))?;
-    let mut sim = Sim::new(&gpu, &world)?;
+    let sim = Sim::new(&gpu, &world)?;
     let mut renderer = Renderer::new(&gpu, &world, &net, &widths, a.width, a.height, far_roads);
     world.shapes = Vec::new();
+    let mut source = SimSource { sim, sim_begin: r.sim_begin, dt: r.dt };
+    render(a, job, r.dt, r.sim_begin, &net, &world, &gpu, &mut renderer, views, &mut source)
+}
+/// Draw a whole job: one pass over time, every camera at each moment.
+#[allow(clippy::too_many_arguments)]
+pub fn render(a: &Common, job: Job, dt: f32, sim_begin: f32, net: &Net, world: &World, gpu: &Gpu, renderer: &mut Renderer, mut views: Vec<View>, source: &mut impl Source) -> Result<(), Box<dyn std::error::Error>> {
+    let (begin, end) = (a.begin.unwrap_or(0.0), a.end.unwrap_or(3600.0));
+    let Job { specs, script, videos, close, realtime, interpolate, spf, .. } = job;
+    let threads = if specs.iter().filter(|s| s.out.is_some()).count() > 1 { 1 } else { 2 };
+    let seconds_per_frame = if realtime { a.speed / a.fps as f32 } else { dt * spf as f32 };
+    let key_time = |k: &Key| k.time.unwrap_or(begin + k.frame.unwrap_or(0) as f32 * seconds_per_frame);
     let mode = match a.color.as_deref() {
         Some("type") => 1,
         Some("wait") => 2,
@@ -433,28 +534,28 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
             }
         }
     };
-    let start_step = ((a.begin - a.sim_begin) / a.dt).ceil() as u64;
-    let end_step = ((a.end - a.sim_begin) / a.dt).ceil() as u64;
+    let start_step = ((begin - sim_begin) / dt).ceil() as u64;
+    let end_step = ((end - sim_begin) / dt).ceil() as u64;
     // What each frame shows: display time, and the step it must have reached.
     let mut plan: Vec<(f32, u64, f32)> = Vec::new();
     let plan_time = |s: f32| {
-        let rel = s - a.sim_begin;
+        let rel = s - sim_begin;
         // FCD labels the state after step k with time (k-1)*dt, and frames must agree with it.
-        let k = (rel / a.dt).ceil() as u64 + 1;
-        let blend = if interpolate { ((rel - (k as f32 - 2.0) * a.dt) / a.dt).clamp(0.0, 1.0) } else { 1.0 };
+        let k = (rel / dt).ceil() as u64 + 1;
+        let blend = if interpolate { ((rel - (k as f32 - 2.0) * dt) / dt).clamp(0.0, 1.0) } else { 1.0 };
         (s, k, blend)
     };
     if videos {
         if realtime {
-            let n = ((a.end - a.begin) / a.speed * a.fps as f32).ceil() as u64;
+            let n = ((end - begin) / a.speed * a.fps as f32).ceil() as u64;
             for f in 0..n {
-                plan.push(plan_time(a.begin + f as f32 * a.speed / a.fps as f32));
+                plan.push(plan_time(begin + f as f32 * a.speed / a.fps as f32));
             }
         } else {
             let n = end_step.saturating_sub(start_step).div_ceil(spf as u64);
             for f in 0..n {
                 let k = (start_step + (f + 1) * spf as u64).min(end_step);
-                plan.push((a.sim_begin + (k.saturating_sub(1)) as f32 * a.dt, k, 1.0));
+                plan.push((sim_begin + (k.saturating_sub(1)) as f32 * dt, k, 1.0));
             }
         }
     } else {
@@ -533,30 +634,16 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
     };
     let any_overlay = views.iter().any(|v| !v.overlay.is_empty());
     let mut snapshot = Snapshot::new();
-    let lead = (5.0 / a.dt).ceil() as u64;
+    let lead = (5.0 / dt).ceil() as u64;
     let warm = plan.first().map_or(0, |p| p.1);
     let warm_to = if realtime || !videos { warm.saturating_sub(lead) } else { start_step };
-    sim.run(&gpu, warm_to);
+    source.warm(gpu, warm_to)?;
     let total = plan.len();
     for (frame, &(display, k, blend)) in plan.iter().enumerate() {
-        // Pose history has to see the last seconds, or a lane change in progress would be lost.
-        while sim.step + 1 < k {
-            let silent = k - sim.step - 1;
-            if silent > lead {
-                sim.run(&gpu, silent - lead);
-            } else {
-                sim.run(&gpu, 1);
-                renderer.prepare(&gpu, &sim, 1.0, mode);
-            }
-        }
-        if sim.step < k {
-            sim.run(&gpu, 1);
-        }
-        let (count, speed) = renderer.prepare(&gpu, &sim, blend, mode);
+        let (count, speed, clock) = source.show(gpu, renderer, display, k, blend, mode, lead)?;
         if any_overlay {
-            snapshot.update(&gpu, &sim, &renderer);
+            source.snapshot(gpu, renderer, &mut snapshot);
         }
-        let clock = a.sim_begin + (sim.step as f32 - 2.0 + blend) * a.dt;
         for v in &mut views {
             let due: Vec<PathBuf> = v.shots.iter().filter(|s| s.0 <= display + 0.5 * seconds_per_frame).map(|s| s.1.clone()).collect();
             if v.ffmpeg.is_none() && due.is_empty() {
@@ -566,7 +653,7 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
                 Target::Fixed(c) => *c,
                 Target::Script => scripted(clock),
                 Target::Follow { trip, mpp, center, start } => {
-                    let target = renderer.trip_position(&gpu, *trip).map_or(*start, |t| t.0);
+                    let target = source.position(gpu, renderer, *trip).unwrap_or(*start);
                     let c = match *center {
                         None => target,
                         Some(c) => {
@@ -578,11 +665,11 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
                     Camera { center: c, metres_per_pixel: *mpp }
                 }
             };
-            let mut pixels = renderer.draw(&gpu, &net, camera);
+            let mut pixels = renderer.draw(gpu, net, camera);
             if close {
                 let mut canvas = Canvas { px: &mut pixels, w: a.width as i32, h: a.height as i32 };
                 if !v.overlay.is_empty() {
-                    v.state.draw(&mut canvas, camera, &net, &world, &snapshot, clock, &v.overlay);
+                    v.state.draw(&mut canvas, camera, net, world, &snapshot, clock, &v.overlay);
                     if v.state.first_teleports.is_none() {
                         v.state.first_teleports = Some(snapshot.teleports);
                         v.state.first_collisions = snapshot.collisions;

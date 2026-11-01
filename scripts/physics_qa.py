@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Does the motion in an FCD file make physical sense? Reports findings, changes nothing.
+"""Does the motion in an FCD file or a trace make physical sense? Reports findings, changes nothing.
 
-    cars run --net n.xml --routes r.xml --dt .1 --end 300 --fcd f.csv --fcd-interval .1 2> run.log
-    python3 scripts/physics_qa.py --net n.xml --fcd f.csv --log run.log --out qa/
+    cars run --net n.xml --routes r.xml --dt .1 --end 300 --trace f.trace 2> run.log
+    python3 scripts/physics_qa.py --net n.xml --trace f.trace --log run.log --out qa/
+
+A trace is the same run the pictures of `cars replay` come from, and names its teleports and
+collisions. --fcd takes the CSV of `cars run --fcd` instead.
 
 Thresholds come from research/truth/11-vehicle-physics.md, which grades them: dry tyre braking is
 measured, comfort targets are design values. Nothing here decides what is acceptable.
@@ -17,6 +20,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from lxml import etree
+
+import cars_trace
 
 BOUNDS = dict(
     accel_comfort=2.0,        # design target, car normal driving
@@ -281,7 +286,19 @@ def figure(out, d, summary):
 def analyse(a):
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    df = pd.read_csv(a.fcd, dtype={'trip': str, 'lane': str, 'prev_lane': str, 'time': float}, keep_default_na=False)
+    events, window = None, {}
+    if a.trace:
+        trace = cars_trace.Trace(a.trace)
+        df = trace.table(a.begin, a.end)
+        events = trace.events(a.begin, a.end)
+        kept = trace.selected(a.begin, a.end)
+        if kept:
+            window = dict(teleports=kept[-1]['teleports'] - kept[0]['teleports'], collisions=kept[-1]['collisions'] - kept[0]['collisions'])
+        if not df.empty:
+            # A vehicle taken off the road keeps its last place in the trace. It did not drive there.
+            df = df[(df['flags'] & (cars_trace.TELEPORT | cars_trace.COLLISION)) == 0].reset_index(drop=True)
+    else:
+        df = pd.read_csv(a.fcd, dtype={'trip': str, 'lane': str, 'prev_lane': str, 'time': float}, keep_default_na=False)
     if df.empty:
         raise SystemExit('no rows in FCD')
     for c in ('pos', 'speed', 'acc', 'length', 'width'):
@@ -402,6 +419,13 @@ def analyse(a):
         junction_overlap_worst=float(overlaps['worst'].max()) if len(overlaps) else 0.0,
         junction_pairs_truncated=bool(truncated), engine_counters=log,
     )
+    if events is not None:
+        if len(events):
+            where = events.assign(x=0.0, y=0.0)
+            where[['x', 'y']] = cars_trace.lane_points(a.net, list(events['lane']), list(events['pos']))
+            events = where
+        events.to_csv(out / 'events.csv', index=False, float_format='%.2f')
+        summary.update(teleports_in_trace=int((events['kind'] == 'teleport').sum()), collisions_in_trace=int((events['kind'] == 'collision').sum()), counters_in_window=window)
     (out / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     gaps.to_csv(out / 'negative_gaps.csv', index=False, float_format='%.3f')
     overlaps.to_csv(out / 'junction_overlaps.csv', index=False, float_format='%.3f')
@@ -413,11 +437,15 @@ def analyse(a):
     s = summary
     share = lambda n: f'{n} ({100 * n / max(s["samples"], 1):.3f}% of samples)'
     pct = lambda d: ', '.join(f'{k} {v:.2f}' for k, v in d.items() if k != 'n') if d else 'no data'
-    lines = ['# Physics QA', '', f'Net `{a.net}`, FCD `{a.fcd}`.', '',
+    lines = ['# Physics QA', '', f'Net `{a.net}`, ' + (f'trace `{a.trace}`.' if a.trace else f'FCD `{a.fcd}`.'), '',
              f'{s["vehicles"]} vehicles, {s["samples"]} samples every {interval:g} s, {s["vehicle_km"]:.0f} vehicle km, simulation time {s["time"][0]:g} to {s["time"][1]:g}.', '']
     if log:
         lines += [f'Engine counters for the whole run: {log["lane_changes"]} lane changes, {log["teleports"]} teleports, {log["collisions"]} collisions '
                   f'({log["collision_lane_change"]} lane change, {log["collision_junction"]} junction, {log["collision_lane_start"]} lane start, {log["collision_other"]} other).', '']
+    if events is not None:
+        lines += ['## Teleports and collisions', '',
+                  f'In scope of the trace: {s["teleports_in_trace"]} teleports and {s["collisions_in_trace"]} collisions, where the vehicle was just before (`events.csv`). Engine counters over the frames, whole net: {window.get("teleports", 0)} and {window.get("collisions", 0)}. `cars replay --at <time> --center x,y` shows each one in this very run.', '']
+        lines += table(events.head(a.top))
     lines += ['## Position', '',
               f'- Missing stretches in a trajectory, teleports or leaving the sampled box: {s["gaps_in_trajectory"]}. Reinsertions: {s["reinsertions"]}. These are excluded below.',
               f'- Backward steps on a lane: {s["backward_steps"]}.',
@@ -454,7 +482,7 @@ def analyse(a):
               '- Samples, not events: a pair counted here may overlap for many samples, and a short window says nothing about a whole run.',
               '- Width comes from the vehicle type, not the engine. A rectangle on a chord is not a swept path: on a tight turn the real corners differ by some decimetres.',
               '- Polylines are coarse and are not the engine\'s own idea of a curve; the curvature window smooths kinks but cannot recover a true radius. Treat a single lane\'s peak as a pointer to go and look.',
-              '- Rows without a lane or on a dummy lane are not in the FCD, so teleports show as gaps. Only the engine counters above count them.', '']
+              '- A teleported vehicle is off the road, so it shows as a gap in its trajectory. In an FCD only the engine counters above count them; a trace also says who and where.', '']
     (out / 'report.md').write_text('\n'.join(lines))
     print(json.dumps({k: v for k, v in summary.items() if not isinstance(v, (dict, list))}))
 
@@ -462,7 +490,11 @@ def analyse(a):
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('--net', required=True)
-    p.add_argument('--fcd', required=True)
+    source = p.add_mutually_exclusive_group(required=True)
+    source.add_argument('--fcd')
+    source.add_argument('--trace', help='file from cars run --trace')
+    p.add_argument('--begin', type=float, help='with --trace, the first time to look at')
+    p.add_argument('--end', type=float, help='with --trace, the last time to look at')
     p.add_argument('--out', required=True)
     p.add_argument('--log', help='stderr of cars run, for its counters')
     p.add_argument('--top', type=int, default=20, help='rows in each table of the report')

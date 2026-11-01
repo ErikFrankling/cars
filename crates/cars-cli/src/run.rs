@@ -85,6 +85,21 @@ pub struct Args {
     /// Time every kernel for one step at these simulated times.
     #[arg(long, value_delimiter = ',')]
     profile_at: Vec<f32>,
+    /// Write a compact binary trajectory here, for `cars replay` and physics_qa. Off without it.
+    #[arg(long)]
+    trace: Option<PathBuf>,
+    /// First time to trace. Defaults to --begin.
+    #[arg(long)]
+    trace_begin: Option<f32>,
+    /// Last time to trace. Defaults to --end.
+    #[arg(long)]
+    trace_end: Option<f32>,
+    /// Trace only lanes touching this box: x0,y0,x1,y1.
+    #[arg(long, value_delimiter = ',', allow_negative_numbers = true)]
+    trace_bbox: Vec<f32>,
+    /// Steps between traced frames.
+    #[arg(long, default_value_t = 1)]
+    trace_stride: u32,
 }
 
 pub fn run(args: Args) {
@@ -128,6 +143,10 @@ pub fn run(args: Args) {
         })
         .collect();
     let widths: Vec<f32> = demand.vtypes.iter().map(|t| t.width).collect();
+    let mut tracer = args.trace.as_ref().map(|p| {
+        let options = crate::trace::Options { begin: args.trace_begin.unwrap_or(args.begin), end: args.trace_end.unwrap_or(args.end), stride: args.trace_stride, bbox: args.trace_bbox.clone() };
+        crate::trace::Tracer::new(p, options, &net, &mut world, &demand, &widths, args.begin, args.time_to_teleport, &gpu).expect("trace")
+    });
     // The GPU has its copies now. A day of Berlin would otherwise keep gigabytes in RAM.
     demand.routes = Vec::new();
     world.routes = Vec::new();
@@ -176,7 +195,10 @@ pub fn run(args: Args) {
             let before_fcd = !args.check_overlaps && !debugging && args.begin + (done as f32 + stride as f32) * args.dt <= args.fcd_begin;
             let wanted = if before_fcd { ((args.fcd_begin - args.begin) / args.dt) as u64 - done } else { stride };
             let advance = wanted.max(1).min(steps - done).min(interval - done % interval);
-            sim.run(&gpu, advance);
+            match tracer.as_mut() {
+                Some(tr) => tr.run(&gpu, &mut sim, advance),
+                None => sim.run(&gpu, advance),
+            };
             done += advance;
             let now = args.begin + done as f32 * args.dt;
             if (args.debug_lane.is_some() || args.debug_collisions) && now < args.debug_from && fcd.is_none() {
@@ -283,7 +305,10 @@ pub fn run(args: Args) {
             let t_next = args.begin + (done + chunk) as f32 * args.dt;
             if let Some(&at) = args.diagnose_at.iter().find(|&&at| at > args.begin + done as f32 * args.dt && at <= t_next) {
                 chunk = ((at - args.begin) / args.dt) as u64 - done;
-                done += sim.run(&gpu, chunk);
+                done += match tracer.as_mut() {
+                    Some(tr) => tr.run(&gpu, &mut sim, chunk),
+                    None => sim.run(&gpu, chunk),
+                };
                 diagnose(&sim, &gpu, &net, &world, at);
                 continue;
             }
@@ -307,7 +332,10 @@ pub fn run(args: Args) {
                 }
             }
             let g0 = sim.globals(&gpu);
-            done += sim.run(&gpu, chunk);
+            done += match tracer.as_mut() {
+                Some(tr) => tr.run(&gpu, &mut sim, chunk),
+                None => sim.run(&gpu, chunk),
+            };
             let g = sim.globals(&gpu);
             let c = sim.counters(&gpu);
             vehicle_updates += (g0.n_active as u64 + g.n_active as u64) / 2 * chunk;
@@ -340,6 +368,9 @@ pub fn run(args: Args) {
         }
     }
     let _ = last_summary_step;
+    if let Some(tr) = tracer {
+        tr.finish(&gpu);
+    }
     let wall = t.elapsed().as_secs_f64();
     let c = sim.counters(&gpu);
     eprintln!("lane changes {}, teleports {}, collisions {} (lane change {}, junction {}, lane start {}, other {}), overflow {}, items full {}; teleports jam {} yield {} wrong lane {}", c[6], c[4], c[7], c[9], c[10], c[11], c[12], c[5], c[8], c[13], c[14], c[15]);

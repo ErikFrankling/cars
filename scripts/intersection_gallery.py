@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Close-up clips and stills of intersections. Restartable: finished files are skipped.
 
-Run inside nix develop. GPU jobs hold /tmp/cars-gpu.lock and each writes many cameras in one
-simulation run, so a city only warms up once.
+Run inside nix develop. GPU jobs hold /tmp/cars-gpu.lock. Each place is simulated once into a
+trace, then every camera is drawn from it, so clips, stills and physics_qa all see the same run.
+Delete a trace to simulate again.
 """
 import argparse
 import json
@@ -20,6 +21,7 @@ CITIES = {
 }
 CITY_ARGS = ['--capacity', '300000', '--dt', '1', '--time-to-teleport', '120', '--ignore-junction-blocker', '20']
 KINDS = ['signal', 'priority', 'roundabout', 'zipper', 'ramp']
+LEAD = 5  # seconds traced before a clip, so a lane change in progress is drawn right
 
 
 def run(args, **kw):
@@ -149,8 +151,13 @@ def small_job(name, a):
     spec = base / 'views.json'
     base.mkdir(parents=True, exist_ok=True)
     spec.write_text(json.dumps({'views': views}))
-    run(['flock', '/tmp/cars-gpu.lock', a.cars, 'record', '--net', d / 'net.xml', '--routes', d / 'routes.xml', '--dt', '0.1',
-         '--begin', begin, '--end', end, '--views', spec])
+    trace = base / 'run.trace'
+    if not trace.exists():
+        partial = trace.with_suffix('.partial')
+        run(['flock', '/tmp/cars-gpu.lock', a.cars, 'run', '--net', d / 'net.xml', '--routes', d / 'routes.xml', '--dt', '0.1', '--end', end + 1,
+             '--trace', partial, '--trace-begin', begin - LEAD, '--trace-end', end + 1], stdout=subprocess.DEVNULL)
+        partial.replace(trace)
+    run(['flock', '/tmp/cars-gpu.lock', a.cars, 'replay', '--net', d / 'net.xml', '--trace', trace, '--begin', begin, '--end', end, '--views', spec])
 
 
 def make_views(base, title, camera, begin, end, subtitle):
@@ -185,17 +192,18 @@ def city_job(city, a):
     cache.mkdir(parents=True, exist_ok=True)
     sim_begin, begin = a.city_warm_from, a.city_begin
     end = begin + a.seconds
-    common = ['--net', net, '--routes', routes, *CITY_ARGS]
     edge_csv = cache / f'{city}.edges.csv'
-    if not edge_csv.exists():
+    trace = cache / f'{city}.trace'
+    if not trace.exists() or not edge_csv.exists():
         run(['free', '-g'])
-        temporary = edge_csv.with_suffix('.partial')
-        run(['flock', '/tmp/cars-gpu.lock', a.cars, 'run', *common, '--begin', sim_begin, '--end', begin, '--edge-csv', temporary, '--edge-interval', 900],
-            stdout=subprocess.DEVNULL)
+        partial, temporary = trace.with_suffix('.partial'), edge_csv.with_suffix('.partial')
+        run(['flock', '/tmp/cars-gpu.lock', a.cars, 'run', '--net', net, '--routes', routes, *CITY_ARGS, '--begin', sim_begin, '--end', end + 1, '--edge-csv', temporary, '--edge-interval', 900,
+             '--trace', partial, '--trace-begin', begin - LEAD, '--trace-end', end + 1], stdout=subprocess.DEVNULL)
+        partial.replace(trace)
         temporary.replace(edge_csv)
     listing = cache / f'{city}.junctions.json'
     if not listing.exists():
-        out = subprocess.run([str(a.cars), 'junctions', '--net', str(net), '--edge-csv', str(edge_csv), '--limit', str(a.per_kind + 1), '--json'], check=True, capture_output=True, text=True).stdout
+        out = subprocess.run([str(a.cars), 'junctions', '--net', str(net), '--edge-csv', str(edge_csv), '--window', f'{sim_begin},{begin}', '--limit', str(a.per_kind + 1), '--json'], check=True, capture_output=True, text=True).stdout
         listing.write_text(out)
     rows = json.loads(listing.read_text())
     views = []
@@ -216,7 +224,7 @@ def city_job(city, a):
     spec = cache / f'{city}.views.json'
     spec.write_text(json.dumps({'views': views}))
     run(['free', '-g'])
-    run(['flock', '/tmp/cars-gpu.lock', a.cars, 'record', *common, '--sim-begin', sim_begin, '--begin', begin, '--end', end, '--views', spec])
+    run(['flock', '/tmp/cars-gpu.lock', a.cars, 'replay', '--net', net, '--trace', trace, '--begin', begin, '--end', end, '--views', spec])
 
 
 def main():
