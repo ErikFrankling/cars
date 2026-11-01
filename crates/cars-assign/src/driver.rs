@@ -563,7 +563,7 @@ pub fn departures(x: &mut Setup, out: &Path, iters: u32, schedule: Schedule, mem
     Ok(result)
 }
 
-/// A saturating stream on each edge, onto its first successor, with nothing else on the network.
+/// A saturating stream on each edge, onto all its successors, with nothing else on the network.
 pub fn measure_discharge(x: &Setup, edges: &[u32]) -> Result<Vec<(u32, f32)>, String> {
     let succ = cuts::successors(&x.net, &x.supply);
     let mut demand = Demand::load(&x.net, &[], &x.s.additional, 1, None)?;
@@ -572,13 +572,18 @@ pub fn measure_discharge(x: &Setup, edges: &[u32]) -> Result<Vec<(u32, f32)>, St
     let mut tv = Vec::new();
     let tested: Vec<u32> = edges.iter().copied().filter(|&e| !succ[e as usize].is_empty()).collect();
     for &e in &tested {
-        let route = vec![x.supply.normal[e as usize], x.supply.normal[succ[e as usize][0] as usize]];
-        let r = demand.routes.len() as u32;
-        demand.routes.push(route.clone());
+        // Round the successors, or a wide link is measured through the one lane that turns.
+        let ways = &succ[e as usize];
+        let first_route = demand.routes.len() as u32;
+        for &n in ways {
+            demand.routes.push(vec![x.supply.normal[e as usize], x.supply.normal[n as usize]]);
+        }
         let lanes = x.supply.lanes[e as usize] as f32;
         for i in 0..((warm + window) / period * lanes) as u32 {
             let depart = i as f32 * period / lanes;
             let id = tv.len() as u32;
+            let r = first_route + i % ways.len() as u32;
+            let route = &demand.routes[r as usize];
             let mut t = crate::population::Traveller { id, o_edge: route[0], d_edge: route[1], depart_s: depart, desired_arrival_s: depart, earliest_s: depart, latest_s: depart, tour: id, vtype: vt, ..Default::default() };
             t.plan[0] = r;
             t.n_plan = 1;
