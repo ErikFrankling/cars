@@ -413,11 +413,13 @@ pub struct HumanParams {
     /// Lee's constants are what MITSIMLab recalibrates per site (Choudhury 2007, section 5.4.2).
     pub lead_shift: f32,
     pub lag_shift: f32,
+    /// Vissim's 0.6 on the safety distance during a lane change.
+    pub lc_safety: f32,
 }
 
 impl Default for HumanParams {
     fn default() -> Self {
-        Self { cooperation: 1.0, t_miss: 120.0, compliance: 1.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 1.0, gap_roundabout: 1.0, t_scale: 1.0, s0_scale: 1.0, lead_shift: 0.0, lag_shift: 0.0 }
+        Self { cooperation: 0.4, t_miss: 120.0, compliance: 1.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 1.0, gap_roundabout: 1.0, t_scale: 1.0, s0_scale: 1.0, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6 }
     }
 }
 
@@ -451,6 +453,7 @@ impl HumanParams {
                 "s0_scale" => self.s0_scale = v,
                 "lead_shift" => self.lead_shift = v,
                 "lag_shift" => self.lag_shift = v,
+                "lc_safety" => self.lc_safety = v,
                 _ => panic!("no human parameter {k}"),
             }
         }
@@ -840,7 +843,7 @@ impl World {
             hu_b: [cfg.human.stop_offset, cfg.human.sig_react, cfg.human.r_urg, cfg.human.coop_decel],
             hu_c: [cfg.human.tau_gate, cfg.human.tau_min, cfg.human.b_em, cfg.human.gap_model],
             hu_d: [cfg.human.gap_junction, cfg.human.gap_roundabout, cfg.human.t_scale, cfg.human.s0_scale],
-            hu_e: [cfg.human.lead_shift, cfg.human.lag_shift, 0.0, 0.0],
+            hu_e: [cfg.human.lead_shift, cfg.human.lag_shift, cfg.human.lc_safety, 0.0],
         };
         w
     }

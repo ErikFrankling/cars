@@ -103,7 +103,7 @@ struct Params {
     hu_b: vec4f,      // stop offset, blinker reaction, urgency distance, cooperative deceleration
     hu_c: vec4f,      // gate tau, minimum tau, urgent braking, gap model
     hu_d: vec4f,      // time gap minor at junctions, in roundabouts, T scale, s0 scale
-    hu_e: vec4f,      // critical gap constant shift: lead, lag, spare, spare
+    hu_e: vec4f,      // critical gap constant shift: lead, lag; safety factor during a change; spare
 }
 
 struct Globals {
@@ -584,6 +584,7 @@ var<private> hu_af: f32;
 var<private> hu_n: f32;
 var<private> hu_k: f32;
 var<private> hu_v0: f32;
+var<private> hu_gap: f32;      // this driver's minor road time gap, at the link being judged
 
 // The persona as stored by world.rs: T 0.6-3 s, s0 0.5-6 m, amax 1-3 m/s2. Places have their own medians.
 

@@ -666,7 +666,8 @@ fn inform_leader(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f32,
 // negative gap if it is alongside, at a limited deceleration so that speed stays continuous as it passes.
 fn hu_two_leaders(e: Veh, n: LcNeighbors, vmax: f32) -> f32 {
     var planned = min(e.speed, stop_speed(e.speed, lc_left_space - lc_blocker, ty.decel, true, vmax));
-    if (n.gap > 1e8) { return planned; }
+    // Alongside and not getting ahead of us, there is nothing to adapt to: the stop offsets break that tie.
+    if (n.gap > 1e8 || (n.gap + ty.min_gap < 0.0 && n.speed <= e.speed)) { return planned; }
     let persona = trips[e.trip].persona;
     hu_load(persona, 0.0, 0.0, 1.0, P.hu_d.z, P.hu_d.w);
     let a = hu_target(e.speed, n.gap + ty.min_gap, n.speed, vmax, hu_s0);
@@ -1188,7 +1189,8 @@ fn check_blocked_human(e: Veh, n: LcNeighbors, dest: u32) -> u32 {
         let self_ty = ty;
         ty = types[n.f_vtype];
         let lag = n.f_gap + ty.min_gap;
-        var need = ph_gap_required(n.f_speed, e.speed, self_ty.apparent, n.f_acc);
+        // Vissim scales the safety distance by 0.6 during a change.
+        var need = max(P.hu_e.z * ph_gap_required(n.f_speed, e.speed, min(self_ty.apparent, ty.b_lo), n.f_acc), S_MIN);
         if (ty.model == MODEL_HUMAN) {
             if (published) { need = max(need, hu_critical_lag(e, n, mandatory, d, nu, second)); }
             else { need = max(need, hu_gap_need(n.f_speed, e.speed, u, 0.7 + 0.6 * h01(n.f_trip, 7u))); }
@@ -1200,7 +1202,7 @@ fn check_blocked_human(e: Veh, n: LcNeighbors, dest: u32) -> u32 {
     }
     if (n.gap < 1e8) {
         let g = n.gap + ty.min_gap;
-        var need = ph_gap_required(e.speed, n.speed, min(n.decel, ty.b_lo), e.acc);
+        var need = max(P.hu_e.z * ph_gap_required(e.speed, n.speed, min(n.decel, ty.b_lo), e.acc), S_MIN);
         if (published) { need = max(need, hu_critical_lead(e, n, dest, mandatory, d, nu, second)); }
         else { need = max(need, hu_gap_need(e.speed, n.speed, u, 0.7 + 0.6 * h01(e.trip, 7u))); }
         if (g < 0.0 || g < need) { blocked |= LCA_BLOCK_LEADER; }

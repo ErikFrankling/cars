@@ -275,10 +275,15 @@ def score_merge(fc, dur):
         at = by_t.get(r.time)
         ahead = set(at[at.pos > r.pos].trip) if at is not None else set()
         np_ = 0
+        last = list(seen)[-1] if seen else None
         for other, closing in seen.items():
             went_ahead = other in ahead or (groups[other].lane == 'down_0').any() and groups[other].time[groups[other].lane == 'down_0'].min() <= r.time
-            letin.append((closing, not went_ahead))
-            np_ += went_ahead
+            # As report 14: each vehicle alongside either passed, or was the last lag and let the car in.
+            if went_ahead:
+                letin.append((closing, 0.0))
+                np_ += 1
+            elif other == last:
+                letin.append((closing, 1.0))
         passes.append(np_)
     cross = []
     for trip, g in groups.items():
@@ -356,7 +361,7 @@ def signal_net(d, La, spill):
     (d / 'tl.xml').write_text(f'<additional><tlLogic id="c" type="static" programID="x" offset="0"><phase duration="40" state="{"G"*ln}"/><phase duration="3" state="{"y"*ln}"/><phase duration="47" state="{"r"*ln}"/></tlLogic></additional>')
 
 
-SUMO_SIGNAL = {(150, 1200, 0): (2, 8, 9), (60, 2000, 0): (14, 42, 54), (60, 1200, 1): (20, 50, 61), (30, 2000, 1): (15, 50, 62), (150, 2000, 1): (43, 92, 164)}
+SIGNAL_CASES = ((150, 1200, 0), (60, 2000, 0), (60, 1200, 1), (30, 2000, 1), (150, 2000, 1))
 
 
 def signal_case(La, vph, spill, off=(), seed=7, tag='', dt=None, model='Human'):
@@ -390,12 +395,12 @@ def signal_case(La, vph, spill, off=(), seed=7, tag='', dt=None, model='Human'):
     w = np.array(wrong_time or [0.0])
     sw = np.array(stop_wrong or [0])
     h = rep['humans']
-    res = dict(wrong_p50=np.percentile(w, 50), wrong_p90=np.percentile(w, 90), wrong_max=w.max(), stop_wrong_max=int(sw.max()), share_stop_wrong=float((sw > 0).mean()), arrived=rep['arrived'], inserted=rep['inserted'], demand=len(rows), active_end=rep['inserted'] - rep['arrived'], collisions=rep['collision_incidents'], cert_floor=rep['cert_floor'], teleports=rep['teleports'], swaps=h['swaps'], swaps_failed=h['swaps_failed'], rerouted=h['rerouted'], reroute_failed=h['reroute_failed'], forced_steps=h['forced_steps'], yield_steps=h['yield_steps'], stuck=rep['gridlock_worst_stuck'], sumo=SUMO_SIGNAL.get((La, vph, spill)))
+    res = dict(wrong_p50=np.percentile(w, 50), wrong_p90=np.percentile(w, 90), wrong_max=w.max(), stop_wrong_max=int(sw.max()), share_stop_wrong=float((sw > 0).mean()), arrived=rep['arrived'], inserted=rep['inserted'], demand=len(rows), active_end=rep['inserted'] - rep['arrived'], collisions=rep['collision_incidents'], cert_floor=rep['cert_floor'], teleports=rep['teleports'], lost_inside=h['lost_inside'], lost_outside=h['lost_outside'], lost_stuck=h['lost_stuck'], lost_per_1000=h['lost_per_1000_trips'], yield_steps=h['yield_steps'], stuck=rep['gridlock_worst_stuck'])
     record(f'signal_{La}_{vph}_{spill}{tag}', res)
 
 
 def signals():
-    for La, vph, spill in SUMO_SIGNAL:
+    for La, vph, spill in SIGNAL_CASES:
         signal_case(La, vph, spill)
 
 
@@ -420,7 +425,8 @@ def yellow_scene():
             for _, r in at.iterrows():
                 ttl = (length - r.pos) / r.speed
                 later = f[(f.trip == r.trip) & (f.time >= t_y) & (f.time < t_y + 25)]
-                stopped = later.speed.min() < 0.3 and (later.lane == 'in_0').all()
+                red = later[later.time < t_y + 23]
+                stopped = red.speed.min() < 0.3 and (red.lane == 'in_0').all()
                 brake = max(-later.acc.min(), 0.0)
                 crossed = later[later.lane != 'in_0']
                 after_red = crossed.time.iloc[0] - (t_y + 3) if not crossed.empty else None
@@ -428,16 +434,17 @@ def yellow_scene():
     a = pd.DataFrame(rows, columns=['ttl', 'stopped', 'brake', 'after_red'])
     a.to_csv(d / 'decisions.csv', index=False)
     from scipy.optimize import minimize
+    a = a[a.ttl < 8.0]
     x, y = a.ttl.values, a.stopped.values.astype(float)
     def nll(p):
         z = np.clip((x - p[0]) / abs(p[1]), -30, 30)
         q = np.clip(1 / (1 + np.exp(-z)), 1e-6, 1 - 1e-6)
         return -(y * np.log(q) + (1 - y) * np.log(1 - q)).sum()
     fit = minimize(nll, [5.0, 0.5], method='Nelder-Mead').x
-    bins = [(0, 3), (3, 4), (4, 5), (5, 6), (6, 8), (8, 99)]
+    bins = [(0, 3), (3, 4), (4, 5), (5, 6), (6, 8)]
     table = {f'{lo}-{hi}': (int(((x >= lo) & (x < hi)).sum()), float(y[(x >= lo) & (x < hi)].mean()) if ((x >= lo) & (x < hi)).any() else None) for lo, hi in bins}
     st = a[a.stopped]
-    go = a[~a.stopped & a.after_red.notna()]
+    go = a[~a.stopped & a.after_red.notna() & (a.after_red < 6.0)]
     record('yellow', dict(n=len(a), half_at=fit[0], scale=abs(fit[1]), table=table, stop_brake_p50=float(st.brake.median()), stop_brake_p95=float(st.brake.quantile(.95)), share_go_after_red=float((go.after_red > 0).mean()), go_after_red_p95=float(go.after_red.quantile(.95))))
 
 
@@ -469,7 +476,7 @@ def deadlocks():
     for name, vs in cases.items():
         (d / f'{name}.xml').write_text(f'<routes>{VTYPE}{routes}{vs}</routes>')
         rep, fc = cars(d, '--dt', A.dt, '--end', 300, '--seed', 1, routes=f'{name}.xml', tag=name, interval=1.0)
-        out[name] = dict(arrived=rep['arrived'], inserted=rep['inserted'], collisions=rep['collision_incidents'], cert_floor=rep['cert_floor'], swaps=rep['humans']['swaps'], rerouted=rep['humans']['rerouted'], stuck=rep['gridlock_worst_stuck'], wall=rep['wall_s'])
+        out[name] = dict(arrived=rep['arrived'], inserted=rep['inserted'], collisions=rep['collision_incidents'], cert_floor=rep['cert_floor'], lost=rep['humans']['lost_cars'], lost_inside=rep['humans']['lost_inside'], stuck=rep['gridlock_worst_stuck'], wall=rep['wall_s'])
     record('deadlocks', out)
 
 
@@ -492,10 +499,194 @@ def merge_one(tag, vb, param, dur=1200, main=1000, ramp=800, seed=1, off=()):
 
 def lee_grid():
     rows = []
-    for lead in (0.0, -2.0, -4.0):
-        for lag in (0.0, -1.0, -2.0):
-            rows.append(merge_one(f'_lead{lead}_lag{lag}', 11.0, f'cooperation=0.5,gap_model=1,lead_shift={lead},lag_shift={lag}'))
+    for vb in (8.0, 11.0):
+        for lead in (-6.0, -9.0):
+            for lag in (-1.0, -2.0, -3.0):
+                rows.append(merge_one(f'_v{vb}_lead{lead}_lag{lag}', vb, f'cooperation=0.5,gap_model=1,lead_shift={lead},lag_shift={lag}'))
+    rows.append(merge_one('_gate_v8', 8.0, 'cooperation=0.5,gap_model=0'))
+    rows.append(merge_one('_gate_v11', 11.0, 'cooperation=0.5,gap_model=0'))
     record('lee_grid', rows)
+
+
+HUMAN_I80 = 'gap_model=1,lead_shift=-6,lag_shift=-2'
+
+
+def cooperation_sweep():
+    """Hidas 2004: more cooperation can lower main road flow and speed. Report both, at I-80's flows and at an open merge."""
+    rows = []
+    for c in (0.0, 0.1, 0.25, 0.5, 0.75, 1.0):
+        for name, vb, main, ramp in (('i80', 11.0, 1000, 800), ('open', 20.0, 1700, 900)):
+            for seed in range(A.seeds):
+                t = f'_{name}_c{c}'
+                r = merge_one(t, vb, f'cooperation={c},{HUMAN_I80}', main=main, ramp=ramp, seed=seed)
+                f = load_fcd(workdir('merge' + t) / f's{seed}.fcd.csv')
+                late = f[f.time.between(300, 1200)]
+                r['main_speed'] = float(late[late.lane == 'merge_1'].speed.mean())
+                r['ramp_speed'] = float(late[late.lane == 'merge_0'].speed.mean())
+                r['c'], r['case'], r['seed'] = c, name, seed
+                rows.append(r)
+    record('cooperation_sweep', rows)
+
+
+def lc_table(f, width=3.2):
+    """Items 13-15: lateral motion, from `offset`, for every change seen whole."""
+    rows = []
+    for trip, g in f.groupby('trip'):
+        g = g.sort_values('time')
+        moving = g.offset.abs().values > 1e-3
+        if not moving.any():
+            continue
+        # A change starts at the full lane width, on the new lane, and runs down to zero.
+        edges = np.where(np.diff(moving.astype(int)) != 0)[0]
+        idx = np.where(moving)[0]
+        for chunk in np.split(idx, np.where(np.diff(idx) > 1)[0] + 1):
+            if len(chunk) < 4 or chunk[0] == 0 or chunk[-1] == len(g) - 1:
+                continue
+            o = g.offset.abs().values[chunk]
+            t = g.time.values[chunk]
+            w = o.max()
+            frac = 1 - o / w
+            if w < 2.0 or g.speed.values[chunk].min() < 3.0:
+                continue
+            t10, t90 = np.interp(0.1, frac, t), np.interp(0.9, frac, t)
+            t25, t75 = np.interp(0.25, frac, t), np.interp(0.75, frac, t)
+            rows.append((t90 - t10, t75 - t25, np.max(np.abs(np.diff(o) / np.diff(t))), g.speed.values[chunk].mean()))
+    return pd.DataFrame(rows, columns=['t1090', 'both', 'peak', 'v'])
+
+
+def accepted_gaps(f, width=3.2):
+    """Items 16-17: time gaps at the moment the car is half way across, as report 05 measures at the label change."""
+    f = f.sort_values('time')
+    by_time = dict(tuple(f.groupby('time')))
+    rows = []
+    for trip, g in f.groupby('trip'):
+        g = g.sort_values('time')
+        o = g.offset.abs().values
+        hit = np.where((o[:-1] > width / 2) & (o[1:] <= width / 2) & (o[:-1] < 4.5))[0]
+        for i in hit:
+            r = g.iloc[i + 1]
+            now = by_time[r.time]
+            same = now[(now.lane == r.lane) & (now.trip != trip)]
+            ahead = same[same.pos > r.pos].sort_values('pos')
+            behind = same[same.pos < r.pos].sort_values('pos')
+            lead = (ahead.iloc[0].pos - r.pos - ahead.iloc[0].length) / max(r.speed, 0.5) if len(ahead) else np.nan
+            lag = (r.pos - behind.iloc[-1].pos - r.length) / max(behind.iloc[-1].speed, 0.5) if len(behind) else np.nan
+            rows.append((lag, lead, r.speed))
+    return pd.DataFrame(rows, columns=['lag', 'lead', 'v'])
+
+
+def lane_changes():
+    """Items 13-17 on one congested and one free scene."""
+    out = {}
+    d = workdir('lc_congested')
+    merge_net(d, 11.0)
+    (d / 'r.xml').write_text(f'''<routes>{VTYPE}<route id="rr" edges="on merge down neck out"/><route id="rm" edges="up merge down neck out"/><flow id="ramp" type="h" route="rr" begin="0" end="1200" vehsPerHour="800" departLane="0" departSpeed="max"/><flow id="main" type="h" route="rm" begin="0" end="1200" vehsPerHour="1000" departLane="0" departSpeed="max"/></routes>''')
+    frames, gaps = [], []
+    for seed in range(A.seeds):
+        rep, fc = cars(d, '--dt', A.dt, '--end', 1800, '--seed', seed, tag=f's{seed}', interval=A.dt)
+        f = load_fcd(fc)
+        frames.append(lc_table(f))
+        gaps.append(accepted_gaps(f))
+    t = pd.concat(frames)
+    g = pd.concat(gaps)
+    out['congested'] = dict(n=len(t), t1090=t.t1090.median(), both=t.both.median(), peak=t.peak.median(), v=t.v.median(), gaps_n=len(g), lag_p5=g.lag.quantile(.05), lag_p50=g.lag.median(), lead_p5=g.lead.quantile(.05), lead_p50=g.lead.median())
+    d = workdir('lc_free')
+    (d / 'n.nod.xml').write_text('<nodes><node id="a" x="0" y="0"/><node id="b" x="6000" y="0"/></nodes>')
+    (d / 'n.edg.xml').write_text('<edges><edge id="m" from="a" to="b" numLanes="3" speed="33.3"/></edges>')
+    run(['netconvert', '-n', d / 'n.nod.xml', '-e', d / 'n.edg.xml', '-o', d / 'net.xml', '--no-turnarounds', 'true'])
+    # Free flow with a spread of desired speeds, as a German motorway, so that changes are discretionary.
+    (d / 'r.xml').write_text(f'''<routes><vType id="h" carFollowModel="Human" length="5" minGap="2.5" speedDev="0.15"/><route id="r" edges="m"/><flow id="a" type="h" route="r" begin="0" end="600" vehsPerHour="4200" departLane="free" departSpeed="max"/></routes>''')
+    frames, gaps = [], []
+    for seed in range(A.seeds):
+        rep, fc = cars(d, '--dt', A.dt, '--end', 800, '--seed', seed, tag=f's{seed}', interval=A.dt)
+        f = load_fcd(fc)
+        frames.append(lc_table(f))
+        gaps.append(accepted_gaps(f))
+    t = pd.concat(frames)
+    g = pd.concat(gaps)
+    out['free'] = dict(n=len(t), t1090=t.t1090.median(), both=t.both.median(), peak=t.peak.median(), v=t.v.median(), gaps_n=len(g), lag_p5=g.lag.quantile(.05), lag_p50=g.lag.median(), lead_p5=g.lead.quantile(.05), lead_p50=g.lead.median())
+    record('lane_changes', out)
+
+
+def capacity_drop(off=(), tag='', seeds=None):
+    """Keane and Gao, Laval and Daganzo: flow before breakdown against flow out of the queue, at an on-ramp.
+    Demand rises slowly until the merge breaks down. Counted well past the merge, in 5 minute windows."""
+    d = workdir('capdrop' + tag)
+    (d / 'n.nod.xml').write_text('<nodes><node id="a" x="0" y="0"/><node id="r" x="1500" y="-60"/><node id="b" x="2000" y="0"/><node id="c" x="2300" y="0"/><node id="d" x="4300" y="0"/></nodes>')
+    (d / 'n.edg.xml').write_text('<edges><edge id="up" from="a" to="b" numLanes="2" speed="29"/><edge id="on" from="r" to="b" numLanes="1" speed="22"/><edge id="merge" from="b" to="c" numLanes="3" speed="29"/><edge id="down" from="c" to="d" numLanes="2" speed="29"/></edges>')
+    (d / 'n.con.xml').write_text('<connections><connection from="up" to="merge" fromLane="0" toLane="1"/><connection from="up" to="merge" fromLane="1" toLane="2"/><connection from="on" to="merge" fromLane="0" toLane="0"/><connection from="merge" to="down" fromLane="1" toLane="0"/><connection from="merge" to="down" fromLane="2" toLane="1"/></connections>')
+    run(['netconvert', '-n', d / 'n.nod.xml', '-e', d / 'n.edg.xml', '-x', d / 'n.con.xml', '-o', d / 'net.xml', '--no-turnarounds', 'true'])
+    flows = ''
+    # 20 minutes at each level, main road rising from 2,000 to 4,400 veh/h, ramp at 500.
+    t = 0
+    for k, main in enumerate(range(2000, 4601, 400)):
+        flows += f'<flow id="m{k}" type="h" route="rm" begin="{t}" end="{t + 900}" vehsPerHour="{main}" departLane="free" departSpeed="max"/><flow id="o{k}" type="h" route="rr" begin="{t}" end="{t + 900}" vehsPerHour="500" departLane="0" departSpeed="max"/>'
+        t += 900
+    (d / 'r.xml').write_text(f'<routes>{VTYPE}<route id="rm" edges="up merge down"/><route id="rr" edges="on merge down"/>{flows}</routes>')
+    extra = ['--human-off', ','.join(off)] if off else []
+    results = []
+    for seed in range(seeds or A.seeds):
+        rep, fc = cars(d, '--dt', A.dt, '--end', t + 300, '--seed', seed, *extra, tag=f's{seed}', interval=1.0)
+        f = pd.read_csv(fc, usecols=['time', 'trip', 'lane', 'pos', 'speed'], dtype={'trip': str, 'lane': str})
+        c = f[f.lane.str.startswith('down_') & (f.pos > 1000)].groupby('trip').time.min().values
+        w = 300.0
+        counts = np.histogram(c, bins=np.arange(0, t + 300 + w, w))[0] / w * 3600
+        s = f[f.lane.str.startswith('up_') & (f.pos > 1000)]
+        speed = s.groupby((s.time // w).astype(int)).speed.mean()
+        ts = np.arange(len(counts))
+        spd = np.array([speed.get(i, np.nan) for i in ts])
+        slow = np.where(spd < 0.6 * np.nanmax(spd))[0]
+        br = int(slow[0]) if len(slow) else -1
+        before = float(np.max(counts[max(br - 3, 0):br])) if br > 0 else float(np.max(counts))
+        q = counts[br + 1:br + 7] if br >= 0 else np.array([np.nan])
+        after = float(np.mean(q)) if len(q) else float('nan')
+        results.append(dict(break_at=br * w if br >= 0 else None, before=before, queue_discharge=after, drop=1 - after / before if br >= 0 else None, flows=counts.round().tolist(), up_speed=[None if np.isnan(x) else round(float(x), 1) for x in spd], collisions=rep['collision_incidents'], lost=rep['humans']['lost_cars']))
+    record('capacity_drop' + tag, results)
+
+
+def relaxation():
+    """Report 05 section 4.9: time gap of a follower after a car cut in, at 2, 5, 10, 15, 20, 25 s. Measured,
+    smallest quartile: 0.72 0.80 0.91 1.02 1.12 1.21 1.27 (DLR HT), 0.72 0.75 0.88 1.09 1.22 1.31 1.41 (I-395)."""
+    fc = workdir('capdrop') / 's0.fcd.csv'
+    f = pd.read_csv(fc, usecols=['time', 'trip', 'lane', 'pos', 'speed', 'length', 'offset'], dtype={'trip': str, 'lane': str})
+    f = f[f.lane.isin(['down_0', 'down_1', 'merge_1', 'merge_2', 'up_0', 'up_1'])]
+    f = f.sort_values(['lane', 'time', 'pos'])
+    f['lead_pos'] = f.groupby(['lane', 'time']).pos.shift(-1)
+    f['lead_trip'] = f.groupby(['lane', 'time']).trip.shift(-1)
+    f['gap'] = (f.lead_pos - f.pos - f.length)
+    f['tg'] = f.gap / f.speed.clip(lower=0.5)
+    tracks = []
+    for trip, g in f[f.speed > 5].groupby('trip'):
+        g = g.sort_values('time')
+        lt = g.lead_trip.values
+        new = np.where((lt[1:] != lt[:-1]) & (g.tg.values[1:] < 1.0) & (g.tg.values[:-1] > g.tg.values[1:] + 0.3))[0]
+        for i in new[:1]:
+            t0 = g.time.values[i + 1]
+            s = g[(g.time >= t0) & (g.time <= t0 + 25) & (g.lead_trip == lt[i + 1])]
+            tracks.append([s.tg[s.time.between(t0 + h - 0.5, t0 + h + 0.5)].mean() for h in (0, 2, 5, 10, 15, 20, 25)])
+    a = np.array(tracks, float)
+    record('relaxation', dict(n=len(a), median=np.nanmedian(a, axis=0).tolist()))
+
+
+def hysteresis():
+    """A disturbance that clears: flow against density on the way in and on the way out."""
+    d = workdir('hysteresis')
+    (d / 'n.nod.xml').write_text('<nodes><node id="a" x="0" y="0"/><node id="b" x="3000" y="0"/><node id="c" x="3200" y="0"/><node id="d" x="5000" y="0"/></nodes>')
+    (d / 'n.edg.xml').write_text('<edges><edge id="up" from="a" to="b" numLanes="1" speed="29"/><edge id="work" from="b" to="c" numLanes="1" speed="29"/><edge id="out" from="c" to="d" numLanes="1" speed="29"/></edges>')
+    run(['netconvert', '-n', d / 'n.nod.xml', '-e', d / 'n.edg.xml', '-o', d / 'net.xml', '--no-turnarounds', 'true'])
+    (d / 'r.xml').write_text(f'<routes><vType id="s" carFollowModel="Human" length="5" minGap="2.5" speedDev="0" maxSpeed="6"/>{VTYPE}<route id="r" edges="up work out"/><flow id="f0" type="h" route="r" begin="0" end="300" vehsPerHour="1500" departSpeed="max"/><vehicle id="slow" type="s" route="r" depart="300" departSpeed="max"/><flow id="f1" type="h" route="r" begin="301" end="1800" vehsPerHour="1500" departSpeed="max"/></routes>')
+    results = []
+    for seed in range(A.seeds):
+        rep, fc = cars(d, '--dt', A.dt, '--end', 2000, '--seed', seed, tag=f's{seed}', interval=1.0)
+        f = pd.read_csv(fc, usecols=['time', 'trip', 'lane', 'pos', 'speed'], dtype={'trip': str, 'lane': str})
+        s = f[(f.lane == 'up_0') & f.pos.between(1500, 1800)]
+        w = 30
+        s = s.assign(b=(s.time // w).astype(int))
+        k = s.groupby('b').size() / w / 0.3
+        v = s.groupby('b').speed.mean()
+        q = k * v * 3.6
+        results.append(dict(k=k.round(1).tolist(), v=v.round(2).tolist(), q=q.round().tolist()))
+    record('hysteresis', results)
 
 
 def main():

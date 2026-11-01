@@ -117,6 +117,12 @@ fn hu_setup(e: Veh) {
     hu_v0 = lane_vmax(e.lane, e.sf);
 }
 
+// Roundabouts and other junctions have their own measured critical gaps, and each driver sits around them.
+fn hu_set_gap(to_lane: u32, trip: u32) {
+    let base = select(P.hu_d.x, P.hu_d.y, (lanes[to_lane].flags & LANE_ROUNDABOUT) != 0u);
+    hu_gap = base * hu_critical(trips[trip].persona2);
+}
+
 // Half of drivers stop only when 5.1 s from the line, and those who go keep going into the red.
 fn hu_can_stop(state: u32, seen: f32, speed: f32, kinematic: bool, trip: u32) -> bool {
     let go = (ego_flags & F_YELLOW_GO) != 0u;
@@ -876,6 +882,7 @@ fn keep_clear(k: Link) -> bool {
 // MSLink::opened for a link further ahead, at planning time: what foes announced in the last step.
 fn foe_on_last_approach(link: u32, a: f32, va: f32, vl: f32, ego: Veh) -> bool {
     let k = links[link];
+    if (hu_on) { hu_set_gap(k.to_lane, ego.trip); }
     let l = a + (k.length + ty.length) / max((va + vl) * 0.5, EPS);
     let impat = clamp(ty.impatience + ego.wait / P.time_to_impatience, 0.0, 1.0);
     for (var f = 0u; f < k.foe_count; f++) {
@@ -1083,6 +1090,7 @@ fn foe_arrival(a: f32, r: Approach, impatience: f32) -> f32 {
 fn blocked_by_foe(r: Approach, a: f32, l: f32, va: f32, vl: f32, same_target: bool, impatience: f32, decel: f32, wait: f32, foe_state: u32) -> bool {
     if (r.will_pass == 0u) { return false; }
     var h = ty.timegap_minor;
+    if (hu_on) { h = hu_gap; }
     if (foe_state == CH_Z) { h = 16.0; }
     if (foe_state == CH_w) {
         if (wait > r.wait) { return false; }
@@ -1099,6 +1107,7 @@ fn blocked_by_foe(r: Approach, a: f32, l: f32, va: f32, vl: f32, same_target: bo
 
 fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f32, decel: f32, wait: f32, trip: u32) -> bool {
     let k = links[link];
+    if (hu_on) { hu_set_gap(k.to_lane, trip); }
     let state = link_state(link);
     if (have_red(state)) { return false; }
     if ((k.flags & L_CONT) != 0u) { return true; }
