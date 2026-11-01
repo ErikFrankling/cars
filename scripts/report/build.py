@@ -156,21 +156,21 @@ B.append(f'''<section class="panel a"><div class="head">{lamp('a')}<h3>Works in 
 <li><b>Speed.</b> A whole day of the public Berlin scenario, 2.25 million trips, in 147.5 s. One Berlin hour runs 5.4 million car updates per second against SUMO's 0.17 on the same PC, and many copies in one GPU world reach 58 million.</li>
 <li><b>Junctions with no lights.</b> 5,679 cars per hour against 3,888 for a traffic light with the same self-driving cars, one lane each way, straight on. With 2 lanes and 20% turns at 5,200 cars per hour: 4.1 s delay against 20.2 s, and 0.01 stops per car against 0.96.</li>
 <li><b>Stockholm no longer locks up, at 60% demand.</b> 2,449 teleports over a full day against 290,352, and 43 km/h against 9. It carries 60% of the real toll-ring traffic and some real signals are deleted, so it isn't validated Stockholm.</li>
-<li><b>No more late braking at one junction.</b> Hard brakes fall from 2,688 to 3 per run at 5,200 cars per hour, and cars over 3 m/s² from 92% to 0, with the same flow and delay.</li>
+<li><b>No more late braking at one junction.</b> Hard brakes fall from 2,688 to 8 per run at 5,200 cars per hour, and cars over 3 m/s² from 92% to 1%, with the same flow and delay.</li>
 <li><b>Safety with failing radios.</b> No contacts at a single junction at any message loss, up to 100%. Lost messages only cost time.</li>
 <li><b>The safety rule.</b> 0 contacts in 503,333 attack cases, in a one-dimensional Python test.</li>
 <li><b>A real neural network drives.</b> One trained car removes a stop-and-go wave: 2,049 cars per hour against 1,743, in Python. The same weights give the same flow in GPU code. A simple formula still does slightly better, at 2,097.</li></ul></section>''')
 B.append(f'''<section class="panel r"><div class="head">{lamp('r')}<h3>Not working yet</h3></div><ul>
 <li><b>Stockholm doesn't match its real sensors.</b> 77.3% error at sensors the model was never fitted to, where the year-to-year noise is 12.4%. It carries about a third of the real flow there. No calibrated test has finished.</li>
 <li><b>Full real traffic still locks Stockholm up.</b> 70,595 teleports by 10:00, and 150,956 on the map closest to the real signal register.</li>
-<li><b>No lights in a real district at peak is worse than signals.</b> 1,846 against 2,659 cars per hour, with signals at their real positions but generated timing, and only 44 of 108 junctions usable.</li>
-<li><b>Overloaded grid.</b> 57 contact events without lights against 0 with them. The zero-collision rule fails there.</li>
+<li><b>No lights in a real district isn\'t ready at full demand.</b> On the new demand it\'s better or level at 30 to 60%, but up to 18% worse than generated signals at 100%, and the planned version up to 41% worse. Only 50 of 199 junctions are coordinated.</li>
+<li><b>Overloaded grid.</b> Planning across junctions cuts contacts from 265 to 3 in 42 runs, not to zero. The zero-collision rule still fails there.</li>
 <li><b>New drivers and physics in a city.</b> On the old demand, Berlin morning: 199,380 cars stuck. The test on the fixed Stockholm demand is still queued. Neither is merged yet.</li>
 <li><b>Not done.</b> Most self-driving tiers have only smoke tests. D9 and M4 aren't built. The "remove humans step by step" experiment hasn't been run.</li></ul></section>''')
 B.append('</div></div></div>')
 B.append('<div class="page">')
 B.append(clip('gallery__d8__versus_signal', 'Best single clip: three ways to run one junction', 'Same junction, same arrivals. Left: no signal. Middle: a traffic light with the same self-driving cars. Right: a traffic light with human-like cars. At one moment in this run: 56 cars at 49 km/h, 81 at 29 km/h, 193 at 10 km/h. Simulated, no real vehicles.'))
-B.append(note('Read this before the numbers', 'Almost everything after the speed chapter sits on branches not merged into main yet, and agents are still running, so unfinished numbers can move. This is a snapshot from 1 November 2026, about 21:30.'))
+B.append(note('Read this before the numbers', 'Almost everything after the speed chapter sits on branches not merged into main yet, and agents are still running, so unfinished numbers can move. This is a snapshot from 1 November 2026, about 23:15.'))
 
 # ---- Speed
 B.append(head('How fast is it?', 'Every car in a city, on one graphics card'))
@@ -453,7 +453,7 @@ B.append(table(['Overloaded 9-junction grid', 'Cars/h', 'Delay', 'Contact events
     ['1 lane, no signal', '9,539', '121 s', '18 (3 seeds)'], ['1 lane, AV signal', '8,413', '154 s', '0 (3 seeds)'], ['1 lane, metered to 140', '8,798', '137 s', '0 (4 seeds)']]))
 B.append(facts(
     ('r', 'On 2 lanes, the contact-free metering level carries 3% less than a signal. Four seeds of 450 s can\'t show any level is safe.'),
-    ('r', 'A 1 km Stockholm district at 8,000 cars per hour: 1,846 against 2,659 with signals at their real positions and generated timing, cars stuck over 120 s. 64 of 108 junctions were refused, because OpenStreetMap draws one junction as a chain of short links.'),
+    ('r', 'On the old demand, a 1 km Stockholm district at 8,000 cars per hour carried 1,846 against 2,659 with signals at their real positions and generated timing. 64 of 108 junctions were refused, because OpenStreetMap draws one junction as a chain of short links. The next chapter re-tests it on the new demand.'),
     ('r', 'One real Stockholm junction with its signal removed: 3,088 against 2,613 cars per hour. But the same conflict table with a signal gives 3,078, so most of the gain comes from the cars, not from removing the light.'),
     ('r', 'A stalled car does cause collisions at the chosen setting: 0.10 and 0.30 per stall, plus 5 ungranted crossings. The stricter setting saw none in 63 stalls, but with turns it gives away nearly the whole gain (-8% to +3%). I set the first as default for now. It\'s your call.'),
     ('r', 'Not modelled: position error, clock error, pedestrians, mixed traffic, several car types. The earlier CPU model also undercounted contacts, by missing tails still in the box. The GPU audit found and fixed that.'),
@@ -464,12 +464,12 @@ B.append(clips(('gallery__d8__grid_overload_metering', 'Overload, with and witho
 
 # ---- Plan ahead
 B.append(head('No more braking at the line', 'Your correction, measured, built and tested'))
-B.append('<p class="answer">You watched the clips and said the cars shouldn\'t brake in front of the junction, because they know far ahead when everyone arrives. You were right, and it\'s built. At 5,200 cars per hour, hard braking falls from 2,688 events to 3 per run with the same flow and delay. It isn\'t ready yet for saturated turning traffic, overloaded grids, Stockholm or heavy message loss.</p>')
-B.append(clip('gallery__d8__plan__versus_5200', 'Same arrivals: late braking on top, planned below', 'Top: today. Bottom: every car knows every other car\'s arrival. Red means braking over 1 m/s², bright over 2.5. Running totals top right. At this moment: 252 hard brakes against 0.'))
-B.append(stats(('92% to 0', 'cars braking over 3 m/s² at 5,200 cars per hour'), ('2,688 to 3', 'hard brakes per run at 5,200 cars per hour'), ('4.4 s', 'delay at 5,200 cars per hour, before and after'), ('60 to 1.2 ms', 'mean miss of its slot at 3,000 cars per hour, one seed, perfect positions')))
+B.append('<p class="answer">You watched the clips and said the cars shouldn\'t brake in front of the junction, because they know far ahead when everyone arrives. You were right, and it\'s built. At 5,200 cars per hour, hard braking falls from 2,688 events to 8 per run with the same flow and delay. Between junctions it\'s only partly built, it isn\'t yet good for a city at full demand, and it still has a few contacts on overloaded grids.</p>')
+B.append(clip('gallery__d8__plan__versus_5200', 'Same arrivals: late braking on top, planned below', 'Top: today. Bottom: every car knows every other car\'s arrival. Red means braking over 1 m/s², bright over 2.5. Running totals top right.'))
+B.append(stats(('92% to 1%', 'cars braking over 3 m/s² at 5,200 cars per hour'), ('2,688 to 8', 'hard brakes per run at 5,200 cars per hour'), ('4.4 to 4.3 s', 'delay at 5,200 cars per hour'), ('60 to 1.2 ms', 'mean miss of its slot at 3,000 cars per hour, one seed, perfect positions')))
 B.append(fig('research/truth/fig/d8/plan/speed_distance_3000.png', 'Every car\'s speed on its way in, same arrivals. Orange is today: sudden dips and turning cars braking hard in the last 35 m. Blue is planned: cars settle early, and turning cars slow over 100 m.'))
-B.append(chart('Speed thrown away by braking on the way in, m/s per car', 'Three seeds, 600 s, 2 lanes, 20% turns. Gentlest is the least braking that still reaches the line at the same moment and takes the corner at its turn speed. It\'s per car and ignores other cars, so real traffic won\'t quite reach it.', 'bars', ['3,000 cars/h', '5,200 cars/h'], [('Today', 'human', [3.08, 6.05]), ('Planned', 'ours', [2.22, 3.40]), ('Gentlest possible', 'old', [1.44, 1.96])]))
-B.append(chart('Energy braked away, Wh per car', 'Same runs. This is kinetic energy, the fuel and battery effect isn\'t modelled in this tier yet.', 'bars', ['3,000 cars/h', '5,200 cars/h'], [('Today', 'human', [13.1, 24.9]), ('Planned', 'ours', [9.6, 14.6]), ('Gentlest possible', 'old', [6.7, 9.1])]))
+B.append(chart('Speed thrown away by braking on the way in, m/s per car', 'Three seeds, 600 s, 2 lanes, 20% turns. Gentlest is the least braking that still reaches the line at the same moment and takes the corner at its turn speed. It\'s per car and ignores other cars, so real traffic won\'t quite reach it.', 'bars', ['3,000 cars/h', '5,200 cars/h'], [('Today', 'human', [3.08, 6.05]), ('Planned', 'ours', [2.18, 3.43]), ('Gentlest possible', 'old', [1.44, 2.01])]))
+B.append(chart('Energy braked away, Wh per car', 'Same runs. This is kinetic energy, the fuel and battery effect isn\'t modelled in this tier yet.', 'bars', ['3,000 cars/h', '5,200 cars/h'], [('Today', 'human', [13.1, 24.9]), ('Planned', 'ours', [9.4, 14.8]), ('Gentlest possible', 'old', [6.7, 9.3])]))
 B.append('<h4>How it works</h4><ol class="steps"><li>Every car broadcasts when it expects to reach the line, as far out as the radio reaches.</li><li>Slots are given far upstream and move only for a reason. New cars take free space instead of pushing others back.</li><li>Each car holds a steady speed to arrive on its slot, with limits on braking and jerk. Hard braking is only for safety events, and each one is counted.</li><li>A car plans from the broadcast plan of the car ahead, not just the gap.</li><li>The safety rule is unchanged: without a firm grant a car can always stop.</li></ol>')
 B.append(clip('gallery__d8__plan__arrivals_3000', 'Every car says when it will arrive', 'The label beside each car is its broadcast arrival time, to the millisecond. The chart below shows slots filling up long before the cars arrive: amber is planned, green is firm.'))
 B.append(clips(('gallery__d8__plan__versus_3000', 'Same comparison at 3,000 cars per hour', 'Top: today. Bottom: planned.'), ('gallery__d8__plan__close_3000', 'Close up', 'The junction up close with planning on.')))
@@ -477,23 +477,39 @@ B.append(fig('research/truth/fig/d8/plan/braking_by_distance.png', 'Where the sp
 B.append(fig('research/truth/fig/d8/plan/time_distance_3000.png', 'Time against distance, the classic traffic picture, with the slots marked.'))
 B.append(facts(
     ('a', 'I reran it separately with my own metric, one seed, 280 s. 3,000 cars per hour: speed lost 3.25 to 2.25 m/s, cars over 3 m/s² 72% to 0. 5,200: 8.64 to 4.95 m/s, 96% to 0. Flow and overlaps stayed the same or better.'),
-    ('a', 'Cost at 3,000 cars per hour: delay rises 0.5 s, from 1.5 to 2.0 s. Below saturation, flow is the same.'),
-    ('a', 'Single junctions: zero overlaps in all 56 capacity runs, all demand runs, and every message loss, blackout, coordinator crash and stricter-setting stall run.', 'CPU-run shader'),
-    ('a', 'Turning cars look far from the gentlest bound, and mostly aren\'t. The conflict table has them enter at about 5.4 m/s where the map allows 6.5 to 9.3. Against the real entry speed, they lose 8.42 m/s against a bound of 8.29.'),
+    ('a', 'Cost at 3,000 cars per hour: delay rises 0.4 s, from 1.5 to 1.9 s. Below saturation, flow is the same.'),
+    ('a', 'Single junctions: zero overlaps in the capacity and demand runs. One contact appeared at 80% message loss at 5,000 cars per hour.', 'CPU-run shader'),
+    ('a', 'Turning cars are slower than the map allows, and that\'s correct: at map speed a corner peaks at 8.6 to 10.4 m/s², beyond dry grip of about 8.6 and far over our 4.37 limit. The simulator has no tyres, so it would happily give 12 to 20% more flow that no real car could drive. The cap is now 4.0 m/s², and cars speed up after the apex, which adds 1.8 to 2.4%.'),
     ('a', '<b>How close to a millisecond?</b> The message and clock carry 1 ms. With perfect positions, 72% of cars arrive within 1 ms of their slot at 3,000 cars per hour. With 0.3 m of position error the mean miss is 25 ms, so tens of milliseconds is the honest figure.'),
-    ('a', 'What tighter timing buys: cutting the margin from 0.3 s to 0.2 s gains 4.1% saturated flow on 2 lanes with 20% turns, with no contacts. Contacts begin at 0.1 s or 0.05 s, depending on position error and load.'),
+    ('a', 'What tighter timing buys: a 0.2 s margin instead of 0.3 s gains flow in every test, up to 11.1%, with 0 contacts in 54 runs with no position error. It\'s as safe as 0.3 s up to 0.3 m of position error, and worse at 1 m (6 contacts against 2), so the default stays 0.3 s.'),
     ('l', 'The standard CAM Path Prediction field resolves only 0.1 s, so 1 ms needs a new field. That is a proposal, in no standard.'),
 ))
-B.append(chart('Saturated capacity, planned against today, % change', '4 seeds, 800 s. T is straight through, M has 20% turns, H has 35% turns. The gate was no more than 2% below today: three cells miss it, and that isn\'t fully explained.', 'bars', ['1 lane|T', '1 lane|M', '1 lane|H', '2 lanes|T', '2 lanes|M', '2 lanes|H', '3 lanes|M'], [('Change, %', 'ours', [2.2, 0.5, -2.6, 5.7, 2.0, -4.8, -5.0])]))
-B.append('<h3>Where planning fails</h3>')
+B.append(chart('Saturated capacity, planned against today, % change', '4 seeds, 800 s. T is straight through, M has 20% turns, H has 35% turns. The gate was no more than 2% below today. One cell still misses it and the cause isn\'t found.', 'bars', ['1 lane|T', '1 lane|M', '1 lane|H', '2 lanes|T', '2 lanes|M', '2 lanes|H', '3 lanes|M'], [('Change, %', 'ours', [2.3, 0.7, 1.0, 6.1, 1.6, -4.2, -1.4])]))
+B.append('<h3>Planning across junctions: the first step</h3><p>City blocks are too short to plan inside one junction, so a slot at one junction now waits until the car will have room on its exit, using the next junction\'s plan to know when that room appears. So a late slot downstream slows the car upstream. This is less than you described: a car still holds one junction\'s slot at a time, and the full plan along a route isn\'t built.</p>')
+B.append(clip('gallery__d8__plan__grid_24000', 'Overloaded grid: today against planning across junctions', '24,000 cars per hour offered on 9 junctions. Running totals top right on each side.'))
+B.append(table(['Grid, 6 seeds', 'Cars/h today', 'Cars/h planned', 'Contacts today', 'Contacts planned', 'Hard brakes today', 'Hard brakes planned'], [
+    ['1 lane, 4,000', '3,976', '3,989', '0', '0', '4,431', '11'], ['1 lane, 9,000', '8,865', '8,864', '2', '0', '13,952', '196'], ['1 lane, 14,000', '9,557', '9,793', '58', '<b>1</b>', '18,100', '1,136'],
+    ['2 lanes, 8,000', '7,919', '7,920', '0', '0', '6,057', '29'], ['2 lanes, 16,000', '15,885', '15,849', '4', '0', '17,065', '210'], ['2 lanes, 20,000', '17,965', '18,151', '78', '<b>2</b>', '29,802', '1,215'], ['2 lanes, 24,000', '16,203', '15,493', '123', '0', '29,109', '1,828']]))
 B.append(facts(
-    ('r', 'Saturated grid: contact events fall from 57 to 11 at 24,000 cars per hour, but not to zero. Flow is better at 20,000 (18,141 against 17,392) and worse at 24,000 (12,339 against 15,803).'),
-    ('r', 'Stockholm: worse than today on the merged-node map (2,093 against 3,217 cars per hour at 5,000 offered) and at the saturated real junction (2,307 against 3,088). Blocks are too short, and planning across junctions isn\'t built. Don\'t turn it on for a city yet.'),
-    ('r', 'Heavy message loss: past about 30% it\'s worse than today. At 5,000 cars per hour and 70% loss, flow is 3,234 against 4,548.'),
-    ('r', 'Faults that aren\'t overlap-free: stalls at the chosen setting show 10 and 9 overlaps (today 3 and 10), and with the exit check off it\'s 39 (today 17).'),
+    ('a', '3 contacts in 42 runs, against 265 today. I reran two seeds at 24,000 with the exact settings: the planned runs matched exactly, with 0 contacts against 25 and 10 today.', 'CPU-run shader'),
+    ('r', 'Zero contacts is your requirement and it isn\'t met: 3 remain. Adding metering at the edge gives 0 in 9 runs, but carries less. Contacts here are chaotic: the same seed differs with the thread count.'),
+))
+B.append(clip('gallery__d8__plan__stockholm_60pct', 'Stockholm district, 60% of the new demand', 'Left: generated signals. Middle: no signal today. Right: planning across junctions. Same arrivals. Signal timing isn\'t the real timing.'))
+B.append(chart('Time lost per trip, Sveavägen district, seconds', 'New demand from the Stockholm report, 2 seeds, with spread. Self-driving cars throughout. Signal timing is generated. 50 of 95 junctions here are coordinated, the rest use normal priority.', 'bars', ['30% demand', '60% demand', '100% demand'], [('AV on signals', 'av', [23.9, 33.7, 56.5]), ('No signal, today', 'alt', [19.8, 33.8, 66.4]), ('No signal, planned', 'ours', [21.5, 32.9, 79.7])]))
+B.append(facts(
+    ('a', 'On the corrected demand, "worse than signals" no longer holds for today\'s no-signal control at 30 to 60%: 17% better at 30%, level at 60%. At 100% it\'s 18% worse on this map and level on the map with joined nodes. The earlier 1,846 against 2,659 used demand we now know was wrong.'),
+    ('r', 'Planning costs time in a city: 20 to 22% more than today\'s no-signal control at 100%, and 20 to 41% more than signals, though with 11 to 42 times fewer hard brakes. So it isn\'t a good city policy yet. Median block is 55 m and 21% are under 25 m, which leaves too little distance to plan. Only 50 of the net\'s 199 junctions are coordinated.'),
+    ('r', 'Contact counts in Stockholm aren\'t comparable between policies, because only coordinated boxes are audited. In one 45 s window the signal panel shows 594 frames of overlap flagged by the picture\'s body check, against none for both no-signal panels. Overlaps on one merging lane at 100% demand remain unexplained.'),
+))
+B.append('<h3>Where planning still fails</h3>')
+B.append(facts(
+    ('r', 'A plan held along the whole route, and one coordinator for chained map nodes, aren\'t built. The published design for this (Chalaki and Malikopoulos) has an upper level setting arrival times along the route, and I found no finite road storage in it.'),
+    ('r', 'Capacity: 2 lanes with 35% turns stays 4.2% under today, and even a 0.2 s margin doesn\'t clear the 2% gate on 6 seeds.'),
+    ('r', 'Stalled cars on the grid: 24 to 28% less flow than today, though with fewer contacts (34 against 66, and 1 against 20). They still aren\'t zero.'),
+    ('r', 'Message loss on the grid: at 30% loss, 15 contacts against 2 today. Cause not found. Heavy loss at one junction is fixed: at 70% it\'s now 4,236 against 4,350 cars per hour, where it was 3,234 against 4,548.'),
     ('r', 'A 1,000 m approach at 5,200 cars per hour gains almost nothing and adds delay. Far-out slots at 5,200 still move nearly as much as today.'),
-    ('r', 'The published energy-optimal cubic speed profile lost to a simpler cruise-and-ramp. Resequencing dynamically brakes least, but costs up to 22% at saturation, so it stays optional.'),
-    ('r', 'Not modelled: a real estimate of channel loss, drifting satellite and clock error, humans, pedestrians, and the physics layer\'s energy model. All numbers ran the shader code on the CPU, because the GPU queue never freed up.'),
+    ('r', 'The published energy-optimal cubic speed profile lost to a simpler cruise-and-ramp. Resequencing dynamically brakes least, but costs up to 22% at saturation, so it stays optional. Max pressure was tried and dropped.'),
+    ('r', 'Not modelled: tyres, drifting satellite and clock error, real signal programmes, correlated message loss, humans, pedestrians, and the physics layer\'s energy model. City runs still need teleports. All numbers ran the shader code on the CPU, because the GPU queue never freed up.'),
 ))
 
 # ---- Tiers
@@ -508,7 +524,7 @@ rows = [
     ('a', 'D6 Signal partner', 'Built, smoke test', 'Delay 20 s against 85 s on a badly timed road, but 27 s against 33 s on a good one, and energy +11%. Worse on a Stockholm sub-net, 1 seed.'),
     ('a', 'D7 Platooning', 'Built, smoke test', 'All 22: 3,918 cars/h. 153 Wh/km, 9.2 m/s impact if the leader stops dead. Contacts on corridors.'),
     ('a', 'D8 Signal-free', 'Built and measured', 'See the previous chapters. Fails on an overloaded grid and a real district at peak.'),
-    ('r', 'D9 Network coordinated', 'Not built', 'Requirement only.'),
+    ('r', 'D9 Network coordinated', 'First step built', 'A slot waits for room on the exit using the next junction\'s plan. Contacts on overloaded grids 265 to 3. Routing and plans along the route aren\'t built.'),
     ('a', 'M1 Learned following', 'Python done, GPU part-trained', 'Python: 2,049 cars/h. GPU training at 42 of 70 generations.'),
     ('r', 'M2 Learned driving', 'Kernel built, no usable result', 'Contact in 100% of runs so far, raw.'),
     ('r', 'M3 Learned cooperation', 'Inputs built, no usable result', 'With rule: no contacts, 570 cars/h, rule overrides 62% of the time.'),
@@ -623,7 +639,7 @@ for src, cap in [('report/figures/bench_realtime.png', 'A Berlin day runs 480 to
                  ('research/truth/fig/stockholm-gridlock.png', 'Old 60% run: cars climb to about 51,000, teleports to about 294,000.'), ('research/truth/fig/stockholm-hourly.png', 'Invented departure curves with a cliff at 06:00. Neither is observed.'), ('research/truth/fig/stockholm-lengths.png', 'Random-walk trips are mostly very short.'), ('research/truth/fig/demand-assignment.png', 'Toy model: rerouting everyone never settles, capped rerouting does.'),
                  ('research/truth/fig/maps07/s09_sveaplan_base.png', 'Sveaplan: 11 simulated controllers against 1 real installation.'), ('research/truth/fig/09b-capacity.png', 'Maximum flow by layout, Python model. Batch polling is a smarter signal.')]:
     fig(src, cap)
-A.append('<footer><p>Built from the research reports and run logs in the cars repo, with sources listed per claim in <code>report/facts/</code>. Built with <code>scripts/report/build.py</code>.</p><p>Snapshot 1 November 2026, about 21:30. Agents are still running, so numbers on unmerged branches can move.</p></footer></div>')
+A.append('<footer><p>Built from the research reports and run logs in the cars repo, with sources listed per claim in <code>report/facts/</code>. Built with <code>scripts/report/build.py</code>.</p><p>Snapshot 1 November 2026, about 23:15. Agents are still running, so numbers on unmerged branches can move.</p></footer></div>')
 fig_html = ''.join(f'<figure style="margin:0"><img loading="lazy" src="figures/{n}" {dims(OUT / "figures" / n)} alt="{esc(c)}"><figcaption>{esc(c)}</figcaption></figure>' for n, c in figs_all)
 BODY_ALL = '\n'.join(A).replace('{{FIGN}}', str(len(figs_all))).replace('{{FIGS}}', fig_html)
 
