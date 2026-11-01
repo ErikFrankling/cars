@@ -764,10 +764,11 @@ fn plan_exit_ok(mi: u32, k: u32, t: f32) -> bool {
 
 // A lost grant leaves a car crossing slower and later than the table thinks, and the slower it crosses
 // the more that costs in time. Level B, which promises no contact with a stalled car, always takes the
-// margin; Level A only when the channel is losing messages.
+// margin; Level A only when the channel is losing messages, the full one when it loses many.
 fn plan_slip(v: f32) -> f32 {
     if (cfg.level_b != 0u) { return 1.0 / max(v, 1.0); }
-    return select(0.5, 0.0, lossless()) / max(v, 1.0);
+    if (lossless()) { return 0.0; }
+    return select(0.5, 1.0, cfg.p_loss >= 0.3) / max(v, 1.0);
 }
 
 var<private> plan_wait: f32;
