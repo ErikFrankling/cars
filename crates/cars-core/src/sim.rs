@@ -23,12 +23,11 @@ const MAIN_BINDINGS: &[bool] = &[
     /*15 prev*/ true, /*16 cur*/ false, /*17 incoming*/ true, /*18 adv_flags*/ false, /*19 lane_free*/ false,
     /*20 seg*/ false, /*21 items*/ false, /*22 slots*/ false, /*23 link_count*/ false,
     /*24 partial*/ false, /*25 tail*/ false, /*26 entrant*/ false, /*27 trip_out*/ false,
-    /*28 series*/ false, /*29 edge_acc*/ false, /*30 unused*/ true, /*31 advice*/ false,
+    /*28 series*/ false, /*29 edge_acc*/ false, /*30 route_patch*/ false, /*31 advice*/ false,
     /*32 queue_trips*/ true, /*33 claims*/ false, /*34 last_detect*/ false, /*35 lc_plan*/ false,
     /*36 mirror*/ false, /*37 energy*/ false, /*38 junction_bid*/ false, /*39 inbound*/ false,
-    /*40 hard_limit*/ false, /*41 zones*/ true, /*42 speed_trace*/ true, /*43 entrant_front*/ false,
-    /*44 poses*/ false, /*45 grid_head*/ false, /*46 grid_next*/ false, /*47 shape_points*/ true,
-    /*48 contacts*/ false, /*49 reroute_req*/ false, /*50 route_patch*/ false,
+    /*40 hard_limit*/ false, /*41 zones*/ true, /*42 speed_trace*/ true, /*43 shape_points*/ true,
+    /*44 poses*/ false, /*45 grid_head*/ false, /*46 contacts*/ false,
 ];
 
 pub struct Sim {
@@ -53,7 +52,6 @@ pub struct Sim {
 
 pub struct Buffers {
     pub routes: wgpu::Buffer,
-    pub reroute_req: wgpu::Buffer,
     pub route_patch: wgpu::Buffer,
     /// Where routes handed out during the run begin in `routes`.
     pub route_arena_at: u64,
@@ -212,9 +210,10 @@ impl Sim {
         let slots = init("slots", &slots_init, storage);
         let link_count = empty("link_count", p.n_links as u64 * 4);
         let ones = vec![0xffu8; p.n_lanes as usize * 4];
+        let entrant_ones = vec![0xffu8; p.n_lanes as usize * if p.mu > 0.0 { 8 } else { 4 }];
         let partial = init("partial", &ones, storage);
         let tail = init("tail", &ones, storage);
-        let entrant = init("entrant", &ones, storage);
+        let entrant = init("entrant", &entrant_ones, storage);
         let trip_out = empty(
             "trip_out",
             p.n_trips as u64 * std::mem::size_of::<GpuTripOut>() as u64,
@@ -229,12 +228,11 @@ impl Sim {
         let claims = init("claims", &claims_init, storage);
         let last_detect = empty("last_detect", p.n_lanes as u64 * 4);
         let lc_plan = empty("lc_plan", cap * LCPLAN_BYTES);
-        let unused = empty("unused", 16);
         let lane_free = empty("lane_free", p.n_lanes as u64 * 16);
         let physical = p.mu > 0.0;
         let when = |on: bool, bytes: u64| if on { bytes } else { 16 };
-        let reroute_req = empty("reroute_req", when(physical, REROUTE_LOG * 16));
-        let route_patch = init("route_patch", &vec![0u8; when(physical, p.n_trips as u64 * 8) as usize], storage | wgpu::BufferUsages::COPY_DST);
+        // Per trip the route waiting for it, then the log of requests.
+        let route_patch = init("route_patch", &vec![0u8; when(physical, (p.n_trips as u64 + 2 * REROUTE_LOG) * 8) as usize], storage | wgpu::BufferUsages::COPY_DST);
         let mirror = empty("mirror", when(physical, p.n_trips as u64 * MIRROR_BYTES));
         let energy = empty("energy", when(physical, p.n_trips as u64 * std::mem::size_of::<GpuTripEnergy>() as u64));
         let junction_bid = empty("junction_bid", when(physical, p.n_lanes as u64 * 4));
@@ -243,11 +241,10 @@ impl Sim {
         let hard_limit = init("hard_limit", &hard_limit_init, storage);
         let zones = init("zones", bytemuck::cast_slice(&world.zones), storage);
         let speed_trace = init("speed_trace", bytemuck::cast_slice(&world.speed_trace), storage);
-        let entrant_front = empty("entrant_front", when(physical, p.n_lanes as u64 * 4));
         let detecting = p.detect_every > 0;
         let poses = empty("poses", when(detecting, cap * POSE_BYTES));
-        let grid_head = empty("grid_head", when(detecting, (p.grid_mask as u64 + 1) * 4));
-        let grid_next = empty("grid_next", when(detecting, cap * 4));
+        // The grid's heads, then each vehicle's next in its cell.
+        let grid_head = empty("grid_head", when(detecting, (p.grid_mask as u64 + 1 + cap) * 4));
         let shape_points = init("shape_points", bytemuck::cast_slice(&world.shape_points), storage);
         let contacts = empty("contacts", when(detecting, CONTACT_LOG * std::mem::size_of::<GpuContact>() as u64));
 
@@ -321,9 +318,9 @@ impl Sim {
                 &params, &globals, &counters, &lanes, &edges, &links, &foes, &conflicts, &types, &routes,
                 &trips, &queues, &tls, &phases, &states, prev, cur, &incoming_links, &adv_flags, &lane_free, &seg,
                 &items, &slots, &link_count, &partial, &tail, &entrant, &trip_out, &series, &edge_acc,
-                &unused, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
-                &mirror, &energy, &junction_bid, &inbound, &hard_limit, &zones, &speed_trace, &entrant_front,
-                &poses, &grid_head, &grid_next, &shape_points, &contacts, &reroute_req, &route_patch,
+                &route_patch, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
+                &mirror, &energy, &junction_bid, &inbound, &hard_limit, &zones, &speed_trace, &shape_points,
+                &poses, &grid_head, &contacts,
             ];
             let entries: Vec<_> = list
                 .iter()
@@ -480,7 +477,6 @@ impl Sim {
             energy,
             contacts,
             routes,
-            reroute_req,
             route_patch,
             route_arena_at,
             total_bytes: total_bytes.get(),

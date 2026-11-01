@@ -33,7 +33,8 @@ impl Gpu {
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn headless(opts: GpuOptions) -> Result<Self, String> {
         let instance = instance();
-        let adapter = match &opts.adapter_name {
+        // CARS_ADAPTER picks another device, such as llvmpipe for debugging small scenes off the GPU.
+        let adapter = match &std::env::var("CARS_ADAPTER").ok().or(opts.adapter_name) {
             Some(name) => {
                 let want = name.to_lowercase();
                 instance

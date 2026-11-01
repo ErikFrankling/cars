@@ -41,7 +41,7 @@ fn detect_pose(@builtin(global_invocation_id) id: vec3u) {
     if (i >= G.n_active) { return; }
     let v = cur[i];
     poses[i].half_len = 0.0;
-    grid_next[i] = NONE;
+    atomicStore(&grid_head[P.grid_mask + 1u + i], NONE);
     if ((v.flags & (F_REMOVED | F_SHADOW)) != 0u || v.lane == P.dummy_lane || v.replica != 0u) { return; }
     let t = types[v.vtype];
     let front = shape_at(v.lane, v.pos);
@@ -92,7 +92,7 @@ fn detect_pose(@builtin(global_invocation_id) id: vec3u) {
     let c = cell_of(center);
     poses[i] = Pose(center, dir, t.length * 0.5, t.width * 0.5, (u32(c.x + 32768) << 16u) | u32(c.y + 32768), 0u);
     let h = grid_hash(c.x, c.y);
-    grid_next[i] = atomicExchange(&grid_head[h], i);
+    atomicStore(&grid_head[P.grid_mask + 1u + i], atomicExchange(&grid_head[h], i));
 }
 
 // Separating axes for two rectangles. Positive is how deep they overlap.
@@ -149,7 +149,7 @@ fn detect_pairs(@builtin(global_invocation_id) id: vec3u) {
                 if (j == NONE || guard >= 256u) { break; }
                 guard += 1u;
                 let b = poses[j];
-                let next = grid_next[j];
+                let next = atomicLoad(&grid_head[P.grid_mask + 1u + j]);
                 if (j > i && b.cell == key) {
                     let reach = a.half_len + b.half_len + a.half_width + b.half_width;
                     if (dot(a.center - b.center, a.center - b.center) < reach * reach) {

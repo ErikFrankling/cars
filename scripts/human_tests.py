@@ -33,7 +33,8 @@ def cars(d, *args, routes='r.xml', net='net.xml', tag='run', fcd=True, interval=
     report = d / f'{tag}.json'
     fc = d / f'{tag}.fcd.csv'
     extra = ['--fcd', fc, '--fcd-interval', interval or A.interval] if fcd else []
-    log = run(['flock', '/tmp/cars-gpu.lock', os.environ.get('CARS_BIN', ROOT / 'target/release/cars'), 'run', '--net', d / net, '--routes', d / routes, '--report-json', report, *extra, *args])
+    lock = [] if os.environ.get('CARS_GPU_HELD') or os.environ.get('CARS_ADAPTER') else ['flock', '/tmp/cars-gpu.lock']
+    log = run([*lock, os.environ.get('CARS_BIN', ROOT / 'target/release/cars'), 'run', '--net', d / net, '--routes', d / routes, '--report-json', report, *extra, *args])
     (d / f'{tag}.log').write_text(log.stdout + log.stderr)
     return json.loads(report.read_text()), fc
 
@@ -83,7 +84,7 @@ def ring(L=230.0, n=22, v0=11.0, seeds=3, dt=None, T=600.0):
                 edge = (edge + 1) % 4
                 pos -= length
             rt = ' '.join(f'e{((edge + i) % 4)}' for i in range(4000))
-            veh += f'<vehicle id="v{k}" type="h" depart="0" departPos="{pos:.2f}" departSpeed="0"><route edges="{rt}"/></vehicle>'
+            veh += f'<vehicle id="v{k}" type="h" depart="0" departPos="{pos:.2f}" departSpeed="4"><route edges="{rt}"/></vehicle>'
         (d / 'r.xml').write_text(f'<routes>{VTYPE}{veh}</routes>')
         rep, fc = cars(d, '--dt', dt or A.dt, '--end', T, '--seed', seed, '--detect-every', 1, tag=f's{seed}')
         f = pd.read_csv(fc, usecols=['time', 'trip', 'lane', 'pos', 'speed', 'acc'], dtype={'trip': str, 'lane': str})
@@ -126,9 +127,10 @@ def wave_from_arrivals(f, L):
     return float(np.median(rates) * 3.6) if rates else float('nan')
 
 
-def queue(seeds=8, n=15, dt=None):
+def queue(seeds=None, n=15, dt=None, region=None, param=None):
+    seeds = seeds or A.seeds
     d = workdir('queue')
-    nodes = '<node id="a" x="-800" y="0"/><node id="t" x="0" y="0" type="traffic_light"/><node id="b" x="500" y="0"/><node id="c" x="0" y="-300"/><node id="e" x="0" y="300"/>'
+    nodes = '<node id="a" x="-400" y="0"/><node id="t" x="0" y="0" type="traffic_light"/><node id="b" x="500" y="0"/><node id="c" x="0" y="-300"/><node id="e" x="0" y="300"/>'
     edges = '<edge id="in" from="a" to="t" numLanes="1" speed="13.89"/><edge id="out" from="t" to="b" numLanes="1" speed="13.89"/><edge id="cross" from="c" to="t" numLanes="1" speed="13.89"/><edge id="crossout" from="t" to="e" numLanes="1" speed="13.89"/>'
     netconvert(d, nodes, edges, '--tls.yellow.time', '3', '--tls.allred.time', '0', '--tls.left-green.time', '0', '--no-left-connections')
     add = '<additional><tlLogic id="t" type="static" programID="fix" offset="0"><phase duration="60" state="rr"/><phase duration="60" state="GG"/></tlLogic></additional>'
@@ -138,7 +140,8 @@ def queue(seeds=8, n=15, dt=None):
     for seed in range(seeds):
         veh = ''.join(f'<vehicle id="v{k:02d}" type="h" depart="{k*2}" departSpeed="max" route="r"/>' for k in range(n))
         (d / 'r.xml').write_text(f'<routes>{VTYPE}<route id="r" edges="in out"/>{veh}</routes>')
-        rep, fc = cars(d, '--dt', dt or A.dt, '--end', 130, '--seed', seed, '--additional', d / 'tl.xml', tag=f's{seed}', interval=dt or A.dt)
+        extra = (['--region', region] if region else []) + (['--human-param', param] if param else [])
+        rep, fc = cars(d, '--dt', dt or A.dt, '--end', 150, '--seed', seed, '--additional', d / 'tl.xml', *extra, tag=f's{seed}', interval=dt or A.dt)
         f = pd.read_csv(fc, usecols=['time', 'trip', 'lane', 'pos', 'speed'], dtype={'trip': str, 'lane': str})
         green = float(_first_green(d))
         cross = []
@@ -158,13 +161,13 @@ def queue(seeds=8, n=15, dt=None):
         h = np.diff(np.concatenate([[green], times]))
         out.append(h)
         # Standing spacing: head to head just before green.
-        snap = f[(f.time >= green - dt_of() * 3) & (f.time < green) & f.lane.str.startswith('in_') & (f.speed < 0.05)]
+        snap = f[(f.time >= green - (dt or A.dt) * 3) & (f.time < green) & f.lane.str.startswith('in_') & (f.speed < 0.05)]
         last_snap = snap[snap.time == snap.time.max()].sort_values('pos', ascending=False)
         stand.extend(np.abs(np.diff(last_snap.pos.values)).tolist())
     m = np.nanmean([x[:n] for x in out if len(x) >= n], axis=0)
     hsat = float(np.mean(m[4:12]))
     lost = float(np.sum(m[:4] - hsat))
-    record(f'queue_dt{dt or A.dt}', dict(h=m[:8].tolist(), hsat=hsat, lost=lost, stand_median=float(np.median(stand)), stand_p10=float(np.percentile(stand, 10)), stand_p90=float(np.percentile(stand, 90))))
+    record(f'queue_dt{dt or A.dt}{"_" + region if region else ""}', dict(h=m[:8].tolist(), hsat=hsat, lost=lost, stand_median=float(np.median(stand)), stand_p10=float(np.percentile(stand, 10)), stand_p90=float(np.percentile(stand, 90))))
 
 
 LANE_IN = {}
@@ -187,9 +190,9 @@ def _tl_program(d):
     idx = {c.get('linkIndex'): c.get('from') for c in conn}
     def state(ch_in, ch_x):
         return ''.join(ch_in if idx.get(str(i)) == 'in' else ch_x for i in range(n))
-    phases = [(50, state('r', 'G')), (3, state('r', 'y')), (1, state('r', 'r')), (60, state('G', 'r')), (3, state('y', 'r')), (1, state('r', 'r'))]
+    phases = [(86, state('r', 'G')), (3, state('r', 'y')), (1, state('r', 'r')), (60, state('G', 'r')), (3, state('y', 'r')), (1, state('r', 'r'))]
     body = ''.join(f'<phase duration="{p[0]}" state="{p[1]}"/>' for p in phases)
-    (d / 'green.txt').write_text(str(54.0))
+    (d / 'green.txt').write_text(str(90.0))
     return f'<additional><tlLogic id="t" type="static" programID="fix" offset="0">{body}</tlLogic></additional>'
 
 
@@ -228,9 +231,10 @@ def label_time(g, lane_to, width):
 
 
 def merge_net(d, vb):
-    (d / 'n.nod.xml').write_text('<nodes><node id="a" x="0" y="0"/><node id="b" x="800" y="0"/><node id="c" x="1004" y="0"/><node id="d" x="1304" y="0"/><node id="e" x="1404" y="0"/><node id="f" x="2000" y="0"/></nodes>')
-    (d / 'n.edg.xml').write_text(f'''<edges><edge id="up" from="a" to="b" numLanes="2" speed="20"/><edge id="merge" from="b" to="c" numLanes="2" speed="20"/><edge id="down" from="c" to="d" numLanes="1" speed="20"/><edge id="neck" from="d" to="e" numLanes="1" speed="{vb}"/><edge id="out" from="e" to="f" numLanes="1" speed="20"/></edges>''')
-    (d / 'n.con.xml').write_text('<connections><connection from="up" to="merge" fromLane="0" toLane="0"/><connection from="up" to="merge" fromLane="1" toLane="1"/><connection from="merge" to="down" fromLane="1" toLane="0"/></connections>')
+    # A ramp that becomes the right lane of `merge`, 204 m long, and a lane that ends there: the I-80 shape.
+    (d / 'n.nod.xml').write_text('<nodes><node id="a" x="0" y="0"/><node id="r" x="300" y="-60"/><node id="b" x="800" y="0"/><node id="c" x="1004" y="0"/><node id="d" x="1304" y="0"/><node id="e" x="1404" y="0"/><node id="f" x="2000" y="0"/></nodes>')
+    (d / 'n.edg.xml').write_text(f'''<edges><edge id="up" from="a" to="b" numLanes="1" speed="20"/><edge id="on" from="r" to="b" numLanes="1" speed="20"/><edge id="merge" from="b" to="c" numLanes="2" speed="20"/><edge id="down" from="c" to="d" numLanes="1" speed="20"/><edge id="neck" from="d" to="e" numLanes="1" speed="{vb}"/><edge id="out" from="e" to="f" numLanes="1" speed="20"/></edges>''')
+    (d / 'n.con.xml').write_text('<connections><connection from="up" to="merge" fromLane="0" toLane="1"/><connection from="on" to="merge" fromLane="0" toLane="0"/><connection from="merge" to="down" fromLane="1" toLane="0"/></connections>')
     run(['netconvert', '-n', d / 'n.nod.xml', '-e', d / 'n.edg.xml', '-x', d / 'n.con.xml', '-o', d / 'net.xml', '--no-turnarounds', 'true'])
 
 
@@ -296,13 +300,13 @@ def score_merge(fc, dur):
                 stopped=float(np.mean(stopped)), v_cross=float(np.median(v_c)), rem_cross=float(np.median(rem)))
 
 
-def merge(main=1180, ramp=920, vb=5.0, dur=1800, off=(), tag='', seeds=None, dt=None):
+def merge(main=1180, ramp=920, vb=5.0, dur=1800, off=(), tag='', seeds=None, dt=None, param=None):
     d = workdir(f'merge{tag}')
     merge_net(d, vb)
-    (d / 'r.xml').write_text(f'''<routes>{VTYPE}<route id="r" edges="up merge down neck out"/>
-<flow id="ramp" type="h" route="r" begin="0" end="{dur}" vehsPerHour="{ramp}" departLane="0" departSpeed="max"/>
-<flow id="main" type="h" route="r" begin="0" end="{dur}" vehsPerHour="{main}" departLane="1" departSpeed="max"/></routes>''')
-    extra = ['--human-off', ','.join(off)] if off else []
+    (d / 'r.xml').write_text(f'''<routes>{VTYPE}<route id="rr" edges="on merge down neck out"/><route id="rm" edges="up merge down neck out"/>
+<flow id="ramp" type="h" route="rr" begin="0" end="{dur}" vehsPerHour="{ramp}" departLane="0" departSpeed="max"/>
+<flow id="main" type="h" route="rm" begin="0" end="{dur}" vehsPerHour="{main}" departLane="0" departSpeed="max"/></routes>''')
+    extra = (['--human-off', ','.join(off)] if off else []) + (['--human-param', param] if param else [])
     out = []
     for seed in range(seeds or A.seeds):
         rep, fc = cars(d, '--dt', dt or A.dt, '--end', dur + 900, '--seed', seed, *extra, tag=f's{seed}', interval=1.0)
@@ -467,6 +471,31 @@ def deadlocks():
         rep, fc = cars(d, '--dt', A.dt, '--end', 300, '--seed', 1, routes=f'{name}.xml', tag=name, interval=1.0)
         out[name] = dict(arrived=rep['arrived'], inserted=rep['inserted'], collisions=rep['collision_incidents'], cert_floor=rep['cert_floor'], swaps=rep['humans']['swaps'], rerouted=rep['humans']['rerouted'], stuck=rep['gridlock_worst_stuck'], wall=rep['wall_s'])
     record('deadlocks', out)
+
+
+def merge_sweep():
+    for cooperation in (0.0, 0.25, 0.5, 0.75, 1.0):
+        merge(param=f'cooperation={cooperation}', tag=f'_c{cooperation}', seeds=1)
+
+
+def merge_one(tag, vb, param, dur=1200, main=1000, ramp=800, seed=1, off=()):
+    d = workdir('merge' + tag)
+    merge_net(d, vb)
+    (d / 'r.xml').write_text(f'''<routes>{VTYPE}<route id="rr" edges="on merge down neck out"/><route id="rm" edges="up merge down neck out"/><flow id="ramp" type="h" route="rr" begin="0" end="{dur}" vehsPerHour="{ramp}" departLane="0" departSpeed="max"/><flow id="main" type="h" route="rm" begin="0" end="{dur}" vehsPerHour="{main}" departLane="0" departSpeed="max"/></routes>''')
+    extra = ['--human-off', ','.join(off)] if off else []
+    rep, fc = cars(d, '--dt', A.dt, '--end', dur + 600, '--seed', seed, '--human-param', param, *extra, tag=f's{seed}', interval=1.0)
+    s_ = score_merge(fc, dur)
+    row = dict(tag=tag, n=s_['n'], never=s_['never'], p50=s_['p50'], p90=s_['p90'], p99=s_['p99'], max=s_['max'], ks=s_['ks'], b0=s_['between'][0], b1=s_['between'][1], bm=s_['between_mean'], ramp=s_['ramp_share'], flow=s_['flow'], pass0=s_['pass0'], pmax=s_['pass_max'], letin=s_['letin'], stop=s_['stopped'], vc=s_['v_cross'], rem=s_['rem_cross'], coll=rep['collision_incidents'], floor=rep['cert_floor'], lost=rep['humans']['lost_cars'], by=s_['letin_by_closing'])
+    print(' '.join(f'{k}={v:.2f}' if isinstance(v, float) else f'{k}={v}' for k, v in row.items() if k != 'by'), flush=True)
+    return row
+
+
+def lee_grid():
+    rows = []
+    for lead in (0.0, -2.0, -4.0):
+        for lag in (0.0, -1.0, -2.0):
+            rows.append(merge_one(f'_lead{lead}_lag{lag}', 11.0, f'cooperation=0.5,gap_model=1,lead_shift={lead},lag_shift={lag}'))
+    record('lee_grid', rows)
 
 
 def main():

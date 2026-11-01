@@ -78,7 +78,7 @@ fn replay(@builtin(global_invocation_id) id: vec3u) {
     var v_safe = wish;
     var cert_binds = false;
     if (R.guard_on != 0u) {
-        let c = ph_v_cert(s - R.len_guard, v, vl, ty.apparent, e.acc);
+        let c = ph_v_cert(s - R.len_guard, v, vl, min(ty.apparent, ty.b_lo), e.acc);
         v_safe = ph_limit(wish, c);
         cert_binds = c < wish;
     }
@@ -88,7 +88,7 @@ fn replay(@builtin(global_invocation_id) id: vec3u) {
     if (R.guard_on == 0u) { nv = max(wish, 0.0); }
     if (v < 0.05) {
         e.state = hu_timer(e.state, v, v_safe);
-        if (f32(e.state & 255u) / 16.0 < HU_T_START) { nv = 0.0; }
+        if (hu_waiting_to_start(e.state)) { nv = 0.0; }
     }
     var acc = (nv - v) / dt;
     var ds = v * dt + 0.5 * acc * dt * dt;

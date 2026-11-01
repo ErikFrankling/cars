@@ -53,7 +53,7 @@ def gpu(veh, rec, samples, steps, dt, sigma, out, **kw):
     flags = []
     for k, x in kw.items():
         flags += [f'--{k.replace("_", "-")}', str(x)] if x is not True else [f'--{k.replace("_", "-")}']
-    r = subprocess.run(['flock', '/tmp/cars-gpu.lock', CARS, 'human-replay', '--veh', vp, '--rec', rp, '--samples', str(samples), '--dt', str(dt), '--steps', str(steps), '--sigma', str(sigma), '--out', op, *flags], capture_output=True, text=True)
+    r = subprocess.run([*( [] if os.environ.get('CARS_ADAPTER') else ['flock', '/tmp/cars-gpu.lock']), os.environ.get('CARS_BIN', CARS), 'human-replay', '--veh', vp, '--rec', rp, '--samples', str(samples), '--dt', str(dt), '--steps', str(steps), '--sigma', str(sigma), '--out', op, *flags], capture_output=True, text=True)
     if r.returncode:
         raise SystemExit(r.stderr[-3000:])
     res = np.fromfile(op, dtype='f4').reshape(steps + 1, veh.shape[0], 2)

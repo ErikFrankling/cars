@@ -39,12 +39,13 @@ const F_YELLOW_GO: u32 = 524288u;  // decided at yellow to carry on through the 
 
 // Human lane change rules, each one switchable: P.hu_flags.
 const HS_COURTESY: u32 = 1u;
-const HS_SHRINK: u32 = 2u;
-const HS_SWAP: u32 = 4u;
-const HS_FORCE: u32 = 8u;
+const HS_SHRINK: u32 = 2u;     // accepted gaps shrink towards the end of the lane
+const HS_OFFSET: u32 = 4u;     // neighbouring lanes stop at different places
+const HS_ANTICIPATE: u32 = 8u; // two-leader car following before a change
 const HS_MISS: u32 = 16u;
 const HS_GATE: u32 = 32u;
 const HS_YELLOW: u32 = 64u;
+const HS_EXIT_CLEAR: u32 = 128u;
 
 // Link flags.
 const L_CONT: u32 = 1u;
@@ -98,6 +99,11 @@ struct Params {
     hu_rho: f32,      // noise correlation over one step
     hu_nscale: f32,
     hu_flags: u32,
+    hu_a: vec4f,      // cooperation, t_miss, exit-clear compliance, stop base
+    hu_b: vec4f,      // stop offset, blinker reaction, urgency distance, cooperative deceleration
+    hu_c: vec4f,      // gate tau, minimum tau, urgent braking, gap model
+    hu_d: vec4f,      // time gap minor at junctions, in roundabouts, T scale, s0 scale
+    hu_e: vec4f,      // critical gap constant shift: lead, lag, spare, spare
 }
 
 struct Globals {
@@ -560,6 +566,12 @@ fn tail_b() -> f32 {
 const HU_K1: f32 = 0.011;
 const HU_K2: f32 = 0.52;
 const HU_BMAX: f32 = 4.5;
+const HU_K_LOW: f32 = 0.15;
+const HU_V_LOW: f32 = 1.0;
+const HU_CLOSE_K: f32 = 1.2;
+const HU_CLOSE_MIN: f32 = 0.8;
+const HU_STANDING: f32 = 1.5;
+const HU_B_APPROACH: f32 = 1.2;
 const HU_COMFORT: f32 = 1.5;      // slowing for a lower limit ahead
 const HU_T_START: f32 = 0.6;
 const HU_STOP_S0: f32 = 1.0;      // standing target before a stop line
@@ -573,12 +585,13 @@ var<private> hu_n: f32;
 var<private> hu_k: f32;
 var<private> hu_v0: f32;
 
-// The persona as stored by world.rs: T 0.6-3 s, s0 0.5-6 m, amax 1-3 m/s2.
-fn hu_load(persona: u32, af: f32, n: f32, k: f32) {
+// The persona as stored by world.rs: T 0.6-3 s, s0 0.5-6 m, amax 1-3 m/s2. Places have their own medians.
+
+fn hu_load(persona: u32, af: f32, n: f32, k: f32, t_scale: f32, s0_scale: f32) {
     hu_on = true;
     let p = unpack4x8unorm(persona);
-    hu_t = 0.6 + p.x * 2.4;
-    hu_s0 = 0.5 + p.y * 5.5;
+    hu_t = (0.6 + p.x * 2.4) * t_scale;
+    hu_s0 = (0.5 + p.y * 5.5) * s0_scale;
     hu_amax = 1.0 + p.z * 2.0;
     hu_af = af;
     hu_n = n;
@@ -599,8 +612,23 @@ fn hu_a_up(v: f32, v0: f32) -> f32 {
 fn hu_target(v: f32, g: f32, vl: f32, v0: f32, s0: f32) -> f32 {
     let dv = vl - v;
     let k2e = HU_K2 * sqrt(15.0 / max(g, 2.0));
-    var a = clamp(HU_K1 * (g - s0 - hu_t * v) + k2e * dv, -HU_BMAX, hu_a_up(v, v0));
-    if (dv < 0.0) { a = min(a, -dv * dv / (2.0 * max(g - 0.5, 0.3))); }
+    let e = g - s0 - hu_t * v;
+    // Report 05's gain was fitted on moving cars and leaves a stopped car 4.5 m short of its place in a
+    // queue. Drivers roll up to the car in front: a stronger pull, fading out by a walking pace.
+    let k1 = select(HU_K1, max(HU_K1, HU_K_LOW * (1.0 - v / HU_V_LOW)), e > 0.0);
+    var a = clamp(k1 * e + k2e * dv, -HU_BMAX, hu_a_up(v, v0));
+    if (dv < 0.0) {
+        if (vl < HU_STANDING) {
+            // Both terms were fitted on following moving cars. Up to a queue or a stop line they would crawl
+            // the last few hundred metres. Drivers keep going and then brake at about the same rate.
+            let kin = dv * dv / (2.0 * max(g - s0, 0.3));
+            let following = exp(-max(e, 0.0) / (hu_t * v + s0));
+            a = max(a, -max(HU_CLOSE_K * kin, HU_CLOSE_MIN * following));
+            if (kin >= HU_B_APPROACH) { a = min(a, -kin); }
+        } else {
+            a = min(a, -dv * dv / (2.0 * max(g - 0.5, 0.3)));
+        }
+    }
     return a;
 }
 
@@ -615,12 +643,14 @@ fn hu_implied(speed: f32, v_safe: f32) -> f32 {
     return ((max(v_safe, 0.0) - speed) / dt - hu_n - (1.0 - hu_k) * hu_af) / hu_k;
 }
 
-// A stopped driver goes a moment after there is reason to. Noise moves nobody at a stand.
+// A stopped driver goes a moment after there is reason to. Noise moves nobody at a stand. Counts steps.
 fn hu_timer(state: u32, speed: f32, v_safe: f32) -> u32 {
-    var timer = 0.0;
-    if (hu_implied(speed, v_safe) > 0.05) { timer = min(f32(state & 255u) / 16.0 + dt, 15.0); }
-    return (state & 0xffffff00u) | u32(timer * 16.0);
+    var steps = 0u;
+    if (hu_implied(speed, v_safe) > 0.05) { steps = min((state & 255u) + 1u, 255u); }
+    return (state & 0xffffff00u) | steps;
 }
+
+fn hu_waiting_to_start(state: u32) -> bool { return f32(state & 255u) * dt < HU_T_START; }
 
 fn hu_filtered(speed: f32, v_safe: f32, v1: f32) -> f32 {
     if (v1 > 0.0) { return (v1 - speed) / dt - hu_n; }
@@ -813,7 +843,10 @@ fn cacc_v(gap: f32, v: f32, vp: f32, des: f32, leader_cacc: bool, has_leader: bo
 // can sit here: nothing past this point depends on which one asked.
 fn follow_speed(v: f32, gap: f32, vp: f32, bp: f32, leader_cacc: bool, lane_vmax: f32, lane_limit: f32) -> f32 {
     if (mu > 0.0) {
-        return ph_limit(follow_driver(v, gap, vp, bp, leader_cacc, lane_vmax, lane_limit), ph_v_cert(gap + ty.min_gap, v, vp, bp, ego_acc));
+        // A human does not leave room for a leader braking harder than the human itself can: at speed that
+        // alone would hold time gaps above 1.2 s, against 0.8 s measured at the 5th percentile on the A39.
+        let leader_b = select(bp, min(bp, ty.b_lo), ty.model == MODEL_HUMAN);
+        return ph_limit(follow_driver(v, gap, vp, bp, leader_cacc, lane_vmax, lane_limit), ph_v_cert(gap + ty.min_gap, v, vp, leader_b, ego_acc));
     }
     return follow_driver(v, gap, vp, bp, leader_cacc, lane_vmax, lane_limit);
 }

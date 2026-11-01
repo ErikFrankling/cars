@@ -40,6 +40,11 @@ pub struct GpuParams {
     pub hu_rho: f32,
     pub hu_nscale: f32,
     pub hu_flags: u32,
+    pub hu_a: [f32; 4],
+    pub hu_b: [f32; 4],
+    pub hu_c: [f32; 4],
+    pub hu_d: [f32; 4],
+    pub hu_e: [f32; 4],
 }
 
 #[repr(C)]
@@ -341,7 +346,7 @@ pub struct GpuTlsPhase {
 pub const ITEM_BYTES: u64 = 40;
 pub const APPROACH_BYTES: u64 = 48;
 pub const SEG_BYTES: u64 = 16;
-pub const LCPLAN_BYTES: u64 = 20;
+pub const LCPLAN_BYTES: u64 = 16;
 pub const MAX_ITEMS: u64 = 8;
 pub const SLOTS: u64 = 8;
 pub const CONTACT_LOG: u64 = 4096;
@@ -361,12 +366,11 @@ pub const C_CONTACT: usize = 24;
 pub const C_CONTACT_KINDS: usize = 25;
 /// Human lane change rules, counted after the contact kinds.
 pub const C_HU_YIELD: usize = 32;
-pub const C_HU_FORCED: usize = 33;
-pub const C_HU_SWAP: usize = 34;
+pub const C_HU_LOST_REQ: usize = 33;
+pub const C_HU_BLOCKING: usize = 34;
 pub const C_HU_REROUTE: usize = 35;
 pub const C_HU_LC_URGENT: usize = 36;
 pub const C_HU_GUARD: usize = 37;
-pub const C_HU_SWAP_FAILED: usize = 38;
 pub const C_HU_STEPS: usize = 39;
 pub const REROUTE_LOG: u64 = 65536;
 /// Everything on except the rules named.
@@ -380,7 +384,78 @@ pub fn human_flags(off: &[String]) -> u32 {
 }
 
 /// Rules of `research/truth/14-human-courtesy.md`, as bits of `GpuParams::hu_flags`.
-pub const HUMAN_RULES: [(&str, u32); 7] = [("courtesy", 1), ("shrink", 2), ("swap", 4), ("force", 8), ("miss", 16), ("gate", 32), ("yellow", 64)];
+pub const HUMAN_RULES: [(&str, u32); 8] = [("courtesy", 1), ("shrink", 2), ("offset", 4), ("anticipate", 8), ("miss", 16), ("gate", 32), ("yellow", 64), ("exit_clear", 128)];
+
+/// The human driver's numbers that are ours to choose. Provenance of each: `shaders/HUMAN.md`.
+#[derive(Clone, Copy, Debug)]
+pub struct HumanParams {
+    /// Aimsun's "cooperation creating a gap", a share of drivers.
+    pub cooperation: f32,
+    /// Mean seconds at a standstill before giving up on a turn. Each driver draws 0.5 to 1.5 times this.
+    pub t_miss: f32,
+    /// Vissim's "avoid blocking" percentage, as a share.
+    pub compliance: f32,
+    /// Stop short of the end of a lane: Trafikverket's minimum 5 m, 7 m more on every second lane.
+    pub stop_base: f32,
+    pub stop_offset: f32,
+    pub sig_react: f32,
+    pub r_urg: f32,
+    /// Vissim's CoopDecel.
+    pub coop_decel: f32,
+    pub tau_gate: f32,
+    pub tau_min: f32,
+    pub b_em: f32,
+    pub gap_model: f32,
+    pub gap_junction: f32,
+    pub gap_roundabout: f32,
+    pub t_scale: f32,
+    pub s0_scale: f32,
+    /// Lee's constants are what MITSIMLab recalibrates per site (Choudhury 2007, section 5.4.2).
+    pub lead_shift: f32,
+    pub lag_shift: f32,
+}
+
+impl Default for HumanParams {
+    fn default() -> Self {
+        Self { cooperation: 1.0, t_miss: 120.0, compliance: 1.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 1.0, gap_roundabout: 1.0, t_scale: 1.0, s0_scale: 1.0, lead_shift: 0.0, lag_shift: 0.0 }
+    }
+}
+
+impl HumanParams {
+    /// Sweden: Trafikverket's jam spacing and through saturation flow, from `TRVMB Kapacitet`.
+    pub fn sweden() -> Self {
+        Self { s0_scale: 2.43 / 2.8, ..Self::default() }
+    }
+
+    /// `name=value`, comma separated.
+    pub fn apply(&mut self, text: &str) {
+        for pair in text.split(',').filter(|s| !s.is_empty()) {
+            let (k, v) = pair.split_once('=').unwrap_or_else(|| panic!("human parameter {pair}: want name=value"));
+            let v: f32 = v.parse().unwrap_or_else(|_| panic!("human parameter {pair}: not a number"));
+            match k {
+                "cooperation" => self.cooperation = v,
+                "t_miss" => self.t_miss = v,
+                "compliance" => self.compliance = v,
+                "stop_base" => self.stop_base = v,
+                "stop_offset" => self.stop_offset = v,
+                "sig_react" => self.sig_react = v,
+                "r_urg" => self.r_urg = v,
+                "coop_decel" => self.coop_decel = v,
+                "tau_gate" => self.tau_gate = v,
+                "tau_min" => self.tau_min = v,
+                "b_em" => self.b_em = v,
+                "gap_model" => self.gap_model = v,
+                "gap_junction" => self.gap_junction = v,
+                "gap_roundabout" => self.gap_roundabout = v,
+                "t_scale" => self.t_scale = v,
+                "s0_scale" => self.s0_scale = v,
+                "lead_shift" => self.lead_shift = v,
+                "lag_shift" => self.lag_shift = v,
+                _ => panic!("no human parameter {k}"),
+            }
+        }
+    }
+}
 /// Contact kinds, as counted from `C_CONTACT_KINDS`.
 pub const CONTACT_NAMES: [&str; 7] = ["same lane", "neighbour lane", "junction crossing", "junction merge", "junction diverge", "lane start", "other"];
 /// Sort key resolution: two vehicles on a lane are always further apart than this.
@@ -416,6 +491,7 @@ pub struct SimConfig {
     pub humans: bool,
     /// Which rules of `HUMAN_RULES` are on.
     pub human_flags: u32,
+    pub human: HumanParams,
     /// Room in the routes buffer for routes handed out during the run, in edges.
     pub route_arena: u32,
 }
@@ -440,7 +516,8 @@ impl Default for SimConfig {
             detect_every: 0,
             speed_trace: Vec::new(),
             humans: false,
-            human_flags: 127,
+            human_flags: 255,
+            human: HumanParams::default(),
             route_arena: 0,
         }
     }
@@ -759,6 +836,11 @@ impl World {
             hu_rho: (-cfg.dt / 3.0).exp(),
             hu_nscale: 0.20 * (1.0 - (-2.0 * cfg.dt / 3.0).exp()).sqrt(),
             hu_flags: cfg.human_flags,
+            hu_a: [cfg.human.cooperation, cfg.human.t_miss, cfg.human.compliance, cfg.human.stop_base],
+            hu_b: [cfg.human.stop_offset, cfg.human.sig_react, cfg.human.r_urg, cfg.human.coop_decel],
+            hu_c: [cfg.human.tau_gate, cfg.human.tau_min, cfg.human.b_em, cfg.human.gap_model],
+            hu_d: [cfg.human.gap_junction, cfg.human.gap_roundabout, cfg.human.t_scale, cfg.human.s0_scale],
+            hu_e: [cfg.human.lead_shift, cfg.human.lag_shift, 0.0, 0.0],
         };
         w
     }

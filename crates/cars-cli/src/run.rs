@@ -55,9 +55,15 @@ pub struct Args {
     /// Every vehicle type drives as a human: the model of research/truth/05, the rules of research/truth/14.
     #[arg(long)]
     humans: bool,
-    /// Human rules to switch off, for measuring each one: courtesy, shrink, swap, force, miss, gate, yellow.
+    /// Human rules to switch off, for measuring each one: courtesy, shrink, offset, anticipate, miss, gate, yellow, exit_clear.
     #[arg(long, value_delimiter = ',')]
     human_off: Vec<String>,
+    /// Human numbers, name=value, comma separated. See crates/cars-core/src/shaders/HUMAN.md.
+    #[arg(long, default_value = "")]
+    human_param: String,
+    /// Reference values of a place. sweden: Trafikverket's jam spacing, saturation flow and critical gaps.
+    #[arg(long)]
+    region: Option<String>,
     /// Seconds before a stuck lane head teleports. 0 turns it off. Default 300 under --sumo-compat, else off.
     #[arg(long)]
     time_to_teleport: Option<f32>,
@@ -163,8 +169,17 @@ pub fn run(args: Args) {
         capacity: args.capacity,
         use_actuation: !args.static_tls,
         humans: args.humans && !args.sumo_compat,
+        route_arena: if !args.sumo_compat && (args.humans || demand.vtypes.iter().any(|t| matches!(t.model, cars_core::demand::CfModel::Human))) { 4_000_000 } else { 0 },
         human_flags: cars_core::world::human_flags(&args.human_off),
-        route_arena: if args.humans && !args.sumo_compat { 4_000_000 } else { 0 },
+        human: {
+            let mut h = match args.region.as_deref() {
+                Some("sweden") => cars_core::world::HumanParams::sweden(),
+                Some(other) => panic!("no region {other}"),
+                None => cars_core::world::HumanParams::default(),
+            };
+            h.apply(&args.human_param);
+            h
+        },
         ..Default::default()
     };
     let t = Instant::now();
@@ -205,7 +220,7 @@ pub fn run(args: Args) {
         report::write_phys_json(p, &net, &world, &demand).expect("phys json");
     }
     let heavy: Vec<bool> = demand.vtypes.iter().map(|t| matches!(cars_core::net::VCLASSES.get(t.vclass.trailing_zeros() as usize).copied(), Some("bus" | "coach" | "truck" | "trailer"))).collect();
-    let mut rerouter = cfg.humans.then(|| cars_core::reroute::Rerouter::new(&net, demand.vtypes.iter().map(|t| t.vclass), &sim));
+    let mut rerouter = (cfg.route_arena > 0).then(|| cars_core::reroute::Rerouter::new(&net, demand.vtypes.iter().map(|t| t.vclass), &sim));
     // The GPU has its copies now. A day of Berlin would otherwise keep gigabytes in RAM.
     demand.routes = Vec::new();
     world.routes = Vec::new();
@@ -482,8 +497,9 @@ pub fn run(args: Args) {
         finished.json["stuck_like_teleports"] = serde_json::json!({"jam": c[13], "yield": c[14], "waiting_for_a_gap": c[15]});
         if let Some(r) = &rerouter {
             let h = serde_json::json!({
-                "yield_steps": c[cars_core::world::C_HU_YIELD], "forced_steps": c[cars_core::world::C_HU_FORCED], "swaps": c[cars_core::world::C_HU_SWAP], "swaps_failed": c[cars_core::world::C_HU_SWAP_FAILED],
-                "reroute_requests": c[cars_core::world::C_HU_REROUTE], "rerouted": r.patched, "reroute_failed": r.failed, "arena_edges": r.arena_used(),
+                "yield_steps": c[cars_core::world::C_HU_YIELD], "blocking_entries": c[cars_core::world::C_HU_BLOCKING],
+                "missed_turns": c[cars_core::world::C_HU_REROUTE], "lost_inside": r.patched, "lost_outside": r.lost_outside, "lost_stuck": r.failed, "lost_cars": r.lost_cars(),
+                "lost_per_1000_trips": 1000.0 * r.lost_cars() as f64 / (c[2] as f64).max(1.0), "arena_edges": r.arena_used(),
                 "guard_steps": c[cars_core::world::C_HU_GUARD], "human_steps": c[cars_core::world::C_HU_STEPS], "rules_off": args.human_off,
             });
             eprintln!("humans: {h}");

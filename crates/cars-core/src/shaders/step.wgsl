@@ -31,6 +31,7 @@
 @group(0) @binding(27) var<storage, read_write> trip_out: array<TripOut>;
 @group(0) @binding(28) var<storage, read_write> series: array<atomic<u32>>;
 @group(0) @binding(29) var<storage, read_write> edge_acc: array<atomic<u32>>;
+@group(0) @binding(30) var<storage, read_write> route_patch: array<vec2u>;
 @group(0) @binding(17) var<storage, read> incoming_links: array<u32>;
 @group(0) @binding(18) var<storage, read_write> adv_flags: array<atomic<u32>>;
 @group(0) @binding(31) var<storage, read_write> advice: array<atomic<u32>>;
@@ -46,14 +47,10 @@
 @group(0) @binding(40) var<storage, read_write> hard_limit: array<atomic<u32>>;
 @group(0) @binding(41) var<storage, read> zones: array<Zone>;
 @group(0) @binding(42) var<storage, read> speed_trace: array<f32>;
-@group(0) @binding(43) var<storage, read_write> entrant_front: array<atomic<u32>>;
 @group(0) @binding(44) var<storage, read_write> poses: array<Pose>;
 @group(0) @binding(45) var<storage, read_write> grid_head: array<atomic<u32>>;
-@group(0) @binding(46) var<storage, read_write> grid_next: array<u32>;
-@group(0) @binding(47) var<storage, read> shape_points: array<vec4f>;
-@group(0) @binding(48) var<storage, read_write> contacts: array<Contact>;
-@group(0) @binding(49) var<storage, read_write> reroute_req: array<RerouteReq>;
-@group(0) @binding(50) var<storage, read_write> route_patch: array<vec2u>;
+@group(0) @binding(43) var<storage, read> shape_points: array<vec4f>;
+@group(0) @binding(46) var<storage, read_write> contacts: array<Contact>;
 
 const C_NEW: u32 = 0u;
 const C_REMOVED: u32 = 1u;
@@ -75,15 +72,13 @@ const C_DENIED: u32 = 23u;
 const C_CONTACT: u32 = 24u;
 const C_CONTACT_KINDS: u32 = 25u;
 const C_HU_YIELD: u32 = 32u;
-const C_HU_FORCED: u32 = 33u;
-const C_HU_SWAP: u32 = 34u;
+const C_HU_LOST_REQ: u32 = 33u;
+const C_HU_BLOCKING: u32 = 34u;
 const C_HU_REROUTE: u32 = 35u;
 const C_HU_LC_URGENT: u32 = 36u;
 const C_HU_GUARD: u32 = 37u;
-const C_HU_SWAP_FAILED: u32 = 38u;
 const C_HU_STEPS: u32 = 39u;
 const REROUTE_LOG: u32 = 65536u;
-const HU_T_MISS: f32 = 120.0;
 const STUCK_AFTER: f32 = 300.0;   // SUMO's time to teleport, for counting what would have
 const F_STUCK_COUNTED: u32 = 1048576u;
 
@@ -99,14 +94,6 @@ struct LcPlan {
     first: u32,   // first reservation cell
     count: u32,
     priority: u32,
-    swap: u32,    // the vehicle this change only happens together with
-}
-
-struct RerouteReq {
-    trip: u32,
-    lane: u32,
-    dest_edge: u32,
-    vclass: u32,
 }
 
 fn is_internal(l: u32) -> bool { return (lanes[l].flags & LANE_INTERNAL) != 0u; }
@@ -126,7 +113,7 @@ fn ph_setup(e: Veh) {
 fn hu_setup(e: Veh) {
     hu_on = false;
     if (ty.model != MODEL_HUMAN || mu <= 0.0) { return; }
-    hu_load(trips[e.trip].persona, e.hu_acc, e.hu_noise, P.hu_k);
+    hu_load(trips[e.trip].persona, e.hu_acc, e.hu_noise, P.hu_k, P.hu_d.z, P.hu_d.w);
     hu_v0 = lane_vmax(e.lane, e.sf);
 }
 
@@ -268,7 +255,7 @@ fn clear_lanes(@builtin(global_invocation_id) id: vec3u) {
     atomicStore(&tail[id.x], NONE);
     atomicStore(&entrant[id.x], NONE);
     if (P.mu > 0.0) {
-        atomicStore(&entrant_front[id.x], 0u);
+        atomicStore(&entrant[P.n_lanes + id.x], 0u);
         atomicStore(&junction_bid[id.x], NONE);
         atomicStore(&inbound[id.x], 0u);
     }
@@ -699,7 +686,12 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
         }
         let link = pick_link(lane, route_i, ego.route_end);
         if (link == NONE) {
-            let va = stop_speed(speed, seen, ty.decel, true, pl_lane_vmax);
+            // Handbok för kapacitetsanalys p. 106: neighbours that stop level with each other lock.
+            var stop_at = seen;
+            if (hu_on && (P.hu_flags & HS_OFFSET) != 0u) {
+                stop_at = seen - P.hu_a.w - P.hu_b.x * f32(lanes[lane].index & 1u);
+            }
+            let va = stop_speed(speed, stop_at, ty.decel, true, pl_lane_vmax);
             if (pl_n > 0u) { adapt_leave(pl_base + pl_n - 1u, va); }
             pl_v = min(va, pl_v);
             push_item(NONE, pl_v, pl_v, false, 0.0, 0.0, 0.0, seen, -1.0);
@@ -1441,7 +1433,7 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
                         }
                     }
                     let wanted = in_front + need_own + f32(atomicLoad(&inbound[to])) / 8.0;
-                    if (wanted > ph_exit_room(to, next_link)) { ok = false; }
+                    if (wanted > ph_exit_room(to, next_link) && !hu_blocks_anyway(e.trip, to)) { ok = false; }
                 }
             }
         }
@@ -1457,6 +1449,14 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
         items[base + j].grant = bid;
         atomicMin(&junction_bid[next], bid);
     }
+}
+
+// Vissim's "avoid blocking" holds for a percentage of drivers. The rest enter and sit in the junction.
+fn hu_blocks_anyway(trip: u32, to: u32) -> bool {
+    if (!hu_on || (P.hu_flags & HS_EXIT_CLEAR) == 0u) { return false; }
+    let blocks = f32(pcg(trip * 2654435761u ^ pcg(to)) >> 8u) / 16777216.0 >= P.hu_a.z;
+    if (blocks) { atomicAdd(&C[C_HU_BLOCKING], 1u); }
+    return blocks;
 }
 
 @compute @workgroup_size(64)
@@ -1759,7 +1759,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     if (e.lane != first_lane) {
         atomicMin(&entrant[e.lane], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
         if (mu > 0.0) {
-            atomicMax(&entrant_front[e.lane], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
+            atomicMax(&entrant[P.n_lanes + e.lane], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
         }
     }
     ph_mirror(&e, false);
@@ -1826,7 +1826,7 @@ const HU_LC_SLOPE: f32 = 0.466;   // steering angle a driver can use, 25 degrees
 fn hu_start_hold(e: ptr<function, Veh>, speed: f32, v_safe: f32, nv: f32) -> f32 {
     if (speed >= 0.05) { return nv; }
     (*e).hu_state = hu_timer((*e).hu_state, speed, v_safe);
-    if (f32((*e).hu_state & 255u) / 16.0 < HU_T_START) { return 0.0; }
+    if (hu_waiting_to_start((*e).hu_state)) { return 0.0; }
     return nv;
 }
 
@@ -1848,13 +1848,17 @@ fn hu_reroute(e: ptr<function, Veh>, n: u32, base: u32, i: u32) {
         }
         return;
     }
-    if ((P.hu_flags & HS_MISS) == 0u || (*e).wait < HU_T_MISS || is_internal((*e).lane) || n == 0u) { return; }
+    if ((P.hu_flags & HS_MISS) == 0u || is_internal((*e).lane) || n == 0u) { return; }
+    // Aimsun draws the give-way time per vehicle. Half to one and a half times the mean.
+    if ((*e).wait < P.hu_a.y * (0.5 + f32(pcg((*e).trip * 2654435761u ^ 11u) >> 8u) / 16777216.0)) { return; }
     let it = items[base];
     let la = lanes[(*e).lane];
     if (it.link != NONE || it.dist > 15.0 || la.links_count == 0u || (*e).route_i + 1u >= (*e).route_end) { return; }
     if (have_red(link_state(la.links_start))) { return; }
     let at = atomicAdd(&C[C_HU_REROUTE], 1u);
-    reroute_req[at % REROUTE_LOG] = RerouteReq((*e).trip, (*e).lane, routes[(*e).route_end - 1u], ty.vclass);
+    let slot = P.n_trips + (at % REROUTE_LOG) * 2u;
+    route_patch[slot] = vec2u((*e).trip, (*e).lane);
+    route_patch[slot + 1u] = vec2u(routes[(*e).route_end - 1u], ty.vclass);
     (*e).flags |= F_REROUTE;
 }
 

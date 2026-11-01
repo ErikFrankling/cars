@@ -108,6 +108,38 @@ impl Router {
         Self { graphs }
     }
 
+    /// Any way out of the network from one of `starts`, for a car with no way to its destination.
+    pub fn to_any_exit(&self, mask: u32, starts: &[u32]) -> Option<Vec<u32>> {
+        let g = self.graphs.get(&mask)?;
+        let mut prev = vec![u32::MAX; g.next.len()];
+        let mut seen = vec![false; g.next.len()];
+        let mut queue = std::collections::VecDeque::new();
+        for &s in starts {
+            if g.cost.get(s as usize).is_some_and(|c| c.is_finite()) {
+                seen[s as usize] = true;
+                queue.push_back(s);
+            }
+        }
+        while let Some(e) = queue.pop_front() {
+            if g.next[e as usize].is_empty() {
+                let mut result = vec![e];
+                while prev[*result.last()? as usize] != u32::MAX {
+                    result.push(prev[*result.last()? as usize]);
+                }
+                result.reverse();
+                return Some(result);
+            }
+            for &n in &g.next[e as usize] {
+                if !seen[n as usize] {
+                    seen[n as usize] = true;
+                    prev[n as usize] = e;
+                    queue.push_back(n);
+                }
+            }
+        }
+        None
+    }
+
     /// A way to `to` that begins on one of `starts`.
     pub fn from_any(&self, mask: u32, starts: &[u32], to: u32) -> Option<Vec<u32>> {
         self.graphs.get(&mask)?.path_any(starts, to)
