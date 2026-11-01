@@ -9,9 +9,9 @@ use cars_assign::cuts;
 use cars_assign::day::{Engine, NoPause, run_day};
 use cars_assign::driver::{self, CalibrateOpts, LoopOpts, Setup, load_costs, setup};
 use cars_assign::enroute::{Enroute, Incident};
-use cars_assign::population::{Population, Traveller};
+use cars_assign::population::Traveller;
 use cars_assign::route::Work;
-use cars_assign::update::{Rule, Schedule};
+use cars_assign::update::{self, Rule, Schedule};
 use cars_assign::{mix, unit};
 use clap::{Parser, Subcommand};
 use rayon::prelude::*;
@@ -281,7 +281,7 @@ fn routebench(x: &mut Setup, out: &std::path::Path, paths: usize) -> Result<(), 
     Ok(())
 }
 
-/// A saturating stream on each cut link, onto its first successor, with nothing else on the network.
+/// Discharge per cut link, measured with nothing else on the network.
 fn discharge(x: &mut Setup, file: &std::path::Path, max_level: u32) -> Result<(), String> {
     let succ = cuts::successors(&x.net, &x.supply);
     let mut family = cuts::cluster_cuts(&x.supply, &succ);
@@ -292,44 +292,10 @@ fn discharge(x: &mut Setup, file: &std::path::Path, max_level: u32) -> Result<()
     let mut edges: Vec<u32> = family.iter().flat_map(|c| c.out_edges.iter().chain(&c.in_edges).copied()).collect();
     edges.sort_unstable();
     edges.dedup();
-    edges.retain(|&e| !succ[e as usize].is_empty());
-    let mut tv = Vec::new();
-    let mut demand_routes = Vec::new();
-    let mut seen = 0u32;
-    let vt = x.pop.demand.vtype_index.get("passenger").or(x.pop.demand.vtype_index.get("DEFAULT_VEHTYPE")).copied().unwrap_or(0);
-    let period = 1.2f32;
-    let warm = 300.0;
-    let window = 900.0;
-    for &e in &edges {
-        let next = succ[e as usize][0];
-        demand_routes.push(vec![x.supply.normal[e as usize], x.supply.normal[next as usize]]);
-        let r = demand_routes.len() as u32 - 1;
-        let n = ((warm + window) / period * x.supply.lanes[e as usize] as f32) as u32;
-        for i in 0..n {
-            let depart = i as f32 * period / x.supply.lanes[e as usize] as f32;
-            let mut t = Traveller { id: seen, o_edge: demand_routes[r as usize][0], d_edge: demand_routes[r as usize][1], depart_s: depart, desired_arrival_s: depart, earliest_s: depart, latest_s: depart, tour: seen, vtype: vt, ..Default::default() };
-            t.plan[0] = r;
-            t.n_plan = 1;
-            tv.push(t);
-            seen += 1;
-        }
-    }
-    eprintln!("discharge test: {} links, {} trips", edges.len(), tv.len());
-    let mut demand = std::mem::take(&mut x.pop.demand);
-    demand.routes = demand_routes;
-    let mut pop = Population::new(demand, vec![Default::default()], tv);
-    let mut s = x.s.clone();
-    s.begin = 0.0;
-    s.end = warm + window;
-    s.horizon = warm + window;
-    s.capacity = 40000.max(edges.len() as u32 * 200);
-    let mut e = Engine::new(&x.net, &mut pop, &s, &[11])?;
-    let day = run_day(&mut e, &x.supply, &pop, &s, &mut NoPause);
-    let (b0, b1) = ((warm / BIN_S) as usize, ((warm + window) / BIN_S) as usize);
+    let rates = driver::measure_discharge(x, &edges)?;
     let mut text = String::from("edge,veh_s,nominal_veh_s\n");
-    for &d in &edges {
-        let n: f32 = (b0..b1).map(|b| day.counts.left[d as usize * day.counts.n_bins + b] as f32).sum();
-        text.push_str(&format!("{},{:.4},{:.4}\n", x.net.edges[x.supply.normal[d as usize] as usize].id, n / window, x.supply.nominal_capacity(d as usize)));
+    for (d, r) in rates {
+        text.push_str(&format!("{},{:.4},{:.4}\n", x.net.edges[x.supply.normal[d as usize] as usize].id, r, x.supply.nominal_capacity(d as usize)));
     }
     std::fs::write(file, text).map_err(|e| e.to_string())
 }
@@ -395,6 +361,9 @@ fn perturb(x: &mut Setup, out: &std::path::Path, into: &std::path::Path, scale: 
     let (added, removed) = calibrate::apply_cells(&mut x.pop, &a, &target, seed);
     eprintln!("perturbed: {added} added, {removed} removed, {} travellers", x.pop.travellers.len());
     // Forget everything the true assignment learned: the prior starts from free flow.
+    update::forget_routes(&mut x.pop);
+    x.pop.compact();
+    update::route_free_flow(&mut x.pop, &x.graphs, &x.supply, 2);
     x.pop.save_state(&into.join("init.bin"))?;
     Ok(())
 }

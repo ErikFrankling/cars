@@ -283,8 +283,7 @@ fn ledger_and_ladder() {
     assert_eq!(verdict(&VerdictInput { delay_ratio: 3.0, ..base.clone() }), Verdict::FeasibleButCongested);
     assert_eq!(verdict(&VerdictInput { converged: false, ..base.clone() }), Verdict::UnstableOrUnconverged);
     assert_eq!(verdict(&VerdictInput { cuts_violated: 1, converged: false, ..base.clone() }), Verdict::DemandExceedsCut);
-    assert_eq!(verdict(&VerdictInput { stalled_at_load: Some(0.4), cuts_violated: 1, ..base.clone() }), Verdict::NetworkSuspect, "the network comes first");
-    assert_eq!(verdict(&VerdictInput { stalled_at_load: Some(0.9), ..base.clone() }), Verdict::Converged);
+    assert_eq!(verdict(&VerdictInput { gridlock_at_half_demand: true, cuts_violated: 1, ..base.clone() }), Verdict::NetworkSuspect, "the network comes first");
     assert_eq!(verdict(&VerdictInput { observations_conflict: true, ..base }), Verdict::IncompatibleWithObservations);
 }
 

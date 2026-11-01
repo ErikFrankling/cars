@@ -77,6 +77,17 @@ impl DayCounts {
         let z = n_edges * n_bins;
         Self { n_edges, n_bins, replicas, end_bin: 0, n_in: vec![0; z], left: vec![0; z], inserted: vec![0; z], requested: vec![0; z] }
     }
+
+    /// Another day's counters, to average over seeds that ran apart.
+    pub fn add(&mut self, o: &DayCounts) {
+        self.replicas += o.replicas;
+        self.end_bin = self.end_bin.max(o.end_bin);
+        for (a, b) in [(&mut self.n_in, &o.n_in), (&mut self.left, &o.left), (&mut self.inserted, &o.inserted), (&mut self.requested, &o.requested)] {
+            for (x, y) in a.iter_mut().zip(b) {
+                *x = x.saturating_add(*y);
+            }
+        }
+    }
 }
 
 #[derive(Clone)]

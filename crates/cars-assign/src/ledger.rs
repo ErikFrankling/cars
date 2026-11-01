@@ -47,8 +47,8 @@ pub enum Verdict {
 
 #[derive(Clone, Debug, Default)]
 pub struct VerdictInput {
-    /// Share of the day's requested trips due by the time it stalled, if it stalled.
-    pub stalled_at_load: Option<f64>,
+    /// A diagnostic day with half the travellers gridlocked too.
+    pub gridlock_at_half_demand: bool,
     pub suspect_links: usize,
     pub cuts_violated: usize,
     pub converged: bool,
@@ -60,7 +60,7 @@ pub struct VerdictInput {
 
 /// In the order of the spec: a loop problem is only what is left once the network and the cuts are cleared.
 pub fn verdict(v: &VerdictInput) -> Verdict {
-    if v.stalled_at_load.is_some_and(|x| x <= 0.5) || v.suspect_links > 0 {
+    if v.gridlock_at_half_demand || v.suspect_links > 0 {
         return Verdict::NetworkSuspect;
     }
     if v.cuts_violated > 0 {

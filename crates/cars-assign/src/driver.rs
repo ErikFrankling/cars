@@ -383,7 +383,6 @@ pub struct EvalSeed {
     pub balanced: bool,
     pub clean: bool,
     pub stats: TripStats,
-    pub gap: f64,
     pub peak_active: u32,
     pub stalled_at_s: Option<f32>,
     pub wall_s: f64,
@@ -395,20 +394,17 @@ pub fn evaluate(x: &mut Setup, out: &Path, seeds: &[u64], tag: &str, per_world: 
     prepare_routes(x, out)?;
     let mut results = Vec::new();
     let mut engine: Option<Engine> = None;
-    let mut last_day = None;
+    let mut combined: Option<crate::costs::DayCounts> = None;
     for group in seeds.chunks(per_world.max(1)) {
         match engine.as_mut() {
             Some(e) if e.seeds.len() == group.len() => e.load_day(&x.net, &mut x.pop, group)?,
             _ => {
                 engine = None;
-                x.pop.fill_trips();
                 engine = Some(Engine::new(&x.net, &mut x.pop, &x.s, group)?);
             }
         }
         let e = engine.as_mut().unwrap();
         let day = run_day(e, &x.supply, &x.pop, &x.s, &mut NoPause);
-        let raw = CostTable::from_day(&x.supply, &day.counts);
-        let gap = update::gap_only(&x.pop, &x.graphs, &x.supply, &raw, 0.15_f64.max(2000.0 / x.pop.travellers.len().max(1) as f64).min(1.0), group[0] ^ 0xE1);
         for (i, &seed) in group.iter().enumerate() {
             let mut errors = FxHashMap::default();
             if let Some(c) = &x.counts {
@@ -421,28 +417,51 @@ pub fn evaluate(x: &mut Setup, out: &Path, seeds: &[u64], tag: &str, per_world: 
                 balanced: day.ledgers[i].balanced(),
                 clean: day.ledgers[i].clean(),
                 stats: day.stats[i].clone(),
-                gap: gap.gap,
                 peak_active: day.peak_active,
                 stalled_at_s: day.stalled_at_s,
                 wall_s: day.wall_s,
                 errors,
             });
         }
-        last_day = Some(day);
+        match combined.as_mut() {
+            Some(c) => c.add(&day.counts),
+            None => combined = Some(day.counts),
+        }
     }
-    if let Some(day) = &last_day {
-        write_edge_flows(&out.join(format!("edge_flows_{tag}.csv")), x, day)?;
-    }
-    let result = serde_json::json!({"seeds": results, "gap_mean": results.iter().map(|r| r.gap).sum::<f64>() / results.len().max(1) as f64});
+    drop(engine);
+    // Averaged over the seeds, as noise in a single table makes the best route look better than it is.
+    let combined = combined.ok_or("no seeds")?;
+    let raw = CostTable::from_day(&x.supply, &combined);
+    let share = 0.15_f64.max(2000.0 / x.pop.travellers.len().max(1) as f64).min(1.0);
+    let gap = update::gap_only(&x.pop, &x.graphs, &x.supply, &raw, share, seeds[0] ^ 0xE1);
+    write_edge_flows(&out.join(format!("edge_flows_{tag}.csv")), x, &combined)?;
+    let n = results.len().max(1) as f64;
+    let mean = |f: &dyn Fn(&EvalSeed) -> f64| results.iter().map(f).sum::<f64>() / n;
+    let mean_travel = mean(&|r| r.stats.mean_travel_s);
+    let sd_travel = (results.iter().map(|r| (r.stats.mean_travel_s - mean_travel).powi(2)).sum::<f64>() / n).sqrt();
+    let result = serde_json::json!({
+        "seeds": results,
+        "gap": gap.gap,
+        "gap_sampled": gap.sampled,
+        "seeds_averaged": seeds.len(),
+        "mean_travel_s": mean_travel,
+        "sd_travel_s": sd_travel,
+        "p95_travel_s": mean(&|r| r.stats.p95_travel_s),
+        "unfinished_share": mean(&|r| r.ledger.unfinished_share()),
+        "teleports": mean(&|r| r.ledger.teleports as f64),
+        "collisions": mean(&|r| r.ledger.collisions as f64),
+        "all_balanced": results.iter().all(|r| r.balanced),
+        "all_clean": results.iter().all(|r| r.clean),
+    });
     std::fs::write(out.join(format!("eval_{tag}.json")), serde_json::to_string_pretty(&result).unwrap()).map_err(|e| e.to_string())?;
     Ok(result)
 }
 
-pub fn write_edge_flows(path: &PathBuf, x: &Setup, day: &DayResult) -> Result<(), String> {
+pub fn write_edge_flows(path: &PathBuf, x: &Setup, day: &crate::costs::DayCounts) -> Result<(), String> {
     let mut s = String::from("edge,flow\n");
-    let k = day.counts.replicas.max(1) as f64;
+    let k = day.replicas.max(1) as f64;
     for e in 0..x.supply.n() {
-        let f: f64 = (0..day.counts.n_bins).map(|b| day.counts.n_in[e * day.counts.n_bins + b] as f64).sum::<f64>() / k;
+        let f: f64 = (0..day.n_bins).map(|b| day.n_in[e * day.n_bins + b] as f64).sum::<f64>() / k;
         s.push_str(&format!("{},{f:.1}\n", x.net.edges[x.supply.normal[e] as usize].id));
     }
     std::fs::write(path, s).map_err(|e| e.to_string())
@@ -527,6 +546,41 @@ pub fn departures(x: &mut Setup, out: &Path, iters: u32, schedule: Schedule, mem
     Ok(result)
 }
 
+/// A saturating stream on each edge, onto its first successor, with nothing else on the network.
+pub fn measure_discharge(x: &Setup, edges: &[u32]) -> Result<Vec<(u32, f32)>, String> {
+    let succ = cuts::successors(&x.net, &x.supply);
+    let mut demand = Demand::load(&x.net, &[], &x.s.additional, 1, None)?;
+    let vt = demand.vtype_index.get("passenger").or(demand.vtype_index.get("DEFAULT_VEHTYPE")).copied().unwrap_or(0);
+    let (period, warm, window) = (1.2f32, 300.0f32, 900.0f32);
+    let mut tv = Vec::new();
+    let tested: Vec<u32> = edges.iter().copied().filter(|&e| !succ[e as usize].is_empty()).collect();
+    for &e in &tested {
+        let route = vec![x.supply.normal[e as usize], x.supply.normal[succ[e as usize][0] as usize]];
+        let r = demand.routes.len() as u32;
+        demand.routes.push(route.clone());
+        let lanes = x.supply.lanes[e as usize] as f32;
+        for i in 0..((warm + window) / period * lanes) as u32 {
+            let depart = i as f32 * period / lanes;
+            let id = tv.len() as u32;
+            let mut t = crate::population::Traveller { id, o_edge: route[0], d_edge: route[1], depart_s: depart, desired_arrival_s: depart, earliest_s: depart, latest_s: depart, tour: id, vtype: vt, ..Default::default() };
+            t.plan[0] = r;
+            t.n_plan = 1;
+            tv.push(t);
+        }
+    }
+    eprintln!("discharge test: {} links, {} trips", tested.len(), tv.len());
+    let mut pop = Population::new(demand, vec![Default::default()], tv);
+    let mut s = x.s.clone();
+    s.begin = 0.0;
+    s.end = warm + window;
+    s.horizon = warm + window;
+    s.capacity = 40000.max(tested.len() as u32 * 200);
+    let mut e = Engine::new(&x.net, &mut pop, &s, &[11])?;
+    let day = run_day(&mut e, &x.supply, &pop, &s, &mut NoPause);
+    let (b0, b1) = ((warm / BIN_S) as usize, ((warm + window) / BIN_S) as usize);
+    Ok(tested.iter().map(|&d| (d, (b0..b1).map(|b| day.counts.left[d as usize * day.counts.n_bins + b] as f32).sum::<f32>() / window)).collect())
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct VerdictReport {
     pub verdict: Verdict,
@@ -536,6 +590,7 @@ pub struct VerdictReport {
     pub collisions: u64,
     pub stalled_at_s: Option<f32>,
     pub due_at_stall: f64,
+    pub half_demand_day: Option<serde_json::Value>,
     pub converged: Convergence,
     pub first_queues: Vec<serde_json::Value>,
     pub suspect_links: Vec<serde_json::Value>,
@@ -553,6 +608,19 @@ pub fn verdict(x: &mut Setup, out: &Path, seed: u64) -> Result<VerdictReport, St
     let mut engine = Engine::new(&x.net, &mut x.pop, &x.s, &[seed])?;
     let day = run_day(&mut engine, &x.supply, &x.pop, &x.s, &mut NoPause);
     drop(engine);
+    // Gridlock at half the demand is what makes a network suspect: run half, on the same routes.
+    let mut half_load: Option<serde_json::Value> = None;
+    if day.stalled_at_s.is_some() || !day.ledgers[0].clean() {
+        let all = x.pop.travellers.clone();
+        x.pop.travellers.retain(|t| crate::unit(seed ^ 0xBEEF, t.id as u64) < 0.5);
+        let mut e = Engine::new(&x.net, &mut x.pop, &x.s, &[seed])?;
+        let half = run_day(&mut e, &x.supply, &x.pop, &x.s, &mut NoPause);
+        drop(e);
+        half_load = Some(serde_json::json!({"stalled_at_s": half.stalled_at_s, "unfinished_share": half.ledgers[0].unfinished_share(), "teleports": half.ledgers[0].teleports, "mean_travel_s": half.stats[0].mean_travel_s}));
+        x.pop.travellers = all;
+        x.pop.fill_trips();
+    }
+    let half_gridlocks = half_load.as_ref().is_some_and(|h| h["stalled_at_s"].is_number() || h["unfinished_share"].as_f64().unwrap_or(0.0) >= 0.001);
     let succ = cuts::successors(&x.net, &x.supply);
     let mut family = cuts::cluster_cuts(&x.supply, &succ);
     if let Some(p) = &x.s.cuts {
@@ -597,23 +665,26 @@ pub fn verdict(x: &mut Setup, out: &Path, seed: u64) -> Result<VerdictReport, St
     first.sort_unstable();
     let name = |e: u32| x.net.edges[x.supply.normal[e as usize] as usize].id.clone();
     let first_queues: Vec<_> = first.iter().take(30).map(|&(b, e)| serde_json::json!({"edge": name(e), "from_s": b as f32 * BIN_S, "discharge_veh_h": discharge.observed[e as usize] * 3600.0, "nominal_veh_h": x.supply.nominal_capacity(e as usize) * 3600.0})).collect();
-    // A proxy for the isolated discharge test unless the scenario has measured ones.
+    // The first queues, tested in isolation. A signal takes its share of green, so its screen is half as high.
+    let first_edges: Vec<u32> = first.iter().take(30).map(|f| f.1).filter(|e| !discharge.measured.contains_key(e)).collect();
+    if !first_edges.is_empty() {
+        discharge.measured.extend(measure_discharge(x, &first_edges)?);
+    }
+    let signalled: rustc_hash::FxHashSet<u32> = x.net.conns.iter().filter(|c| c.tl.is_some()).map(|c| x.supply.dense[c.from_edge as usize]).collect();
     let suspect: Vec<_> = first
         .iter()
         .take(30)
-        .filter(|&&(b, e)| {
-            let rate = discharge.measured.get(&e).copied().unwrap_or(discharge.observed[e as usize]);
-            let _ = b;
-            // Signals halve a link's discharge in a healthy network, so the screen is half of half.
-            rate < 0.25 * x.supply.nominal_capacity(e as usize) && (x.s.discharge.is_some() && discharge.measured.contains_key(&e) || rate < 0.05)
+        .filter(|&&(_, e)| {
+            let limit = if signalled.contains(&e) { 0.25 } else { 0.5 };
+            discharge.measured.get(&e).is_some_and(|&r| r < limit * x.supply.nominal_capacity(e as usize))
         })
-        .map(|&(b, e)| serde_json::json!({"edge": name(e), "from_s": b as f32 * BIN_S, "discharge_veh_h": discharge.observed[e as usize] * 3600.0, "nominal_veh_h": x.supply.nominal_capacity(e as usize) * 3600.0}))
+        .map(|&(b, e)| serde_json::json!({"edge": name(e), "from_s": b as f32 * BIN_S, "isolated_discharge_veh_h": discharge.measured[&e] * 3600.0, "nominal_veh_h": x.supply.nominal_capacity(e as usize) * 3600.0}))
         .collect();
     let conv: Convergence = std::fs::read_to_string(out.join("convergence.json")).ok().and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok()).map(|v| Convergence { converged: v["converged"].as_bool().unwrap_or(false), gap_ok: v["gap_ok"].as_bool().unwrap_or(false), stable: v["stable"].as_bool().unwrap_or(false), ledger_clean: v["ledger_clean"].as_bool().unwrap_or(false), gap_unseen: v["gap_unseen"].as_f64().unwrap_or(f64::NAN), stability_cost_change: v["stability_cost_change"].as_f64().unwrap_or(f64::NAN), stability_flow_change: v["stability_flow_change"].as_f64().unwrap_or(f64::NAN) }).unwrap_or_default();
     let ff_mean: f64 = x.pop.travellers.iter().map(|t| x.pop.demand.routes[t.route() as usize].iter().map(|&e| x.supply.ff[x.supply.dense[e as usize] as usize] as f64).sum::<f64>()).sum::<f64>() / x.pop.travellers.len().max(1) as f64;
     let delay_ratio = day.stats[0].mean_travel_s / ff_mean.max(1.0);
     let v = ledger::verdict(&VerdictInput {
-        stalled_at_load: day.stalled_at_s.map(|_| day.due_at_stall),
+        gridlock_at_half_demand: half_gridlocks,
         suspect_links: suspect.len(),
         cuts_violated: violated.len(),
         converged: conv.converged,
@@ -635,6 +706,7 @@ pub fn verdict(x: &mut Setup, out: &Path, seed: u64) -> Result<VerdictReport, St
         collisions: day.ledgers[0].collisions,
         stalled_at_s: day.stalled_at_s,
         due_at_stall: day.due_at_stall,
+        half_demand_day: half_load,
         converged: conv,
         first_queues,
         suspect_links: suspect,
