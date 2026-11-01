@@ -484,12 +484,12 @@ pub struct DepartRow {
 /// generalised cost is undone, the share halved and tried again. Two rejections stop it.
 pub fn departures(x: &mut Setup, out: &Path, iters: u32, schedule: Schedule, memory: f32, consistent: bool) -> Result<serde_json::Value, String> {
     prepare_routes(x, out)?;
-    update::default_schedule(&mut x.pop, &x.supply);
     let n_bins = x.s.n_bins();
     let mut costs = load_costs(&x.supply, n_bins, &out.join("costs.bin")).unwrap_or_else(|_| CostTable::free_flow(&x.supply, n_bins));
     if consistent {
         update::consistent_start(&mut x.pop, &x.supply, &costs);
     }
+    update::default_schedule(&mut x.pop, &x.supply);
     let seed0 = x.s.seed.wrapping_mul(7000);
     let mut engine = Engine::new(&x.net, &mut x.pop, &x.s, &[seed0])?;
     let mut share = 0.05f64;
@@ -581,6 +581,8 @@ pub fn measure_discharge(x: &Setup, edges: &[u32]) -> Result<Vec<(u32, f32)>, St
     Ok(tested.iter().map(|&d| (d, (b0..b1).map(|b| day.counts.left[d as usize * day.counts.n_bins + b] as f32).sum::<f32>() / window)).collect())
 }
 
+const HALF_DEMAND_ITERATIONS: u32 = 5;
+
 #[derive(Clone, Debug, Serialize)]
 pub struct VerdictReport {
     pub verdict: Verdict,
@@ -608,12 +610,22 @@ pub fn verdict(x: &mut Setup, out: &Path, seed: u64) -> Result<VerdictReport, St
     let mut engine = Engine::new(&x.net, &mut x.pop, &x.s, &[seed])?;
     let day = run_day(&mut engine, &x.supply, &x.pop, &x.s, &mut NoPause);
     drop(engine);
-    // Gridlock at half the demand is what makes a network suspect: run half, on the same routes.
+    // Gridlock at half the demand is what makes a network suspect. Routes assigned for the whole demand
+    // would not be fair to half of it, so it gets a few iterations of its own first.
     let mut half_load: Option<serde_json::Value> = None;
     if day.stalled_at_s.is_some() || !day.ledgers[0].clean() {
         let all = x.pop.travellers.clone();
         x.pop.travellers.retain(|t| crate::unit(seed ^ 0xBEEF, t.id as u64) < 0.5);
         let mut e = Engine::new(&x.net, &mut x.pop, &x.s, &[seed])?;
+        let mut half_costs = load_costs(&x.supply, x.s.n_bins(), &out.join("costs.bin")).unwrap_or_else(|_| CostTable::free_flow(&x.supply, x.s.n_bins()));
+        for j in 0..HALF_DEMAND_ITERATIONS {
+            let s = seed + 1 + j as u64;
+            e.load_day(&x.net, &mut x.pop, &[s])?;
+            let d = run_day(&mut e, &x.supply, &x.pop, &x.s, &mut NoPause);
+            half_costs.blend(&CostTable::from_day(&x.supply, &d.counts), x.s.memory);
+            update::update_routes(&mut x.pop, &x.graphs, &x.supply, &half_costs, Rule::Capped { share: x.s.share }, s);
+        }
+        e.load_day(&x.net, &mut x.pop, &[seed])?;
         let half = run_day(&mut e, &x.supply, &x.pop, &x.s, &mut NoPause);
         drop(e);
         half_load = Some(serde_json::json!({"stalled_at_s": half.stalled_at_s, "unfinished_share": half.ledgers[0].unfinished_share(), "teleports": half.ledgers[0].teleports, "mean_travel_s": half.stats[0].mean_travel_s}));

@@ -260,7 +260,8 @@ pub struct DepartStats {
     pub mean_shift_s: f64,
 }
 
-/// `depart = desired arrival - experienced travel time`, for travellers with no observed departure.
+/// A consistent schedule. With a desired arrival, `depart = desired arrival - experienced travel time`.
+/// With an observed departure and none desired, today's arrival is what the traveller wants.
 pub fn consistent_start(pop: &mut Population, supply: &Supply, costs: &CostTable) {
     let travel: Vec<f32> = pop
         .travellers
@@ -273,6 +274,8 @@ pub fn consistent_start(pop: &mut Population, supply: &Supply, costs: &CostTable
     for (t, c) in pop.travellers.iter_mut().zip(travel) {
         if t.desired_arrival_s.is_finite() {
             t.depart_s = (t.desired_arrival_s - c).clamp(t.earliest_s, t.latest_s).max(0.0);
+        } else {
+            t.desired_arrival_s = t.depart_s + c;
         }
     }
 }
