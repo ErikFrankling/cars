@@ -1146,6 +1146,7 @@ fn ph_lc_road(e: Veh, dest: u32) -> f32 {
         if (e.route_i + 1u >= e.route_end) { return remaining; }
         return -1.0;
     }
+    if (P.lc_carry == 0u) { return remaining; }
     return remaining + continuation_length(links[k].to_lane, e.route_i + 1u, e.route_end);
 }
 

@@ -91,9 +91,9 @@ struct Params {
     zones_ahead: u32,
     lc_gap: f32,
     zone_time: u32,
-    lat_standing: f32,
     lc_crawl: f32,
-    lat_floor: f32,
+    lc_carry: u32,
+    pad_y: f32,
     pad_z: f32,
 }
 

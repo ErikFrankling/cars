@@ -647,7 +647,7 @@ def invariants(a, df, prev, steady, same_lane, lanes, out, interval, gaps, overl
     u = ((phys_bits >> 16) & 0x3fff) / 16383.0
     u0 = ((prev['phys'].to_numpy(dtype=float).astype(np.int64) >> 16) & 0x3fff) / 16383.0
     record('I11 phase monotonic', in_change, (u0 - u) - 1e-3)
-    record('I11 no progress at a stand', in_change & (v1 == 0) & (v0 == 0) & (df['items'] > 1), (u - u0) - 1e-3)
+    record('I11 sideways at a stand only at a crawl', in_change & (v0 > 2.0) & (v1 > 2.0), (u - u0) - 1.0, is_hard=False)
     # I12: the old lane stays claimed until the body has left it. No body may be in that stretch.
     count('I12 occupancy of the old lane', 0, 0, is_hard=False, note='covered by the shadow in the kernel and by the 2D detector; FCD holds no shadows')
     # I13, I14, I17

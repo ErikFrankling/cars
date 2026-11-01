@@ -53,7 +53,7 @@ def driver(a):
 INVENTED = dict(
     zone_distance=(2.2, 2.6, 3.0), width_margin=(0.0, 0.1, 0.3), claim_scale=(0.7, 1.0, 1.3), queue_speed=(1.0, 5.0, 8.0), exit_comply=(0.5, 0.9, 1.0),
     lc_path=(0, 1), certificate=(0, 1), arbiter=(0, 1), exit_clear=(0, 1), curve_cap=(3.0, 4.17), car_b_lo=(7.0, 8.3),
-    tc_clear=(0.6, 1.2, 1.8), tc_scale=(0.6, 0.8, 1.0), zone_time=(0, 1, 2), zones_ahead=(0, 1), rewind=(0, 1), lc_gap=(0.3, 0.6, 1.0), lat_standing=(0.0, 0.1, 0.3), lost_after=(0, 120, 300),
+    tc_clear=(0.6, 1.2, 1.8), tc_scale=(0.6, 0.8, 1.0), zone_time=(0, 1, 2), zones_ahead=(0, 1), rewind=(0, 1), lc_gap=(0.3, 0.6, 1.0), lc_crawl=(0.0, 0.5, 2.0), lc_carry=(0, 1), lost_after=(0, 120, 300),
 )
 
 

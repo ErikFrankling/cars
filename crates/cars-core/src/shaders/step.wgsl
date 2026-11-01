@@ -1599,6 +1599,11 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     var acc = (v_next - speed) / dt;
     let old_pos = e.pos;
     if (mu > 0.0) {
+        // Bodies do not cross a junction still half in another lane.
+        if (P.lc_carry == 0u && (e.phys >> 30u) != 0u && !is_internal(e.lane)) {
+            let left = lanes[e.lane].length - e.pos;
+            v_safe = min(v_safe, stop_speed(speed, max(left - 0.1, 0.0), ty.decel, true, 1e9));
+        }
         let bound = atomicExchange(&hard_limit[e.trip], NONE);
         if (bound != NONE) {
             v_safe = min(v_safe, f32(bound) / 1024.0 - 0.002);
@@ -1635,7 +1640,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         e.pos += ds;
         e.speed = v_next;
         ph_account(&e, speed, v_next, ds);
-        ph_lateral(&e, speed, v_next, n == 0u || items[base].link == NONE);
+        ph_lateral(&e, speed, v_next);
     } else {
         e.pos += v_next * dt;
         e.speed = v_next;
@@ -1835,8 +1840,8 @@ fn ph_lateral_done(t: f32, w: f32, v_lat: f32) -> f32 {
     return w - v_lat * (r * 0.5 - sin(3.14159265 * r) / 6.2831853);
 }
 
-// Sideways progress of a lane change. It takes forward motion: at a stand the phase does not move.
-fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32, lane_ends: bool) {
+// Sideways progress of a lane change. Tied to forward motion, except at a crawl.
+fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32) {
     let p = (*e).phys;
     if ((p >> 30u) == 0u) { return; }
     var v_lat = ty.v_lat;
@@ -1845,9 +1850,7 @@ fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32, lane_ends: bool) {
     let total = w / v_lat + 1.0;
     let vbar = 0.5 * (v0 + v1);
     var rate = min(1.0, vbar * 0.21256 / v_lat);
-    if (vbar < P.lc_crawl && vbar > P.lat_floor) { rate = 1.0; }
-    // Held at the end of a lane with no way on, a driver edges across. SUMO has lcMaxSpeedLatStanding for this.
-    if (lane_ends) { rate = max(rate, P.lat_standing / v_lat); }
+    if (vbar < P.lc_crawl) { rate = 1.0; }
     var u = f32((p >> 16u) & 0x3fffu) / 16383.0;
     u = min(1.0, u + rate * dt / total);
     if (u >= 1.0) {
