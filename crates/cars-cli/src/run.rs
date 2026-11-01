@@ -39,6 +39,12 @@ pub struct Args {
     fcd: Option<PathBuf>,
     #[arg(long)]
     trip_csv: Option<PathBuf>,
+    /// Write trajectories only from this simulation time on.
+    #[arg(long, default_value_t = 0.0)]
+    fcd_begin: f32,
+    /// Write trajectories only for lanes touching this box: x0,y0,x1,y1.
+    #[arg(long, value_delimiter = ',', allow_negative_numbers = true)]
+    fcd_bbox: Vec<f32>,
     /// Seconds between trajectory snapshots (simulation still advances at dt).
     #[arg(long, default_value_t = 0.1)]
     fcd_interval: f32,
@@ -113,6 +119,15 @@ pub fn run(args: Args) {
     let gpu = pollster::block_on(Gpu::headless(GpuOptions { adapter_name: Some("7900".into()), checks })).expect("gpu");
     let mut sim = Sim::new(&gpu, &world).expect("sim");
     sim.target_submit_ms = args.target_submit_ms;
+    let in_box: Vec<bool> = net
+        .lanes
+        .iter()
+        .map(|l| {
+            args.fcd_bbox.len() != 4
+                || l.shape.iter().any(|p| p[0] >= args.fcd_bbox[0] && p[1] >= args.fcd_bbox[1] && p[0] <= args.fcd_bbox[2] && p[1] <= args.fcd_bbox[3])
+        })
+        .collect();
+    let widths: Vec<f32> = demand.vtypes.iter().map(|t| t.width).collect();
     // The GPU has its copies now. A day of Berlin would otherwise keep gigabytes in RAM.
     demand.routes = Vec::new();
     world.routes = Vec::new();
@@ -133,7 +148,7 @@ pub fn run(args: Args) {
     let t = Instant::now();
     let mut fcd = args.fcd.as_ref().map(|p| std::io::BufWriter::new(std::fs::File::create(p).expect("fcd")));
     if let Some(f) = fcd.as_mut() {
-        writeln!(f, "time,trip,lane,pos,speed,acc,wait,own,items,best_off").unwrap();
+        writeln!(f, "time,trip,lane,pos,speed,acc,wait,own,items,best_off,length,width,flags,prev_lane,depart_step").unwrap();
     }
     let mut summary = args.summary_csv.as_ref().map(|p| std::io::BufWriter::new(std::fs::File::create(p).expect("summary")));
     if let Some(f) = summary.as_mut() {
@@ -158,14 +173,16 @@ pub fn run(args: Args) {
             let stride = if args.check_overlaps || debugging { 1 } else {
                 (args.fcd_interval / args.dt).round().max(1.0) as u64
             };
-            let advance = stride.min(steps - done).min(interval - done % interval);
+            let before_fcd = !args.check_overlaps && !debugging && args.begin + (done as f32 + stride as f32) * args.dt <= args.fcd_begin;
+            let wanted = if before_fcd { ((args.fcd_begin - args.begin) / args.dt) as u64 - done } else { stride };
+            let advance = wanted.max(1).min(steps - done).min(interval - done % interval);
             sim.run(&gpu, advance);
             done += advance;
             let now = args.begin + done as f32 * args.dt;
             if (args.debug_lane.is_some() || args.debug_collisions) && now < args.debug_from && fcd.is_none() {
                 continue;
             }
-            let vs = sim.vehicles(&gpu);
+            let vs = if before_fcd { Vec::new() } else { sim.vehicles(&gpu) };
             if let Some(id) = &args.debug_tls {
                 let ti = net.tls_index[id] as usize;
                 let tls: Vec<cars_core::world::GpuTlsState> = sim.read(&gpu, &sim.buffers.tls, world.tls.len() as u64);
@@ -248,10 +265,11 @@ pub fn run(args: Args) {
             }
             if let Some(f) = fcd.as_mut() {
                 for v in vs.iter() {
-                    if v.flags & 1 != 0 || v.lane == world.params.dummy_lane {
+                    if v.flags & 1 != 0 || v.lane == world.params.dummy_lane || !in_box[v.lane as usize] {
                         continue;
                     }
-                    writeln!(f, "{:.2},{},{},{:.4},{:.4},{:.4},{:.1},{},{},{}", args.begin + (done - 1) as f32 * args.dt, demand.ids[demand.trips[world.trip_source[v.trip as usize] as usize].id as usize], net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc, v.wait, v.lc_own, v.n_items, v.best_off).unwrap();
+                    let prev = if v.prev_lane == u32::MAX { "" } else { net.lanes[v.prev_lane as usize].id.as_str() };
+                    writeln!(f, "{:.2},{},{},{:.4},{:.4},{:.4},{:.1},{},{},{},{},{},{},{},{}", args.begin + (done - 1) as f32 * args.dt, demand.ids[demand.trips[world.trip_source[v.trip as usize] as usize].id as usize], net.lanes[v.lane as usize].id, v.pos, v.speed, v.acc, v.wait, v.lc_own, v.n_items, v.best_off, world.vtypes[v.vtype as usize].length, widths[v.vtype as usize], v.flags, prev, v.depart_step).unwrap();
                 }
             }
         } else {

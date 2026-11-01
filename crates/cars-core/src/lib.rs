@@ -2,6 +2,7 @@
 
 pub mod actuated;
 pub mod bestlanes;
+pub mod closeup;
 pub mod demand;
 pub mod gpu;
 pub mod metrics;
