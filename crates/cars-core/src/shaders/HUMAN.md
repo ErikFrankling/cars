@@ -47,8 +47,9 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 |---|---|---|---|
 | Yellow: stop if time to line ≥ driver's threshold, logistic 5.1 s, 0.54 s | ADAPTED | DLR Urban Traffic, one Sunday, report 05. Those who go keep going into red for at most 2.5 s to the line | off with `--human-off yellow` |
 | Gap acceptance in place of SUMO's arrival windows | ESTABLISHED | TRVMB, Aimsun, HCM family | - |
-| Critical gap table by movement and sign, +0.45 s per 10 km/h | ESTABLISHED | TRVMB Kapacitet table 3. Applied everywhere, not only in Sweden: no Berlin table is open. Report 05's roundabout value is separate | `gap_junction` |
-| Roundabout 2.95 s | ESTABLISHED | Swiss roundabouts, report 05, one day | `gap_roundabout` |
+| Critical gap table by movement and sign, +0.45 s per 10 km/h | ESTABLISHED | TRVMB Kapacitet table 3. Applied everywhere: no Berlin table is open | - |
+| Those gaps × 0.5 in the entry test | ADAPTED | The test runs from when the car would reach the line and foes count until they clear. With 0.5, minor road capacity meets Siegloch with TRVMB's 5.1 s, within 25% at major flows up to 640 veh/h | `gap_junction` |
+| Roundabout: 2.95 s target, entry test value 1.5 s | ADAPTED | Swiss roundabouts, report 05, one day. Value by analogy with the factor above; the estimator on simulated traces does not reach the target (see 16) | `gap_roundabout` |
 | Lowest corner speed 6 m/s | INVENTED | netconvert's corners give 2 m/s under the driver curve rule. Calibrated to TRVMB's 1,700 per green hour | `turn_min` |
 | Sees a give-way line from 30 m | INVENTED | SUMO's 9 m makes every car slow to walking pace with no one coming | constant |
 | Exit-clear compliance 90% | ESTABLISHED | Vissim percentage, physics branch | `exit_comply` |
