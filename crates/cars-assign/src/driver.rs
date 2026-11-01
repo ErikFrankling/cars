@@ -6,7 +6,7 @@ use std::time::Instant;
 
 use cars_core::demand::Demand;
 use cars_core::net::Net;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use serde::Serialize;
 
 use crate::calibrate::{self, CountError, Counts, Role};
@@ -563,15 +563,44 @@ pub fn departures(x: &mut Setup, out: &Path, iters: u32, schedule: Schedule, mem
     Ok(result)
 }
 
-/// A saturating stream on each edge, onto all its successors, with nothing else on the network.
+/// A saturating stream on each edge, onto all its successors, with nothing else on the network. Links
+/// that meet at a junction would get in each other's way, so they run in separate days.
 pub fn measure_discharge(x: &Setup, edges: &[u32]) -> Result<Vec<(u32, f32)>, String> {
     let succ = cuts::successors(&x.net, &x.supply);
+    let tested: Vec<u32> = edges.iter().copied().filter(|&e| !succ[e as usize].is_empty()).collect();
+    let junctions = |e: u32| -> Vec<&str> {
+        let edge = &x.net.edges[x.supply.normal[e as usize] as usize];
+        let mut v = vec![edge.from.as_str(), edge.to.as_str()];
+        for &n in &succ[e as usize] {
+            v.push(x.net.edges[x.supply.normal[n as usize] as usize].to.as_str());
+        }
+        v
+    };
+    let mut groups: Vec<(Vec<u32>, FxHashSet<&str>)> = Vec::new();
+    for &e in &tested {
+        let js = junctions(e);
+        match groups.iter_mut().find(|g| js.iter().all(|j| !g.1.contains(j))) {
+            Some(g) => {
+                g.0.push(e);
+                g.1.extend(js);
+            }
+            None => groups.push((vec![e], js.into_iter().collect())),
+        }
+    }
+    eprintln!("discharge test: {} links in {} separate days", tested.len(), groups.len());
+    let mut out = Vec::new();
+    for (group, _) in &groups {
+        out.extend(discharge_day(x, group, &succ)?);
+    }
+    Ok(out)
+}
+
+fn discharge_day(x: &Setup, tested: &[u32], succ: &[Vec<u32>]) -> Result<Vec<(u32, f32)>, String> {
     let mut demand = Demand::load(&x.net, &[], &x.s.additional, 1, None)?;
     let vt = demand.vtype_index.get("passenger").or(demand.vtype_index.get("DEFAULT_VEHTYPE")).copied().unwrap_or(0);
     let (period, warm, window) = (1.2f32, 300.0f32, 900.0f32);
     let mut tv = Vec::new();
-    let tested: Vec<u32> = edges.iter().copied().filter(|&e| !succ[e as usize].is_empty()).collect();
-    for &e in &tested {
+    for &e in tested {
         // Round the successors, or a wide link is measured through the one lane that turns.
         let ways = &succ[e as usize];
         let first_route = demand.routes.len() as u32;
@@ -590,7 +619,6 @@ pub fn measure_discharge(x: &Setup, edges: &[u32]) -> Result<Vec<(u32, f32)>, St
             tv.push(t);
         }
     }
-    eprintln!("discharge test: {} links, {} trips", tested.len(), tv.len());
     let mut pop = Population::new(demand, vec![Default::default()], tv);
     let mut s = x.s.clone();
     s.begin = 0.0;
@@ -615,6 +643,7 @@ pub struct VerdictReport {
     pub stalled_at_s: Option<f32>,
     pub due_at_stall: f64,
     pub half_demand_day: Option<serde_json::Value>,
+    pub half_demand_cut_load: f64,
     pub converged: Convergence,
     pub first_queues: Vec<serde_json::Value>,
     pub suspect_links: Vec<serde_json::Value>,
@@ -654,7 +683,7 @@ pub fn verdict(x: &mut Setup, out: &Path, seed: u64) -> Result<VerdictReport, St
         x.pop.travellers = all;
         x.pop.fill_trips();
     }
-    let half_gridlocks = half_load.as_ref().is_some_and(|h| h["stalled_at_s"].is_number() || h["unfinished_share"].as_f64().unwrap_or(0.0) >= 0.001);
+    let half_failed = half_load.as_ref().is_some_and(|h| h["stalled_at_s"].is_number() || h["unfinished_share"].as_f64().unwrap_or(0.0) >= 0.001);
     let succ = cuts::successors(&x.net, &x.supply);
     let mut family = cuts::cluster_cuts(&x.supply, &succ);
     if let Some(p) = &x.s.cuts {
@@ -675,6 +704,9 @@ pub fn verdict(x: &mut Setup, out: &Path, seed: u64) -> Result<VerdictReport, St
     let mut reports: Vec<CutReport> = family.iter().flat_map(|c| cuts::check_cut(c, &x.pop, &x.supply, &discharge, x.s.begin, x.s.horizon)).collect();
     reports.sort_by(|a, b| b.shortfall_1h.total_cmp(&a.shortfall_1h).then((b.peak_1h_crossing as f64 / b.capacity_veh_h.max(1.0)).total_cmp(&(a.peak_1h_crossing as f64 / a.capacity_veh_h.max(1.0)))));
     let violated: Vec<CutReport> = reports.iter().filter(|r| r.violated).cloned().collect();
+    // Half of a demand that is still at a cut's capacity says nothing against the network.
+    let half_cut_load = reports.iter().map(|r| 0.5 * r.peak_1h_crossing as f64 / (r.capacity_veh_h + r.storage_veh).max(1.0)).fold(0.0, f64::max);
+    let half_gridlocks = half_failed && half_cut_load < 0.9;
     let min_unmet = reports.iter().map(|r| r.min_unmet).fold(0.0, f64::max);
     // First persistent queues, and whether what they discharge is under half the nominal screen.
     let n_bins = day.counts.n_bins;
@@ -745,6 +777,7 @@ pub fn verdict(x: &mut Setup, out: &Path, seed: u64) -> Result<VerdictReport, St
         stalled_at_s: day.stalled_at_s,
         due_at_stall: day.due_at_stall,
         half_demand_day: half_load,
+        half_demand_cut_load: half_cut_load,
         converged: conv,
         first_queues,
         suspect_links: suspect,
