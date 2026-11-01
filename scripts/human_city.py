@@ -53,7 +53,12 @@ def one(place, case, a):
     if case != 'sumo':
         cmd += ['--time-to-teleport', '0']
     t = time.time()
-    r = subprocess.run(list(map(str, cmd)), capture_output=True, text=True)
+    # The PC's load guard kills a big job when the desktop stalls. Just try again.
+    for _ in range(4):
+        r = subprocess.run(list(map(str, cmd)), capture_output=True, text=True)
+        if r.returncode != -15:
+            break
+        time.sleep(60)
     (out / f'{case}.log').write_text(r.stdout + r.stderr)
     row = dict(place=place, case=case, exit=r.returncode, wall=round(time.time() - t, 1))
     text = r.stdout + r.stderr
