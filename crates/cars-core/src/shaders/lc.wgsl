@@ -556,6 +556,10 @@ fn lc_advice(trip: u32, speed: f32) { atomicMin(&advice[trip], u32(max(0.0, spee
 
 // CF::getSecureGap while changing lanes: a vehicle already braking may need less room.
 fn secure_gap_lc(v: f32, vl: f32, bl: f32, acc: f32, safety: f32, leader_cacc: bool) -> f32 {
+    // Physical mode: the driver's own gap law, at Vissim's 0.6 during a change. Hard limits are checked apart.
+    if (mu > 0.0 && ty.model == MODEL_KRAUSS) {
+        return max(0.0, ty.ph_tau * v + v * v / (2.0 * ty.decel) - vl * vl / (2.0 * ty.b_assume)) * P.lc_gap;
+    }
     var g: f32;
     switch ty.model {
         case MODEL_IDM: { g = idm_secure_gap(v, vl); }

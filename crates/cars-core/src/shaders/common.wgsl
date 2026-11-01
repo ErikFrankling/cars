@@ -89,7 +89,7 @@ struct Params {
     queue_speed: f32,
     lost_after: f32,
     zones_ahead: u32,
-    pad_b: f32,
+    lc_gap: f32,
     pad_c: f32,
 }
 

@@ -45,7 +45,8 @@ pub struct GpuParams {
     pub lost_after: f32,
     /// Hold zones by where a body can reach, and ask again for those ahead on the lane. Off: by lane.
     pub zones_ahead: u32,
-    pub pad: [f32; 2],
+    pub lc_gap: f32,
+    pub pad: f32,
 }
 
 #[repr(C)]
@@ -713,13 +714,14 @@ impl World {
             detect_every: if cfg.mu > 0.0 { cfg.detect_every } else { 0 },
             grid_mask: (capacity.max(16) as u64 * 2).next_power_of_two() as u32 - 1,
             trace_len: cfg.speed_trace.len() as u32,
-            safety: (cfg.tune("certificate", 1.0) as u32) | ((cfg.tune("arbiter", 1.0) as u32) << 1) | ((cfg.tune("exit_clear", 1.0) as u32) << 2) | ((cfg.tune("lc_path", 1.0) as u32) << 3),
+            safety: (cfg.tune("certificate", 1.0) as u32) | ((cfg.tune("arbiter", 1.0) as u32) << 1) | ((cfg.tune("exit_clear", 1.0) as u32) << 2) | ((cfg.tune("lc_path", 1.0) as u32) << 3) | ((cfg.tune("rewind", 1.0) as u32) << 4),
             width_margin: cfg.tune("width_margin", 0.1),
             claim_scale: cfg.tune("claim_scale", 1.0),
             queue_speed: cfg.tune("queue_speed", 2.0),
             lost_after: cfg.tune("lost_after", 0.0),
             zones_ahead: cfg.tune("zones_ahead", 0.0) as u32,
-            pad: [0.0; 2],
+            lc_gap: cfg.tune("lc_gap", 0.6),
+            pad: 0.0,
         };
         w
     }

@@ -64,6 +64,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Heading limit 12° | ADAPTED | 11 §4.2, I11 | |
 | Old-lane leader must leave the forward travel a change takes | INVENTED | Stops a change halting across two lanes | `lc_path` |
 | No stopping for lane-change reservation while a change is under way | INVENTED | LC2013's blocker would hold the car at a stand, where it cannot finish | |
+| Lane-change acceptance: the driver's gap law at factor 0.6 | ESTABLISHED | Vissim's safety distance factor during a change, 0.6 [vlc] | `lc_gap` |
 | Certificate on target-lane gaps | ADAPTED | Vissim's cooperative gap is laxer, factor 0.6 [vlc]. Ours is the full certificate | |
 | Claims on target-lane cells | ADAPTED | TRANSIMS, LPSim; 15 row 29 | |
 | Reach of claim: certificate gap | INVENTED | Two changers side by side respect each other | |

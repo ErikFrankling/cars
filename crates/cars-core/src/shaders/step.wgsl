@@ -858,6 +858,7 @@ fn foe_on_last_approach(link: u32, a: f32, va: f32, vl: f32, ego: Veh) -> bool {
 // MSVehicle::checkRewindLinkLanes.
 fn check_rewind(ego: Veh, base: u32, n: u32, lengths_in_front: f32) {
     if ((lanes[ego.lane].flags & LANE_ROUNDABOUT) != 0u || n == 0u) { return; }
+    if (P.mu > 0.0 && (P.safety & 16u) == 0u) { return; }
     let need = ty.length + ty.min_gap;
     var seen = -lengths_in_front;
     var found = false;
