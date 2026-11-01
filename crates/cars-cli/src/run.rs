@@ -201,7 +201,7 @@ pub fn run(args: Args) {
         return;
     }
     let checks = if args.trusted { Checks::Trusted } else { Checks::Safe };
-    let gpu = pollster::block_on(Gpu::headless(GpuOptions { adapter_name: Some("7900".into()), checks })).expect("gpu");
+    let gpu = pollster::block_on(Gpu::headless(GpuOptions { adapter_name: Some(std::env::var("CARS_ADAPTER").unwrap_or("7900".into())), checks })).expect("gpu");
     let mut sim = Sim::new(&gpu, &world).expect("sim");
     sim.target_submit_ms = args.target_submit_ms;
     let in_box: Vec<bool> = net

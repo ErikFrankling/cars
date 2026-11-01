@@ -37,6 +37,14 @@ pub fn vclass_mask(list: &str) -> u32 {
     mask
 }
 
+fn permissions(e: &BytesStart) -> u32 {
+    match (attr(e, "allow"), attr(e, "disallow")) {
+        (Some(a), _) => vclass_mask(&a),
+        (None, Some(d)) => !vclass_mask(&d),
+        (None, None) => u32::MAX,
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EdgeFunc {
     Normal,
@@ -86,6 +94,7 @@ pub struct Conn {
     pub state: u8,
     pub keep_clear: bool,
     pub visibility: f32,
+    pub allow: u32,
 }
 
 #[derive(Clone, Debug)]
@@ -154,6 +163,11 @@ impl Net {
         net.parse(path, &mut pending_conns)?;
         for c in pending_conns {
             net.add_conn(c);
+        }
+        // The kernels read a link's permissions from its via lane, so a link without one has none.
+        let unseen = net.conns.iter().filter(|c| c.via.is_none() && c.allow != u32::MAX).count();
+        if unseen > 0 {
+            eprintln!("warning: {unseen} restricted connections have no internal lane: routes respect them, lane choice in the step does not");
         }
         net.compute_bounds();
         Ok(net)
@@ -281,11 +295,7 @@ impl Net {
 
     fn add_lane(&mut self, e: &BytesStart, edge: u32) {
         let Some(id) = attr(e, "id") else { return };
-        let allow = match (attr(e, "allow"), attr(e, "disallow")) {
-            (Some(a), _) => vclass_mask(&a),
-            (None, Some(d)) => !vclass_mask(&d),
-            (None, None) => u32::MAX,
-        };
+        let allow = permissions(e);
         let index = self.lanes.len() as u32;
         self.lane_index.insert(id.clone(), index);
         self.lanes.push(Lane {
@@ -352,6 +362,9 @@ impl Net {
         }
         let via = c.via.as_ref().and_then(|v| self.lane_index.get(v).copied());
         let tl = c.tl.as_ref().and_then(|t| self.tls_index.get(t).copied());
+        if let Some(v) = via {
+            self.lanes[v as usize].allow &= c.allow;
+        }
         self.conns.push(Conn {
             from_edge,
             from_lane: c.from_lane,
@@ -364,6 +377,7 @@ impl Net {
             state: c.state,
             keep_clear: c.keep_clear,
             visibility: c.visibility,
+            allow: c.allow,
         });
     }
 
@@ -378,6 +392,15 @@ impl Net {
             }
         }
         self.bounds = b;
+    }
+
+    /// The classes that may drive this connection, as `MSEdge::rebuildAllowedTargets`.
+    pub fn conn_allow(&self, c: &Conn) -> u32 {
+        let (Some(from), Some(to)) = (self.lane_of(c.from_edge, c.from_lane), self.lane_of(c.to_edge, c.to_lane)) else {
+            return 0;
+        };
+        let via = c.via.map_or(u32::MAX, |v| self.lanes[v as usize].allow);
+        self.lanes[from as usize].allow & self.lanes[to as usize].allow & via & c.allow
     }
 
     pub fn is_internal_lane(&self, lane: u32) -> bool {
@@ -404,6 +427,7 @@ struct PendingConn {
     state: u8,
     keep_clear: bool,
     visibility: f32,
+    allow: u32,
 }
 
 impl PendingConn {
@@ -420,6 +444,7 @@ impl PendingConn {
             state: attr(e, "state").and_then(|d| d.bytes().next()).unwrap_or(b'M'),
             keep_clear: attr(e, "keepClear").is_none_or(|k| k != "0" && k != "false"),
             visibility: attr_f32(e, "visibility").unwrap_or(4.5),
+            allow: permissions(e),
         })
     }
 }

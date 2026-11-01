@@ -129,6 +129,8 @@ pub struct Snapshot {
     pub by_lane: HashMap<u32, Vec<usize>>,
     pub teleports: u32,
     pub collisions: u32,
+    pub cj_phase: Vec<u32>,
+    pub arrived: u32,
     /// Trips a trace says collided. Without one, a vehicle going to the dummy lane counts as a
     /// collision when the engine's counter moved.
     pub collided: Option<std::collections::HashSet<u32>>,
@@ -143,6 +145,8 @@ impl Snapshot {
             by_lane: HashMap::new(),
             teleports: 0,
             collisions: 0,
+            cj_phase: Vec::new(),
+            arrived: 0,
             collided: None,
             step: u64::MAX,
         }
@@ -169,6 +173,14 @@ impl Snapshot {
             let c = sim.counters(g);
             self.teleports = c[4];
             self.collisions = c[7];
+            self.arrived = c[2];
+            if let Some(cj) = &sim.coord {
+                // Whatever the auditor saw in a box counts as a collision on the frame.
+                let seen: Vec<u32> = sim.read(g, &cj.events, 1);
+                self.collisions += seen[0];
+                let js: Vec<cars_core::coord::GpuCjJunction> = sim.read(g, &cj.junctions, (cj.junctions.size() / std::mem::size_of::<cars_core::coord::GpuCjJunction>() as u64).max(1));
+                self.cj_phase = js.iter().map(|j| j.phase).collect();
+            }
         }
         self.poses = r.instances(g, sim, self.vs.len() as u32);
     }
@@ -268,6 +280,19 @@ pub struct Overlay {
     collisions: u32,
     pub first_teleports: Option<u32>,
     pub first_collisions: u32,
+    pub first_arrived: u32,
+    brake: BrakeTotals,
+}
+
+/// Running totals for the `brake` overlay: what every car on an approach has thrown away so far.
+#[derive(Default)]
+struct BrakeTotals {
+    last: HashMap<u32, (f32, bool, bool)>,
+    lost: f32,
+    wh: f32,
+    hard: u32,
+    stops: u32,
+    cars: u32,
 }
 
 fn corners(p: &Instance) -> [[f32; 2]; 4] {
@@ -290,7 +315,264 @@ fn rectangles_touch(a: &Instance, b: &Instance) -> bool {
     ![a.dir, [-a.dir[1], a.dir[0]], b.dir, [-b.dir[1], b.dir[0]]].iter().any(|&axis| separated(&ca, &cb, axis))
 }
 
+const NAVY: [u8; 3] = [18, 26, 44];
+
+/// A point on a movement's path, in network metres, straight beyond either end.
+fn coord_point(cw: &cars_core::coord::CoordWorld, mi: u32, s: f32) -> [f32; 2] {
+    let m = &cw.links[mi as usize];
+    let pts = &cw.path[m.path_start as usize..(m.path_start + m.path_n) as usize];
+    let spacing = m.path_len / (m.path_n - 1).max(1) as f32;
+    let k = ((s / spacing).floor().max(0.0) as usize).min(pts.len().saturating_sub(2));
+    let u = s / spacing - k as f32;
+    [pts[k][0] + u * (pts[k + 1][0] - pts[k][0]), pts[k][1] + u * (pts[k + 1][1] - pts[k][1])]
+}
+
 impl Overlay {
+    /// Grants, planned paths and slots, and who is talking to the junction.
+    #[allow(clippy::too_many_arguments)]
+    /// Brake lights on every car, red over 1 m/s2 and bright over 2.5, and the running totals.
+    fn draw_brake(&mut self, c: &mut Canvas, at: &dyn Fn([f32; 2]) -> [f32; 2], world: &World, snap: &Snapshot, shown: &[usize], mpp: f32) {
+        let Some(cw) = world.coord.as_ref() else { return };
+        for v in snap.vs.iter() {
+            if v.flags & F_REMOVED != 0 || v.replica != 0 || v.lane == world.params.dummy_lane {
+                continue;
+            }
+            let Some(li) = cw.lane_info.get(v.lane as usize) else { continue };
+            if li.app == u32::MAX {
+                continue;
+            }
+            let t = &mut self.brake;
+            let (prev, was_hard, was_stopped) = t.last.get(&v.trip).copied().unwrap_or_else(|| {
+                t.cars += 1;
+                (v.speed, false, false)
+            });
+            if v.speed < prev {
+                t.lost += prev - v.speed;
+                t.wh += 0.5 * 1500.0 * (prev * prev - v.speed * v.speed) / 3600.0;
+            }
+            let hard = v.acc < -2.5;
+            let stopped = v.speed < 0.5;
+            if hard && !was_hard {
+                t.hard += 1;
+            }
+            if stopped && !was_stopped {
+                t.stops += 1;
+            }
+            t.last.insert(v.trip, (v.speed, hard || (was_hard && v.acc < -1.0), stopped || (was_stopped && v.speed < 2.0)));
+        }
+        for &i in shown {
+            let v = &snap.vs[i];
+            if v.acc >= -1.0 {
+                continue;
+            }
+            let p = &snap.poses[i];
+            let bright = v.acc < -2.5;
+            let half = p.length * 0.5;
+            let rear = [p.xy[0] - p.dir[0] * half, p.xy[1] - p.dir[1] * half];
+            let mid = [p.xy[0] - p.dir[0] * half * 0.2, p.xy[1] - p.dir[1] * half * 0.2];
+            let width = (1.9 / mpp).max(3.0);
+            c.line(at(rear), at(mid), width, if bright { [255, 30, 30] } else { [200, 25, 25] }, if bright { 1.0 } else { 0.85 });
+            if bright {
+                c.ring(at(rear), width * 0.9, 1.5, [255, 90, 90], 0.9);
+            }
+        }
+        let t = &self.brake;
+        let n = t.cars.max(1) as f32;
+        let (x, y) = (c.w - 500, if c.w < 1400 { 84 } else { 18 });
+        c.rect(x - 10, y - 8, 490, 78, NAVY, 0.72);
+        c.text(x, y, &format!("stops {}   hard brakes {}", t.stops, t.hard), 2, if t.hard > 0 { [255, 170, 150] } else { WHITE });
+        c.text(x, y + 22, &format!("speed thrown away {:.0} m/s  ({:.1} per car)", t.lost, t.lost / n), 2, WHITE);
+        c.text(x, y + 44, &format!("braked away {:.0} Wh  ({:.1} per car)", t.wh, t.wh / n), 2, WHITE);
+    }
+
+    /// Each car's broadcast arrival to the millisecond beside it, and the slot chart filling up from far out.
+    fn draw_arrivals(&mut self, c: &mut Canvas, at: &dyn Fn([f32; 2]) -> [f32; 2], world: &World, snap: &Snapshot, shown: &[usize], time: f32) {
+        use cars_core::coord::{CJ_ADVISED, CJ_FIRM, CJ_PENDING, CJ_STATE_MASK};
+        let Some(cw) = world.coord.as_ref() else { return };
+        for &i in shown {
+            let v = &snap.vs[i];
+            let state = v.cj_state & CJ_STATE_MASK;
+            let Some(li) = cw.lane_info.get(v.lane as usize) else { continue };
+            if li.app == u32::MAX || (state != CJ_ADVISED && state != CJ_FIRM && state != CJ_PENDING) {
+                continue;
+            }
+            let p = at(snap.poses[i].xy);
+            let col = if state == CJ_FIRM { GREEN } else { AMBER };
+            let ms = v.cj_t_ms;
+            c.label(p[0] as i32 + 8, p[1] as i32 - 14, &format!("{}.{:03}", ms / 1000, ms % 1000), 1, col);
+        }
+        // Rows are approach lanes, the axis runs from now to 30 s ahead.
+        let horizon = 30.0f32;
+        let rows = cw.apps.len().min(16) as i32;
+        let (w, row_h) = (c.w - 160, 12);
+        let (x0, y0) = (120, c.h - 110 - rows * row_h);
+        c.rect(x0 - 100, y0 - 26, w + 120, rows * row_h + 40, NAVY, 0.8);
+        c.text(x0 - 90, y0 - 20, "slots: when each car has said it reaches the line. amber: planned, green: firm", 1, WHITE);
+        for s in (0..=30).step_by(5) {
+            let x = x0 + (s as f32 / horizon * w as f32) as i32;
+            c.rect(x, y0 - 3, 1, rows * row_h + 3, WHITE, 0.25);
+            c.text(x - 4, y0 + rows * row_h + 2, &format!("+{s}"), 1, [205, 212, 220]);
+        }
+        for (a, app) in cw.apps.iter().take(16).enumerate() {
+            let _ = app;
+            c.text(x0 - 90, y0 + a as i32 * row_h, &format!("lane {}", a + 1), 1, [205, 212, 220]);
+        }
+        for v in snap.vs.iter() {
+            if v.flags & F_REMOVED != 0 || v.replica != 0 {
+                continue;
+            }
+            let state = v.cj_state & CJ_STATE_MASK;
+            if state != CJ_ADVISED && state != CJ_FIRM && state != CJ_PENDING {
+                continue;
+            }
+            let Some(li) = cw.lane_info.get(v.lane as usize) else { continue };
+            if li.app == u32::MAX || v.cj_link as usize >= cw.links.len() {
+                continue;
+            }
+            let t = v.cj_t_ms as f32 * 0.001 - time;
+            if !(0.0..=horizon).contains(&t) {
+                continue;
+            }
+            let m = &cw.links[v.cj_link as usize];
+            let dur = (m.path_len + 5.0) / v.cj_v_line.max(2.0);
+            let row = (li.app as i32 - 0).min(rows - 1);
+            let x = x0 + (t / horizon * w as f32) as i32;
+            c.rect(x, y0 + row * row_h, ((dur / horizon * w as f32) as i32).clamp(3, x0 + w - x), row_h - 3, if state == CJ_FIRM { GREEN } else { AMBER }, 0.9);
+        }
+    }
+
+    fn draw_coord(&mut self, c: &mut Canvas, at: &dyn Fn([f32; 2]) -> [f32; 2], world: &World, snap: &Snapshot, shown: &[usize], time: f32, modes: &[String]) {
+        use cars_core::coord::{CJ_ADVISED, CJ_BOX, CJ_FIRM, CJ_PENDING, CJ_STATE_MASK};
+        let Some(cw) = world.coord.as_ref() else { return };
+        let on = |s: &str| modes.iter().any(|m| m == s || m == "all");
+        let front = |i: usize| {
+            let p = &snap.poses[i];
+            [p.xy[0] + p.dir[0] * p.length * 0.5, p.xy[1] + p.dir[1] * p.length * 0.5]
+        };
+        let now = time;
+        let info = |lane: u32| cw.lane_info.get(lane as usize).copied();
+        let mut slots: Vec<(f32, f32, [u8; 3], &str)> = Vec::new();
+        // The signal baseline: its lamps are the coordinator's own phase, drawn as stop bars.
+        if on("grants") {
+            for (ji, j) in cw.junctions.iter().enumerate() {
+                if j.mode != cars_core::coord::MODE_SIGNAL {
+                    continue;
+                }
+                let phase = snap.cj_phase.get(ji).copied().unwrap_or(0);
+                for a in &cw.apps[j.app_start as usize..(j.app_start + j.app_count) as usize] {
+                    let green = cw.links[a.mov_start as usize..(a.mov_start + a.mov_count) as usize].iter().any(|m| (m.group >> phase) & 1 != 0);
+                    let m0 = &cw.links[a.mov_start as usize];
+                    let p = cw.path[m0.path_start as usize];
+                    let n = [-m0.dir_in[1] * 1.6, m0.dir_in[0] * 1.6];
+                    c.line(at([p[0] + n[0], p[1] + n[1]]), at([p[0] - n[0], p[1] - n[1]]), 5.0, if green { GREEN } else { RED }, 1.0);
+                }
+            }
+        }
+        if on("channel") {
+            for j in &cw.junctions {
+                let q = at([j.cx, j.cy]);
+                c.ring(q, 7.0, 2.0, WHITE, 0.9);
+                c.ring(q, 13.0, 1.0, WHITE, 0.5);
+            }
+        }
+        for &i in shown {
+            let v = &snap.vs[i];
+            let state = v.cj_state & CJ_STATE_MASK;
+            let Some(li) = info(v.lane) else { continue };
+            let in_box = li.box_mov != u32::MAX;
+            let mi = if in_box { li.box_mov } else { v.cj_link };
+            let color = match state {
+                CJ_FIRM => GREEN,
+                CJ_BOX => CYAN,
+                CJ_ADVISED => AMBER,
+                CJ_PENDING => MAGENTA,
+                _ => SLATE,
+            };
+            if mi == u32::MAX || mi as usize >= cw.links.len() {
+                continue;
+            }
+            let m = cw.links[mi as usize];
+            let s = if in_box { li.s_offset + v.pos } else { v.pos - world.lanes[v.lane as usize].length };
+            if on("paths") && (state == CJ_FIRM || state == CJ_BOX || state == CJ_PENDING) {
+                let mut last = front(i);
+                let alpha = if state == CJ_BOX { 0.55 } else { 0.8 };
+                let step = 1.0;
+                let mut x = s.max(0.0) + step;
+                while x < m.path_len {
+                    let p = coord_point(cw, mi, x);
+                    c.line(at(last), at(p), 2.0, color, alpha);
+                    last = p;
+                    x += step;
+                }
+                c.line(at(last), at(coord_point(cw, mi, m.path_len)), 2.0, color, alpha);
+                // The stretches of this path that a crossing foe also needs.
+                for f in &cw.conflicts[m.conf_start as usize..(m.conf_start + m.conf_count) as usize] {
+                    if f.s_out < s {
+                        continue;
+                    }
+                    let (a, b) = (coord_point(cw, mi, f.s_in), coord_point(cw, mi, f.s_out));
+                    c.line(at(a), at(b), 5.0, color, 0.28);
+                }
+            }
+            if on("grants") {
+                let p = at(snap.poses[i].xy);
+                let t_left = v.cj_t_line - now;
+                match state {
+                    CJ_FIRM => {
+                        c.ring(p, 11.0, 2.0, GREEN, 0.9);
+                        c.label(p[0] as i32 + 13, p[1] as i32 - 16, &format!("slot {t_left:.1}s"), 1, GREEN);
+                    }
+                    CJ_ADVISED => {
+                        c.ring(p, 11.0, 1.5, AMBER, 0.7);
+                        let text = if t_left < 0.0 { "holding".to_string() } else { format!("{:.0} km/h {t_left:.0}s", v.cj_v_cruise * 3.6) };
+                        c.label(p[0] as i32 + 13, p[1] as i32 - 16, &text, 1, AMBER);
+                    }
+                    CJ_PENDING => {
+                        c.ring(p, 11.0, 2.0, MAGENTA, 1.0);
+                        c.label(p[0] as i32 + 13, p[1] as i32 - 16, "GRANT LOST", 1, MAGENTA);
+                    }
+                    CJ_BOX => c.ring(p, 9.0, 1.5, CYAN, 0.8),
+                    _ => {
+                        if !in_box && li.app != u32::MAX && world.lanes[v.lane as usize].length - v.pos < 60.0 {
+                            c.label(p[0] as i32 + 13, p[1] as i32 - 16, if v.speed < 0.5 { "holding" } else { "no grant" }, 1, SLATE);
+                        }
+                    }
+                }
+                if v.cj_state & 64 != 0 {
+                    c.label(p[0] as i32 + 13, p[1] as i32 + 12, "STALLED", 2, RED);
+                }
+            }
+            if on("channel") && (li.app != u32::MAX || in_box) {
+                let j = &cw.junctions[m.junction as usize];
+                let (a, b) = (at(snap.poses[i].xy), at([j.cx, j.cy]));
+                let (col, al) = if state == CJ_PENDING { (MAGENTA, 0.9) } else if state == CJ_FIRM { (GREEN, 0.3) } else { (SLATE, 0.18) };
+                c.line(a, b, 1.2, col, al);
+            }
+            if state == CJ_FIRM || state == CJ_PENDING {
+                let width = (m.path_len + 5.0) / v.cj_v_line.max(2.0);
+                let name = match state {
+                    CJ_PENDING => "lost",
+                    _ => "",
+                };
+                slots.push((v.cj_t_line - now, width, color, name));
+            }
+        }
+        if on("grants") && !slots.is_empty() {
+            slots.sort_by(|a, b| a.0.total_cmp(&b.0));
+            let w = (c.w / 3).min(300);
+            let (x0, y0) = (c.w - w - 30, 96);
+            let horizon = 6.0;
+            let rows = slots.len().min(16) as i32;
+            c.rect(x0 - 8, y0 - 22, w + 16, rows * 11 + 30, NAVY, 0.72);
+            c.text(x0, y0 - 16, if w < 300 { "slots, +6 s" } else { "granted slots, now to +6 s" }, 1, WHITE);
+            for (r, (t, width, col, _)) in slots.iter().take(16).enumerate() {
+                let bar_x = x0 + ((t.max(0.0) / horizon).min(1.0) * w as f32) as i32;
+                let bar_w = ((width / horizon).min(1.0) * w as f32) as i32;
+                c.rect(bar_x, y0 + r as i32 * 11, bar_w.min(x0 + w - bar_x).max(2), 8, *col, 0.9);
+            }
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn draw(&mut self, c: &mut Canvas, cam: Camera, net: &Net, world: &World, snap: &Snapshot, time: f32, modes: &[String]) {
         let on = |s: &str| modes.iter().any(|m| m == s || m == "all");
@@ -389,6 +671,15 @@ impl Overlay {
                     c.line(at(mid), at(b), 1.5, MAGENTA, 0.45);
                 }
             }
+        }
+        if on("grants") || on("paths") || on("channel") {
+            self.draw_coord(c, &at, world, snap, &shown, time, modes);
+        }
+        if on("brake") {
+            self.draw_brake(c, &at, world, snap, &shown, mpp);
+        }
+        if on("arrivals") {
+            self.draw_arrivals(c, &at, world, snap, &shown, time);
         }
         for &i in &shown {
             let v = &snap.vs[i];
@@ -520,6 +811,7 @@ pub struct Hud<'a> {
     pub mpp: f32,
     pub teleports: Option<u32>,
     pub collisions: Option<u32>,
+    pub trips: Option<u32>,
     pub modes: &'a [String],
 }
 
@@ -547,7 +839,9 @@ pub fn draw_hud(c: &mut Canvas, hud: &Hud) {
     c.label(24, h - 40, &line, 2, WHITE);
     if let (Some(a), Some(b)) = (hud.teleports, hud.collisions) {
         let color = if a + b > 0 { RED } else { [170, 180, 190] };
-        c.label(24, h - 64, &format!("teleports {a}  collisions {b} in this clip"), 2, color);
+        let trips = hud.trips.map_or(String::new(), |t| format!("  {t} trips"));
+        let text = if w < 900 { format!("teleports {a} collisions {b}{trips}") } else { format!("teleports {a}  collisions {b} in this clip{trips} done") };
+        c.label(24, h - 64, &text, 2, color);
     }
     let on = |s: &str| hud.modes.iter().any(|m| m == s || m == "all");
     let mut y = h - 88;
@@ -558,8 +852,11 @@ pub fn draw_hud(c: &mut Canvas, hud: &Hud) {
         ("state", "WAIT/GO/APPR, link state, metres to link", GREEN),
         ("speed", "white: km/h", WHITE),
         ("events", "red marker: teleport, collision or body overlap", RED),
+        ("grants", "green: firm slot, amber: speed advice, magenta: grant lost, cyan: in the box, grey: no grant", GREEN),
+        ("paths", "lines: planned paths through the box, wide: stretches shared with a crossing foe", CYAN),
+        ("channel", "white rings: coordinator, lines: messages, magenta: lost grant being resent", WHITE),
     ] {
-        if on(name) {
+        if on(name) && w >= 900 {
             c.label(24, y, text, 1, color);
             y -= 14;
         }
@@ -568,9 +865,11 @@ pub fn draw_hud(c: &mut Canvas, hud: &Hud) {
     let metres = nice.iter().copied().find(|m| m / hud.mpp > 90.0).unwrap_or(1000.0);
     let px = (metres / hud.mpp) as i32;
     let x = w - 40 - px;
-    c.rect(x - 8, h - 66, px + 16, 44, [8, 8, 10], 0.55);
-    c.rect(x, h - 34, px, 5, WHITE, 1.0);
-    c.rect(x, h - 40, 3, 11, WHITE, 1.0);
-    c.rect(x + px - 3, h - 40, 3, 11, WHITE, 1.0);
-    c.text(x, h - 60, &format!("{metres:.0} m"), 2, WHITE);
+    // A narrow frame has no room beside the text, so the bar moves above it.
+    let lift = if w < 900 { 80 } else { 0 };
+    c.rect(x - 8, h - 66 - lift, px + 16, 44, [8, 8, 10], 0.55);
+    c.rect(x, h - 34 - lift, px, 5, WHITE, 1.0);
+    c.rect(x, h - 40 - lift, 3, 11, WHITE, 1.0);
+    c.rect(x + px - 3, h - 40 - lift, 3, 11, WHITE, 1.0);
+    c.text(x, h - 60 - lift, &format!("{metres:.0} m"), 2, WHITE);
 }
