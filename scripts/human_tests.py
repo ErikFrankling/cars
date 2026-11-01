@@ -140,7 +140,7 @@ def queue(seeds=None, n=15, dt=None, region=None, param=None):
     for seed in range(seeds):
         veh = ''.join(f'<vehicle id="v{k:02d}" type="h" depart="{k*2}" departSpeed="max" route="r"/>' for k in range(n))
         (d / 'r.xml').write_text(f'<routes>{VTYPE}<route id="r" edges="in out"/>{veh}</routes>')
-        extra = (['--region', region] if region else []) + ([x for t in param.split(',') for x in ('--tune', t)] if param else [])
+        extra = (['--region', region] if region else []) + ([x for t in param.split(',') if t for x in ('--tune', t)] if param else [])
         rep, fc = cars(d, '--dt', dt or A.dt, '--end', 150, '--seed', seed, '--additional', d / 'tl.xml', *extra, tag=f's{seed}', interval=dt or A.dt)
         f = pd.read_csv(fc, usecols=['time', 'trip', 'lane', 'pos', 'speed'], dtype={'trip': str, 'lane': str})
         green = float(_first_green(d))
@@ -311,7 +311,7 @@ def merge(main=1180, ramp=920, vb=5.0, dur=1800, off=(), tag='', seeds=None, dt=
     (d / 'r.xml').write_text(f'''<routes>{VTYPE}<route id="rr" edges="on merge down neck out"/><route id="rm" edges="up merge down neck out"/>
 <flow id="ramp" type="h" route="rr" begin="0" end="{dur}" vehsPerHour="{ramp}" departLane="0" departSpeed="max"/>
 <flow id="main" type="h" route="rm" begin="0" end="{dur}" vehsPerHour="{main}" departLane="0" departSpeed="max"/></routes>''')
-    extra = (['--human-off', ','.join(off)] if off else []) + ([x for t in param.split(',') for x in ('--tune', t)] if param else [])
+    extra = (['--human-off', ','.join(off)] if off else []) + ([x for t in param.split(',') if t for x in ('--tune', t)] if param else [])
     out = []
     for seed in range(seeds or A.seeds):
         rep, fc = cars(d, '--dt', dt or A.dt, '--end', dur + 900, '--seed', seed, *extra, tag=f's{seed}', interval=1.0)
@@ -490,7 +490,7 @@ def merge_one(tag, vb, param, dur=1200, main=1000, ramp=800, seed=1, off=()):
     merge_net(d, vb)
     (d / 'r.xml').write_text(f'''<routes>{VTYPE}<route id="rr" edges="on merge down neck out"/><route id="rm" edges="up merge down neck out"/><flow id="ramp" type="h" route="rr" begin="0" end="{dur}" vehsPerHour="{ramp}" departLane="0" departSpeed="max"/><flow id="main" type="h" route="rm" begin="0" end="{dur}" vehsPerHour="{main}" departLane="0" departSpeed="max"/></routes>''')
     extra = ['--human-off', ','.join(off)] if off else []
-    rep, fc = cars(d, '--dt', A.dt, '--end', dur + 600, '--seed', seed, *[x for t in param.split(',') for x in ('--tune', t)], *extra, tag=f's{seed}', interval=1.0)
+    rep, fc = cars(d, '--dt', A.dt, '--end', dur + 600, '--seed', seed, *[x for t in param.split(',') if t for x in ('--tune', t)], *extra, tag=f's{seed}', interval=1.0)
     s_ = score_merge(fc, dur)
     row = dict(tag=tag, n=s_['n'], never=s_['never'], p50=s_['p50'], p90=s_['p90'], p99=s_['p99'], max=s_['max'], ks=s_['ks'], b0=s_['between'][0], b1=s_['between'][1], bm=s_['between_mean'], ramp=s_['ramp_share'], flow=s_['flow'], pass0=s_['pass0'], pmax=s_['pass_max'], letin=s_['letin'], stop=s_['stopped'], vc=s_['v_cross'], rem=s_['rem_cross'], coll=rep['collision_incidents'], floor=rep['cert_floor'], lost=rep['humans']['lost_cars'], by=s_['letin_by_closing'])
     print(' '.join(f'{k}={v:.2f}' if isinstance(v, float) else f'{k}={v}' for k, v in row.items() if k != 'by'), flush=True)
@@ -747,6 +747,54 @@ def event_study():
         fast = e[e.v > 25]
         out[name] = dict(events=len(e), controls=len(c), hold_back_2_15=float(band.hold.median()) if len(band) else None, opens_gap_2_15=float((band.hold > 2).mean()) if len(band) else None, peak_median=float(band.peak.median()) if len(band) else None, hold_back_over_25=float(fast.hold.median()) if len(fast) else None)
     record('event_study', out)
+
+
+def stub_lane():
+    """A road merging into a short two-lane edge, its turn only reachable from the other lane. Stockholm's and Berlin's nets hold thousands of such edges."""
+    out = {}
+    for x in (1, 3, 5, 8, 22):
+        d = workdir(f'stub{x}')
+        (d / 'n.nod.xml').write_text(f'<nodes><node id="a" x="-300" y="0"/><node id="b" x="-100" y="-200"/><node id="j" x="0" y="0" type="priority"/><node id="k" x="{x}" y="0" type="priority"/><node id="c" x="200" y="-200"/><node id="d" x="400" y="0"/></nodes>')
+        (d / 'n.edg.xml').write_text('<edges><edge id="in1" from="a" to="j" numLanes="2" speed="13.89" priority="5"/><edge id="in2" from="b" to="j" numLanes="1" speed="13.89" priority="1"/><edge id="stub" from="j" to="k" numLanes="2" speed="13.89" priority="5"/><edge id="e1" from="k" to="c" numLanes="1" speed="13.89" priority="1"/><edge id="e2" from="k" to="d" numLanes="2" speed="13.89" priority="5"/></edges>')
+        (d / 'n.con.xml').write_text('<connections><connection from="in1" to="stub" fromLane="0" toLane="0"/><connection from="in1" to="stub" fromLane="1" toLane="1"/><connection from="in2" to="stub" fromLane="0" toLane="1"/><connection from="stub" to="e1" fromLane="0" toLane="0"/><connection from="stub" to="e2" fromLane="0" toLane="0"/><connection from="stub" to="e2" fromLane="1" toLane="1"/></connections>')
+        run(['netconvert', '-n', d / 'n.nod.xml', '-e', d / 'n.edg.xml', '-x', d / 'n.con.xml', '-o', d / 'net.xml', '--no-turnarounds'])
+        (d / 'r.xml').write_text(f'<routes>{VTYPE}<route id="w" edges="in2 stub e1"/><route id="m" edges="in1 stub e2"/><route id="o" edges="in2 stub e2"/><flow id="w" type="h" route="w" begin="0" end="600" vehsPerHour="120" departSpeed="max"/><flow id="o" type="h" route="o" begin="0" end="600" vehsPerHour="120" departSpeed="max"/><flow id="m" type="h" route="m" begin="0" end="600" vehsPerHour="600" departSpeed="max" departLane="best"/></routes>')
+        rep, _ = cars(d, '--dt', 1, '--end', 1200, '--seed', 1, '--time-to-teleport', 0, '--humans', fcd=False)
+        h = rep['humans']
+        out[x] = dict(arrived=rep.get('arrived'), inserted=rep.get('inserted'), collisions=rep.get('collisions'), lost=h['lost_cars'])
+    record('stub_lane', out)
+
+
+INVENTED = dict(b_approach=(0.9, 1.6), tau_approach=(1.5, 3.0), overshoot=(0.7, 2.1), standing=(0.2, 1.0), see=(15, 60), lc_slope=(0.42, 1.73), stop_s0=(0.5, 2.0), comfort=(1.0, 2.5), turn_min=(4, 8), t_miss=(60, 240), gap_junction=(0.5, 1.0), gap_roundabout=(1.0, 2.5), stub=(5, 30))
+
+
+def minor_road(param, seed=1, dur=900):
+    d = workdir('minor')
+    if not (d / 'net.xml').exists():
+        nodes = '<node id="a" x="-400" y="0"/><node id="j" x="0" y="0" type="priority"/><node id="b" x="400" y="0"/><node id="c" x="0" y="-300"/>'
+        edges = '<edge id="main" from="a" to="j" numLanes="1" speed="13.89" priority="5"/><edge id="on" from="j" to="b" numLanes="1" speed="13.89" priority="5"/><edge id="side" from="c" to="j" numLanes="1" speed="13.89" priority="1"/>'
+        netconvert(d, nodes, edges)
+    (d / 'r.xml').write_text(f'''<routes>{VTYPE}<route id="m" edges="main on"/><route id="s" edges="side on"/><flow id="m" type="h" route="m" begin="0" end="{dur}" vehsPerHour="600" departSpeed="max"/><flow id="s" type="h" route="s" begin="0" end="{dur}" vehsPerHour="500" departSpeed="max"/></routes>''')
+    rep, fc = cars(d, '--dt', A.dt, '--end', dur + 300, '--seed', seed, *[x for t in param.split(',') if t for x in ('--tune', t)], tag=f's{seed}', interval=1.0)
+    f = pd.read_csv(fc, usecols=['trip', 'lane'], dtype=str)
+    side = f[f.trip.str.startswith('s') & f.lane.str.startswith('on')].trip.nunique()
+    return dict(minor_flow=side / (dur + 300) * 3600, collisions=rep.get('collisions', 0))
+
+
+def sensitivity():
+    """Each invented number at a low and a high value, in a queue, a lane end and a give-way junction."""
+    rows = []
+    for name, vals in [('default', (None,)), *INVENTED.items()]:
+        for v in vals:
+            param = f'{name}={v}' if v is not None else ''
+            A.seeds = 1
+            queue(param=param or None)
+            q = RESULTS.pop(f'queue_dt{A.dt}')
+            m = merge_one('_sens', 5.0, param, dur=600, main=800, ramp=600)
+            y = minor_road(param)
+            rows.append(dict(name=name, value=v, hsat=q['hsat'], lost=q['lost'], stand=q['stand_median'], merge_n=m['n'], never=m['never'], p50=m['p50'], p90=m['p90'], **y))
+            print(rows[-1], flush=True)
+            record('sensitivity', rows)
 
 
 def main():

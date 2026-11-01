@@ -1268,7 +1268,7 @@ fn lc_decide_helpers(@builtin(global_invocation_id) id: vec3u) {
 fn ph_lc_path(e: Veh, own: LcNeighbors, n: LcNeighbors, dest: u32) -> bool {
     if ((P.safety & 8u) == 0u) { return true; }
     let half = 0.5 * (lanes[dest].width + ty.width);
-    let travel = half / select(0.21256, HU_LC_SLOPE, ty.v_lat <= 0.0);
+    let travel = half / select(0.21256, P.hu_g.y, ty.v_lat <= 0.0);
     let t = half / select(ty.v_lat, 0.7, ty.v_lat <= 0.0);
     if (own.gap < 1e8 && own.gap + ty.min_gap + own.speed * t < travel) { return false; }
     return n.gap >= 1e8 || n.gap + ty.min_gap + n.speed * t >= travel;

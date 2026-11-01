@@ -9,7 +9,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Linear gap and speed feedback, 1 s response lag, correlated noise | ADAPTED | Stimulus-response family, MITSIM [Ahmed 1999]; report 05 fit. Kernel replay within 2% of report 05's Python on I-395, I-90, A39 | - |
 | k1 0.011, k2 0.52, √(15/g), T 1.30, amax 1.80, σ 0.20, τ_a 1.0, t_start 0.6 | ADAPTED | Report 05 section 8, fitted or measured there. k2 √(15/g) and level of σ are flagged there | constants |
 | Gipps' rule towards a stopped or nearly stopped target (below 0.5 m/s) | ADAPTED | Gipps, as in Aimsun. Replaces the feedback there, because the feedback, fitted only on following, crawled the last 100 m to a queue and left 12-15 m in queues. Report 05 never saw this: its queue tests started from a formed queue | - |
-| Approach deceleration 1.2 m/s², reaction term 2 s, stop margin 1.4 m, 0.5 m/s threshold | INVENTED | Chosen to pass item 10-12 with replay unchanged. 1.2 agrees with "almost nobody brakes harder than 2 m/s²" and TGSIM's median yield of 1.27 m/s² | constants, not yet `--tune` |
+| Approach deceleration 1.2 m/s², reaction term 2 s, stop margin 1.4 m, 0.5 m/s threshold | INVENTED | Chosen to pass item 10-12 with replay unchanged. 1.2 agrees with "almost nobody brakes harder than 2 m/s²" and TGSIM's median yield of 1.27 m/s² | `b_approach`, `tau_approach`, `overshoot`, `standing` |
 | s0 median 2.8 m × 1.2 | ADAPTED | Report 05 median, scaled in closed loop to measured standing spacing | `s0_scale` |
 | Guard is the physics certificate, with the leader assumed to brake no harder than the driver can | ADAPTED | Report 11 certificate; against SUMO's own settings report 05 asked for a lax guard. With leader braking at b_hi it held time gaps above 1.2 s at 34 m/s, against 0.8 s measured | - |
 | Desired speed = lane limit × speedFactor | ESTABLISHED | SUMO, TfL | - |
@@ -29,8 +29,8 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Two-leader anticipation, with limited deceleration | ESTABLISHED | Aimsun. No advice when the leader is alongside and not getting ahead, else side by side cars hold each other | off with `--human-off anticipate` |
 | Blinker: 93% signal, 1 s reaction | ADAPTED | Field share Sweden, 103 drivers; reaction is ours. No time term beyond this | `sig_react` |
 | Lane change duration, quintic, per-driver lognormal | ADAPTED | Report 05 fit on 36,000 events; profile against constant speed. Runs faster if the lane is running out | - |
-| Steering limit 45° at a crawl | INVENTED | Lets a queue-bound car nose in. With 12° or 25° wrong-lane waits rose several-fold on signal approaches; no measurement | constant |
-| Offset stop points at a lane end: 5 m, 12 m on every second lane | ESTABLISHED | Handbok för kapacitetsanalys med simulering, p. 106 (Trafikverket) | `stop_base`, `stop_offset`, off with `--human-off offset` |
+| Steering limit 45° at a crawl | INVENTED | Lets a queue-bound car nose in. With 12° or 25° wrong-lane waits rose several-fold on signal approaches; no measurement | `lc_slope` |
+| Offset stop points at a lane end: 5 m, 12 m on every second lane | ESTABLISHED | Handbok för kapacitetsanalys med simulering, p. 106 (Trafikverket). Kept on the lane with no way on: on a short lane the point would otherwise lie back in the junction | `stop_base`, `stop_offset`, off with `--human-off offset` |
 | Removed: side-by-side swap, forced yield at 90 s, the wait term, the pair hash | | Report 15 rows 17, 18, 20, 21 | - |
 
 ## Missed turns
@@ -40,6 +40,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Give up the turn, carry on in the lane, new route; counted as lost | ESTABLISHED | Aimsun Lost Inside and Outside, TfL | off with `--human-off miss` |
 | Time at standstill, per-driver draw | ADAPTED | Aimsun's per-vehicle give-way time | |
 | Mean 120 s, 0.5-1.5 × per driver | INVENTED | No source; sensitivity swept in cities | `t_miss` |
+| Nobody waits on a lane shorter than 15 m, the route is given up on reaching its end | INVENTED | 11,015 of 82,709 lanes in Stockholm and 4,722 of 84,546 in Berlin are under 15 m, most of them stubs between two junctions, where no one can change lanes. Waiting there blocks the junction behind | `stub` |
 
 ## Junctions and signals (`step.wgsl`)
 
@@ -60,3 +61,14 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Rule or number | Class | Source and what changed | Parameter |
 |---|---|---|---|
 | T × 0.55, s0 × 0.47 | ADAPTED | Scaled to TRVMB's 1,900 per green hour and 7.43 m. These are design values there, not measurements. T this low is not what replay finds on US and German roads | `t_scale`, `s0_scale` |
+
+## Other invented numbers
+
+| Rule or number | Class | Source and what changed | Parameter |
+|---|---|---|---|
+| Standing target 1 m before a stop line | INVENTED | Keeps queue heads off the line, no measurement | `stop_s0` |
+| 1.5 m/s² when slowing for a lower limit ahead | INVENTED | Matches "almost nobody brakes harder than 2 m/s²" in report 05 | `comfort` |
+
+## Sensitivity of the invented numbers
+
+`scripts/human_tests.py sensitivity`, one seed, dt 0.5, results in `cars-data/truth/humans/sens/results.json` and the table in `research/truth/16-human-build.md`. Each number low and high in a queue at a signal, a lane end and a give-way junction. City sensitivity to `t_miss` and `cooperation` is in the same report.

@@ -112,6 +112,9 @@ struct Params {
     hu_c: vec4f,      // gate tau, minimum tau, urgent braking, gap model
     hu_d: vec4f,      // time gap minor at junctions, in roundabouts, T scale, s0 scale
     hu_e: vec4f,      // critical gap constant shift: lead, lag; safety factor during a change; lowest speed in a corner
+    hu_f: vec4f,      // approach deceleration, its reaction term, stop margin, speed below which a leader counts as standing
+    hu_g: vec4f,      // sees a give-way line from, steering slope at a crawl, standing target at a stop line, slowing for a limit ahead
+    hu_h: vec4f,      // shortest lane a driver expects to change on
 }
 
 struct Globals {
@@ -586,13 +589,7 @@ fn tail_b() -> f32 {
 const HU_K1: f32 = 0.011;
 const HU_K2: f32 = 0.52;
 const HU_BMAX: f32 = 4.5;
-const HU_STANDING: f32 = 0.5;
-const HU_TAU_APPROACH: f32 = 2.0;
-const HU_OVERSHOOT: f32 = 1.4;    // what the response lag adds to a stop, measured in queues
-const HU_B_APPROACH: f32 = 1.2;
-const HU_COMFORT: f32 = 1.5;      // slowing for a lower limit ahead
 const HU_T_START: f32 = 0.6;
-const HU_STOP_S0: f32 = 1.0;      // standing target before a stop line
 
 var<private> hu_on: bool;
 var<private> hu_t: f32;
@@ -603,6 +600,13 @@ var<private> hu_n: f32;
 var<private> hu_k: f32;
 var<private> hu_v0: f32;
 var<private> hu_gap: f32;      // this driver's minor road time gap, at the link being judged
+// Invented numbers, see HUMAN.md. The kernels load them from P, the replay keeps these.
+var<private> hu_standing: f32 = 0.5;
+var<private> hu_tau_approach: f32 = 2.0;
+var<private> hu_overshoot: f32 = 1.4;
+var<private> hu_b_approach: f32 = 1.2;
+var<private> hu_comfort: f32 = 1.5;
+var<private> hu_stop_s0: f32 = 1.0;
 
 // The persona as stored by world.rs: T 0.6-3 s, s0 0.5-6 m, amax 1-3 m/s2. Places have their own medians.
 
@@ -629,11 +633,11 @@ fn hu_a_up(v: f32, v0: f32) -> f32 {
 
 // What the driver wants for a leader `g` ahead by bumper.
 fn hu_target(v: f32, g: f32, vl: f32, v0: f32, s0: f32) -> f32 {
-    if (vl < HU_STANDING) {
+    if (vl < hu_standing) {
         // Report 05's feedback was fitted on following moving cars. Up to a queue or a stop line it would
         // crawl the last few hundred metres and stop short. Gipps' rule for a stopped obstacle does neither.
-        let b = HU_B_APPROACH * HU_TAU_APPROACH;
-        let vs = -b + sqrt(b * b + max(HU_B_APPROACH * (2.0 * max(g - s0 - HU_OVERSHOOT, 0.0) - v * HU_TAU_APPROACH) + vl * vl, 0.0));
+        let b = hu_b_approach * hu_tau_approach;
+        let vs = -b + sqrt(b * b + max(hu_b_approach * (2.0 * max(g - s0 - hu_overshoot, 0.0) - v * hu_tau_approach) + vl * vl, 0.0));
         return clamp(vs - v, -HU_BMAX, hu_a_up(v, v0));
     }
     let dv = vl - v;
@@ -902,7 +906,7 @@ fn stop_speed(v: f32, gap: f32, decel: f32, relax: bool, lane_vmax: f32) -> f32 
 
 // What each model wants for a stop line, in physical mode. The certificate bounds it after.
 fn stop_wish(v: f32, gap: f32, decel: f32, lane_vmax: f32) -> f32 {
-    if (ty.model == MODEL_HUMAN && hu_on) { return hu_next(v, hu_target(v, gap + 0.5, 0.0, lane_vmax, HU_STOP_S0)); }
+    if (ty.model == MODEL_HUMAN && hu_on) { return hu_next(v, hu_target(v, gap + 0.5, 0.0, lane_vmax, hu_stop_s0)); }
     var d = min(ph_stop_driver(gap, v, decel, ty.ph_tau), max_next_speed(v));
     if (ty.model == MODEL_IDM) { d = min(d, stop_driver_idm(v, gap, decel, lane_vmax)); }
     return d;
@@ -1010,7 +1014,7 @@ fn idm_secure_gap(v: f32, vl: f32) -> f32 {
 fn free_speed(v: f32, seen: f32, vt: f32, lane_vmax: f32) -> f32 {
     if (vt < 0.0) { return vt; }
     if (mu > 0.0) {
-        let d = select(ty.decel, HU_COMFORT, ty.model == MODEL_HUMAN);
+        let d = select(ty.decel, hu_comfort, ty.model == MODEL_HUMAN);
         let bh = d * dt * 0.5;
         return max(vt, -bh + sqrt(bh * bh + vt * vt + 2.0 * d * max(seen - v * dt * 0.5, 0.0)));
     }

@@ -78,7 +78,6 @@ const C_HU_LC_URGENT: u32 = 36u;
 const C_HU_GUARD: u32 = 37u;
 const C_HU_STEPS: u32 = 39u;
 const REROUTE_LOG: u32 = 65536u;
-const HU_SEE: f32 = 30.0;         // how far back a driver sees that a give-way line is clear. Not measured
 const STUCK_AFTER: f32 = 300.0;   // SUMO's time to teleport, for counting what would have
 const F_STUCK_COUNTED: u32 = 2097152u;
 const CONTACT_LOG: u32 = 65536u;
@@ -104,6 +103,12 @@ fn lane_vmax(l: u32, sf: f32) -> f32 { return min(lanes[l].speed * sf, ty.max_sp
 
 fn ph_setup(e: Veh) {
     if (mu <= 0.0) { return; }
+    hu_b_approach = P.hu_f.x;
+    hu_tau_approach = P.hu_f.y;
+    hu_overshoot = P.hu_f.z;
+    hu_standing = P.hu_f.w;
+    hu_stop_s0 = P.hu_g.z;
+    hu_comfort = P.hu_g.w;
     ph_load = 0.25 + f32(e.phys & 255u) / 146.0;
     ph_power = 0.5 + f32((e.phys >> 8u) & 255u) / 127.5;
     let l = lanes[e.lane];
@@ -707,7 +712,10 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
             // off a lane too short to hold it: it has to get there to change lanes.
             var stop_at = seen + select(0.0, 0.45, mu > 0.0);
             if (hu_on && (P.hu_flags & HS_OFFSET) != 0u) {
-                stop_at = seen - P.hu_a.w - P.hu_b.x * f32(lanes[lane].index & 1u);
+                // The point stays on the lane with no way on, else a short lane's cars wait back in the junction.
+                let room = max(lanes[lane].length - ty.length - 0.5, 0.0);
+                stop_at += -min(P.hu_a.w + P.hu_b.x * f32(lanes[lane].index & 1u), room);
+                stop_at += max(2.5 - lanes[lane].length, 0.0);
             }
             let va = stop_speed(speed, stop_at, ty.decel, true, pl_lane_vmax);
             if (pl_n > 0u) { adapt_leave(pl_base + pl_n - 1u, va); }
@@ -759,7 +767,7 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
         if (pl_n > 0u) { adapt_leave(pl_base + pl_n - 1u, lane_max); }
         var arr_speed = pl_pass;
         let vis = lk.visibility;
-        let determined = seen <= select(vis, max(vis, HU_SEE), hu_on);
+        let determined = seen <= select(vis, max(vis, P.hu_g.x), hu_on);
         let could_brake_minor = !have_priority(state) && brake_dist < seen && !last_was_cont_major(link);
         if (could_brake_minor && !determined) {
             let at_vis = safe_stop(vis, ty.decel, speed, 0.0, false);
@@ -1332,7 +1340,7 @@ fn walk_links(e: ptr<function, Veh>, base: u32, n: u32, speed: f32, vmax_lane: f
             if (((*e).flags & F_HAVE_STOPPED) != 0u) { my_wait = 1e9; }
             let opened = yellow || link_opened(it.link, it.arrival, it.arr_speed, leave, ty.length, imp, ty.decel, my_wait, (*e).trip);
             let k = links[it.link];
-            let determined = it.dist <= select(k.visibility, max(k.visibility, HU_SEE), hu_on);
+            let determined = it.dist <= select(k.visibility, max(k.visibility, P.hu_g.x), hu_on);
             if (opened && (state == CH_s || state == CH_w) && determined) { (*e).flags |= F_HAVE_STOPPED; }
             if (opened && !have_priority(state) && !last_was_cont_major(it.link) && (k.flags & L_CONT) == 0u) {
                 if (!determined && (can_brake || !yellow)) {
@@ -1858,7 +1866,7 @@ fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32) {
     var u = f32((p >> 16u) & 0x3fffu) / 16383.0;
     if (v_lat <= 0.0) {
         let d = max(f32(((*e).hu_state >> 8u) & 255u) * 0.1, 1.0);
-        var du = min(1.0, 0.5 * (v0 + v1) * HU_LC_SLOPE * d / (1.875 * w)) * dt / d;
+        var du = min(1.0, 0.5 * (v0 + v1) * P.hu_g.y * d / (1.875 * w)) * dt / d;
         // Faster than planned if the lane is running out: the body must be across by its end.
         let left = (lanes[(*e).lane].length - (*e).pos) / max(0.5 * (v0 + v1), 0.1);
         if (left < (1.0 - u) * d) { du = max(du, (1.0 - u) * dt / max(left, dt)); }
@@ -1886,7 +1894,6 @@ fn ph_mirror(e: ptr<function, Veh>, done: bool) {
     mirror[(*e).trip] = Mirror((*e).pos, (*e).speed, (*e).acc, state);
 }
 
-const HU_LC_SLOPE: f32 = 1.0;     // steering angle a driver can use nosing in at a crawl, 45 degrees
 
 fn hu_start_hold(e: ptr<function, Veh>, speed: f32, v_safe: f32, nv: f32) -> f32 {
     if (speed >= 0.05) { return nv; }
@@ -1914,10 +1921,12 @@ fn hu_reroute(e: ptr<function, Veh>, n: u32, base: u32, i: u32) {
         return;
     }
     if ((P.hu_flags & HS_MISS) == 0u || is_internal((*e).lane) || n == 0u) { return; }
-    // Aimsun draws the give-way time per vehicle. Half to one and a half times the mean.
-    if ((*e).wait < P.hu_a.y * (0.5 + f32(pcg((*e).trip * 2654435761u ^ 11u) >> 8u) / 16777216.0)) { return; }
     let it = items[base];
     let la = lanes[(*e).lane];
+    // Aimsun draws the give-way time per vehicle. Half to one and a half times the mean. Nobody waits on a lane too
+    // short to change on: there is nothing to wait for.
+    let hopeless = la.length < P.hu_h.x;
+    if (!hopeless && (*e).wait < P.hu_a.y * (0.5 + f32(pcg((*e).trip * 2654435761u ^ 11u) >> 8u) / 16777216.0)) { return; }
     if (it.link != NONE || it.dist > 15.0 || la.links_count == 0u || (*e).route_i + 1u >= (*e).route_end) { return; }
     if (have_red(link_state(la.links_start))) { return; }
     let at = atomicAdd(&C[C_HU_REROUTE], 1u);

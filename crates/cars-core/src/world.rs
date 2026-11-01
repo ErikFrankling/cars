@@ -53,6 +53,9 @@ pub struct GpuParams {
     pub hu_c: [f32; 4],
     pub hu_d: [f32; 4],
     pub hu_e: [f32; 4],
+    pub hu_f: [f32; 4],
+    pub hu_g: [f32; 4],
+    pub hu_h: [f32; 4],
 }
 
 #[repr(C)]
@@ -428,11 +431,22 @@ pub struct HumanParams {
     pub lc_safety: f32,
     /// A driver's lowest speed through a junction corner, however tight the lane's shape.
     pub turn_min: f32,
+    /// Invented, see HUMAN.md: Gipps approach to a standing target.
+    pub b_approach: f32,
+    pub tau_approach: f32,
+    pub overshoot: f32,
+    pub standing: f32,
+    pub see: f32,
+    pub lc_slope: f32,
+    pub stop_s0: f32,
+    pub comfort: f32,
+    /// A lane shorter than this is no place to wait for a gap: the route is given up at once.
+    pub stub: f32,
 }
 
 impl Default for HumanParams {
     fn default() -> Self {
-        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 0.65, gap_roundabout: 1.5, t_scale: 1.0, s0_scale: 1.2, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6, turn_min: 6.0 }
+        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 0.65, gap_roundabout: 1.5, t_scale: 1.0, s0_scale: 1.2, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6, turn_min: 6.0, b_approach: 1.2, tau_approach: 2.0, overshoot: 1.4, standing: 0.5, see: 30.0, lc_slope: 1.0, stop_s0: 1.0, comfort: 1.5, stub: 15.0 }
     }
 }
 
@@ -466,6 +480,15 @@ impl HumanParams {
                 "lag_shift" => self.lag_shift = v,
                 "lc_safety" => self.lc_safety = v,
                 "turn_min" => self.turn_min = v,
+                "b_approach" => self.b_approach = v,
+                "tau_approach" => self.tau_approach = v,
+                "overshoot" => self.overshoot = v,
+                "standing" => self.standing = v,
+                "see" => self.see = v,
+                "lc_slope" => self.lc_slope = v,
+                "stop_s0" => self.stop_s0 = v,
+                "comfort" => self.comfort = v,
+                "stub" => self.stub = v,
                 _ => {}
             }
         }
@@ -881,6 +904,9 @@ impl World {
             hu_c: [human.tau_gate, human.tau_min, human.b_em, human.gap_model],
             hu_d: [human.gap_junction, human.gap_roundabout, human.t_scale, human.s0_scale],
             hu_e: [human.lead_shift, human.lag_shift, human.lc_safety, human.turn_min],
+            hu_f: [human.b_approach, human.tau_approach, human.overshoot, human.standing],
+            hu_g: [human.see, human.lc_slope, human.stop_s0, human.comfort],
+            hu_h: [human.stub, 0.0, 0.0, 0.0],
             lost_after: cfg.tune("lost_after", 0.0),
             pad: [0.0; 3],
         };
