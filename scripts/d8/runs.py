@@ -66,6 +66,18 @@ def faults():
     return out
 
 
+def faults2():
+    # Radio gone for good, every message dropped from one tick on. Past 10 s of silence cars use sensing alone.
+    out = []
+    for d in (3000, 5000):
+        b = dict(net='j2', mix='M', demand=d)
+        out.append(case(**b, blackout=(400.0, 400.0 + 30.0), fault='blackout30_fallback'))
+        out.append(case(**b, blackout=(400.0, 1e9), fault='radio_off'))
+        out.append(case(**b, blackout=(400.0, 1e9), no_fallback=True, fault='radio_off_wait'))
+        out.append(case(**b, loss=1.0, fault='loss1.0_from_start'))
+    return out
+
+
 def stalls():
     out = []
     for d in (3000, 5000):
@@ -106,11 +118,29 @@ def meter():
     return out
 
 
+def meter_seeds():
+    out = []
+    for net, d, ns in (('grid2', 24000, (200, 220, 240, 260, 280)), ('grid2', 20000, (240, 280)), ('grid1', 14000, (140, 170, 200))):
+        for n in ns:
+            for seed in (0, 1, 2):
+                out.append(case(net=net, mix='M', demand=d, end=600.0, warm=150.0, junctions='grid', meter=n, seed=seed))
+    for net, d in (('grid2', 24000), ('grid2', 20000), ('grid1', 14000)):
+        for seed in (1, 2):
+            out.append(case(net=net, mix='M', demand=d, end=600.0, warm=150.0, junctions='grid', seed=seed))
+            out.append(case(net=net, mix='M', demand=d, end=600.0, warm=150.0, junctions='grid', seed=seed, mode='signal', sig=(30.0, 2.0)))
+    return out
+
+
+def headway():
+    # Build spec test 3: one through stream each way, no crossing traffic.
+    return [case('j1', 'T', 7000, seed, ew=1.0) for seed in (0, 1)]
+
+
 def smoke():
     return [case('j1', 'T', 150.0, end=300.0, warm=50.0), case('j2', 'M', 3000.0)]
 
 
-PARTS = dict(smoke=smoke, capacity=capacity, demand=demand, faults=faults, stalls=stalls, t=t_junction, grid=grid, meter=meter)
+PARTS = dict(smoke=smoke, capacity=capacity, demand=demand, faults=faults, stalls=stalls, t=t_junction, grid=grid, meter=meter, meter_seeds=meter_seeds, headway=headway, faults2=faults2)
 
 
 def key(c):

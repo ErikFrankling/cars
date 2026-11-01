@@ -28,7 +28,8 @@ def record(cars, name, net, rou, begin, end, sim_end, title, sub, cj='B1', extra
     else:
         cmd += ['--begin', str(begin), '--end', str(end), '--speed', str(speed), '--out', str(out)]
     f = open('/tmp/cars-gpu.lock', 'a')
-    fcntl.flock(f, fcntl.LOCK_EX)
+    if not preview:
+        fcntl.flock(f, fcntl.LOCK_EX)
     r = subprocess.run(cmd, capture_output=True, text=True)
     fcntl.flock(f, fcntl.LOCK_UN)
     print(name, r.returncode, r.stderr.strip().splitlines()[-1][:160] if r.stderr.strip() else '', flush=True)
@@ -75,8 +76,8 @@ def main():
         if not pv:
             stack(parts, OUT / 'versus_signal.mp4')
     if want('loss'):
-        net, rou = demand('j2', 3000, 'M', 400)
-        record(c, 'loss_70pct', net, rou, 300, 340, 400, '70% of messages lost', 'a lost grant costs a slot, never safety. 3000 veh/h, Level A', extra=['--cj-loss', '0.7'], overlay='grants,channel,events', mpp=0.1, preview=pv)
+        net, rou = demand('j2', 4000, 'M', 400)
+        record(c, 'loss_70pct', net, rou, 300, 340, 400, '70% of messages lost', 'a lost grant costs a slot, never safety. 4000 veh/h, Level A', extra=['--cj-loss', '0.7'], overlay='grants,channel,events', mpp=0.1, preview=pv)
     if want('crash'):
         net, rou = demand('j2', 3000, 'M', 400)
         record(c, 'coordinator_crash', net, rou, 305, 375, 400, 'Coordinator down from 310 to 350 s', 'grants stand, everyone stops, oldest goes first with the box to itself', extra=['--cj-crash', '310,350'], overlay='grants,channel,events', mpp=0.1, preview=pv)
@@ -95,6 +96,11 @@ def main():
         js = ','.join(f'{x}{y}' for x in 'BCD' for y in '123')
         net, rou = demand('grid2', 20000, 'M', 300)
         record(c, 'grid', net, rou, 200, 240, 300, '9 signal-free junctions', '20000 veh/h offered, 2 lanes, Level A', cj=js, junction='C2', extra=['--cj-warm', '0'], overlay='events', mpp=0.45, preview=pv)
+        net, rou = demand('grid2', 24000, 'M', 300)
+        parts = [record(c, 'g_free', net, rou, 230, 270, 300, 'Past critical load, no metering', '24000 veh/h offered. The auditor finds contacts', cj=js, junction='C2', overlay='events', mpp=0.8, w=960, h=1080, preview=pv, out=WORK / 'g_free.mp4'),
+                 record(c, 'g_meter', net, rou, 230, 270, 300, 'Same demand, metered at the edge', 'at most 240 cars inside, the rest wait outside', cj=js, junction='C2', extra=['--cj-meter', '240'], overlay='events', mpp=0.8, w=960, h=1080, preview=pv, out=WORK / 'g_meter.mp4')]
+        if not pv:
+            stack(parts, OUT / 'grid_overload_metering.mp4')
 
 
 if __name__ == '__main__':

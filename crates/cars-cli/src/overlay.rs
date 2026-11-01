@@ -427,11 +427,12 @@ impl Overlay {
         }
         if on("grants") && !slots.is_empty() {
             slots.sort_by(|a, b| a.0.total_cmp(&b.0));
-            let (x0, y0, w) = (c.w - 330, 96, 300);
+            let w = (c.w / 3).min(300);
+            let (x0, y0) = (c.w - w - 30, 96);
             let horizon = 6.0;
             let rows = slots.len().min(16) as i32;
             c.rect(x0 - 8, y0 - 22, w + 16, rows * 11 + 30, NAVY, 0.72);
-            c.text(x0, y0 - 16, "granted slots, now to +6 s", 1, WHITE);
+            c.text(x0, y0 - 16, if w < 300 { "slots, +6 s" } else { "granted slots, now to +6 s" }, 1, WHITE);
             for (r, (t, width, col, _)) in slots.iter().take(16).enumerate() {
                 let bar_x = x0 + ((t.max(0.0) / horizon).min(1.0) * w as f32) as i32;
                 let bar_w = ((width / horizon).min(1.0) * w as f32) as i32;
@@ -716,7 +717,7 @@ pub fn draw_hud(c: &mut Canvas, hud: &Hud) {
         ("paths", "lines: planned paths through the box, wide: stretches shared with a crossing foe", CYAN),
         ("channel", "white rings: coordinator, lines: messages, magenta: lost grant being resent", WHITE),
     ] {
-        if on(name) {
+        if on(name) && w >= 900 {
             c.label(24, y, text, 1, color);
             y -= 14;
         }
@@ -725,9 +726,11 @@ pub fn draw_hud(c: &mut Canvas, hud: &Hud) {
     let metres = nice.iter().copied().find(|m| m / hud.mpp > 90.0).unwrap_or(1000.0);
     let px = (metres / hud.mpp) as i32;
     let x = w - 40 - px;
-    c.rect(x - 8, h - 66, px + 16, 44, [8, 8, 10], 0.55);
-    c.rect(x, h - 34, px, 5, WHITE, 1.0);
-    c.rect(x, h - 40, 3, 11, WHITE, 1.0);
-    c.rect(x + px - 3, h - 40, 3, 11, WHITE, 1.0);
-    c.text(x, h - 60, &format!("{metres:.0} m"), 2, WHITE);
+    // A narrow frame has no room beside the text, so the bar moves above it.
+    let lift = if w < 900 { 80 } else { 0 };
+    c.rect(x - 8, h - 66 - lift, px + 16, 44, [8, 8, 10], 0.55);
+    c.rect(x, h - 34 - lift, px, 5, WHITE, 1.0);
+    c.rect(x, h - 40 - lift, 3, 11, WHITE, 1.0);
+    c.rect(x + px - 3, h - 40 - lift, 3, 11, WHITE, 1.0);
+    c.text(x, h - 60 - lift, &format!("{metres:.0} m"), 2, WHITE);
 }

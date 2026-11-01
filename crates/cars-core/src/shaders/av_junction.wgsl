@@ -751,7 +751,9 @@ fn cj_commit(@builtin(global_invocation_id) id: vec3u) {
     let J = cj_junctions[j];
     if (J.mode == MODE_SUMO || J.frozen != 0u) { return; }
     now = f32(G.step) * P.dt;
-    if (!coordinator_up()) {
+    // With no coordinator, or no radio for a while, sensing alone still moves one car at a time.
+    let silent = !radio_up() && now - cfg.blackout_t0 > 10.0;
+    if (!coordinator_up() || silent) {
         if (cfg.fallback != 0u) { awsc(j); }
         return;
     }
