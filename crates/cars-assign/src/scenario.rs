@@ -41,6 +41,8 @@ pub struct Scenario {
     #[serde(default)]
     pub fixed_vtypes: Vec<String>,
     pub counts: Option<PathBuf>,
+    /// Count WAPE between comparable days at the same sites, from real data.
+    pub noise_floor: Option<f64>,
     pub cuts: Option<PathBuf>,
     pub discharge: Option<PathBuf>,
     #[serde(default)]

@@ -689,7 +689,11 @@ pub fn verdict(x: &mut Setup, out: &Path, seed: u64) -> Result<VerdictReport, St
         cuts_violated: violated.len(),
         converged: conv.converged,
         ledger_clean: day.ledgers[0].clean(),
-        observations_conflict: false,
+        // Selection rows only: a converged city that stays this far from the counts disagrees with them.
+        observations_conflict: match (&x.counts, x.s.noise_floor) {
+            (Some(c), Some(floor)) => calibrate::count_error(&c.rows, Role::Selection, |r| calibrate::simulated(r, &day.counts)).wape > 2.0 * floor,
+            _ => false,
+        },
         delay_ratio,
     });
     let mut notes = vec![

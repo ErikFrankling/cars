@@ -540,6 +540,7 @@ fn gpu_scenario() -> (Scenario, Net, Supply) {
         fixed_prefixes: vec![],
         fixed_vtypes: vec![],
         counts: None,
+        noise_floor: None,
         cuts: None,
         discharge: None,
         begin: 0.0,
