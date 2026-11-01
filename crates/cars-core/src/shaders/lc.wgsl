@@ -87,8 +87,7 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
             var fits = !has_next;
             if (has_next && a[k] > 0.0) {
                 for (var j = 0u; j < l.links_count; j++) {
-                    let lk = links[l.links_start + j];
-                    if (lk.to_edge == routes[ri + 1u] && (lanes[lk.to_lane].allow & ty.vclass) == ty.vclass) { fits = true; break; }
+                    if (links[l.links_start + j].to_edge == routes[ri + 1u] && link_usable(l.links_start + j)) { fits = true; break; }
                 }
             }
             if (fits) { ok |= 1u << k; }
@@ -134,7 +133,7 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
                         for (var j = 0u; j < l.links_count; j++) {
                             let c = l.links_start + j;
                             let lk = links[c];
-                            if (lk.to_edge != routes[ri + 1u] || (lanes[lk.to_lane].allow & ty.vclass) != ty.vclass) { continue; }
+                            if (lk.to_edge != routes[ri + 1u] || !link_usable(c)) { continue; }
                             let m = i32(min(lanes[lk.to_lane].index, 15u));
                             var better = bn < 0;
                             if (!better) {
@@ -179,7 +178,7 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
                     let l = lanes[edge.first_lane + k];
                     for (var j = 0u; j < l.links_count; j++) {
                         let lk = links[l.links_start + j];
-                        if (lk.to_edge != routes[ri + 1u]) { continue; }
+                        if (lk.to_edge != routes[ri + 1u] || !link_usable(l.links_start + j)) { continue; }
                         let m = min(lanes[lk.to_lane].index, 15u);
                         if (best_dist > abs(next_off[m])) {
                             best_dist = abs(next_off[m]);

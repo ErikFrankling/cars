@@ -31,14 +31,7 @@ impl Graph {
             .collect();
         let mut next = vec![Vec::new(); net.edges.len()];
         for c in &net.conns {
-            let permitted = net
-                .lane_of(c.from_edge, c.from_lane)
-                .zip(net.lane_of(c.to_edge, c.to_lane))
-                .is_some_and(|(a, b)| {
-                    net.lanes[a as usize].allow & mask != 0
-                        && net.lanes[b as usize].allow & mask != 0
-                });
-            if permitted && cost[c.to_edge as usize].is_finite() {
+            if net.conn_allow(c) & mask != 0 && cost[c.to_edge as usize].is_finite() {
                 next[c.from_edge as usize].push(c.to_edge);
             }
         }
