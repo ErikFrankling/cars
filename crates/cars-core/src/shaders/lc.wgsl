@@ -1161,20 +1161,20 @@ fn hu_normal(a: u32, b: u32) -> f32 {
 // Published critical gaps, in metres: lognormal, one driver term, a new draw each second. A mandatory
 // change uses Lee 2006 table 5.1 (I-80), where the end of the lane acts through the remaining distance.
 // Any other uses Ahmed 1999's discretionary model (I-93, Lee's table 2.3).
-fn hu_critical_lead(e: Veh, n: LcNeighbors, dest: u32, mandatory: bool, d: f32, nu: f32, second: u32) -> f32 {
+fn hu_critical_lead(e: Veh, n: LcNeighbors, dest: u32, mandatory: bool, d: f32, nu: f32, second: u32, shift: f32) -> f32 {
     let eps = hu_normal(e.trip ^ second, 23u);
     let min_dv = min(0.0, n.speed - e.speed);
     if (!mandatory) { return exp(0.508 - 0.420 * min_dv + 0.488 * eps); }
     var avg = e.speed;
     if (lane_occupied(dest)) { avg = lane_free[dest].mean_speed; }
-    return exp(P.hu_e.x + 0.182 + 1.45 / (1.0 + exp(-max(0.0, avg - e.speed))) - 0.571 * min_dv + 1.03 * d / (1.0 + exp(-0.492 + 0.798 * nu)) + 4.28 * eps);
+    return exp(shift + 0.182 + 1.45 / (1.0 + exp(-max(0.0, avg - e.speed))) - 0.571 * min_dv + 1.03 * d / (1.0 + exp(-0.492 + 0.798 * nu)) + 4.28 * eps);
 }
 
-fn hu_critical_lag(e: Veh, n: LcNeighbors, mandatory: bool, d: f32, nu: f32, second: u32) -> f32 {
+fn hu_critical_lag(e: Veh, n: LcNeighbors, mandatory: bool, d: f32, nu: f32, second: u32, shift: f32) -> f32 {
     let eps = hu_normal(e.trip ^ second, 25u);
     let dv = n.f_speed - e.speed;
     if (!mandatory) { return exp(0.508 + 0.153 * min(0.0, dv) + 0.188 * max(0.0, dv) + 0.526 * eps); }
-    return exp(P.hu_e.y + 0.379 + 0.179 * max(0.0, dv) + 0.0909 * min(0.0, dv) + 0.179 * d / (1.0 + exp(-2.22 + 2.88 * nu)) + 0.0766 * max(0.0, n.f_acc) + 0.91 * eps);
+    return exp(shift + 0.379 + 0.179 * max(0.0, dv) + 0.0909 * min(0.0, dv) + 0.179 * d / (1.0 + exp(-2.22 + 2.88 * nu)) + 0.0766 * max(0.0, n.f_acc) + 0.91 * eps);
 }
 
 fn check_blocked_human(e: Veh, n: LcNeighbors, dest: u32) -> u32 {
@@ -1193,7 +1193,7 @@ fn check_blocked_human(e: Veh, n: LcNeighbors, dest: u32) -> u32 {
         // Vissim scales the safety distance by 0.6 during a change.
         var need = max(P.hu_e.z * ph_gap_required(n.f_speed, e.speed, min(self_ty.apparent, ty.b_lo), n.f_acc), S_MIN);
         if (ty.model == MODEL_HUMAN) {
-            if (published) { need = max(need, hu_critical_lag(e, n, mandatory, d, nu, second)); }
+            if (published) { need = max(need, hu_critical_lag(e, n, mandatory, d, nu, second, mix(P.hu_h.z, P.hu_e.y, u))); }
             else { need = max(need, hu_gap_need(n.f_speed, e.speed, u, 0.7 + 0.6 * h01(n.f_trip, 7u))); }
         } else {
             need = max(need, ty.min_gap + secure_gap_lc(n.f_speed, e.speed, self_ty.apparent, n.f_acc, 1.0, false));
@@ -1204,7 +1204,7 @@ fn check_blocked_human(e: Veh, n: LcNeighbors, dest: u32) -> u32 {
     if (n.gap < 1e8) {
         let g = n.gap + ty.min_gap;
         var need = max(P.hu_e.z * ph_gap_required(e.speed, n.speed, min(n.decel, ty.b_lo), e.acc), S_MIN);
-        if (published) { need = max(need, hu_critical_lead(e, n, dest, mandatory, d, nu, second)); }
+        if (published) { need = max(need, hu_critical_lead(e, n, dest, mandatory, d, nu, second, mix(P.hu_h.y, P.hu_e.x, u))); }
         else { need = max(need, hu_gap_need(e.speed, n.speed, u, 0.7 + 0.6 * h01(e.trip, 7u))); }
         if (g < 0.0 || g < need) { blocked |= LCA_BLOCK_LEADER; }
     }

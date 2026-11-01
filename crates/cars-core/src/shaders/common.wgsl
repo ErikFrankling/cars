@@ -114,7 +114,8 @@ struct Params {
     hu_e: vec4f,      // critical gap constant shift: lead, lag; safety factor during a change; lowest speed in a corner
     hu_f: vec4f,      // approach deceleration, its reaction term, stop margin, speed below which a leader counts as standing
     hu_g: vec4f,      // sees a give-way line from, steering slope at a crawl, standing target at a stop line, slowing for a limit ahead
-    hu_h: vec4f,      // shortest lane a driver expects to change on
+    hu_i: vec4f,      // Gipps limit behind a moving leader: deceleration, reaction term. 0 off
+    hu_h: vec4f,      // shortest lane a driver expects to change on; critical gap shifts far from the lane end, lead, lag
 }
 
 struct Globals {
@@ -610,6 +611,8 @@ var<private> hu_overshoot: f32 = 1.4;
 var<private> hu_b_approach: f32 = 1.2;
 var<private> hu_comfort: f32 = 1.5;
 var<private> hu_stop_s0: f32 = 1.0;
+var<private> hu_gipps_b: f32 = 4.5;
+var<private> hu_gipps_tau: f32 = 0.4;
 
 // The persona as stored by world.rs: T 0.6-3 s, s0 0.5-6 m, amax 1-3 m/s2. Places have their own medians.
 
@@ -648,6 +651,15 @@ fn hu_target(v: f32, g: f32, vl: f32, v0: f32, s0: f32) -> f32 {
     var a = clamp(HU_K1 * (g - s0 - hu_t * v) + k2e * dv, -HU_BMAX, hu_a_up(v, v0));
     if (dv < 0.0) { a = min(a, -dv * dv / (2.0 * max(g - 0.5, 0.3))); }
     return a;
+}
+
+// Gipps behind a moving leader: room to stop if it stops, which holds s0 while a queue forms. Apart from hu_target,
+// as only the plan and the replay need it: inlined in every lane change kernel, llvmpipe's JIT took minutes.
+fn hu_leader_limit(v: f32, g: f32, vl: f32, s0: f32) -> f32 {
+    if (hu_gipps_b <= 0.0 || vl >= v || vl < hu_standing) { return 1e9; }
+    let bt = hu_gipps_b * hu_gipps_tau;
+    let vs = -bt + sqrt(bt * bt + max(hu_gipps_b * (2.0 * max(g - s0, 0.0) - v * hu_gipps_tau) + vl * vl, 0.0));
+    return hu_next(v, max(vs - v, -HU_BMAX));
 }
 
 // Every constraint passes through the same filter from the same state, so taking the lowest speed

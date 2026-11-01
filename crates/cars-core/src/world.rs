@@ -57,6 +57,7 @@ pub struct GpuParams {
     pub hu_e: [f32; 4],
     pub hu_f: [f32; 4],
     pub hu_g: [f32; 4],
+    pub hu_i: [f32; 4],
     pub hu_h: [f32; 4],
 }
 
@@ -444,11 +445,17 @@ pub struct HumanParams {
     pub comfort: f32,
     /// A lane shorter than this is no place to wait for a gap: the route is given up at once.
     pub stub: f32,
+    /// Gipps limit behind a moving leader, deceleration and reaction term. 0 off.
+    pub gipps_b: f32,
+    pub gipps_tau: f32,
+    /// Critical gap shifts far from a lane end, moving to lead_shift and lag_shift within r_urg of it.
+    pub lead_far: f32,
+    pub lag_far: f32,
 }
 
 impl Default for HumanParams {
     fn default() -> Self {
-        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 0.65, gap_roundabout: 1.5, t_scale: 1.0, s0_scale: 1.2, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6, turn_min: 6.0, b_approach: 1.2, tau_approach: 2.0, overshoot: 1.4, standing: 0.5, see: 30.0, lc_slope: 1.0, stop_s0: 1.0, comfort: 1.5, stub: 15.0 }
+        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 0.65, gap_roundabout: 1.5, t_scale: 1.0, s0_scale: 1.2, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6, turn_min: 6.0, b_approach: 1.2, tau_approach: 2.0, overshoot: 1.4, standing: 0.5, see: 30.0, lc_slope: 1.0, stop_s0: 1.0, comfort: 1.5, stub: 15.0, gipps_b: 4.5, gipps_tau: 0.4, lead_far: -6.0, lag_far: -2.0 }
     }
 }
 
@@ -491,6 +498,10 @@ impl HumanParams {
                 "stop_s0" => self.stop_s0 = v,
                 "comfort" => self.comfort = v,
                 "stub" => self.stub = v,
+                "gipps_b" => self.gipps_b = v,
+                "gipps_tau" => self.gipps_tau = v,
+                "lead_far" => self.lead_far = v,
+                "lag_far" => self.lag_far = v,
                 _ => {}
             }
         }
@@ -908,7 +919,8 @@ impl World {
             hu_e: [human.lead_shift, human.lag_shift, human.lc_safety, human.turn_min],
             hu_f: [human.b_approach, human.tau_approach, human.overshoot, human.standing],
             hu_g: [human.see, human.lc_slope, human.stop_s0, human.comfort],
-            hu_h: [human.stub, 0.0, 0.0, 0.0],
+            hu_i: [human.gipps_b, human.gipps_tau, 0.0, 0.0],
+            hu_h: [human.stub, human.lead_far, human.lag_far, 0.0],
             lost_after: cfg.tune("lost_after", 0.0),
             zones_ahead: cfg.tune("zones_ahead", 0.0) as u32,
             pad: [0.0; 2],

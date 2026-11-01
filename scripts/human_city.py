@@ -21,6 +21,8 @@ PLACES = {
     'berlin-morning': dict(BERLIN, begin=21600, end=32400, capacity=350000, extra=[]),
     'berlin-day': dict(BERLIN, begin=0, end=86400, capacity=450000, extra=[]),
     'stockholm': dict(STOCKHOLM, begin=25200, end=32400, capacity=250000, extra=['--region', 'sweden']),
+    'stockholm-v2-morning': dict(net=DATA / 'truth/stockholm/factorial/n7_ramps.net.xml', routes=DATA / 'truth/stockholm/factorial/v2_c4.rou.gz', begin=21600, end=36000, capacity=250000, extra=['--region', 'sweden']),
+    'stockholm-v2-day': dict(net=DATA / 'truth/stockholm/factorial/n7_ramps.net.xml', routes=DATA / 'truth/stockholm/factorial/v2_c4.rou.gz', begin=0, end=86400, capacity=350000, extra=['--region', 'sweden']),
     'stockholm-no-first-uturn': dict(STOCKHOLM, routes=DATA / 'truth/humans/morning.no-first-uturn.rou.xml.gz', begin=25200, end=32400, capacity=250000, extra=['--region', 'sweden']),
     'stockholm-no-uturn': dict(STOCKHOLM, routes=DATA / 'truth/humans/morning.no-uturn.rou.xml.gz', begin=25200, end=32400, capacity=250000, extra=['--region', 'sweden']),
 }

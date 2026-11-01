@@ -109,6 +109,8 @@ fn ph_setup(e: Veh) {
     hu_standing = P.hu_f.w;
     hu_stop_s0 = P.hu_g.z;
     hu_comfort = P.hu_g.w;
+    hu_gipps_b = P.hu_i.x;
+    hu_gipps_tau = P.hu_i.y;
     ph_load = 0.25 + f32(e.phys & 255u) / 146.0;
     ph_power = 0.5 + f32((e.phys >> 8u) & 255u) / 127.5;
     let l = lanes[e.lane];
@@ -322,6 +324,7 @@ fn adapt_to_leader(gap: f32, seen: f32, cur_len: f32, ls: f32, lb: f32, lcacc: b
     }
     if (back_on_route) {
         vsafe = follow_speed(pl_speed, gap, ls, lb, lcacc, pl_lane_vmax, pl_limit);
+        if (hu_on) { vsafe = min(vsafe, hu_leader_limit(pl_speed, gap + ty.min_gap, ls, hu_s0)); }
     }
     if (has_last) {
         let last = pl_base + pl_n - 1u;
@@ -365,6 +368,7 @@ fn adapt_to_junction_leader(gap: f32, is_critical: bool, seen: f32, l_len: f32, 
     var vsafe = 0.0;
     if (!is_critical && gap >= 0.0) {
         vsafe = follow_speed(pl_speed, gap, ls, lb, lcacc, pl_lane_vmax, pl_limit);
+        if (hu_on) { vsafe = min(vsafe, hu_leader_limit(pl_speed, gap + ty.min_gap, ls, hu_s0)); }
     } else {
         vsafe = stop_speed(pl_speed, seen - l_len - POS_EPS, ty.decel, true, pl_lane_vmax);
     }

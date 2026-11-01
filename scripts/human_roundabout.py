@@ -57,43 +57,41 @@ def routes(d, q_in, dur, seed):
 
 
 def decisions(f):
-    """Per entry: the gaps offered on the ring to the first car at the line, in seconds at the point of entry."""
+    """As research/truth/scripts/opus_roundabout.py did on the Swiss trajectories. First in line within 2 m of the line
+    at ta; crosses the outer edge of the ring, 3 m before the end of the entry's junction lane, at tc. Ring cars count
+    where they pass the entry, and those leaving at this arm have gone by then. Rejected gaps lie wholly between ta and
+    tc, with the lag from ta first. A follow-up is under 8 s after the car before it on the arm, no ring car in between,
+    and slowed under 2.5 m/s in its last 3 s."""
     rows, follow = [], []
     for arm in range(4):
-        lane = f'in{arm}_0'
-        ring_up = f'ring{(arm - 1) % 4}_0'
-        ring_len = f[f.lane == ring_up].pos.max() if (f.lane == ring_up).any() else 0
-        passing = f[f.lane == ring_up].sort_values('time')
-        # Time each ring car reaches the end of the ring edge before this entry.
-        crossings = []
-        for trip, g in passing.groupby('trip'):
-            crossings.append(g.time.iloc[-1])
-        crossings = np.array(sorted(crossings))
+        ring_up, ring_on, lane = f'ring{(arm - 1) % 4}_0', f'ring{arm}_0', f'in{arm}_0'
+        through = set(f[f.lane == ring_up].trip) & set(f[f.lane == ring_on].trip)
+        passes = np.sort(f[f.lane == ring_up][f.trip.isin(through)].groupby('trip').time.max().values)
         ent = f[f.lane == lane]
+        if ent.empty or len(passes) < 2:
+            continue
         length = ent.pos.max()
+        inside = f[f.lane.str.startswith(f':j{arm}_') & f.trip.isin(set(ent.trip))]
+        cross = inside[inside.pos >= inside.groupby('lane').pos.transform('max') - 3.0].groupby('trip').time.min()
         entries = []
         for trip, g in ent.groupby('trip'):
-            g = g.sort_values('time')
-            near = g[length - g.pos < 12.0]
-            if near.empty:
-                continue
-            t_arrive, t_enter = near.time.iloc[0], g.time.iloc[-1]
-            entries.append((t_arrive, t_enter, trip))
+            near = g[length - g.pos < 2.0]
+            if trip in cross.index and not near.empty:
+                last3 = g[g.time >= cross[trip] - 3.0]
+                entries.append((cross[trip], near.time.iloc[0], trip, last3.speed.min() if len(last3) else 99.0))
         entries.sort()
-        last = None
-        for t_arrive, t_enter, trip in entries:
-            first_in_line = last is None or t_arrive >= last
-            if not first_in_line:
-                follow.append(t_enter - last)
-            else:
-                k = np.searchsorted(crossings, t_enter)
-                if 0 < k < len(crossings):
-                    accepted = crossings[k] - crossings[k - 1]
-                    # Gaps that closed while it waited at the line.
-                    k0 = np.searchsorted(crossings, t_arrive)
-                    rejected = np.diff(crossings[max(k0 - 1, 0):k]) if k > k0 else np.array([])
-                    rows.append((accepted, rejected.max() if len(rejected) else 0.0))
-            last = t_enter
+        tcs = np.array([e[0] for e in entries])
+        for i, (tc, ta, trip, vmin) in enumerate(entries):
+            k = np.searchsorted(passes, tc)
+            if k >= len(passes):
+                continue
+            pv = passes[k - 1] if k > 0 else -1e9
+            if not ((tcs > ta) & (tcs < tc)).any():
+                btw = passes[(passes > ta) & (passes <= tc)]
+                rej = ([btw[0] - ta] + list(np.diff(btw))) if len(btw) else []
+                rows.append((passes[k] - max(pv, ta), max(rej) if rej else 0.0, tc - ta))
+            if i and tc - tcs[i - 1] < 8.0 and not ((passes > tcs[i - 1]) & (passes < tc)).any() and vmin < 2.5:
+                follow.append(tc - tcs[i - 1])
     return np.array(rows), np.array(follow)
 
 
@@ -136,8 +134,11 @@ def main():
         collisions += json.loads(rep.read_text())['collision_incidents']
     rows = np.vstack(all_rows)
     fo = np.concatenate(all_follow)
-    med, sd = censored(rows)
-    out = dict(decisions=len(rows), with_rejected=int((rows[:, 1] > 0).sum()), critical_gap_median=med, log_sd=sd, follow_up_median=float(np.median(fo[(fo > 0.5) & (fo < 10)])) if len(fo) else None, follow_ups=len(fo), collisions=collisions, tune=a.tune)
+    # As the Swiss analysis: only cars with a decision to make.
+    decided = rows[(rows[:, 1] > 0) | (rows[:, 0] < 25)]
+    med, sd = censored(decided)
+    extra = dict(share_rejected=float((rows[:, 1] > 0).mean()), accepted_p05=float(np.percentile(rows[:, 0], 5)), accepted_p25=float(np.percentile(rows[:, 0], 25)), accepted_p50=float(np.percentile(rows[:, 0], 50)), rejected_p50=float(np.median(rows[rows[:, 1] > 0, 1])) if (rows[:, 1] > 0).any() else None, wait_p50=float(np.median(rows[:, 2])), wait_p90=float(np.percentile(rows[:, 2], 90)))
+    out = dict(**extra, decisions=len(rows), with_rejected=int((rows[:, 1] > 0).sum()), critical_gap_median=med, log_sd=sd, follow_up_median=float(np.median(fo[(fo > 0.5) & (fo < 10)])) if len(fo) else None, follow_ups=len(fo), collisions=collisions, tune=a.tune)
     (d / 'roundabout.json').write_text(json.dumps(out, indent=1))
     print(json.dumps(out))
 
