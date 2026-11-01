@@ -101,6 +101,7 @@ pub struct GpuVeh {
     pub cj_yield: f32,
     pub cj_t_ms: u32,
     pub cj_plan_ms: u32,
+    pub cj_rx_ms: u32,
     pub cj_rank: u32,
 }
 

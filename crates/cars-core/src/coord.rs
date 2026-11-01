@@ -186,7 +186,9 @@ pub struct GpuCjJunction {
     pub stall_detect: f32,
     pub stall_until: f32,
     pub p_load: f32,
-    pub pad: u32,
+    pub p_hat: f32,
+    pub fallback: u32,
+    pub pad_f: u32,
 }
 
 #[repr(C)]
@@ -266,7 +268,7 @@ pub struct GpuCjApp {
     pub s_cand_score: f32,
     pub box_tail: u32,
     pub line_ms: u32,
-    pub n_ranked: u32,
+    pub n_exp: u32,
     pub pad: [u32; 2],
 }
 

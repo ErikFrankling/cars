@@ -107,6 +107,7 @@ var<private> now_ms: u32;
 fn ms_rel(x: u32) -> f32 { return f32(i32(x - now_ms)) * 0.001; }
 fn rel_ms(t: f32) -> u32 { return now_ms + u32(i32(round(t * 1000.0))); }
 fn plan_on() -> bool { return (cfg.plan & PLAN_STABLE) != 0u; }
+fn plan_here(j: u32) -> bool { return plan_on() && cj_junctions[j].fallback == 0u; }
 
 // A unit normal per car and purpose, fixed for the whole trip.
 fn car_normal(trip: u32, c: u32) -> f32 {
@@ -480,6 +481,8 @@ fn cj_propose(@builtin(global_invocation_id) id: vec3u) {
     if (!is_tick(j)) { return; }
     let sim = cj_apps[a].sim_lane;
     var n = 0u;
+    var n_exp = 0u;
+    var n_rx = 0u;
     if (seg[sim].stamp == G.step) {
         let first = seg[sim].first;
         let len = cj_apps[a].length;
@@ -511,22 +514,33 @@ fn cj_propose(@builtin(global_invocation_id) id: vec3u) {
                 now_ms = G.step * cfg.dt_ms;
                 now = f32(G.step) * P.dt;
                 if (cfg.pos_err > 0.0) { q.d = max(q.d + cfg.pos_err * car_normal(e.trip, 1u), 0.0); }
-                let sends = ((G.step / cfg.tick_steps) + e.trip) % 2u == 0u;
+                let on_turn = ((G.step / cfg.tick_steps) + e.trip) % 2u == 0u;
+                // No slot yet after a turn in range means it was not heard: say it again.
+                let tick_s = f32(cfg.tick_steps) * P.dt;
+                let retry = e.cj_rank == NONE && now - e.cj_zone_t > tick_s + 0.01 && q.d + e.speed * tick_s <= cfg.plan_range;
                 var heard = false;
-                if (sends && q.d <= cfg.plan_range) {
+                if ((on_turn || retry) && q.d <= cfg.plan_range) {
                     stat(cj_junctions[j].replica, S_BYTES_UP, 262u);
                     heard = lossless() || delivered(e.trip, 4u, q.d, cj_junctions[j].p_load, cj_junctions[j].replica);
+                    // A car on the books that misses its turn is a lost message. Nobody has to know the true rate.
+                    if (on_turn && (e.cj_rank != NONE || cj_junctions[j].fallback != 0u)) {
+                        n_exp += 1u;
+                        if (heard) { n_rx += 1u; }
+                    }
                 }
                 // Not yet heard: not in the schedule, but the fallback for a dead radio still has to see it.
                 q.heard = u32(heard || e.cj_rank != NONE);
                 q.rank = select(f32(e.cj_rank), INF, e.cj_rank == NONE);
                 q.held = select(ms_rel(e.cj_plan_ms), INF, e.cj_rank == NONE);
+                if (cj_junctions[j].fallback != 0u) { cur[idx].cj_rank = NONE; }
             }
             cj_req[cj_apps[a].req_start + n] = q;
             n += 1u;
         }
     }
     cj_apps[a].n_req = n;
+    cj_apps[a].n_exp = n_exp;
+    cj_apps[a].n_rx = n_rx;
     cj_apps[a].s_ptr = 0u;
     cj_apps[a].s_cand_state = CAND_STALE;
     cj_apps[a].s_line_ref = cj_apps[a].line_ref;
@@ -634,8 +648,23 @@ fn cj_arbitrate(@builtin(global_invocation_id) id: vec3u) {
     let cbr = select(select(0.47 + (n - 100.0) / 150.0 * 0.38, 0.25 + (n - 50.0) / 50.0 * 0.22, n < 100.0), n / 50.0 * 0.25, n < 50.0);
     let pl = select(select(0.007 + (cbr - 0.47) / 0.35 * 0.123, 0.005 + (cbr - 0.25) / 0.22 * 0.002, cbr < 0.47), cbr / 0.25 * 0.005, cbr < 0.25);
     cj_junctions[j].p_load = clamp(pl, 0.0, 0.5);
-    if (J.mode != MODE_FREE || J.frozen != 0u || !coordinator_up()) { return; }
     if (plan_on()) {
+        var ex = 0u;
+        var rx = 0u;
+        for (var a = J.app_start; a < J.app_start + J.app_count; a++) {
+            ex += cj_apps[a].n_exp;
+            rx += cj_apps[a].n_rx;
+        }
+        if (ex > 0u) {
+            let w = min(f32(ex) / LOSS_WINDOW, 1.0);
+            cj_junctions[j].p_hat += (1.0 - f32(rx) / f32(ex) - J.p_hat) * w;
+        }
+        plan_loss = cj_junctions[j].p_hat;
+        if (plan_loss >= P_FALLBACK_ON) { cj_junctions[j].fallback = 1u; }
+        if (plan_loss <= P_FALLBACK_OFF) { cj_junctions[j].fallback = 0u; }
+    }
+    if (J.mode != MODE_FREE || J.frozen != 0u || !coordinator_up()) { return; }
+    if (plan_here(j)) {
         now_ms = G.step * cfg.dt_ms;
         plan_sequence(j);
         return;
@@ -767,10 +796,15 @@ fn plan_exit_ok(mi: u32, k: u32, t: f32) -> bool {
 // margin; Level A only when the channel is losing messages, the full one when it loses many.
 fn plan_slip(v: f32) -> f32 {
     if (cfg.level_b != 0u) { return 1.0 / max(v, 1.0); }
-    if (lossless()) { return 0.0; }
-    return select(0.5, 1.0, cfg.p_loss >= 0.3) / max(v, 1.0);
+    if (plan_loss < 0.01) { return 0.0; }
+    return clamp(plan_loss / 0.3, 0.5, 1.0) / max(v, 1.0);
 }
 
+const LOSS_WINDOW: f32 = 40.0;
+const P_FALLBACK_ON: f32 = 0.3;
+const P_FALLBACK_OFF: f32 = 0.15;
+const STALE_MS: i32 = 2500;
+var<private> plan_loss: f32;
 var<private> plan_wait: f32;
 var<private> plan_vmax: f32;
 
@@ -1084,16 +1118,20 @@ fn plan_commit_real(j: u32, q: CjReq, mi: u32, k: u32, t: f32, deliver_now: bool
         let rv = cj_conflicts[ci].rev_index;
         let out = rel_ms(t + cj_times[ci * 12u + 6u + k] + plan_slip(cj_mov_k[mi * N_CLASS + k].vk));
         if (i32(out - cj_rel_ms[rv]) > 0) { cj_rel_ms[rv] = out; }
+        cj_rel[rv] = max(cj_rel[rv], now + ms_rel(out));
     }
     cj_apps[m.from_lane].line_ref = mi * N_CLASS + k;
     cj_apps[m.from_lane].line_ms = ms;
+    cj_apps[m.from_lane].line_t = now + ms_rel(ms);
     cj_exits[m.to_lane].exit_ref = mi * N_CLASS + k;
     cj_exits[m.to_lane].exit_ms = ms;
+    cj_exits[m.to_lane].exit_t = now + ms_rel(ms);
     atomicAdd(&cj_exits[m.to_lane].n_committed, 1u);
     let seq = cj_exits[m.to_lane].seq + 1u;
     cj_exits[m.to_lane].seq = seq;
     stat(cj_junctions[j].replica, S_GRANTS, 1u);
     stat(cj_junctions[j].replica, S_BYTES_DOWN, 180u);
+    cur[q.veh].cj_rx_ms = now_ms;
     cur[q.veh].cj_t_ms = ms;
     cur[q.veh].cj_plan_ms = ms;
     cur[q.veh].cj_t_line = f32(ms) * 0.001;
@@ -1171,6 +1209,7 @@ fn plan_commit(j: u32) {
         if (changed || repeat_now) {
             stat(J.replica, S_BYTES_DOWN, 180u);
             if (free || delivered(q.trip, 3u, q.d, J.p_load, J.replica)) {
+                cur[q.veh].cj_rx_ms = now_ms;
                 cur[q.veh].cj_t_ms = ms;
                 cur[q.veh].cj_t_line = f32(ms) * 0.001;
                 cur[q.veh].cj_v_line = mk.vk;
@@ -1297,11 +1336,24 @@ fn commit_real(j: u32, q: CjReq, mi: u32, k: u32, t: f32, deliver_now: bool) {
         let ci = m.conf_start + c;
         let rv = cj_conflicts[ci].rev_index;
         cj_rel[rv] = max(cj_rel[rv], t + cj_times[ci * 12u + 6u + k]);
+        // The planner reads milliseconds; when it comes back it must see these reservations.
+        if (plan_on()) {
+            let out = rel_ms(t - now + cj_times[ci * 12u + 6u + k]);
+            if (i32(out - cj_rel_ms[rv]) > 0) { cj_rel_ms[rv] = out; }
+        }
     }
     cj_apps[m.from_lane].line_ref = mi * N_CLASS + k;
     cj_apps[m.from_lane].line_t = t;
     cj_exits[m.to_lane].exit_ref = mi * N_CLASS + k;
     cj_exits[m.to_lane].exit_t = t;
+    if (plan_on()) {
+        let ms = rel_ms(t - now);
+        cj_apps[m.from_lane].line_ms = ms;
+        cj_exits[m.to_lane].exit_ms = ms;
+        cur[q.veh].cj_t_ms = ms;
+        cur[q.veh].cj_plan_ms = ms;
+        cur[q.veh].cj_rx_ms = now_ms;
+    }
     atomicAdd(&cj_exits[m.to_lane].n_committed, 1u);
     // Numbered per exit lane, so that cars in its box never share a table slot until K_BOX of them are in.
     let seq = cj_exits[m.to_lane].seq + 1u;
@@ -1347,7 +1399,7 @@ fn awsc(j: u32, min_wait: f32) {
     }
     if (best == NONE) { return; }
     let q = cj_req[cj_apps[best].req_start];
-    if (plan_on()) {
+    if (plan_here(j)) {
         now_ms = G.step * cfg.dt_ms;
         plan_wait = 0.0;
         if (!plan_cand(q.link, q.d, q.v, 0.5, 0u, false) || !exit_ok(q.link, cand_k)) { return; }
@@ -1443,8 +1495,9 @@ fn cj_commit(@builtin(global_invocation_id) id: vec3u) {
         signal_tick(j);
         return;
     }
-    if (plan_on()) {
-        now_ms = G.step * cfg.dt_ms;
+    now_ms = G.step * cfg.dt_ms;
+    plan_loss = J.p_hat;
+    if (plan_here(j)) {
         plan_commit(j);
         if (cfg.fallback != 0u) { awsc(j, HEARD_NOTHING); }
         return;
@@ -1747,7 +1800,7 @@ fn cj_apply(@builtin(global_invocation_id) id: vec3u) {
     let v = e.speed;
     let len = lanes[e.lane].length;
     let a_max = cfg.accel;
-    let planned = (cfg.plan & PLAN_PROFILE) != 0u;
+    var planned = (cfg.plan & PLAN_PROFILE) != 0u;
     // Time to its slot, in the car's own clock.
     var t_left = select(e.cj_t_line - now, ms_rel(e.cj_t_ms), plan_on());
     if (cfg.clock_err > 0.0) { t_left += cfg.clock_err * car_normal(e.trip, 2u); }
@@ -1790,6 +1843,11 @@ fn cj_apply(@builtin(global_invocation_id) id: vec3u) {
         }
     } else {
         e.cj_link = NONE;
+    }
+    // A junction on today's horizon has its cars on today's control.
+    if (planned && !in_box && mi != NONE && cj_junctions[cj_links[mi].junction].fallback != 0u) {
+        planned = false;
+        t_left = e.cj_t_line - now;
     }
     // Stop curve margin in the auditor's words: nobody without a grant may be unable to stop.
     var yield_at = e.cj_yield;
@@ -1880,7 +1938,9 @@ fn cj_apply(@builtin(global_invocation_id) id: vec3u) {
         a_stopc = clamp((vs - v) / dt, -cfg.b_s, a_max);
         if (planned) { a_hard = a_stopc; } else { a_cmd = min(a_cmd, a_stopc); }
     }
-    if (planned && !in_box && (state == CJ_ADVISED || state == CJ_FIRM || state == CJ_PENDING)) {
+    // The car can see for itself that its plan has gone quiet: then it keeps going, as today, on its stop curve.
+    let stale = state == CJ_ADVISED && i32(now_ms - e.cj_rx_ms) > STALE_MS;
+    if (planned && !in_box && (state == CJ_ADVISED || state == CJ_FIRM || state == CJ_PENDING) && !stale) {
         let di = max(d, 0.0);
         e.cj_v_cruise = di / max(t_left, 0.1);
         // A firm slot is a promise about conflicts: keep it even past comfort, and count that.
@@ -1894,7 +1954,7 @@ fn cj_apply(@builtin(global_invocation_id) id: vec3u) {
         if (promise && di < 8.0 && t_left - di / max(v, 0.5) > 0.25) {
             a_hard = min(a_hard, max((di / t_left - v) / dt, -cfg.b_s));
         }
-    } else if (!in_box && (state == CJ_ADVISED || state == CJ_FIRM || state == CJ_PENDING)) {
+    } else if (!planned && !in_box && (state == CJ_ADVISED || state == CJ_FIRM || state == CJ_PENDING)) {
         if ((G.step & 1u) == 0u) {
             e.cj_v_cruise = plan_vc(v, max(d, 0.0), max(e.cj_t_line - now, 0.01), e.cj_v_line, vcap);
         }
@@ -1990,7 +2050,7 @@ fn cj_apply(@builtin(global_invocation_id) id: vec3u) {
                 if (lead_i != NONE && info.app != NONE) {
                     let t = cur[lead_i];
                     let sl = t.cj_state & CJ_STATE_MASK;
-                    if (sl == CJ_ADVISED || sl == CJ_FIRM || sl == CJ_PENDING) {
+                    if ((sl == CJ_ADVISED && i32(now_ms - t.cj_rx_ms) <= STALE_MS) || sl == CJ_FIRM || sl == CJ_PENDING) {
                         let dl = len - t.pos;
                         let tl = select(t.cj_t_line - now, ms_rel(t.cj_t_ms), plan_on());
                         x1 = plan_x(dl, t.speed, tl, t.cj_v_line, t.acc, 1.0);
