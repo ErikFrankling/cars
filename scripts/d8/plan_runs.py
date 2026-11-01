@@ -134,6 +134,33 @@ def capacity_factors():
     return [case(n, m, SAT[n], s, p, trace=False) for n, m in CELLS for s in (0, 1, 2, 3) for p in ('stable', 'dr')]
 
 
+def route_cap():
+    return [case(n, m, SAT[n], s, 'route', trace=False) for n, m in CELLS for s in (0, 1, 2, 3)]
+
+
+def route_grid():
+    out = []
+    for net, ds in (('grid1', (4000, 9000, 14000)), ('grid2', (8000, 16000, 20000, 24000))):
+        for d in ds:
+            for s in (0, 1, 2, 3, 4, 5):
+                out.append(case(net, 'M', d, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS))
+                out.append(case(net, 'M', d, s, 'off', end=600.0, warm=150.0, trace=False, junctions=GRID_JS))
+    return out
+
+
+def route_faults():
+    # Message loss and stalls on the grid with planning across junctions.
+    out = []
+    for s in (0, 1, 2):
+        for loss in (0.1, 0.3, 0.5, 0.7):
+            out.append(case('grid2', 'M', 16000, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS, loss=loss, fault=f'loss{loss}'))
+        out.append(case('grid2', 'M', 16000, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS, stall=120.0, level='B', fault='stallB'))
+        out.append(case('grid2', 'M', 16000, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS, stall=120.0, fault='stallA'))
+        out.append(case('grid2', 'M', 16000, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS, chan=1, fault='channel08'))
+        out.append(case('grid2', 'M', 16000, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS, blackout=(300.0, 330.0), fault='blackout30'))
+    return out
+
+
 def capacity_chan():
     return [case(n, m, SAT[n], s, p, trace=False, chan=1, fault='channel08') for n, m in (('j2', 'M'), ('j2', 'H'), ('j2', 'T'), ('j1', 'M'), ('j3', 'M')) for s in (0, 1) for p in MODES]
 
@@ -180,7 +207,7 @@ def smoke():
     return [case('j2', 'M', 3000, 0, 'full', end=200.0, warm=60.0)]
 
 
-PARTS = dict(gate=gate, lateral=lateral, capacity_factors=capacity_factors, capacity_chan=capacity_chan, smoke=smoke, grid=grid, grid_meter=grid_meter, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
+PARTS = dict(route_cap=route_cap, route_grid=route_grid, route_faults=route_faults, gate=gate, lateral=lateral, capacity_factors=capacity_factors, capacity_chan=capacity_chan, smoke=smoke, grid=grid, grid_meter=grid_meter, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
 
 
 def key(c):
