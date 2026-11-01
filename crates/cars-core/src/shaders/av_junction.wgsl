@@ -92,6 +92,7 @@ const PLAN_STABLE: u32 = 2u;
 const PLAN_FOLLOW: u32 = 4u;
 const PLAN_CUBIC: u32 = 8u;
 const PLAN_DR: u32 = 16u;
+const PLAN_ROUTE: u32 = 32u;
 const MAX_NEW: u32 = 8u;
 const INSERT_TRIES: u32 = 12u;
 
@@ -106,6 +107,7 @@ var<private> now_ms: u32;
 
 fn ms_rel(x: u32) -> f32 { return f32(i32(x - now_ms)) * 0.001; }
 fn rel_ms(t: f32) -> u32 { return now_ms + u32(i32(round(t * 1000.0))); }
+fn plan_route() -> bool { return (cfg.plan & PLAN_ROUTE) != 0u; }
 fn plan_on() -> bool { return (cfg.plan & PLAN_STABLE) != 0u; }
 fn plan_here(j: u32) -> bool { return plan_on() && cj_junctions[j].fallback == 0u; }
 
@@ -796,10 +798,51 @@ fn plan_exit_ok(mi: u32, k: u32, t: f32) -> bool {
 // margin; Level A only when the channel is losing messages, the full one when it loses many.
 fn plan_slip(v: f32) -> f32 {
     if (cfg.level_b != 0u) { return 1.0 / max(v, 1.0); }
+    // From a standstill the engine takes a moment to come in, and the table does not know that.
+    if (plan_route() && v < 1.5 && plan_loss < 0.3) { return 0.5; }
     if (plan_loss < 0.01) { return 0.0; }
     return clamp(plan_loss / 0.3, 0.5, 1.0) / max(v, 1.0);
 }
 
+// When the lane out of this movement has the room a car needs, seconds from now. Room is counted as if
+// everyone on it stopped where they fit, so it holds even if the next junction stops them. The cars on it
+// leave in their order at the next junction at the times that junction has given them, so its plan
+// reaches back here. Negative: there is room already. INF: no time can be named yet.
+fn plan_room_time(x: u32, added: u32, need: f32, firm_only: bool) -> f32 {
+    let on_box = atomicLoad(&cj_exits[x].n_box) + atomicLoad(&cj_exits[x].n_committed) + added;
+    let sim = cj_exits[x].sim_lane;
+    let on_lane = select(0u, seg[sim].end - seg[sim].first, seg[sim].stamp == G.step);
+    let base = cj_exits[x].length - f32(on_lane + on_box) * cfg.unit;
+    if (base >= need) { return -1.0; }
+    let gone = u32(ceil((need - base) / cfg.unit));
+    if (gone > on_lane) { return INF; }
+    let e = cur[seg[sim].end - gone];
+    if (cj_exits[x].next_app == NONE) {
+        // No plan to read: going by what it is doing, as long as it is moving at all.
+        if (e.speed < 1.0) { return INF; }
+        return (cj_exits[x].length - e.pos) / e.speed;
+    }
+    let state = e.cj_state & CJ_STATE_MASK;
+    // For a plan its plan will do. For a grant, only a grant counts: a car past the point of no return
+    // must not be relying on a slot that can still move.
+    if (state == CJ_FIRM) { return ms_rel(e.cj_t_ms); }
+    if (firm_only || state == CJ_NONE || e.cj_rank == NONE) { return INF; }
+    return ms_rel(e.cj_plan_ms);
+}
+
+// Max pressure, as a tie-break in time: how full the lane ahead is against how full this one is.
+fn plan_pressure(mi: u32) -> f32 {
+    let m = cj_links[mi];
+    let sa = cj_apps[m.from_lane].sim_lane;
+    let n_app = select(0u, seg[sa].end - seg[sa].first, seg[sa].stamp == G.step);
+    let sx = cj_exits[m.to_lane].sim_lane;
+    let n_exit = select(0u, seg[sx].end - seg[sx].first, seg[sx].stamp == G.step);
+    return f32(n_exit) * cfg.unit / max(cj_exits[m.to_lane].length, 1.0) - f32(n_app) * cfg.unit / max(cj_apps[m.from_lane].length, 1.0);
+}
+
+const GATE_FILL: f32 = 0.5;
+const PRESSURE: f32 = 0.0;
+const ROOM_UNKNOWN: f32 = 30.0;
 const LOSS_WINDOW: f32 = 40.0;
 const P_FALLBACK_ON: f32 = 0.3;
 const P_FALLBACK_OFF: f32 = 0.15;
@@ -853,6 +896,17 @@ fn plan_cand(mi: u32, d: f32, v: f32, min_t: f32, kmin: u32, scratch: bool) -> b
         if (line_ref != NONE) { t = max(t, line_t + headway(mi, k, line_ref, 0u)); }
         if (exit_ref != NONE) { t = max(t, exit_t + headway(mi, k, exit_ref, 1u)); }
         // The table covers a tail that follows its plan. One that has stopped following it is a real obstacle.
+        if (plan_route()) {
+            let added = select(0u, cj_exits[m.to_lane].s_added, scratch);
+            var need = cfg.unit + cfg.t_r * mk.vout + mk.vout * mk.vout / (2.0 * cfg.plan_bc);
+            // From outside the coordinated area into it: keep room inside, so the area stays below the
+            // density where it stops flowing. Cars then wait outside, not in the way.
+            if (m.pad_l > 0.5 && cj_exits[m.to_lane].next_app != NONE) { need = max(need, GATE_FILL * cj_exits[m.to_lane].length); }
+            let room = plan_room_time(m.to_lane, added, min(need, cj_exits[m.to_lane].length), !scratch);
+            // Through the box and clear of it by then. If no time can be named yet, the slot is far out.
+            if (room >= INF * 0.5) { t = max(t, ROOM_UNKNOWN); }
+            else if (room > 0.0) { t = max(t, room - mk.t_clear); }
+        }
         if (has_tail && tx >= 0.0 && vt < 1.0 && cj_exits[m.to_lane].tail_a < 0.1) {
             let v_t = 2.0;
             let need = 2.0 * cfg.length + cfg.s0 + mk.vout * cfg.tau - tx;
@@ -1024,6 +1078,7 @@ fn plan_sequence(j: u32) {
     for (var x = J.exit_start; x < J.exit_start + J.exit_count; x++) {
         cj_exits[x].s_exit_ref = cj_exits[x].exit_ref;
         cj_exits[x].s_exit_t = ms_rel(cj_exits[x].exit_ms);
+        cj_exits[x].s_added = 0u;
     }
     for (var a = J.app_start; a < J.app_start + J.app_count; a++) {
         cj_apps[a].s_line_ref = cj_apps[a].line_ref;
@@ -1066,6 +1121,7 @@ fn plan_sequence(j: u32) {
                         if (ok) {
                             var score = cand_t;
                             if (now - q.age_t > cfg.a_max) { score -= 1e6; }
+                            if (plan_route()) { score += PRESSURE * plan_pressure(q.link); }
                             cj_apps[a].s_cand_t = cand_t;
                             cj_apps[a].s_cand_k = cand_k;
                             cj_apps[a].s_cand_score = score;
@@ -1098,6 +1154,8 @@ fn plan_sequence(j: u32) {
         cj_apps[best].s_line_t = t;
         cj_exits[m.to_lane].s_exit_ref = q.link * N_CLASS + k;
         cj_exits[m.to_lane].s_exit_t = t;
+        cj_exits[m.to_lane].s_added += 1u;
+        // Only lanes in conflict get a fresh look below; a lane sharing this exit is one of them.
         cj_req[slot].t_plan = t;
         cj_req[slot].k_plan = k;
         cj_plan[J.plan_start + planned] = slot;
@@ -1276,7 +1334,9 @@ fn plan_accel(d: f32, v: f32, t: f32, ve: f32, vcap: f32, bc: f32) -> f32 {
     let up = 0.8 * a_c;
     // A car in a long queue keeps its speed longer and brakes less gently, so that it can still take an
     // earlier slot when one opens: slowing early gives up the freedom that saturation flow needs.
-    let b = mix(cfg.plan_b, cfg.plan_bc, clamp((plan_wait - cfg.plan_slack) / 8.0, 0.0, 1.0));
+    var b = mix(cfg.plan_b, cfg.plan_bc, clamp((plan_wait - cfg.plan_slack) / 8.0, 0.0, 1.0));
+    // A firm slot that moved at the last moment has to be kept, or the car arrives early and then too slow.
+    if (plan_route() && bc > cfg.plan_bc) { b = cfg.plan_bc; }
     let vc = plan_vc_ab(v, d, t, ve, vcap, up, b);
     let rate = select(b, up, ve > v);
     let d3 = abs(ve * ve - v * v) / (2.0 * rate);
@@ -1298,7 +1358,8 @@ fn plan_x(d: f32, v: f32, t: f32, ve: f32, a_now: f32, tau: f32) -> f32 {
         let rate = select(cfg.plan_b, up, ve > vc);
         let tr = min(abs(ve - vc) / rate, t);
         let tc = t - tr;
-        if (tau <= tc) { return vc * tau; }
+        // Not faster than it can get going from what it is doing now, for instance stuck in a queue.
+        if (tau <= tc) { return min(vc * tau, v * tau + 0.5 * up * tau * tau); }
         let u = select(-rate, rate, ve > vc);
         let dt_r = min(tau - tc, tr);
         return vc * tc + vc * dt_r + 0.5 * u * dt_r * dt_r + max(tau - t, 0.0) * ve;
@@ -1951,7 +2012,8 @@ fn cj_apply(@builtin(global_invocation_id) id: vec3u) {
         a_cmd = min(a_cmd, a_track);
         if (state == CJ_FIRM && t_left < 0.0) { a_cmd = min((vcap - v) / dt, a_max); }
         // Never well ahead of the slot; the conflict margin covers a little.
-        if (promise && di < 8.0 && t_left - di / max(v, 0.5) > 0.25) {
+        // A car creeping up to the line is not ahead of anything: stopping it there makes it late.
+        if (promise && di < 8.0 && (v > 0.8 || !plan_route()) && t_left - di / max(v, 0.5) > 0.25) {
             a_hard = min(a_hard, max((di / t_left - v) / dt, -cfg.b_s));
         }
     } else if (!planned && !in_box && (state == CJ_ADVISED || state == CJ_FIRM || state == CJ_PENDING)) {

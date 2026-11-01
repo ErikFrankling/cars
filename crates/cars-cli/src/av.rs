@@ -187,6 +187,7 @@ impl CoordArgs {
             "full" => coord::PLAN_PROFILE | coord::PLAN_STABLE | coord::PLAN_FOLLOW,
             "cubic" => coord::PLAN_PROFILE | coord::PLAN_STABLE | coord::PLAN_FOLLOW | coord::PLAN_CUBIC,
             "dr" => coord::PLAN_PROFILE | coord::PLAN_STABLE | coord::PLAN_FOLLOW | coord::PLAN_DR,
+            "route" => coord::PLAN_PROFILE | coord::PLAN_STABLE | coord::PLAN_FOLLOW | coord::PLAN_ROUTE,
             other => return Err(format!("unknown --cj-plan {other}")),
         };
         if let Some(m) = self.cj_margin {

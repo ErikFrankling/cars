@@ -541,6 +541,9 @@ struct CjExit {
     seq: u32,
     exit_ms: u32,
     tail_a: f32,
+    next_app: u32,     // the approach this lane is at the next coordinated junction
+    n_store: u32,      // whole cars this lane can hold
+    s_added: u32,      // cars the schedule has sent into it this tick
 }
 
 struct CjReq {

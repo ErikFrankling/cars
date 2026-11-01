@@ -21,6 +21,7 @@ pub const PLAN_STABLE: u32 = 2;
 pub const PLAN_FOLLOW: u32 = 4;
 pub const PLAN_CUBIC: u32 = 8;
 pub const PLAN_DR: u32 = 16;
+pub const PLAN_ROUTE: u32 = 32;
 pub const EVENTS_MAX: u32 = 4095;
 const DS: f64 = 0.25;
 const MIN_LANE: f32 = 25.0;
@@ -296,6 +297,9 @@ pub struct GpuCjExit {
     pub seq: u32,
     pub exit_ms: u32,
     pub tail_a: f32,
+    pub next_app: u32,
+    pub n_store: u32,
+    pub s_added: u32,
 }
 
 #[repr(C)]
@@ -1038,6 +1042,8 @@ pub fn build(net: &Net, topo: &Topology, c: &CoordConfig, dt: f32, seed: u64) ->
                 s_exit_t: -1e9,
                 block_t0: 1e30,
                 block_t1: 1e30,
+                next_app: NONE,
+                n_store: ((l.length as f64 / (c.length + c.s0 + 1.0)).floor() as u32).max(1),
                 ..Default::default()
             };
             for f in &c.exit_faults {
@@ -1237,6 +1243,15 @@ pub fn build(net: &Net, topo: &Topology, c: &CoordConfig, dt: f32, seed: u64) ->
     w.cfg.n_apps = w.apps.len() as u32;
     w.cfg.n_exits = w.exits.len() as u32;
     w.n_replicas = 1;
+    for x in 0..w.exits.len() {
+        w.exits[x].next_app = w.lane_info[w.exits[x].sim_lane as usize].app;
+    }
+    // A movement whose lane nobody coordinated feeds is at the edge of the coordinated area.
+    let fed: std::collections::HashSet<u32> = w.exits.iter().map(|x| x.sim_lane).collect();
+    for l in 0..w.links.len() {
+        let from = w.apps[w.links[l].from_lane as usize].sim_lane;
+        w.links[l].pad_l = if fed.contains(&from) { 0.0 } else { 1.0 };
+    }
     w
 }
 
@@ -1293,7 +1308,13 @@ pub fn add_replica(w: &mut CoordWorld, base: &CoordWorld, lane0: u32, replica: u
         mov_start: x.mov_start + m0,
         ..*x
     }));
-    w.exits.extend(base.exits.iter().map(|x| GpuCjExit { sim_lane: x.sim_lane + lane0, junction: x.junction + j0, ..*x }));
+    let a0 = (w.apps.len() - base.apps.len()) as u32;
+    w.exits.extend(base.exits.iter().map(|x| GpuCjExit {
+        sim_lane: x.sim_lane + lane0,
+        junction: x.junction + j0,
+        next_app: if x.next_app == NONE { NONE } else { x.next_app + a0 },
+        ..*x
+    }));
     w.path.extend_from_slice(&base.path);
     w.n_req += base.n_req;
     w.n_plan += base.n_plan;

@@ -8,6 +8,9 @@ D8 = Path(__file__).resolve().parents[2] / 'research/truth/fig/d8'
 P = D8 / 'plan'
 
 
+TAG = ""
+
+
 def load(name):
     p = P / f'{name}.jsonl'
     return [json.loads(l) for l in p.read_text().splitlines()] if p.exists() else []
