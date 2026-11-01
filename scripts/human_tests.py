@@ -20,6 +20,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 A = None
 RESULTS = {}
+COLLISIONS = 0
 
 
 def run(cmd):
@@ -36,7 +37,10 @@ def cars(d, *args, routes='r.xml', net='net.xml', tag='run', fcd=True, interval=
     lock = [] if os.environ.get('CARS_GPU_HELD') or os.environ.get('CARS_ADAPTER') else ['flock', '/tmp/cars-gpu.lock']
     log = run([*lock, os.environ.get('CARS_BIN', ROOT / 'target/release/cars'), 'run', '--net', d / net, '--routes', d / routes, '--report-json', report, *extra, *args])
     (d / f'{tag}.log').write_text(log.stdout + log.stderr)
-    return json.loads(report.read_text()), fc
+    rep = json.loads(report.read_text())
+    global COLLISIONS
+    COLLISIONS += rep.get('collision_incidents', 0)
+    return rep, fc
 
 
 def workdir(name):
@@ -761,7 +765,7 @@ def stub_lane():
         (d / 'r.xml').write_text(f'<routes>{VTYPE}<route id="w" edges="in2 stub e1"/><route id="m" edges="in1 stub e2"/><route id="o" edges="in2 stub e2"/><flow id="w" type="h" route="w" begin="0" end="600" vehsPerHour="120" departSpeed="max"/><flow id="o" type="h" route="o" begin="0" end="600" vehsPerHour="120" departSpeed="max"/><flow id="m" type="h" route="m" begin="0" end="600" vehsPerHour="600" departSpeed="max" departLane="best"/></routes>')
         rep, _ = cars(d, '--dt', 1, '--end', 1200, '--seed', 1, '--time-to-teleport', 0, '--humans', fcd=False)
         h = rep['humans']
-        out[x] = dict(arrived=rep.get('arrived'), inserted=rep.get('inserted'), collisions=rep.get('collisions'), lost=h['lost_cars'])
+        out[x] = dict(arrived=rep.get('arrived'), inserted=rep.get('inserted'), collisions=rep['collision_incidents'], lost=h['lost_cars'])
     record('stub_lane', out)
 
 
@@ -778,7 +782,7 @@ def minor_road(param, seed=1, dur=900):
     rep, fc = cars(d, '--dt', A.dt, '--end', dur + 300, '--seed', seed, *[x for t in param.split(',') if t for x in ('--tune', t)], tag=f's{seed}', interval=1.0)
     f = pd.read_csv(fc, usecols=['trip', 'lane'], dtype=str)
     side = f[f.trip.str.startswith('s') & f.lane.str.startswith('on')].trip.nunique()
-    return dict(minor_flow=side / (dur + 300) * 3600, collisions=rep.get('collisions', 0))
+    return dict(minor_flow=side / (dur + 300) * 3600)
 
 
 def sensitivity():
@@ -788,11 +792,13 @@ def sensitivity():
         for v in vals:
             param = f'{name}={v}' if v is not None else ''
             A.seeds = 1
+            global COLLISIONS
+            COLLISIONS = 0
             queue(param=param or None)
             q = RESULTS.pop(f'queue_dt{A.dt}')
             m = merge_one('_sens', 5.0, param, dur=600, main=800, ramp=600)
             y = minor_road(param)
-            rows.append(dict(name=name, value=v, hsat=q['hsat'], lost=q['lost'], stand=q['stand_median'], merge_n=m['n'], never=m['never'], p50=m['p50'], p90=m['p90'], **y))
+            rows.append(dict(name=name, value=v, hsat=q['hsat'], lost=q['lost'], stand=q['stand_median'], merge_n=m['n'], never=m['never'], p50=m['p50'], p90=m['p90'], collisions=COLLISIONS, **y))
             print(rows[-1], flush=True)
             record('sensitivity', rows)
 
