@@ -18,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DATA = Path('/home/erikf/projects/personal/cars-data')
 CITIES = {
+    'recipe': dict(net=DATA / 'truth/stockholm/factorial/n7_ramps.net.xml', routes=DATA / 'truth/stockholm/factorial/v2_c4.rou.gz'),
     'stockholm': dict(net=DATA / 'truth/maps/builds/v5_inventory/net.xml', routes=DATA / 'physics/stockholm/morning.repaired.rou.xml.gz'),
     'berlin': dict(net=DATA / 'best/berlin.net.xml', routes=DATA / 'best/berlin.rou.gz'),
 }

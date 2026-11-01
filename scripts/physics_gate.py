@@ -18,7 +18,12 @@ DATA = Path('/home/erikf/projects/personal/cars-data')
 LOCK = [] if os.environ.get('CARS_GPU_HELD') else ['flock', '/tmp/cars-gpu.lock']
 STOCKHOLM = dict(net=DATA / 'truth/maps/builds/v5_inventory/net.xml', routes=DATA / 'physics/stockholm/morning.repaired.rou.xml.gz')
 BERLIN = dict(net=DATA / 'best/berlin.net.xml', routes=DATA / 'best/berlin.rou.gz')
+# Report 02's recipe: the net and demand that do not lock up under the baseline driver, so what locks here is ours.
+RECIPE = dict(net=DATA / 'truth/stockholm/factorial/n7_ramps.net.xml', routes=DATA / 'truth/stockholm/factorial/v2_c4.rou.gz')
 RUNS = {
+    'recipe-1': dict(RECIPE, fraction=0.01, begin=0, end=86400),
+    'recipe-50': dict(RECIPE, fraction=0.5, begin=0, end=86400),
+    'recipe-day': dict(RECIPE, fraction=1.0, begin=0, end=86400),
     'stockholm-1': dict(STOCKHOLM, fraction=0.01, begin=25200, end=34200),
     'stockholm-50': dict(STOCKHOLM, fraction=0.5, begin=25200, end=34200),
     'berlin-1': dict(BERLIN, fraction=0.01, begin=0, end=86400),
