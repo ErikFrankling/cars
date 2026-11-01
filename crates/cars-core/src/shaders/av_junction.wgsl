@@ -2014,8 +2014,10 @@ fn cj_apply(@builtin(global_invocation_id) id: vec3u) {
         a_cmd = min(a_cmd, a_track);
         if (state == CJ_FIRM && t_left < 0.0) { a_cmd = min((vcap - v) / dt, a_max); }
         // Never well ahead of the slot; the conflict margin covers a little.
-        // A car creeping up to the line is not ahead of anything: stopping it there makes it late.
-        if (promise && di < 8.0 && (v > 0.8 || !plan_route()) && t_left - di / max(v, 0.5) > 0.25) {
+        // A car creeping up to the line a moment early is not ahead of anything: stopping it there makes
+        // it late. Well early, it waits at the line: even at walking pace it would be in the way.
+        let early = t_left - di / max(v, 0.5);
+        if (promise && di < 8.0 && (((v > 0.8 || !plan_route()) && early > 0.25) || early > 0.6)) {
             a_hard = min(a_hard, max((di / t_left - v) / dt, -cfg.b_s));
         }
     } else if (!planned && !in_box && (state == CJ_ADVISED || state == CJ_FIRM || state == CJ_PENDING)) {

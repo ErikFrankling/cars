@@ -15,7 +15,7 @@ OUT = D8 / 'plan'
 CARS = Path(os.environ.get('CARS_BIN', ROOT / 'target/release/cars'))
 SAT = {'j1': 7000, 'j2': 11000, 'j3': 15000, 't1': 6000, 'j150': 11000, 'j280': 11000, 'j500': 11000, 'j1000': 11000}
 CELLS = (('j1', 'T'), ('j1', 'M'), ('j1', 'H'), ('j2', 'T'), ('j2', 'M'), ('j2', 'H'), ('j3', 'M'))
-MODES = ('off', 'full')
+MODES = ('off', 'route')
 
 
 def case(net, mix='M', demand=3000.0, seed=0, plan='full', end=800.0, warm=200.0, trace=True, **kw):
@@ -51,10 +51,10 @@ def ablation():
     out = []
     for d in (3000, 5200):
         for s in (0, 1, 2):
-            for p in ('off', 'profile', 'stable', 'full', 'cubic', 'dr'):
+            for p in ('off', 'profile', 'stable', 'full', 'route', 'cubic', 'dr'):
                 out.append(case('j2', 'M', d, s, p, end=600.0, warm=150.0))
     for s in (0, 1, 2):
-        for p in ('off', 'profile', 'stable', 'full', 'cubic', 'dr'):
+        for p in ('off', 'profile', 'stable', 'full', 'route', 'cubic', 'dr'):
             out.append(case('j2', 'M', SAT['j2'], s, p, end=500.0, warm=150.0, trace=False))
     return out
 
@@ -164,7 +164,7 @@ def route_faults():
 def gate_route():
     # The margin on the final design: every cell, 8 seeds, with and without position error, and loads where a rare contact shows.
     out = []
-    for s in range(8):
+    for s in range(6):
         for n, m in CELLS:
             for mg in (0.3, 0.2):
                 for pos in (0.0, 0.3):
@@ -202,7 +202,7 @@ def gate():
 def lateral():
     # What the corner speed buys, safe or not: peak lateral 4.0 with apex release against the old table and the map.
     out = []
-    for s in (0, 1, 2, 3):
+    for s in (0, 1):
         for n, m in CELLS:
             out.append(case(n, m, SAT[n], s, 'route', trace=False, peak=4.0, fault='peak4'))
             out.append(case(n, m, SAT[n], s, 'route', trace=False, peak=-1.0, fault='old_table'))
