@@ -352,7 +352,7 @@ def _val(c, h, a):
 
 
 def cmd_es(a):
-    c = C.with_(qm=a.qm, qr=a.qr, pav=a.pav)
+    c = C.with_(qm=a.qm, qr=a.qr, pav=a.pav, horizon=a.horizon)
     h = HUMAN
 
     def ro(th, seed):
@@ -408,13 +408,13 @@ def cmd_eval(a):
     for tag, (th, om) in runners.items():
         res[tag] = {}
         for name, (c, h, kw) in conds.items():
-            s = stats(rollout(th, c.with_(horizon=800.0), h, 777001, obsmode=om, **kw))
+            s = stats(rollout(th, c.with_(horizon=a.horizon), h, 777001, obsmode=om, **kw))
             res[tag][name] = {k: float(np.mean(v)) for k, v in s.items()}
         print(tag, json.dumps(res[tag]["test"]), flush=True)
     for tag, kd in (("IDM humans only", None), ("IDM T=1.0 AV", ctrl_noiseless), ("IDM T=1.5 AV", ctrl_idm_t(1.5))):
         res[tag] = {}
         for name, (c, h, kw) in conds.items():
-            cc = c.with_(horizon=800.0)
+            cc = c.with_(horizon=a.horizon)
             if kd is None:
                 cc = cc.with_(pav=0.0)
             s = stats(rollout(None, cc, h, 777001, kind=kd or "idm"))
@@ -434,11 +434,13 @@ def main():
     e.add_argument("--reward", default="delay"); e.add_argument("--obs", default="v2x")
     e.add_argument("--shield", action="store_true"); e.add_argument("--qm", type=float, default=2000.0)
     e.add_argument("--qr", type=float, default=400.0); e.add_argument("--pav", type=float, default=0.1)
+    e.add_argument("--horizon", type=float, default=400.0)
     e.add_argument("--eval-every", type=int, default=10); e.add_argument("--init", default=None)
     v = sp.add_parser("eval"); v.set_defaults(fn=cmd_eval)
     v.add_argument("policies", nargs="*"); v.add_argument("--out", required=True)
     v.add_argument("--qm", type=float, default=2000.0); v.add_argument("--qr", type=float, default=400.0)
     v.add_argument("--pav", type=float, default=0.1)
+    v.add_argument("--horizon", type=float, default=800.0)
     a = p.parse_args()
     a.fn(a)
 

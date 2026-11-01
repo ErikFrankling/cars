@@ -1626,7 +1626,7 @@ fn lane_is_good(l: u32, route_i: u32, route_end: u32) -> bool {
     let want = routes[route_i + 1u];
     let la = lanes[l];
     for (var k = 0u; k < la.links_count; k++) {
-        if (links[la.links_start + k].to_edge == want) { return true; }
+        if (links[la.links_start + k].to_edge == want && link_usable(la.links_start + k)) { return true; }
     }
     return false;
 }

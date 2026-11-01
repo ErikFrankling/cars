@@ -7,7 +7,7 @@ use quick_xml::{
     Reader,
     events::{BytesStart, Event},
 };
-use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
+use rustc_hash::{FxHashMap, FxHasher};
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
@@ -244,6 +244,8 @@ pub struct Trip {
 pub struct DropCounts {
     pub unknown_edge: u64,
     pub unconnected: u64,
+    /// Connected only by connections or lanes the vehicle's class may not use.
+    pub banned_connection: u64,
     pub unknown_route: u64,
     pub unknown_vtype: u64,
     pub taz: u64,
@@ -465,19 +467,29 @@ impl Demand {
         for (index, request) in request_trips {
             d.trips[index].route = routed[request];
         }
-        let conns: FxHashSet<_> = net.conns.iter().map(|c| (c.from_edge, c.to_edge)).collect();
+        let mut conns: FxHashMap<(u32, u32), u32> = FxHashMap::default();
+        for c in &net.conns {
+            *conns.entry((c.from_edge, c.to_edge)).or_default() |= net.conn_allow(c);
+        }
         let valid: Vec<_> = d
             .routes
             .iter()
-            .map(|r| !r.is_empty() && r.windows(2).all(|w| conns.contains(&(w[0], w[1]))))
+            .map(|r| !r.is_empty() && r.windows(2).all(|w| conns.contains_key(&(w[0], w[1]))))
             .collect();
+        let mut legal = FxHashMap::default();
         d.trips.retain(|t| {
             if t.route == u32::MAX || !valid[t.route as usize] {
                 d.dropped.unconnected += 1;
-                false
-            } else {
-                true
+                return false;
             }
+            let class = d.vtypes[t.vtype as usize].vclass;
+            let ok = *legal.entry((t.route, class)).or_insert_with(|| {
+                d.routes[t.route as usize].windows(2).all(|w| conns[&(w[0], w[1])] & class == class)
+            });
+            if !ok {
+                d.dropped.banned_connection += 1;
+            }
+            ok
         });
         d.trips.sort_by(|a, b| a.depart.total_cmp(&b.depart));
         Ok(d)

@@ -4,6 +4,8 @@ Follows [09c](09c-d8-gpu-build.md). Erik, after watching the clips: "They should
 
 `--cj-plan off|profile|stable|full|cubic|dr` switches it, and `full` is the design. `off` is the baseline: on j2 at 5200 veh/h its flow, delay, grants, dropped grants, time lost and rms acceleration match the Job 1 binary to the last digit, on the same arrivals.
 
+**Code:** sweeps ran at commit 636f3d2. Main was merged after, bringing turn bans on connections. On j2 at 5200 veh/h both `off` and `full` give identical numbers after the merge. Stockholm has real connection permissions and was not re-run after it.
+
 **Device:** every number here is CPU Vulkan (llvmpipe), on the homelab or the PC. The GPU lock stayed busy for three attempts of about an hour each, so there is no GPU sample on the final code. 09c measured the two devices within 1.3% on single junctions. The off column reproduces 09c's CPU capacity numbers exactly.
 
 ## What it does for braking

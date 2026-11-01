@@ -23,13 +23,13 @@ def census(src):
     print(json.dumps(dict(n=n,used=len(c),top1=s[0],top100_share=cum(100),top1000_share=cum(1000),top5000_share=cum(5000),median_used=s[len(s)//2],distinct_origins=len(org),top_origin=org.most_common(5))))
 def nouturn(src,idx,dst):
     N=pickle.load(open(idx,'rb'));E,C=N['E'],N['C']
-    def allowed(l): return 'passenger' in (l['allow'] or 'passenger') and 'passenger' not in (l['disallow'] or '')
+    def allowed(l): return 'passenger' in (l.get('allow') or 'passenger') and 'passenger' not in (l.get('disallow') or '')
     pas={e for e,v in E.items() if v['fn'] is None and any(allowed(l) for l in v['lanes'])}
     out=collections.defaultdict(set)
     for e,cs in C.items():
         if e in pas:
             for c in cs:
-                if c['to'] in pas and allowed(E[e]['lanes'][int(c['fromLane'])]) and allowed(E[c['to']]['lanes'][int(c['toLane'])]): out[e].add(c['to'])
+                if c['to'] in pas and allowed(c) and allowed(E[e]['lanes'][int(c['fromLane'])]) and allowed(E[c['to']]['lanes'][int(c['toLane'])]): out[e].add(c['to'])
     cost={e:E[e]['lanes'][0]['length']/max(E[e]['lanes'][0]['speed'],1)+1 for e in pas}
     def path(a,b):
         # shortest a->b never using an edge's immediate reverse. State is the edge, so reverse pairs are banned on relax.
@@ -72,13 +72,13 @@ def nouturn(src,idx,dst):
 def transfer(src,idx,dst):
     # Same vehicles on another net: keep the edges that survive, bridge the gaps, U-turns of the source route stay when still connected.
     N=pickle.load(open(idx,'rb'));E,C=N['E'],N['C']
-    def allowed(l): return 'passenger' in (l['allow'] or 'passenger') and 'passenger' not in (l['disallow'] or '')
+    def allowed(l): return 'passenger' in (l.get('allow') or 'passenger') and 'passenger' not in (l.get('disallow') or '')
     pas={e for e,v in E.items() if v['fn'] is None and any(allowed(l) for l in v['lanes'])}
     out=collections.defaultdict(set)
     for e,cs in C.items():
         if e in pas:
             for c in cs:
-                if c['to'] in pas and allowed(E[e]['lanes'][int(c['fromLane'])]) and allowed(E[c['to']]['lanes'][int(c['toLane'])]): out[e].add(c['to'])
+                if c['to'] in pas and allowed(c) and allowed(E[e]['lanes'][int(c['fromLane'])]) and allowed(E[c['to']]['lanes'][int(c['toLane'])]): out[e].add(c['to'])
     cost={e:E[e]['lanes'][0]['length']/max(E[e]['lanes'][0]['speed'],1)+1 for e in pas}
     def path(a,b):
         d={a:0};prev={};h=[(0,a)]

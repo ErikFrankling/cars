@@ -44,6 +44,8 @@ ROWS = [
     ("ES, reward with 1 s floor", "es_tg_s"),
     ("ES, 1 s floor, trained on L = 220–320", "es_tgrange_s"),
     ("PPO, reward with 1 s floor", "ppo_tg_s"),
+    ("ES, 1 s floor, trained on 1–22 AVs", "es_tgk_s"),
+    ("ES, 1 s floor, trained on IDM and report 05 humans", "es_mix_s"),
     ("DAgger from PI", "dagger_pi_s"),
     ("BC from PI, no correction", "bc_pi_s"),
     ("ES, no floor", "es_ema_s"),
@@ -54,7 +56,7 @@ ROWS = [
     ("ES, speed-only reward", "es_speedonly_s"),
     ("ES, energy-only reward", "es_energyonly_s"),
 ]
-EV = ("eval-es-ema", "eval-es-tg", "eval-ppo", "eval-memory", "eval-shield-range", "eval-tgrange-dagger", "eval-bc-hacks")
+EV = ("eval-es-ema", "eval-es-tg", "eval-ppo", "eval-memory", "eval-shield-range", "eval-tgrange-dagger", "eval-bc-hacks", "eval-tgk", "eval-mix")
 
 
 def fmt(m, s, nd=0):
@@ -78,7 +80,7 @@ def ring_table(d):
 
 def general_table(d):
     conds = ["test seeds", "test seeds, shield", "L=220", "L=240", "L=300", "L=400", "humans a=1.6", "humans b=2.5", "humans T=0.9", "noise x2", "hetero humans", "Krauss humans", "dt=0.05", "dt=0.5", "dt=1.0", "k=3 of 22", "k=11 of 22", "k=22 of 22"]
-    cols = [("IDM", ["IDM (no noise)"]), ("PI-sat", ["PI with saturation"]), ("ES", "es_tg_s"), ("ES range", "es_tgrange_s"), ("PPO", "ppo_tg_s"), ("DAgger", "dagger_pi_s")]
+    cols = [("IDM", ["IDM (no noise)"]), ("PI-sat", ["PI with saturation"]), ("ES", "es_tg_s"), ("ES range", "es_tgrange_s"), ("ES 1–22", "es_tgk_s"), ("ES mix", "es_mix_s"), ("PPO", "ppo_tg_s"), ("DAgger", "dagger_pi_s")]
     print("| Test | " + " | ".join(c[0] for c in cols) + " |")
     print("|---|" + "---:|" * len(cols))
     for cond in conds:
@@ -181,9 +183,12 @@ def fig_merge():
             continue
         c = json.loads(str(np.load(p)["curve"]))
         ax.plot([r["gen"] for r in c], [r["outflow"] for r in c], color=col, lw=2, label=name)
+    h = json.loads((L / "eval-merge400.json").read_text())["IDM humans only"]["test"]["outflow"]
+    ax.axhline(h, color=MUTED, lw=1, ls="--")
+    ax.text(2, h + 25, f"IDM humans only, 400 s, {h:,.0f}", color=MUTED, fontsize=9)
     ax.set_xlabel("Generation", color=INK)
     ax.set_ylabel("Outflow on validation seeds, veh/h", color=INK)
-    ax.set_title("Merge, 10% learned cars: the curriculum learns, the scratch run parks", color=INK, fontsize=11, loc="left")
+    ax.set_title("Merge, 10% learned cars: a warm start reaches human level, the scratch run parks", color=INK, fontsize=11, loc="left")
     ax.spines[["top", "right"]].set_visible(False)
     ax.grid(axis="y", color="#e6e5e0", lw=0.6)
     ax.legend(frameon=False, labelcolor=INK)
@@ -206,9 +211,22 @@ def main():
         print("|---|---:|---:|---:|---:|")
         for k, v in json.loads(b.read_text()).items():
             print(f"| {k} | {100 * v['coll']:.0f} | {100 * v['survived']:.0f}% | {v['flow']:.0f} | {100 * v['shield']:.2f}% |")
+    h5 = L / "eval-h05.json"
+    if h5.exists() and "L=400 rule" in next(iter(json.loads(h5.read_text()).values())):
+        hd = json.loads(h5.read_text())
+        print("\n### h05")
+        conds = ["L=200", "L=260", "L=400", "L=400 rule"]
+        print("| Car | " + " | ".join(conds) + " |")
+        print("|---|" + "---:|" * len(conds))
+        for k, v in hd.items():
+            print(f"| {k} | " + " | ".join(f"{v[c]['flow']:.0f} / {v[c]['sd']:.2f}" + (f" / **{100 * v[c]['coll']:.0f}%**" if v[c]["coll"] > 0 else "") + (f" / ov {100 * v[c]['shield']:.0f}%" if "rule" in c else "") for c in conds) + " |")
     m = L / "eval-merge.json"
     if m.exists():
         md = json.loads(m.read_text())
+        for extra in ("eval-merge2", "eval-merge3"):
+            e = L / f"{extra}.json"
+            if e.exists():
+                md.update({k: v for k, v in json.loads(e.read_text()).items() if k not in md})
         print("\n### merge")
         print("| Car | Outflow | Delay/veh, s | Queue left | Wh/km | Contact % | Override % | Min AV gap |")
         print("|---|---:|---:|---:|---:|---:|---:|---:|")

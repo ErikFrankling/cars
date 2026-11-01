@@ -21,14 +21,16 @@ import learned_drivers as ld  # noqa: E402
 SPLIT = Path("/home/erikf/projects/personal/cars-data/truth/trajectories/opus-20261031-heavy/cache/split_all.pkl")
 L_EFF = 5.0
 DT = 0.1
+USE_VREF = False  # set by --vref: lets the network see each site's free speed, as the fitted models do
 
 
 def load():
     return pickle.load(open(SPLIT, "rb"))
 
 
-def features(v, vl, gap, a_prev):
+def features(v, vl, gap, a_prev, vref=0.0):
     o = np.zeros(v.shape + (ld.IN,))
+    o[..., 5] = vref / 30.0
     o[..., 0] = v / 20.0
     o[..., 1] = vl / 20.0
     o[..., 2] = np.minimum(np.maximum(gap, 0.0), 40.0) / 40.0
@@ -45,6 +47,8 @@ def rollout(theta, w, idx=None, stride=1):
         s, v, vl = s[:, idx], v[:, idx], vl[:, idx]
     T, N = s.shape
     P = theta.shape[0]
+    vref = w["meta"]["vref"][idx] if idx is not None else w["meta"]["vref"]
+    vref = vref if USE_VREF else 0.0
     net = ld.Net(theta)
     xf = np.vstack([np.zeros((1, N)), np.cumsum((v[1:] + v[:-1]) * 0.5 * DT, axis=0)])
     xl = xf + s
@@ -57,7 +61,7 @@ def rollout(theta, w, idx=None, stride=1):
         sp = xl[t] - x
         if t % stride == 0:
             S[t // stride], V[t // stride] = sp, vs
-        o = features(vs, np.broadcast_to(vl[t], vs.shape), sp - L_EFF, a)
+        o = features(vs, np.broadcast_to(vl[t], vs.shape), sp - L_EFF, a, vref)
         a = np.maximum(ld.out_to_accel(net(o)[..., 0]), -9.0)
         v1 = np.maximum(vs + a * DT, 0.0)
         a = (v1 - vs) / DT
@@ -89,6 +93,8 @@ def score(theta, w):
 
 
 def cmd_es(a):
+    global USE_VREF
+    USE_VREF = a.vref
     d = load()
     tr, va = d["train"], d["val"]
     N = tr["s"].shape[1]
@@ -166,7 +172,7 @@ def ring_closed_loop(theta, n=22, length=260.0, horizon=600.0, R=16, seed=4242, 
         gap[:, -1] += length
         hit = (gap < 0).any(axis=1)
         alive &= ~hit
-        o = features(v, vl, gap, a)
+        o = features(v, vl, gap, a, 25.0 if USE_VREF else 0.0)
         acc = np.maximum(ld.out_to_accel(net(o)[..., 0]) + rng.normal(0, 0.2, (R, n)), -9.0)
         v1 = np.maximum(v + acc * DT, 0.0)
         a = (v1 - v) / DT
@@ -181,16 +187,21 @@ def ring_closed_loop(theta, n=22, length=260.0, horizon=600.0, R=16, seed=4242, 
 
 
 def cmd_eval(a):
+    global USE_VREF
     d = load()
     splits = dict(train=d["train"], val=d["val"], **d["test"])
     res = {}
     for path in a.policies:
         z = np.load(path)
         tag = Path(path).stem
+        USE_VREF = bool(json.loads(str(z["args"])).get("vref", False))
         res[tag] = {k: score(z["theta"], w) for k, w in splits.items()}
         res[tag]["ring"] = ring_closed_loop(z["theta"])
         print(tag, json.dumps({k: (round(v["spacing_rmse_30s"], 2), round(v["speed_rmse_30s"], 2), round(v["collision_frac"], 4)) for k, v in res[tag].items() if k != "ring"}), res[tag]["ring"], flush=True)
-    (ld.OUT / f"{a.out}.json").write_text(json.dumps(res, indent=1))
+    p = ld.OUT / f"{a.out}.json"
+    old = json.loads(p.read_text()) if p.exists() else {}
+    old.update(res)
+    p.write_text(json.dumps(old, indent=1))
 
 
 def main():
@@ -200,7 +211,7 @@ def main():
     e.add_argument("--tag", required=True); e.add_argument("--seed", type=int, default=0)
     e.add_argument("--gens", type=int, default=200); e.add_argument("--pairs", type=int, default=32)
     e.add_argument("--batch", type=int, default=400); e.add_argument("--sigma", type=float, default=0.05)
-    e.add_argument("--lr", type=float, default=0.02); e.add_argument("--eval-every", type=int, default=25)
+    e.add_argument("--lr", type=float, default=0.02); e.add_argument("--vref", action="store_true"); e.add_argument("--eval-every", type=int, default=25)
     b = sp.add_parser("bc"); b.set_defaults(fn=cmd_bc)
     b.add_argument("--tag", required=True); b.add_argument("--seed", type=int, default=0); b.add_argument("--epochs", type=int, default=20)
     v = sp.add_parser("eval"); v.set_defaults(fn=cmd_eval)

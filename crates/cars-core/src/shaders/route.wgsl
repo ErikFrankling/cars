@@ -1,5 +1,10 @@
 // Which way a vehicle goes, shared by the step kernels and the coordinator.
 
+// next_lane is the via lane when the link has one, which carries the connection's permissions.
+fn link_usable(c: u32) -> bool {
+    return (lanes[links[c].next_lane].allow & lanes[links[c].to_lane].allow & ty.vclass) == ty.vclass;
+}
+
 // How far a vehicle can stay on from `lane` along its route without changing lanes.
 fn continuation_length(start: u32, route_i: u32, route_end: u32) -> f32 {
     var l = start;
@@ -13,7 +18,7 @@ fn continuation_length(start: u32, route_i: u32, route_end: u32) -> f32 {
         var next = NONE;
         for (var k = 0u; k < la.links_count; k++) {
             let t = links[la.links_start + k].to_lane;
-            if (links[la.links_start + k].to_edge == want && (next == NONE || t > next)) { next = t; }
+            if (links[la.links_start + k].to_edge == want && link_usable(la.links_start + k) && (next == NONE || t > next)) { next = t; }
         }
         if (next == NONE) { return total; }
         l = next;
@@ -35,7 +40,7 @@ fn pick_link(lane: u32, route_i: u32, route_end: u32) -> u32 {
     var count = 0u;
     for (var k = 0u; k < l.links_count; k++) {
         let c = l.links_start + k;
-        if (links[c].to_edge != want || (lanes[links[c].to_lane].allow & ty.vclass) != ty.vclass) { continue; }
+        if (links[c].to_edge != want || !link_usable(c)) { continue; }
         count += 1u;
         if (count == 1u) { first = c; continue; }
         if (count == 2u) { best_len = continuation_length(links[first].to_lane, route_i + 1u, route_end); }
