@@ -1342,6 +1342,18 @@ fn zone_taken(zn: Zone) -> bool {
     return zn.dist < 0.5 * (ty.width + f32(atomicLoad(&occ_width[zn.foe_lane])) / 16.0) + P.width_margin;
 }
 
+// Vissim's rear gap: a body that will have left the zone 0.5 s before we reach it does not hold it. Merges only
+// by default, where the one behind follows the one ahead anyway.
+fn zone_clears(zn: Zone, la: Lane, dist: f32, v: f32) -> bool {
+    if (P.zone_time == 0u) { return false; }
+    if (P.zone_time == 1u && (la.links_count == 0u || lanes[zn.foe_lane].links_count == 0u
+        || links[la.links_start].to_lane != links[lanes[zn.foe_lane].links_start].to_lane)) { return false; }
+    let p = atomicLoad(&tail[zn.foe_lane]);
+    let d = dist + zn.own_in;
+    let reach = d / max(v, sqrt(max(2.0 * d, 1.0)));
+    return (zn.foe_out - unpack_back(p)) / max(unpack_speed(p), 0.5) + 0.5 < reach;
+}
+
 // A vehicle on a junction lane still has zones ahead of it on that lane, and asks for them as it nears each.
 fn zones_ahead_bid(i: u32, e: Veh, claim: f32) {
     let la = lanes[e.lane];
@@ -1409,7 +1421,8 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
         var ok = true;
         if (!committed) {
             for (var z = 0u; z < la.zone_count; z++) {
-                if (zone_taken(zones[la.zone_start + z])) {
+                let zn = zones[la.zone_start + z];
+                if (zone_taken(zn) && !zone_clears(zn, la, it.dist, v)) {
                     ok = false;
                     break;
                 }

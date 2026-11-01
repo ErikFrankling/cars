@@ -90,7 +90,7 @@ struct Params {
     lost_after: f32,
     zones_ahead: u32,
     lc_gap: f32,
-    pad_c: f32,
+    zone_time: u32,
 }
 
 struct Globals {

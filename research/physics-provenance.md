@@ -41,7 +41,8 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | 1.2 s for the first vehicle to clear the conflict point | INVENTED | A body length and zone at 50 km/h, from the gap test | `tc_clear` |
 | Claim distance: v dt + v²/2b + v τ + 2 | INVENTED | Where a driver would start slowing anyway | `claim_scale` |
 | Occupied until the rear has passed the zone | ADAPTED | Vissim conflict area rear gap [vca], with gap 0 | |
-| A body that can stop short of a zone does not hold it, and asks for it when it nears it | ADAPTED | Vissim conflict area status [vca] | |
+| A body out of the zone 0.5 s before we arrive does not hold it, at merges | ADAPTED | Vissim rear gap default 0.5 s [vca]. Holding a merge until the rear had cleared cost 30% or more at a roundabout | `zone_time` |
+| A body that can stop short of a zone does not hold it, and asks for it when it nears it | ADAPTED | Vissim conflict area status [vca]. Off: it locked more junctions than it freed | `zones_ahead` |
 | Held vehicles release their right of way | INVENTED | Otherwise a car waits for one that waits for it | |
 | Exit-clear rule | ESTABLISHED | Vissim avoid blocking [vca], Aimsun yellow box [an], SUMO [si] | `exit_clear` |
 | Blocker under 75% of desired speed | ESTABLISHED | Vissim [vca] | |

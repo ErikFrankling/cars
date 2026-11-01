@@ -46,7 +46,8 @@ pub struct GpuParams {
     /// Hold zones by where a body can reach, and ask again for those ahead on the lane. Off: by lane.
     pub zones_ahead: u32,
     pub lc_gap: f32,
-    pub pad: f32,
+    /// A body about to leave a zone holds it not: 0 never, 1 at merges, 2 everywhere.
+    pub zone_time: u32,
 }
 
 #[repr(C)]
@@ -721,7 +722,7 @@ impl World {
             lost_after: cfg.tune("lost_after", 0.0),
             zones_ahead: cfg.tune("zones_ahead", 0.0) as u32,
             lc_gap: cfg.tune("lc_gap", 0.6),
-            pad: 0.0,
+            zone_time: cfg.tune("zone_time", 1.0) as u32,
         };
         w
     }
