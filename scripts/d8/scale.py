@@ -21,8 +21,8 @@ with out.open('w') as f:
             if with_cj:
                 args += ['--cj', cj]
             r = subprocess.run(args, capture_output=True, text=True)
-            GATE.leave()
             res = json.loads(r.stdout.strip().splitlines()[-1]) if r.returncode == 0 else dict(error=r.stderr[-500:])
             f.write(json.dumps(dict(net=net.stem, demand=d, cj=with_cj, result=res)) + '\n')
             f.flush()
             print(net.stem, with_cj, {k: res.get(k) for k in ('junctions', 'mean_active', 'ms_per_step', 'gpu_mb', 'coord_mb', 'overlap', 'flow', 'collisions', 'error')}, flush=True)
+GATE.leave()

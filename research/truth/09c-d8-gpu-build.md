@@ -23,13 +23,14 @@ Built from the "Reviewed by Opus" section of [09](09-coordinated-intersections.m
 - One stall per junction at a time. The CPU model allows several, so GPU runs have about half its stalls.
 - Crash restart keeps `cj_rel`, as the CPU model does. Rebuilding it from held grants is not built.
 - **Added beyond the spec:** a head car parked at the line for 20 s with no grant goes on sensing alone, with the box to itself. Without this, total message loss deadlocks. A car cannot tell a dead radio from bad luck, so the rule has to rest on what it can see.
+- **Added:** the sensing brake also covers cars with a tail across a conflict and cars that have missed their slot past their stopping point (see below).
 - **Added:** junctions with a lane under 25 m are refused and stay on their old control, with the reason logged. OSM draws one real junction as a chain of nodes, with exits as short as 0.2 m, and a slot cannot be checked against that.
 - **Stricter auditor than the CPU model:** it also tests cars with their front past the box and tail in it, and heads within 3 m of the line.
 - **Batch polling and FCFS were not built.** They were comparison policies in the report and were not asked for here, so spec test 4 (K crossover) is not run.
 
 ## Which device ran what
 
-Capacity, demand and faults ran on the RX 7900 XT. The GPU lock had about ten jobs waiting, so stalls, the T junction, the grid and metering ran the same kernels on CPU Vulkan (llvmpipe), and a sample was run again on the GPU ([fig/d8/verify.jsonl](fig/d8/verify.jsonl)). At light load the two agree to every digit reported. At saturation flows differ by about 0.2% to 1.5%, the size of seed noise, so they are statistically comparable and not identical.
+The GPU lock had about ten jobs waiting for most of this work, and each sweep had to be rerun twice after bugs below. So the final sweeps ran the same kernels on CPU Vulkan (llvmpipe), and on the RX 7900 XT ran the cells the spec names, compute cost and the clips, plus a 26-case sample of the rest ([fig/d8/verify.jsonl](fig/d8/verify.jsonl), table in the tables file). In that sample 14 cases match to the digit on flow, and the rest differ by up to 1.3% on single junctions and 4.3% on one grid case. Overlap counts differ too when they are not zero: 3 and 5, 3 and 8, 0 and 1. So the two are statistically comparable, not identical, and an overlap count of 0 from CPU Vulkan is evidence for that seed on that device only. At 3000 veh/h a run repeats exactly on one device, including with message loss.
 
 ## Results against the CPU model
 
@@ -41,7 +42,7 @@ Every table is in [fig/d8/tables.md](fig/d8/tables.md). The short version:
 | 2 Single car | Crossing within 0.15 s of grant, delay under 0.2 s | **Pass.** Delay 0.067 s (reference 0.08), mean error 0.053 s, none over 0.15 s |
 | 3 Headway | 1.304 s | **Pass for the table:** 1.304 s. A run measures 1.40 s on both this build and the CPU model (5136 veh/h on both, seed 0), because the insertion boundary limits both |
 | 4 K crossover | | **Not run.** No polling policy here |
-| 5 Capacity | Within 5% | **Pass, 28 of 28 cells**, largest difference 3.6% |
+| 5 Capacity | Within 5% | **Pass, 28 of 28 cells** on CPU Vulkan, largest difference 3.6%. On the GPU, 8 named cells: also within 5% |
 | 6 Demand | Delay within 25% or 1 s | **48 of 54 cells.** The misses are saturated or noisy cases, in the tables |
 | 7 Exit block | On: 0 overlaps, under 5 veh s in the box. Off must fail | **Pass.** On: 0, 2.9. Off: 17 overlaps, 572 veh s |
 | 8 Loss, blackout, crash | 0 overlaps, tolerances above | **Pass on overlaps,** all 0. Delay misses listed below |
@@ -91,10 +92,42 @@ Metering at a level with no contacts on 1 lane beats the signal by 5% with less 
 
 **The channel of report 08** (`--cj-chan 1`, LTE-PC5 statistics: range cliff, shadowing, bursts, load) changes little at one junction: 16 to 20 lost messages in a run, delay as without. It has no burst structure from a fit, no latency beyond one step, and no position or clock error, which matter more and are not modelled.
 
+**The numbers the spec names, on the RX 7900 XT, seeds 0 and 1:**
+
+| Case | Signal-free, GPU | CPU model | AV signal, GPU | CPU model |
+|---|---:|---:|---:|---:|
+| Capacity, 1 lane through, veh/h | 5679 | 5619 | 3888 | 3894 |
+| Capacity, 2 lanes through | 9918 | 9834 | 6837 | 6843 |
+| Capacity, 2 lanes 20% turns | 6615 | 6462 | 5175 | 5412 |
+| Capacity, 3 lanes 20% turns | 8931 | 8850 | 7269 | 7254 |
+| Delay at 3000 veh/h, s | 1.6 | 1.5 | 3.2 | 2.9 |
+| Delay at 5200 veh/h, s | 4.1 | 4.6 | 20.2 | 23.1 |
+| Stops per car at 5200 veh/h | 0.01 | 0.02 | 0.96 | 1.09 |
+
 ![Capacity](fig/d8/capacity.png)
 ![Delay](fig/d8/demand.png)
 ![Loss](fig/d8/loss.png)
 ![Metering](fig/d8/metering.png)
+
+## Compute
+
+COMPUTE_PLACEHOLDER
+
+## Clips
+
+`/home/erikf/projects/personal/cars-data/videos/gallery/d8/`, made with `cars record` because a trace does not hold grants: `cars replay` cannot draw these overlays until the trace format carries `cj_state`. Each frame's HUD counts teleports and everything the auditor saw.
+
+| Clip | Shows |
+|---|---|
+| `weave.mp4`, `weave_turns.mp4` | No signal, streams interleaving at speed |
+| `versus_signal.mp4` | Same arrivals: no signal, AV signal, human signal |
+| `paths_and_slots.mp4` | Planned paths, wide where a foe also needs the road, and the slot chart |
+| `loss_70pct.mp4` | 70% message loss, lost grants in magenta |
+| `coordinator_crash.mp4` | Coordinator down 40 s: grants stand, everyone stops, one at a time |
+| `exit_blocked.mp4`, `exit_blocked_unprotected.mp4` | A full exit: the box stays clear, then with checks off it locks and collides |
+| `stall_level_a.mp4`, `stall_level_b.mp4` | An injected stall that causes a contact. Level B has its own stalls in the same window |
+| `grid.mp4`, `grid_overload_metering.mp4` | 9 junctions; overload unmetered and metered |
+| `stockholm_junction.mp4` | Sveavägen at Apelbergsgatan with the signal removed |
 
 ## Mixed traffic next
 
@@ -112,3 +145,12 @@ python3 scripts/d8/film.py
 ```
 
 Runs take `/tmp/cars-gpu.lock` in five minute turns. `CARS_ADAPTER=llvmpipe` runs anything without the lock. Finished cases are not rerun.
+
+## What still fails
+
+- **Zero collisions on a saturated grid.** Level A leaves contacts past critical load. Metering reduces them, but only a level that carries less than the signal had none on 2 lanes.
+- **Real districts at peak.** 64 of 108 junctions are refused, and past capacity flow falls below the real signals. Merging OSM clusters is the next step.
+- **`--trusted` hangs on llvmpipe** with the audit on, and any small edit to the audit kernel makes it go away. It looks like a compiler effect of unbounded loops, and I could not prove it. `cars av` no longer offers the flag, and this has not been seen on the RX 7900 XT.
+- **Not built:** position error, clock skew and message latency beyond one step, which report 08 requires and 09 says matter most; mixed traffic; lane changes on the approach beyond SUMO's model; several vehicle types (one AV type, so buses and trucks are not represented); `cars replay` of grants; physics layer, which has not merged and goes in at `av_safe_speed`, `av_stop_curve` and the `exec` position line.
+- **Unexplained:** exit block delay 43 s against 71 s and coordinator down without fallback 21 s against 36 s.
+- **Evidence:** a few seeds per cell. No vehicle, no count data, one model checking another.
