@@ -64,7 +64,7 @@ At `--dt 0.1` unless stated, final build. Run with `scripts/human_replay.py` and
 | 17 | Same, free flow | 0.70, 0.61 s ±30% | 0.37, 0.79 | **fail** on lag, pass on lead |
 | 18 | Yellow: half stop at | 4.5-5.7 s | 4.90, slope 0.40 s. Stopping braking median 1.68, p95 3.47 m/s². 33% of goers cross after red, p95 1.5 s (measured 25%, 1.0 s) | **pass** |
 | 19 | Roundabout critical gap, follow-up | 2.65-3.25, 2.3-3.1 s | 2.95, 3.0 at the inflow whose rejection share matches the Swiss sites (300 veh/h per arm, 12%). 2.40 and 3.5 at 250, 4.07 and 3.5 at 350 | **pass at 300 veh/h only**, strongly flow dependent, see below |
-| 20 | Overlaps and guard | under 0.5% of windows, guard under 1% of steps | overlaps at most 0.49%, guard at most 0.75%. At dt 1 the guard binds 3-31% of steps, and 1.8% in Berlin | **pass at dt 0.1, fail at dt 1** |
+| 20 | Overlaps and guard | under 0.5% of windows, guard under 1% of steps | overlaps at most 0.06%, guard at most 0.16% at dt 0.1. Cities at dt 1 not yet remeasured on this driver | **pass at dt 0.1**, earlier fail at dt 1 stands |
 
 **Item 19, what changed.** The earlier 5.60 and 4.0 were mostly the estimator. `scripts/human_roundabout.py` now uses the definitions of `research/truth/scripts/opus_roundabout.py`, the Swiss analysis: arrival within reach of the line, crossing at the ring's outer edge, ring cars counted where they pass the entry and not if they left before it, follow-ups only with no ring car between. Raising the corner floor from 6 to 8 m/s then brought the median to 2.95. Measured on software GPU, 3 seeds, dt 0.5:
 
@@ -83,7 +83,7 @@ So the median can be hit, but the model's spread is more than twice the measured
 | Quantity | TRVMB | dt 1 | dt 0.1 | |
 |---|---:|---:|---:|---|
 | Through, per green hour | 1,900 | 1,782 | 1,858 | fail at dt 1 (−6%), pass at 0.1 |
-| Right, left | 1,700 | 1,378, 1,354 | 1,452, 1,434 | **fail**, −15 to −20% |
+| Right, left | 1,700 | 1,449, 1,569 (dt 0.5: 1,413, 1,502, with the 8 m/s corner floor) | 1,452, 1,434 with the 6 m/s floor | **fail**, −8 to −17% |
 | Double turn | 1,500 | 1,548 | 1,199 | pass at dt 1 only |
 | Jam spacing | 7.43 m | 7.9-8.2 | 8.4 | **fail**, +0.5 to +1 m |
 | Minor road across major at 100, 300 veh/h | Siegloch 1,056, 856 | 924, 864 | 921, 897 | pass |
@@ -101,8 +101,8 @@ Fitting these took T × 0.55, which is not what replay finds on US and German ro
 | KS to the 610 I-80 waits | at most 0.15 | 0.07-0.09 | **pass** |
 | Main-lane cars between ramp cars | mode 1, 0 under 35%, 1 over 35%, mean 1.25 ± 0.3 | 14-15%, 64-65%, 1.08-1.10 | **pass** |
 | Passes per car | 0 for 50-65%, max at most 8 | 77-82%, max 1-2 | **fail**: too few passed |
-| Let in per resolved vehicle | 0.59 ± 0.08, 0.9 falling to 0.35 with closing | 0.79-0.83, 0.97 falling to 0.68 | **fail** |
-| Stopped first | 25-50% | 19-21% | **fail** |
+| Let in per resolved vehicle | 0.59 ± 0.08, 0.9 falling to 0.35 with closing | 0.83-0.88 on the final driver | **fail**, see small scene fixes |
+| Stopped first | 25-50% | 33-35% after the Gipps limit | **pass** |
 | Failed to get in | 0 | 0 | **pass** |
 
 **B. Followers, on simulated traces** (simplified from `courtesy_events.py`): see `accept2/lc01`. Peak braking median about −1 m/s² is in band. Excess hold-back is not: followers here do not visibly hold back more than matched pairs. **Fail.**
@@ -118,6 +118,74 @@ Fitting these took T × 0.55, which is not what replay finds on US and German ro
 - **Relaxation: pass.** Time gap after a cut-in at 0, 2, 5, 10, 15, 20, 25 s: 0.73, 0.84, 0.93, 1.08, 1.21, 1.34, 1.42. Measured on I-395: 0.72, 0.75, 0.88, 1.09, 1.22, 1.31, 1.41.
 - **Capacity drop: fail, not produced.** Queue discharge is 5-14% above the flow before breakdown, at about 1,430 veh/h per lane. On a free single lane this model tops out near 1,640 veh/h, not far above its queue discharge. So there is no high pre-breakdown state to fall from. Keane & Gao's relaxation is there, but the top of the fundamental diagram is not. Treat any city result on bottleneck throughput with that in mind.
 - **Hysteresis: no target.** A slow car entering a stream at 1,500 veh/h drops flow to about 880-1,300 veh/h in the wave, and it recovers to 1,400-1,650 at lower density. Open and closed branches differ, but no data-based band exists.
+
+## Small scene fixes after the review of the misses
+
+All **software GPU** (llvmpipe), dt 0.5 unless stated, then repeated on the GPU only through the city runs. Commits 4b920ba to 2a8b319.
+
+**A short lane with no way on.** At 10% of Stockholm's demand, heads had waited since the first minutes. Two read closely wanted lane 0 of an edge 2.9 and 6.6 m long while their junction lane fed lane 1. The offset stop point, 5 or 12 m before the lane end, lay back on the junction lane, where the missed-turn rule does not look, so each stood for good and blocked the junction behind. Stockholm has 11,015 lanes under 15 m of 82,709, Berlin 4,722 of 84,546. Now the stop point stays on the lane, and a driver who reaches the end of a lane under 15 m gives the route up at once. `scripts/human_tests.py stub_lane`: on a 5 m stub, 7 of 96 inserted cars arrived in 1,200 s before, and 140 of 140 now, 20 of them lost. No contacts.
+
+Cost, on the old demand on the GPU: Stockholm at 10% stuck at the end 2,658 → 970, arrived 22,933 → 25,142, jam and yield cases 658, 255 → 156, 110. At full demand arrived 96,780 → 110,912, stuck at the end 75,906 → 70,520. These two runs also carry the physics merge, so they do not separate its share. Contacts rose: 5,709 → 7,293 at full demand, same lane 251 → 719, lane start 662 → 1,089. Not explained yet; small scenes show none. Route patches rose to about 20 for each lost car at 10% demand, 21,963 for 1,091 cars: the router works on edges, so a new route can meet the next short wrong lane.
+
+**Queue formation.** A queue formed with half the cars 1 m or less apart and braking to −8 m/s². The closing rule trusts the leader to keep its speed, so followers brake late as a leader slows and each brakes harder. A Gipps limit behind a moving leader fixes the spacing and leaves replay in band, and lowers guard use in replay from at most 0.75% to at most 0.16%. It sits apart from `hu_target`: inlined in every lane change kernel, llvmpipe's JIT took over 10 minutes on the first lane change.
+
+| | Saturation headway, 1.8-2.2 | Lost time, 2.2-3.6 | Standing spacing, 7.0-8.2 |
+|---|---|---|---|
+| Before, dt 0.1 / 0.5 / 1 | 2.32 / 2.16 / 2.34 | 2.29 / 2.21 / 0.54 | 6.13 / 5.98 / 6.49 |
+| After | 2.36 / 2.29 / 2.33 | 2.68 / 2.30 / 0.99 | 7.41 / 6.53 / 6.77 |
+
+Discharge is the remaining miss: it does not close up after the start, because the fitted spacing term `k1` is so weak. Lower `T` barely helps with the limit on. Spacing and discharge pull against each other here.
+
+**Let-in, 0.83-0.88 against 0.59.** A grid over the critical gap shifts, safety factor and cooperation found the cause: real I-80 drivers cross with 0.9 m of lane left and are passed on the way, and here they cross 80 m early. Larger gaps far from the lane end move them down the lane, and with low cooperation let-in reaches band, but they queue for the lane end and waits miss. No setting tried passes both:
+
+| Setting | Wait p50, p90 (22.6, 43.7) | KS, max 0.15 | Unpassed (57%) | Let-in (0.51-0.67) | Stopped (25-50%) | Left at crossing, m (0.9) |
+|---|---|---:|---:|---:|---:|---:|
+| Default | 20.5-22, 42-43 | 0.04-0.08 | 83-89% | 0.83-0.88 | 33-35% | 79-85 |
+| `lead_far=-1,lag_far=-1,cooperation=0.1`, neck 20 m/s | 27.5, 43 | 0.16 | 70% | 0.76 | 32% | 29 |
+| `lead_far=0,lag_far=0,cooperation=0.1` | 38, 53.5 | 0.42 | 55% | 0.66 | 42% | 15 |
+| `lead_far=0,lag_far=0,cooperation=0` | 40, 57 | 0.43 | 49% | 0.61 | 49% | 15 |
+
+The default stays, because waits are the measured quantity most tied to Erik's question. **Let-in and passes remain a fail.**
+
+**Capacity drop: still not produced.** Three seeds on the final driver, flow before breakdown 2,460-2,604 veh/h, discharge 2,770-2,786: 7-13% above, not below. Upstream speed falls from the start, at about 1,200 veh/h per lane: there is no high flow state to fall from. `T` × 0.7, the Swedish values and switching off courtesy and anticipation do not change the sign. One earlier seed read +7.8%, from the 5 minute noise in the maximum. A method for this needs a state with short headways at high speed that this fit has no term for.
+
+**Why the latest physics commits are not in this build.** Merging the 6 commits now on `t3/1c6fee50` (including `908f4b8` and `cafce4d`) builds, but a kernel spins on the I-80 scene between t = 1,180 and 1,200 s. Under gdb the hot thread, on seed 1, is in JITed kernel code. Seeds 2 and 3 also do not finish in 30 s, where the previous build takes 8 s. It survives `exit_clear=0`, `arbiter=0`, `lc_path=0`, `rewind=0`, `zone_time=0` and `--human-off miss`, and does not appear with demand ending at 400 s. The cause is not found. The merge was aborted and that binary was never put on the GPU, where a kernel like this could stall the desktop.
+
+## Sensitivity of the invented numbers
+
+**Software GPU**, one seed, dt 0.5, final driver. Queue at a signal, lane end at 800 and 600 veh/h, give-way at 600 and 500 veh/h. No collisions in any case.
+
+| Number | Value | Saturation headway s | Lost time s | Standing spacing m | Lane end wait p50 / p90 s | Minor road flow veh/h | Collisions |
+|---|---:|---:|---:|---:|---|---:|---:|
+| default |  | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
+| b_approach | 0.9 | 2.53 | 0.81 | 6.70 | 24 / 63 | 360 | 0 |
+| b_approach | 1.6 | 2.24 | 1.95 | 6.32 | 28 / 74 | 342 | 0 |
+| tau_approach | 1.5 | 2.29 | 1.73 | 5.72 | 22 / 66 | 348 | 0 |
+| tau_approach | 3.0 | 2.59 | 1.37 | 7.14 | 26 / 65 | 366 | 0 |
+| overshoot | 0.7 | 2.38 | 1.02 | 6.15 | 28 / 59 | 357 | 0 |
+| overshoot | 2.1 | 2.32 | 2.36 | 6.43 | 22 / 62 | 366 | 0 |
+| standing | 0.2 | 2.33 | 1.31 | 6.58 | 24 / 57 | 375 | 0 |
+| standing | 1.0 | 2.53 | 1.67 | 5.67 | 27 / 68 | 333 | 0 |
+| see | 15 | 2.37 | 1.45 | 6.51 | 26 / 63 | 324 | 0 |
+| see | 60 | 2.37 | 1.45 | 6.51 | 26 / 63 | 318 | 0 |
+| lc_slope | 0.42 | 2.37 | 1.45 | 6.51 | 24 / 58 | 354 | 0 |
+| lc_slope | 1.73 | 2.37 | 1.45 | 6.51 | 23 / 60 | 354 | 0 |
+| stop_s0 | 0.5 | 2.37 | 1.36 | 6.51 | 24 / 65 | 336 | 0 |
+| stop_s0 | 2.0 | 2.37 | 1.60 | 6.54 | 20 / 61 | 351 | 0 |
+| comfort | 1.0 | 2.37 | 1.45 | 6.51 | 23 / 60 | 336 | 0 |
+| comfort | 2.5 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
+| turn_min | 4 | 2.37 | 1.45 | 6.51 | 26 / 63 | 327 | 0 |
+| turn_min | 8 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
+| t_miss | 60 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
+| t_miss | 240 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
+| gap_junction | 0.5 | 2.37 | 1.45 | 6.51 | 26 / 63 | 375 | 0 |
+| gap_junction | 1.0 | 2.37 | 1.45 | 6.51 | 26 / 63 | 273 | 0 |
+| gap_roundabout | 1.0 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
+| gap_roundabout | 2.5 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
+| stub | 5 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
+| stub | 30 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
+
+Largest effects: `turn_min` and `gap_junction` on the minor road, `b_approach`, `tau_approach` and `standing` on lost time and spacing. `see` moves the minor road by about 10%, both ways down, so 30 m is not obviously right. `t_miss`, `gap_roundabout` and `stub` do not move these scenes at all, so their sensitivity is only known from cities, the roundabout scene and `stub_lane`.
 
 ## Replay against Wiedemann and Gipps
 

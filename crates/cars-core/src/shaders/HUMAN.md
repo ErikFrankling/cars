@@ -11,6 +11,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Gipps' rule towards a stopped or nearly stopped target (below 0.5 m/s) | ADAPTED | Gipps, as in Aimsun. Replaces the feedback there, because the feedback, fitted only on following, crawled the last 100 m to a queue and left 12-15 m in queues. Report 05 never saw this: its queue tests started from a formed queue | - |
 | Approach deceleration 1.2 m/s², reaction term 2 s, stop margin 1.4 m, 0.5 m/s threshold | INVENTED | Chosen to pass item 10-12 with replay unchanged. 1.2 agrees with "almost nobody brakes harder than 2 m/s²" and TGSIM's median yield of 1.27 m/s² | `b_approach`, `tau_approach`, `overshoot`, `standing` |
 | s0 median 2.8 m × 1.2 | ADAPTED | Report 05 median, scaled in closed loop to measured standing spacing | `s0_scale` |
+| Gipps limit behind a moving, slower leader: 4.5 m/s², 0.4 s, down to s0 | ADAPTED | Gipps 1981, as in Aimsun. Without it a queue forms with half the cars 1 m or less apart and braking to −8 m/s²: the closing rule above it trusts the leader to keep its speed. The rule is established, the two numbers are chosen so replay stays in band and p5 of time gaps stays low. 0.7 s lifts A39 replay by 9% and p5 of time gaps to 1.31 s | `gipps_b`, `gipps_tau` |
 | Guard is the physics certificate, with the leader assumed to brake no harder than the driver can | ADAPTED | Report 11 certificate; against SUMO's own settings report 05 asked for a lax guard. With leader braking at b_hi it held time gaps above 1.2 s at 34 m/s, against 0.8 s measured | - |
 | Desired speed = lane limit × speedFactor | ESTABLISHED | SUMO, TfL | - |
 
@@ -21,6 +22,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Reasons to change, look-ahead | ESTABLISHED | LC2013 strategic stage | - |
 | Critical gaps for a mandatory change: lognormal, one driver term, remaining distance | ESTABLISHED | Lee 2006 table 5.1, I-80 | - |
 | Constants of those gaps shifted, lead −6, lag −2 | ADAPTED | Lee and Choudhury (section 5.4.2) recalibrate constants per site in MITSIMLab. The size here is large, and the certificate floor then binds most of the time | `lead_shift`, `lag_shift` |
+| The shifts can differ far from the lane end, moving to lead −6, lag −2 within `r_urg`. Default: no difference | INVENTED | Real I-80 drivers merge with 0.9 m left; here they merge 80 m early, which is why too few are passed. `lead_far=0,lag_far=0,cooperation=0.1` gives let-in 0.66 and 55% unpassed, both in band, and median wait 38 s against 22.6 s, out of band. So it stays off | `lead_far`, `lag_far` |
 | Critical gaps for a discretionary change | ESTABLISHED | Ahmed 1999, as tabulated in Lee table 2.3 | - |
 | Physical floor under any gap: the certificate × 0.6 | ADAPTED | Vissim's factor 0.6 during a change, on our certificate | `lc_safety` |
 | Urgency by remaining distance only, no time terms | ESTABLISHED | Rao, Lee, Aimsun zones, TRANSIMS, I-80 in report 14 | `r_urg` |
@@ -52,7 +54,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Those gaps × 0.65 for the human, then × the driver's lognormal factor | ADAPTED | With the driver's spread, 1.0 gives half of Siegloch's capacity at major flows over 600 veh/h; 0.65 keeps it within 25%. Log-SD 0.26 from the Swiss roundabouts | `gap_junction` |
 | Gap test from when the car would reach the line, in place of SUMO's arrival windows | ESTABLISHED | TRVMB, Aimsun, HCM family | - |
 | Roundabout: 2.95 s target, entry test value 1.5 s | ADAPTED | Swiss roundabouts, report 05, one day. The value is by analogy with the factor above; the estimator on simulated traces does not reach the target (see report 16) | `gap_roundabout` |
-| Lowest corner speed 6 m/s, on the shape limit and up to twice the lane limit | INVENTED | netconvert's corners give 2 to 4 m/s under the driver curve rule. Brings turning flows from 700 to about 1,300 per green hour, against TRVMB's 1,700 | `turn_min` |
+| Lowest corner speed 8 m/s, on the shape limit and up to twice the lane limit | INVENTED | netconvert's corners give 2 to 4 m/s under the driver curve rule. 8 puts the roundabout's critical gap and follow-up on the Swiss 2.95 and 3.0 s at 300 veh/h per arm, right turns at 1,449 and left at 1,569 per green hour against TRVMB's 1,700. On a lane radius of 5 m it asks 12.8 m/s² of the shape, which the lane's drawn shape overstates; this shows in QA as lateral findings | `turn_min` |
 | Sees a give-way line from 30 m | INVENTED | SUMO's 9 m makes every car slow to walking pace with no one coming | constant |
 | Exit-clear compliance 90% | ESTABLISHED | Vissim percentage, physics branch | `exit_comply` |
 
