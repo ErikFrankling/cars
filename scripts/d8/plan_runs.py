@@ -130,6 +130,10 @@ def grid():
     return out
 
 
+def capacity_factors():
+    return [case(n, m, SAT[n], s, p, trace=False) for n, m in CELLS for s in (0, 1, 2, 3) for p in ('stable', 'dr')]
+
+
 def capacity_chan():
     return [case(n, m, SAT[n], s, p, trace=False, chan=1, fault='channel08') for n, m in (('j2', 'M'), ('j2', 'H'), ('j2', 'T'), ('j1', 'M'), ('j3', 'M')) for s in (0, 1) for p in MODES]
 
@@ -148,7 +152,7 @@ def smoke():
     return [case('j2', 'M', 3000, 0, 'full', end=200.0, warm=60.0)]
 
 
-PARTS = dict(capacity_chan=capacity_chan, smoke=smoke, grid=grid, grid_meter=grid_meter, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
+PARTS = dict(capacity_factors=capacity_factors, capacity_chan=capacity_chan, smoke=smoke, grid=grid, grid_meter=grid_meter, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
 
 
 def key(c):

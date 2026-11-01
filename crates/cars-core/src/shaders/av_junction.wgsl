@@ -1251,6 +1251,17 @@ fn plan_accel(d: f32, v: f32, t: f32, ve: f32, vcap: f32, bc: f32) -> f32 {
 
 // Where a planned car will be in tau seconds, as the plan it broadcasts says.
 fn plan_x(d: f32, v: f32, t: f32, ve: f32, a_now: f32, tau: f32) -> f32 {
+    // Holds its speed, then the last ramp to the class speed, as plan_accel drives it.
+    if (t > 0.2 && (cfg.plan & PLAN_CUBIC) == 0u) {
+        let up = 0.8 * cfg.accel;
+        let rate = select(cfg.plan_b, up, ve > v);
+        let tr = min(abs(ve - v) / rate, t);
+        let tc = t - tr;
+        if (tau <= tc) { return v * tau; }
+        let u = select(-rate, rate, ve > v);
+        let dt_r = min(tau - tc, tr);
+        return v * tc + v * dt_r + 0.5 * u * dt_r * dt_r + max(tau - t, 0.0) * ve;
+    }
     if (t > 0.2) {
         let aa = ve - v;
         let bb = d - v * t;
