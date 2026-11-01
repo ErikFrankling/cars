@@ -100,7 +100,7 @@ struct Params {
     claim_scale: f32,
     queue_speed: f32,
     lost_after: f32,
-    pad_a: f32,
+    zones_ahead: u32,
     pad_b: f32,
     pad_c: f32,
     hu_k: f32,        // response lag factor over one step
@@ -548,11 +548,14 @@ fn ph_limit(driver: f32, cert: f32) -> f32 {
 // MSCFModel::maximumSafeStopSpeedBallistic.
 fn ph_stop_driver(gap_total: f32, v: f32, b: f32, tau: f32) -> f32 {
     if (gap_total <= 0.0) { return 0.0; }
-    if (gap_total <= v * tau * 0.5) { return max(0.0, v - v * v / (2.0 * gap_total) * dt); }
+    // At dt above the reaction time the law alone runs past the gap in a step and stops short of nothing.
+    // What is driven this step, and what stopping takes in the next, have to fit in the gap.
+    // A human stops by the Gipps rule of hu_target. Under it this limit brought back rear-end contacts at dt 1.
+    let fits = select(max(gap_total - v * dt * 0.5, 0.0) / dt, 1e9, ty.model == MODEL_HUMAN);
+    if (gap_total <= v * tau * 0.5) { return min(fits, max(0.0, v - v * v / (2.0 * gap_total) * dt)); }
     let bt = b * tau * 0.5;
     let v1 = -bt + sqrt(bt * bt + b * (2.0 * gap_total - tau * v));
-    // Never more than the whole way in one step, which a reaction time under dt would ask for.
-    return max(0.0, v + (v1 - v) * min(dt / tau, 1.0));
+    return min(fits, max(0.0, v + (v1 - v) * min(dt / tau, 1.0)));
 }
 
 // The hardest the brakes allow by the end of this step. Below zero, the stop is inside the step.

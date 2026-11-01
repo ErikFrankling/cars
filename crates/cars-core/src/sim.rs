@@ -236,8 +236,8 @@ impl Sim {
         let mirror = empty("mirror", when(physical, p.n_trips as u64 * MIRROR_BYTES));
         let energy = empty("energy", when(physical, p.n_trips as u64 * std::mem::size_of::<GpuTripEnergy>() as u64));
         let junction_bid = empty("junction_bid", when(physical, p.n_lanes as u64 * 4));
-        // Per lane what is heading there, then the widest body on it.
-        let inbound = empty("inbound", when(physical, p.n_lanes as u64 * 8));
+        // Per lane what is heading there, then the widest body on it, then how far bodies on it can reach.
+        let inbound = empty("inbound", when(physical, p.n_lanes as u64 * 12));
         let hard_limit_init = vec![0xffu8; when(physical, p.n_trips as u64 * 4) as usize];
         let hard_limit = init("hard_limit", &hard_limit_init, storage);
         let zones = init("zones", bytemuck::cast_slice(&world.zones), storage);

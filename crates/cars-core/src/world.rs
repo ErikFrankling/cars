@@ -43,7 +43,9 @@ pub struct GpuParams {
     pub queue_speed: f32,
     /// Seconds at the end of a wrong lane before the vehicle is taken off and counted lost. 0 never.
     pub lost_after: f32,
-    pub pad: [f32; 3],
+    /// Hold zones by where a body can reach, and ask again for those ahead on the lane. Off: by lane.
+    pub zones_ahead: u32,
+    pub pad: [f32; 2],
     pub hu_k: f32,
     pub hu_rho: f32,
     pub hu_nscale: f32,
@@ -711,7 +713,7 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.a0 = num("phys.a0", r.a0.min(t.accel));
     g.a1 = num("phys.a1", r.a1);
     g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
-    g.v_lat = num("phys.v_lat", 0.6);
+    g.v_lat = num("phys.v_lat", cfg.tune("v_lat", 0.6));
     g.width = t.width;
     g.ph_tau = num("phys.tau", cfg.tune("tau", 0.65));
     let automated = matches!(t.model, CfModel::Acc | CfModel::Cacc);
@@ -894,7 +896,7 @@ impl World {
             safety: (cfg.tune("certificate", 1.0) as u32) | ((cfg.tune("arbiter", 1.0) as u32) << 1) | ((cfg.tune("exit_clear", 1.0) as u32) << 2) | ((cfg.tune("lc_path", 1.0) as u32) << 3),
             width_margin: cfg.tune("width_margin", 0.1),
             claim_scale: cfg.tune("claim_scale", 1.0),
-            queue_speed: cfg.tune("queue_speed", 5.0),
+            queue_speed: cfg.tune("queue_speed", 2.0),
             hu_k: 1.0 - (-cfg.dt / 1.0).exp(),
             hu_rho: (-cfg.dt / 3.0).exp(),
             hu_nscale: 0.20 * (1.0 - (-2.0 * cfg.dt / 3.0).exp()).sqrt(),
@@ -908,7 +910,8 @@ impl World {
             hu_g: [human.see, human.lc_slope, human.stop_s0, human.comfort],
             hu_h: [human.stub, 0.0, 0.0, 0.0],
             lost_after: cfg.tune("lost_after", 0.0),
-            pad: [0.0; 3],
+            zones_ahead: cfg.tune("zones_ahead", 0.0) as u32,
+            pad: [0.0; 2],
         };
         w
     }

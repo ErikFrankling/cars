@@ -48,11 +48,20 @@ def city(name, a):
     m = re.search(r'lane changes (\d+), teleports (\d+), collisions (\d+) \(lane change (\d+), junction (\d+), lane start (\d+), other (\d+)\)', text)
     result['before'] = dict(speed_of(text), exit=code, **({'lane_changes': int(m[1]), 'teleports': int(m[2]), 'collisions': int(m[3])} if m else {}))
     print(name, 'before', result['before'], flush=True)
-    text, wall, code = run([a.cars, 'run', *common, '--end', a.end, '--detect-every', 0, '--report-json', out / 'nodetect.json'], out / 'nodetect.log')
+    # Speed is measured on runs that write nothing per step; the kernel timings come with them.
+    text, wall, code = run([a.cars, 'run', *common, '--end', a.end, '--detect-every', 0, '--report-json', out / 'nodetect.json', '--profile-at', a.window - 60], out / 'nodetect.log')
     result['physical_no_detector'] = dict(speed_of(text), exit=code)
     print(name, 'physical, detector off', result['physical_no_detector'], flush=True)
+    text, wall, code = run([a.cars, 'run', *common, '--end', a.end, '--report-json', out / 'detect.json', '--profile-at', a.window - 60], out / 'detect.log')
+    result['physical_detector'] = dict(speed_of(text), exit=code)
+    print(name, 'physical, detector on', result['physical_detector'], flush=True)
+    text, wall, code = run([a.cars, 'run', *common, '--end', a.end, '--tune', 'lost_after=300', '--report-json', out / 'lost.json'], out / 'lost.log')
+    if (out / 'lost.json').exists():
+        rep = json.loads((out / 'lost.json').read_text())
+        result['physical_removing_lost'] = dict(speed_of(text), exit=code, **{k: rep.get(k) for k in ('lost', 'inserted', 'arrived', 'collision_incidents', 'gridlock_worst_stuck')})
+    print(name, 'physical, wrong-lane cars removed after 300 s', result.get('physical_removing_lost'), flush=True)
     text, wall, code = run([a.cars, 'run', *common, '--end', a.end, '--report-json', out / 'after.json', '--phys-json', out / 'phys.json', '--trip-csv', out / 'trips.csv',
-                            '--fcd', out / 'fcd.csv', '--fcd-begin', a.window, '--fcd-interval', 1, '--profile-at', a.window - 60, '--diagnose-at', a.end - 1], out / 'after.log')
+                            '--fcd', out / 'fcd.csv', '--fcd-begin', a.window, '--fcd-interval', 1], out / 'after.log')
     # FCD writing and readback slow this run down, so its speed is not the figure to quote.
     result['physical'] = dict(speed_of(text), exit=code)
     if (out / 'after.json').exists():
@@ -77,7 +86,7 @@ def main():
     p.add_argument('--cars', default=str(ROOT / 'target/release/cars'))
     p.add_argument('--baseline', default=str(DATA / 'physics/cars-baseline-69cf836'))
     p.add_argument('--begin', type=float, default=25200)
-    p.add_argument('--end', type=float, default=29100)
+    p.add_argument('--end', type=float, default=28920)
     p.add_argument('--window', type=float, default=28800, help='start of the second-by-second trajectories')
     p.add_argument('--capacity', type=int, default=300000)
     p.add_argument('--no-qa', action='store_true')

@@ -275,6 +275,7 @@ fn clear_lanes(@builtin(global_invocation_id) id: vec3u) {
         atomicStore(&junction_bid[id.x], NONE);
         atomicStore(&inbound[id.x], 0u);
         atomicStore(&inbound[P.n_lanes + id.x], 0u);
+        atomicStore(&inbound[2u * P.n_lanes + id.x], 0u);
     }
 }
 
@@ -907,7 +908,7 @@ fn foe_on_last_approach(link: u32, a: f32, va: f32, vl: f32, ego: Veh) -> bool {
     let k = links[link];
     if (hu_on) { hu_set_gap(link, ego.trip); }
     var l = a + (k.length + ty.length) / max((va + vl) * 0.5, EPS);
-    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor; }
+    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor - dt; }
     let impat = clamp(ty.impatience + ego.wait / P.time_to_impatience, 0.0, 1.0);
     for (var f = 0u; f < k.foe_count; f++) {
         let foe = foes[k.foe_start + f];
@@ -1143,7 +1144,7 @@ fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f3
     if ((k.flags & L_CONT) != 0u) { return true; }
     var l = a + (k.length + veh_len) / max((va + vl) * 0.5, EPS);
     // Physical mode: go when the next foe is a critical gap away, Trafikverket's numbers rather than a crossing estimate.
-    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor; }
+    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor - dt; }
     let e_is_major_green = (k.flags & (L_EXIT_AFTER_IJ | L_INTERNAL_JUNCTION)) != 0u && link_state(k.entry) == CH_G;
     if ((have_priority(state) || e_is_major_green) && state != CH_Z) { return true; }
     if (state == CH_w && wait < dt) { return false; }
@@ -1170,7 +1171,7 @@ fn lc_patch_speed(wanted: f32, e: Veh, vmax: f32) -> f32 {
     var mx = fin_max;
     var nv = wanted;
     var got = false;
-    if (e.blocker != 0.0 && !is_internal(e.lane)) {
+    if (e.blocker != 0.0 && !is_internal(e.lane) && (e.phys >> 30u) == 0u) {
         let space = e.left_space - e.blocker - POS_EPS;
         if (space > 0.0) {
             let vme = min_next_speed_emergency(e.speed);
@@ -1410,6 +1411,38 @@ fn ph_exit_room(to: u32, next_item_link: u32) -> f32 {
     return room;
 }
 
+// Is a body in this zone, or unable to stay out of it? One stopped short of it is not: it would otherwise hold a
+// vehicle that it is itself waiting for.
+fn zone_taken(zn: Zone) -> bool {
+    let p = atomicLoad(&tail[zn.foe_lane]);
+    if (p == NONE || unpack_back(p) >= zn.foe_out) { return false; }
+    if (P.zones_ahead != 0u && f32(atomicLoad(&inbound[2u * P.n_lanes + zn.foe_lane])) / 8.0 < zn.foe_in) { return false; }
+    return zn.dist < 0.5 * (ty.width + f32(atomicLoad(&inbound[P.n_lanes + zn.foe_lane])) / 16.0) + P.width_margin;
+}
+
+// A vehicle on a junction lane still has zones ahead of it on that lane, and asks for them as it nears each.
+fn zones_ahead_bid(i: u32, e: Veh, claim: f32) {
+    let la = lanes[e.lane];
+    var hold = 1e9;
+    var near = false;
+    let committed_at = ph_stop_distance(e.speed, e.acc) + 0.1;
+    for (var z = 0u; z < la.zone_count; z++) {
+        let zn = zones[la.zone_start + z];
+        let ahead = zn.own_in - e.pos;
+        if (ahead <= 0.0 || ahead > claim || ahead < committed_at) { continue; }
+        near = true;
+        if (zone_taken(zn)) { hold = min(hold, ahead); }
+    }
+    if (hold < 1e8) { atomicMin(&hard_limit[e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
+    if (near) {
+        let bid = (1u << 30u) | ((pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u);
+        atomicMin(&junction_bid[e.lane], bid);
+        cur[i].best_off = i32(bid);
+    } else {
+        cur[i].best_off = 0;
+    }
+}
+
 // Every vehicle that would otherwise have to slow for a contested junction lane asks for it. A
 // vehicle past the point where it can stop asks ahead of all others. What is occupied cannot be asked for.
 @compute @workgroup_size(64)
@@ -1426,11 +1459,12 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
     mu = P.mu;
     cert_on = (P.safety & 1u) != 0u;
     if ((P.safety & 2u) == 0u) { return; }
-    let claim = (v * dt + v * v / (2.0 * ty.decel) + v * ty.ph_tau + 2.0) * P.claim_scale;
-    if (items[base].dist > claim) { return; }
+    let claim = (v * dt * 0.5 + v * v / (2.0 * ty.decel) + v * ty.ph_tau + 2.0) * P.claim_scale;
     ego_acc = e.acc;
     ph_setup(e);
     hu_setup(e);
+    if (P.zones_ahead != 0u && is_internal(e.lane) && lanes[e.lane].zone_count != 0u) { zones_ahead_bid(i, e, claim); }
+    if (items[base].dist > claim) { return; }
     var walker = e;
     walk_links(&walker, base, n, v, lane_vmax(e.lane, e.sf));
     let stop = min(wk_stop_at, n);
@@ -1454,10 +1488,7 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
         var ok = true;
         if (!committed) {
             for (var z = 0u; z < la.zone_count; z++) {
-                let zn = zones[la.zone_start + z];
-                let p = atomicLoad(&tail[zn.foe_lane]);
-                if (p != NONE && unpack_back(p) < zn.foe_out
-                    && zn.dist < 0.5 * (ty.width + f32(atomicLoad(&inbound[P.n_lanes + zn.foe_lane])) / 16.0) + P.width_margin) {
+                if (zone_taken(zones[la.zone_start + z])) {
                     ok = false;
                     break;
                 }
@@ -1479,8 +1510,10 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
                     }
                     // Vissim wants room for the length plus 0.5 m, from the share of drivers who bother.
                     let wanted = in_front + ty.length + 0.5 + f32(atomicLoad(&inbound[to])) / 8.0;
-                    // Nobody fills a roundabout: its ring would lock whole.
-                    let keeps_clear = (P.safety & 4u) != 0u && (f32(pcg(e.trip ^ 0x51ed270bu) >> 8u) / 16777216.0 < ty.exit_comply || (lanes[to].flags & LANE_ROUNDABOUT) != 0u);
+                    // Nobody enters a full roundabout, or its ring locks whole. Whoever is on the ring keeps going, or the
+                    // ring waits for itself.
+                    let on_ring = (lanes[e.lane].flags & LANE_ROUNDABOUT) != 0u;
+                    let keeps_clear = (P.safety & 4u) != 0u && !on_ring && (f32(pcg(e.trip ^ 0x51ed270bu) >> 8u) / 16777216.0 < ty.exit_comply || (lanes[to].flags & LANE_ROUNDABOUT) != 0u);
                     if (keeps_clear && wanted > ph_exit_room(to, next_link)) { ok = false; }
                 }
             }
@@ -1491,8 +1524,8 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
             break;
         }
         // Whoever started goes on: without this a car that won a gap loses it again before it reaches the line.
-        var rank = 2u;
-        if (committed || ((e.flags & F_GRANTED) != 0u && v > HALT_SPEED)) { rank = 0u; } else if (have_priority(link_state(it.link))) { rank = 1u; }
+        var rank = 3u;
+        if (committed) { rank = 0u; } else if ((e.flags & F_GRANTED) != 0u && v > HALT_SPEED) { rank = 1u; } else if (have_priority(link_state(it.link))) { rank = 2u; }
         let hash = (pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u;
         let bid = (rank << 30u) | (min(u32(max(it.arrival, 0.0) * 8.0), 16383u) << 16u) | hash;
         items[base + j].grant = bid;
@@ -1506,6 +1539,28 @@ fn ph_grant(@builtin(global_invocation_id) id: vec3u) {
     if (i >= G.n_active) { return; }
     let n = cur[i].n_items;
     let base = i * MAX_ITEMS;
+    if (P.mu > 0.0 && P.zones_ahead != 0u && (P.safety & 2u) != 0u && is_internal(cur[i].lane) && cur[i].best_off != 0) {
+        // Lost a zone ahead on its own lane to a better claim: stop short of that zone.
+        let e = cur[i];
+        let bid = u32(e.best_off);
+        ty = types[e.vtype];
+        dt = P.dt;
+        mu = P.mu;
+        cert_on = (P.safety & 1u) != 0u;
+        ego_acc = e.acc;
+        ph_setup(e);
+        let claim = (e.speed * dt * 0.5 + e.speed * e.speed / (2.0 * ty.decel) + e.speed * ty.ph_tau + 2.0) * P.claim_scale;
+        let committed_at = ph_stop_distance(e.speed, e.acc) + 0.1;
+        let la = lanes[e.lane];
+        var hold = 1e9;
+        for (var z = 0u; z < la.zone_count; z++) {
+            let zn = zones[la.zone_start + z];
+            let ahead = zn.own_in - e.pos;
+            if (ahead <= 0.0 || ahead > claim || ahead < committed_at) { continue; }
+            if (atomicLoad(&junction_bid[zn.foe_lane]) < bid) { hold = min(hold, ahead); }
+        }
+        if (hold < 1e8) { atomicMin(&hard_limit[e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
+    }
     for (var j = 0u; j < n; j++) {
         let bid = items[base + j].grant;
         if (bid == 1u) { return; }
@@ -1820,9 +1875,14 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     if (mu > 0.0) {
         let w = u32(ty.width * 16.0);
         atomicMax(&inbound[P.n_lanes + e.lane], w);
+        atomicMax(&inbound[2u * P.n_lanes + e.lane], u32((e.pos + ph_stop_distance(e.speed, e.acc) + 0.5) * 8.0));
         if (back < 0.0 && e.prev_lane != NONE) {
             atomicMax(&inbound[P.n_lanes + e.prev_lane], w);
-            if (e.prev2_lane != NONE && lanes[e.prev_lane].length + back < 0.0) { atomicMax(&inbound[P.n_lanes + e.prev2_lane], w); }
+            atomicMax(&inbound[2u * P.n_lanes + e.prev_lane], u32(lanes[e.prev_lane].length * 8.0 + 8.0));
+            if (e.prev2_lane != NONE && lanes[e.prev_lane].length + back < 0.0) {
+                atomicMax(&inbound[P.n_lanes + e.prev2_lane], w);
+                atomicMax(&inbound[2u * P.n_lanes + e.prev2_lane], u32(lanes[e.prev2_lane].length * 8.0 + 8.0));
+            }
         }
     }
     if (e.lane != first_lane) {
