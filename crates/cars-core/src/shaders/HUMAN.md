@@ -47,9 +47,10 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 |---|---|---|---|
 | Yellow: stop if time to line ≥ driver's threshold, logistic 5.1 s, 0.54 s | ADAPTED | DLR Urban Traffic, one Sunday, report 05. Those who go keep going into red for at most 2.5 s to the line | off with `--human-off yellow` |
 | Gap acceptance in place of SUMO's arrival windows | ESTABLISHED | TRVMB, Aimsun, HCM family | - |
-| Critical gap table by movement and sign, +0.45 s per 10 km/h | ESTABLISHED | TRVMB Kapacitet table 3. Applied everywhere: no Berlin table is open | - |
-| Those gaps × 0.5 in the entry test | ADAPTED | The test runs from when the car would reach the line and foes count until they clear. With 0.5, minor road capacity meets Siegloch with TRVMB's 5.1 s, within 25% at major flows up to 640 veh/h | `gap_junction` |
-| Roundabout: 2.95 s target, entry test value 1.5 s | ADAPTED | Swiss roundabouts, report 05, one day. Value by analogy with the factor above; the estimator on simulated traces does not reach the target (see 16) | `gap_roundabout` |
+| Critical gap per link, by movement, sign and major road speed | ESTABLISHED | TRVMB Kapacitet table 3, held per link by the physics (`Link::tc`, less 1.2 s for clearing). Applied everywhere: no Berlin table is open | `tc_scale`, `tc_clear` |
+| Those gaps × 0.65 for the human, then × the driver's lognormal factor | ADAPTED | With the driver's spread, 1.0 gives half of Siegloch's capacity at major flows over 600 veh/h; 0.65 keeps it within 25%. Log-SD 0.26 from the Swiss roundabouts | `gap_junction` |
+| Gap test from when the car would reach the line, in place of SUMO's arrival windows | ESTABLISHED | TRVMB, Aimsun, HCM family | - |
+| Roundabout: 2.95 s target, entry test value 1.5 s | ADAPTED | Swiss roundabouts, report 05, one day. The value is by analogy with the factor above; the estimator on simulated traces does not reach the target (see report 16) | `gap_roundabout` |
 | Lowest corner speed 6 m/s, on the shape limit and up to twice the lane limit | INVENTED | netconvert's corners give 2 to 4 m/s under the driver curve rule. Brings turning flows from 700 to about 1,300 per green hour, against TRVMB's 1,700 | `turn_min` |
 | Sees a give-way line from 30 m | INVENTED | SUMO's 9 m makes every car slow to walking pace with no one coming | constant |
 | Exit-clear compliance 90% | ESTABLISHED | Vissim percentage, physics branch | `exit_comply` |
