@@ -1871,7 +1871,7 @@ fn ph_mirror(e: ptr<function, Veh>, done: bool) {
     mirror[(*e).trip] = Mirror((*e).pos, (*e).speed, (*e).acc, state);
 }
 
-const HU_LC_SLOPE: f32 = 0.466;   // steering angle a driver can use, 25 degrees
+const HU_LC_SLOPE: f32 = 1.0;     // steering angle a driver can use nosing in at a crawl, 45 degrees
 
 fn hu_start_hold(e: ptr<function, Veh>, speed: f32, v_safe: f32, nv: f32) -> f32 {
     if (speed >= 0.05) { return nv; }
