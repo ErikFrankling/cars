@@ -8,9 +8,6 @@ D8 = Path(__file__).resolve().parents[2] / 'research/truth/fig/d8'
 P = D8 / 'plan'
 
 
-TAG = ""
-
-
 def load(name):
     p = P / f'{name}.jsonl'
     return [json.loads(l) for l in p.read_text().splitlines()] if p.exists() else []
@@ -49,7 +46,7 @@ def capacity():
     for (n, mx, p) in sorted(g):
         if p != 'off':
             continue
-        a, b = g[(n, mx, 'off')], g.get((n, mx, 'full'), [])
+        a, b = g[(n, mx, 'off')], g.get((n, mx, 'route'), [])
         fa, fb = m(a, lambda x: x['flow']), m(b, lambda x: x['flow'])
         rows.append((n, mx, len(b), f'{fa:.0f}', f'{fb:.0f}', f'{100 * (fb / fa - 1):+.1f}%', f"{m(a, lambda x: x['delay']):.0f} / {m(b, lambda x: x['delay']):.0f}",
                      f"{sum(x['overlap'] for x in a)} / {sum(x['overlap'] for x in b)}", f"{m(a, hard):.0f} / {m(b, hard):.0f}", f"{m(a, lambda x: x['aborts']):.0f} / {m(b, lambda x: x['aborts']):.0f}"))
@@ -66,7 +63,7 @@ def demand(name='demand', keys=('net', 'mix', 'demand')):
     for k in sorted(g):
         if k[-1] != 'off':
             continue
-        a, b = g[k], g.get(k[:-1] + ('full',), [])
+        a, b = g[k], g.get(k[:-1] + ('route',), [])
         if not b:
             continue
         rows.append((*k[:-1], f"{m(a, lambda x: x['flow']):.0f} / {m(b, lambda x: x['flow']):.0f}", f"{m(a, lambda x: x['delay']):.1f} / {m(b, lambda x: x['delay']):.1f}",
@@ -84,7 +81,7 @@ def tiers(name='demand'):
     for k in sorted(g):
         if k[-1] != 'off' or k[0] != 'j2' or k[1] != 'M' or k[2] not in (3000, 5200):
             continue
-        a, b = g[k], g[k[:-1] + ('full',)]
+        a, b = g[k], g[k[:-1] + ('route',)]
         for t in ('all', 'straight', 'turning'):
             rows.append((k[2], t, f"{tier(a, t, 'speed_lost'):.2f} / {tier(b, t, 'speed_lost'):.2f} / {tier(b, t, 'gentlest'):.2f}", f"{tier(a, t, 'wh'):.1f} / {tier(b, t, 'wh'):.1f} / {tier(b, t, 'gentlest_wh'):.1f}",
                          f"{tier(a, t, 'peak50'):.1f} / {tier(b, t, 'peak50'):.1f}", f"{tier(a, t, 'peak99'):.1f} / {tier(b, t, 'peak99'):.1f}", f"{tier(a, t, 'jerk90'):.0f} / {tier(b, t, 'jerk90'):.0f}",
@@ -107,7 +104,7 @@ def ablation():
     rows_ = load('ablation')
     g = group(rows_, 'demand', 'plan')
     rows = []
-    order = ('off', 'profile', 'stable', 'full', 'cubic', 'dr')
+    order = ('off', 'profile', 'stable', 'full', 'route', 'cubic', 'dr')
     for d in sorted({k[0] for k in g}):
         for p in order:
             L = g.get((d, p))
@@ -125,7 +122,7 @@ def length():
     for k in sorted(g, key=lambda k: (int(k[0][1:]), k[1], k[2])):
         if k[2] != 'off':
             continue
-        a, b = g[k], g.get(k[:2] + ('full',), [])
+        a, b = g[k], g.get(k[:2] + ('route',), [])
         if not b:
             continue
         tr = 'brake' in a[0]
@@ -141,7 +138,7 @@ def faults(name='faults'):
     for k in sorted(g, key=str):
         if k[2] != 'off':
             continue
-        a, b = g[k], g.get(k[:2] + ('full',), [])
+        a, b = g[k], g.get(k[:2] + ('route',), [])
         if not b:
             continue
         rows.append((k[0], k[1], f"{m(a, lambda x: x['flow']):.0f} / {m(b, lambda x: x['flow']):.0f}", f"{m(a, lambda x: x['delay']):.1f} / {m(b, lambda x: x['delay']):.1f}", f"{sum(x['overlap'] for x in a)} / {sum(x['overlap'] for x in b)}",
@@ -155,7 +152,7 @@ def loss():
     for k in sorted(g, key=str):
         if k[2] != 'off':
             continue
-        a, b = g[k], g.get(k[:2] + ('full',), [])
+        a, b = g[k], g.get(k[:2] + ('route',), [])
         if b:
             rows.append((k[0], k[1][4:], f"{m(a, lambda x: x['flow']):.0f} / {m(b, lambda x: x['flow']):.0f}", f"{m(a, lambda x: x['delay']):.1f} / {m(b, lambda x: x['delay']):.1f}", f"{sum(x['overlap'] for x in a)} / {sum(x['overlap'] for x in b)}",
                          f"{tier(a, 'all', 'speed_lost'):.2f} / {tier(b, 'all', 'speed_lost'):.2f}", f"{tier(a, 'all', 'over3') * 100:.0f} / {tier(b, 'all', 'over3') * 100:.0f}", f"{m(b, lambda x: x.get('bytes_up', 0)) / max(m(b, lambda x: x.get('arrived', 1)), 1):.0f}"))
@@ -180,7 +177,7 @@ def grid():
     for k in sorted(g):
         if k[2] != 'off':
             continue
-        a, b = g[k], g.get(k[:2] + ('full',), [])
+        a, b = g[k], g.get(k[:2] + ('route',), [])
         if b:
             rows.append((k[0], k[1], f"{m(a, lambda x: x['flow']):.0f} / {m(b, lambda x: x['flow']):.0f}", f"{m(a, lambda x: x['delay']):.1f} / {m(b, lambda x: x['delay']):.1f}", f"{sum(x['overlap'] for x in a)} / {sum(x['overlap'] for x in b)}", f"{m(a, hard):.0f} / {m(b, hard):.0f}"))
     return table(('Net', 'veh/h', 'Flow today / planned', 'Delay s', 'Overlaps, 3 seeds', 'Hard brakes'), rows)
@@ -192,10 +189,107 @@ def grid_meter():
     for k in sorted(g):
         if k[3] != 'off':
             continue
-        a, b = g[k], g.get(k[:3] + ('full',), [])
+        a, b = g[k], g.get(k[:3] + ('route',), [])
         if b:
             rows.append((k[0], k[1], k[2], f"{m(a, lambda x: x['flow']):.0f} / {m(b, lambda x: x['flow']):.0f}", f"{m(a, lambda x: x['delay']):.1f} / {m(b, lambda x: x['delay']):.1f}", f"{sum(x['overlap'] for x in a)} / {sum(x['overlap'] for x in b)}", f"{m(a, hard):.0f} / {m(b, hard):.0f}"))
     return table(('Net', 'veh/h', 'Held at', 'Flow today / planned', 'Delay s', 'Overlaps, 3 seeds', 'Hard brakes'), rows)
+
+
+def route_grid():
+    g = group(load('route_grid'), 'net', 'demand', 'plan')
+    rows = []
+    tot = [0, 0]
+    for k in sorted(g):
+        if k[2] != 'off':
+            continue
+        a, b = g[k], g.get(k[:2] + ('route',), [])
+        if b:
+            oa, ob = sum(x['overlap'] for x in a), sum(x['overlap'] for x in b)
+            tot[0] += oa
+            tot[1] += ob
+            fa, fb = m(a, lambda x: x['flow']), m(b, lambda x: x['flow'])
+            rows.append((k[0], k[1], len(b), f"{fa:.0f} / {fb:.0f}", f"{100 * (fb / fa - 1):+.1f}%", f"{m(a, lambda x: x['delay']):.1f} / {m(b, lambda x: x['delay']):.1f}", f"{oa} / {ob}", ' '.join(str(x['overlap']) for x in b), f"{m(a, hard):.0f} / {m(b, hard):.0f}"))
+    rows.append(('all', '', '', '', '', '', f"{tot[0]} / {tot[1]}", '', ''))
+    return table(('Net', 'veh/h', 'Seeds', 'Flow today / route', 'Change', 'Delay s', 'Contacts', 'Route, per seed', 'Hard brakes'), rows)
+
+
+def route_faults():
+    g = group(load('route_faults'), 'fault', 'plan')
+    rows = []
+    for k in sorted({x[0] for x in g}):
+        a, b = g[(k, 'off')], g[(k, 'route')]
+        rows.append((k, len(b), f"{m(a, lambda x: x['flow']):.0f} / {m(b, lambda x: x['flow']):.0f}", f"{m(a, lambda x: x['delay']):.1f} / {m(b, lambda x: x['delay']):.1f}", f"{sum(x['overlap'] for x in a)} / {sum(x['overlap'] for x in b)}", f"{m(a, hard):.0f} / {m(b, hard):.0f}"))
+    return table(('Fault', 'Seeds', 'Flow today / route', 'Delay s', 'Contacts', 'Hard brakes'), rows)
+
+
+def loss_heavy():
+    g = group(load('loss_heavy'), 'demand', 'fault', 'plan')
+    rows = []
+    for d, f in sorted({x[:2] for x in g}):
+        a, b = g[(d, f, 'off')], g[(d, f, 'route')]
+        fa, fb = m(a, lambda x: x['flow']), m(b, lambda x: x['flow'])
+        rows.append((d, f.replace('loss', ''), len(b), f"{fa:.0f} / {fb:.0f}", f"{100 * (fb / fa - 1):+.1f}%", f"{m(a, lambda x: x['delay']):.1f} / {m(b, lambda x: x['delay']):.1f}", f"{sum(x['overlap'] for x in a)} / {sum(x['overlap'] for x in b)}", f"{m(a, hard):.0f} / {m(b, hard):.0f}"))
+    return table(('veh/h', 'Loss', 'Seeds', 'Flow today / route', 'Change', 'Delay s', 'Contacts', 'Hard brakes'), rows)
+
+
+def capacity_chan():
+    g = group(load('capacity_chan'), 'net', 'mix', 'plan')
+    rows = []
+    for n, mx in sorted({x[:2] for x in g}):
+        a, b = g[(n, mx, 'off')], g[(n, mx, 'route')]
+        fa, fb = m(a, lambda x: x['flow']), m(b, lambda x: x['flow'])
+        rows.append((n, mx, len(b), f"{fa:.0f} / {fb:.0f}", f"{100 * (fb / fa - 1):+.1f}%", f"{sum(x['overlap'] for x in a)} / {sum(x['overlap'] for x in b)}"))
+    return table(('Net', 'Mix', 'Seeds', 'Flow today / route', 'Change', 'Contacts'), rows)
+
+
+def lateral():
+    g = group(load('lateral'), 'net', 'mix', 'fault')
+    base = group(load('capacity'), 'net', 'mix', 'plan')
+    rows = []
+    for k in sorted({x[:2] for x in g}):
+        o = m(base.get(k + ('off',), []), lambda x: x['flow'])
+        cells = []
+        for f in ('old_table', 'peak4', 'alat3', 'alat5.5'):
+            v = m(g.get(k + (f,), []), lambda x: x['flow'])
+            cells.append(f"{v:.0f} ({100 * (v / o - 1):+.1f}%), {sum(x['overlap'] for x in g.get(k + (f,), []))}")
+        rows.append((*k, f'{o:.0f}', *cells))
+    return table(('Net', 'Mix', 'Today', 'Old corner speed', 'Peak 4 m/s2, speed up after the apex', 'a_lat 3', 'a_lat 5.5, the map'), rows)
+
+
+def gate_route():
+    rows_ = load('gate_route')
+    g = group(rows_, 'net', 'mix', 'demand', 'fault')
+    base = group(load('capacity'), 'net', 'mix', 'plan')
+    rows = []
+    for k in sorted(g, key=str):
+        L = g[k]
+        o = base.get((k[0], k[1], 'off'))
+        ch = ''
+        if o and k[2] > 6000 and k[0].startswith('j'):
+            ch = f"{100 * (m(L, lambda x: x['flow']) / m(o, lambda x: x['flow']) - 1):+.1f}%"
+        rows.append((*k, len(L), f"{m(L, lambda x: x['flow']):.0f}", ch, f"{m(L, lambda x: x['delay']):.1f}", sum(x['overlap'] for x in L), f"{m(L, hard):.0f}"))
+    return table(('Net', 'Mix', 'veh/h', 'Case', 'Seeds', 'Flow', 'Against today', 'Delay s', 'Contacts', 'Hard brakes'), rows)
+
+
+def stockholm2():
+    p = P / 'stockholm2.jsonl'
+    if not p.exists():
+        return ''
+    g = collections.defaultdict(list)
+    for l in p.read_text().splitlines():
+        r = json.loads(l)
+        c = r['case']
+        if 'error' not in r['result']:
+            g[(c['place'], c['scale'], c['policy'])].append(r['result'])
+    rows = []
+    names = ('krauss_signals', 'av_signals', 'av_free', 'av_full', 'av_route')
+    for pl, sc in sorted({k[:2] for k in g}):
+        for n in names:
+            L = g.get((pl, sc, n))
+            if not L:
+                continue
+            rows.append((pl, f'{sc * 60:.0f}%', L[0].get('n_trips'), n, len(L), f"{m(L, lambda x: x['flow']):.0f}", f"{m(L, lambda x: x['time_loss']):.1f}", f"{m(L, lambda x: x['teleports']):.0f}", sum(x['overlap'] for x in L), sum(x.get('collisions', 0) for x in L), f"{m(L, hard):.0f}", f"{L[0].get('junctions')} of {L[0].get('junctions', 0) + L[0].get('refused', 0)}"))
+    return table(('Net', 'Demand, of the fit', 'Trips', 'Policy', 'Seeds', 'Flow', 'Time lost s', 'Teleports', 'Contacts', 'Collisions', 'Hard brakes', 'Coordinated'), rows)
 
 
 def stockholm():
@@ -216,7 +310,7 @@ def stockholm():
 
 
 def main():
-    parts = dict(capacity=capacity, tiers=tiers, demand=demand, where=where, ablation=ablation, length=length, loss=loss, timing=timing, faults=faults, grid=grid, grid_meter=grid_meter, stockholm=stockholm)
+    parts = dict(capacity=capacity, tiers=tiers, demand=demand, where=where, ablation=ablation, length=length, loss=loss, timing=timing, faults=faults, grid_meter=grid_meter, loss_heavy=loss_heavy, capacity_chan=capacity_chan, route_grid=route_grid, route_faults=route_faults, lateral=lateral, gate_route=gate_route, stockholm2=stockholm2)
     out = []
     for name, f in parts.items():
         try:

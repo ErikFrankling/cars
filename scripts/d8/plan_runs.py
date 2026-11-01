@@ -151,14 +151,19 @@ def route_grid():
 def route_faults():
     # Message loss and stalls on the grid with planning across junctions.
     out = []
-    for s in (0, 1, 2):
+    for s, plan in ((s, p) for s in (0, 1, 2) for p in ('route', 'off')):
         for loss in (0.1, 0.3, 0.5, 0.7):
-            out.append(case('grid2', 'M', 16000, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS, loss=loss, fault=f'loss{loss}'))
-        out.append(case('grid2', 'M', 16000, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS, stall=120.0, level='B', fault='stallB'))
-        out.append(case('grid2', 'M', 16000, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS, stall=120.0, fault='stallA'))
-        out.append(case('grid2', 'M', 16000, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS, chan=1, fault='channel08'))
-        out.append(case('grid2', 'M', 16000, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS, blackout=(300.0, 330.0), fault='blackout30'))
+            out.append(case('grid2', 'M', 16000, s, plan, end=600.0, warm=150.0, trace=False, junctions=GRID_JS, loss=loss, fault=f'loss{loss}'))
+        out.append(case('grid2', 'M', 16000, s, plan, end=600.0, warm=150.0, trace=False, junctions=GRID_JS, stall=120.0, level='B', fault='stallB'))
+        out.append(case('grid2', 'M', 16000, s, plan, end=600.0, warm=150.0, trace=False, junctions=GRID_JS, stall=120.0, fault='stallA'))
+        out.append(case('grid2', 'M', 16000, s, plan, end=600.0, warm=150.0, trace=False, junctions=GRID_JS, chan=1, fault='channel08'))
+        out.append(case('grid2', 'M', 16000, s, plan, end=600.0, warm=150.0, trace=False, junctions=GRID_JS, blackout=(300.0, 330.0), fault='blackout30'))
     return out
+
+
+def loss_heavy():
+    # Enough seeds at the loss rates where the fallback decides the result.
+    return [case('j2', 'M', d, s, p, end=800.0, warm=200.0, trace=False, loss=l, fault=f'loss{l}') for d in (3000, 5000) for s in range(4) for p in MODES for l in (0.3, 0.5, 0.6, 0.7, 0.8)]
 
 
 def gate_route():
@@ -225,7 +230,7 @@ def smoke():
     return [case('j2', 'M', 3000, 0, 'full', end=200.0, warm=60.0)]
 
 
-PARTS = dict(gate_route=gate_route, route_cap=route_cap, route_grid=route_grid, route_faults=route_faults, gate=gate, lateral=lateral, capacity_factors=capacity_factors, capacity_chan=capacity_chan, smoke=smoke, grid=grid, grid_meter=grid_meter, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
+PARTS = dict(loss_heavy=loss_heavy, gate_route=gate_route, route_cap=route_cap, route_grid=route_grid, route_faults=route_faults, gate=gate, lateral=lateral, capacity_factors=capacity_factors, capacity_chan=capacity_chan, smoke=smoke, grid=grid, grid_meter=grid_meter, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
 
 
 def key(c):

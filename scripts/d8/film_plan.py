@@ -34,7 +34,8 @@ def record(out, net, rou, begin, end, plan, title, sub, overlay, mpp, w, h, sim_
         cmd += ['--cj', cj, '--cj-plan', 'off' if plan == 'sig' else plan]
     GATE.enter()
     r = subprocess.run(cmd, capture_output=True, text=True)
-    print(out.name, r.returncode, r.stderr.strip().splitlines()[-1][:160] if r.stderr.strip() else '', flush=True)
+    ev = [l.split() for l in r.stderr.splitlines() if l.startswith('event ')]
+    print(out.name, r.returncode, r.stderr.strip().splitlines()[-1][:160] if r.stderr.strip() else '', 'overlap frames', sum(e[2] in ('GAP', 'BODY') for e in ev), flush=True)
     if r.returncode:
         print(r.stderr[-1500:], flush=True)
         raise SystemExit(1)
