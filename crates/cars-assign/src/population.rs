@@ -184,8 +184,8 @@ impl Population {
     }
 
     /// Travellers from a loaded demand, keeping its routes as their first plan entry. Vehicle ids
-    /// starting with a prefix in `fixed` are never rerouted.
-    pub fn from_demand_fixed(mut demand: Demand, fixed: &[String]) -> Self {
+    /// starting with a prefix in `fixed`, and vehicle types in `fixed_types`, are never rerouted.
+    pub fn from_demand_fixed(mut demand: Demand, fixed: &[String], fixed_types: &[String]) -> Self {
         let mut procedures: Vec<Procedures> = Vec::new();
         let mut travellers = Vec::with_capacity(demand.trips.len());
         for (i, t) in demand.trips.iter().enumerate() {
@@ -209,7 +209,7 @@ impl Population {
                 tour: i as u32,
                 vtype: t.vtype,
                 proc_id: proc_id as u32,
-                class: u32::from(fixed.iter().any(|p| demand.ids[t.id as usize].starts_with(p.as_str()))) * CLASS_FIXED,
+                class: u32::from(fixed.iter().any(|p| demand.ids[t.id as usize].starts_with(p.as_str())) || fixed_types.contains(&demand.vtypes[t.vtype as usize].id)) * CLASS_FIXED,
                 ..Default::default()
             };
             tr.plan[0] = t.route;

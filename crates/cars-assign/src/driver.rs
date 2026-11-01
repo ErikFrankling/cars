@@ -67,7 +67,7 @@ pub fn setup(path: &Path) -> Result<Setup, String> {
     } else {
         let d = Demand::load(&net, &s.routes, &s.additional, s.seed, Some(s.end as f64))?;
         eprintln!("{}", d.summary());
-        Population::from_demand_fixed(d, &s.fixed_prefixes)
+        Population::from_demand_fixed(d, &s.fixed_prefixes, &s.fixed_vtypes)
     };
     pop.travellers.retain(|t| t.depart_s >= s.begin && t.depart_s <= s.end);
     if s.init != "given" {
@@ -77,7 +77,7 @@ pub fn setup(path: &Path) -> Result<Setup, String> {
     eprintln!("population in {:.1}s: {} travellers", t.elapsed().as_secs_f64(), pop.travellers.len());
     let supply = Supply::new(&net, &pop.demand.vtypes, pop.travellers.iter().map(|t| t.vtype));
     let t = Instant::now();
-    let graphs = Graphs::new(&net, &supply, &pop, s.landmarks);
+    let graphs = Graphs::with_turnaround(&net, &supply, &pop, s.landmarks, s.turnaround_s);
     eprintln!("graphs in {:.1}s for {} classes", t.elapsed().as_secs_f64(), graphs.by_mask.len());
     let counts = match &s.counts {
         Some(p) => Some(Counts::load(p, &net, &supply)?),

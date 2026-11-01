@@ -15,6 +15,9 @@ fn default_share() -> f64 {
 fn default_memory() -> f32 {
     0.3
 }
+fn default_turnaround() -> f32 {
+    crate::route::TURNAROUND_S
+}
 fn default_landmarks() -> usize {
     16
 }
@@ -34,6 +37,9 @@ pub struct Scenario {
     /// Vehicle ids starting with one of these keep their route: bus lines.
     #[serde(default)]
     pub fixed_prefixes: Vec<String>,
+    /// Vehicle types that keep their route.
+    #[serde(default)]
+    pub fixed_vtypes: Vec<String>,
     pub counts: Option<PathBuf>,
     pub cuts: Option<PathBuf>,
     pub discharge: Option<PathBuf>,
@@ -59,6 +65,9 @@ pub struct Scenario {
     pub memory: f32,
     #[serde(default = "default_landmarks")]
     pub landmarks: usize,
+    /// Seconds added to a turn back onto the opposite edge.
+    #[serde(default = "default_turnaround")]
+    pub turnaround_s: f32,
     #[serde(default)]
     pub init: String,
     /// Zones for OD cells and cut bisections.

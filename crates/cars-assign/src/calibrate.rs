@@ -431,7 +431,7 @@ pub fn guards(cells: &[u64], q0: &[f64], q: &[f64], mean_len: &[f64]) -> Guards 
         ends_slope,
         ends_r2,
         length_mean_ratio: m1 / m0.max(1e-9),
-        length_sd_ratio: s1 / s0.max(1e-9),
+        length_sd_ratio: if s0 > 1e-6 { s1 / s0 } else { 1.0 },
         sector_max_change,
         total_ratio: t1 / t0.max(1e-9),
         vkm_ratio: (t1 * m1) / (t0 * m0).max(1e-9),

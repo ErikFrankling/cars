@@ -9,7 +9,7 @@ use rustc_hash::FxHashSet;
 use crate::costs::{CostTable, NONE, Supply};
 
 pub const LANDMARKS: usize = 16;
-const TURNAROUND_S: f32 = 10.0;
+pub const TURNAROUND_S: f32 = 10.0;
 
 /// The turns one vehicle class may make, as compressed rows over dense edges.
 pub struct Graph {
@@ -19,6 +19,8 @@ pub struct Graph {
     pub to: Vec<u32>,
     pub reversal: Vec<bool>,
     pub usable: Vec<bool>,
+    /// Added to a turn back onto the opposite edge.
+    pub turnaround_s: f32,
     from_l: Vec<f32>,
     to_l: Vec<f32>,
     landmarks: usize,
@@ -100,7 +102,7 @@ impl Graph {
                 x.from == y.to && x.to == y.from
             })
             .collect();
-        let mut g = Graph { mask, n, first, to, reversal, usable, from_l: Vec::new(), to_l: Vec::new(), landmarks: 0 };
+        let mut g = Graph { mask, n, first, to, reversal, usable, turnaround_s: TURNAROUND_S, from_l: Vec::new(), to_l: Vec::new(), landmarks: 0 };
         g.build_landmarks(&supply.ff, landmarks);
         g
     }
@@ -202,7 +204,7 @@ impl Graph {
             for arc in self.first[eu] as usize..self.first[eu + 1] as usize {
                 let n = self.to[arc];
                 let nu = n as usize;
-                let at = if self.reversal[arc] { de + TURNAROUND_S } else { de };
+                let at = if self.reversal[arc] { de + self.turnaround_s } else { de };
                 let nd = at + costs.cost(nu, at);
                 if w.stamp[nu] != w.cur || nd < w.dist[nu] {
                     w.stamp[nu] = w.cur;
@@ -213,6 +215,21 @@ impl Graph {
             }
         }
         None
+    }
+
+    /// A route's cost on the same terms as `path`: time plus turnaround penalties.
+    pub fn evaluate(&self, costs: &CostTable, route: &[u32], depart: f32) -> f32 {
+        let Some(&first) = route.first() else { return f32::INFINITY };
+        let mut t = depart + costs.wait_at(first as usize, depart);
+        t += costs.cost(first as usize, t);
+        for p in route.windows(2) {
+            let a = p[0] as usize;
+            if (self.first[a] as usize..self.first[a + 1] as usize).any(|arc| self.to[arc] == p[1] && self.reversal[arc]) {
+                t += self.turnaround_s;
+            }
+            t += costs.cost(p[1] as usize, t);
+        }
+        t - depart
     }
 
     pub fn has_reversal(&self, route: &[u32]) -> bool {

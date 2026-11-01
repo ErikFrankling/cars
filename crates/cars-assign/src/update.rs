@@ -27,10 +27,21 @@ pub struct Graphs {
 
 impl Graphs {
     pub fn new(net: &Net, supply: &Supply, pop: &Population, landmarks: usize) -> Self {
+        Self::with_turnaround(net, supply, pop, landmarks, crate::route::TURNAROUND_S)
+    }
+
+    pub fn with_turnaround(net: &Net, supply: &Supply, pop: &Population, landmarks: usize, turnaround_s: f32) -> Self {
         let mut masks: Vec<u32> = pop.travellers.iter().map(|t| pop.demand.vtypes[t.vtype as usize].vclass).collect();
         masks.sort_unstable();
         masks.dedup();
-        let by_mask = masks.par_iter().map(|&m| (m, Graph::new(net, supply, m, landmarks))).collect();
+        let by_mask = masks
+            .par_iter()
+            .map(|&m| {
+                let mut g = Graph::new(net, supply, m, landmarks);
+                g.turnaround_s = turnaround_s;
+                (m, g)
+            })
+            .collect();
         Self { by_mask, work_size: supply.n() }
     }
 }
@@ -73,7 +84,7 @@ pub fn gap_only(pop: &Population, graphs: &Graphs, supply: &Supply, costs: &Cost
                 let t = &tv[i as usize];
                 let g = &graphs.by_mask[&pop.demand.vtypes[t.vtype as usize].vclass];
                 let cur = to_dense(supply, &pop.demand.routes[t.route() as usize]);
-                let c_cur = costs.evaluate(&cur, t.depart_s) as f64;
+                let c_cur = g.evaluate(costs, &cur, t.depart_s) as f64;
                 match g.path(costs, w, supply.dense[t.o_edge as usize], supply.dense[t.d_edge as usize], t.depart_s, true) {
                     Some((_, c)) => (c_cur, (c as f64).min(c_cur), true),
                     None => (c_cur, c_cur, false),
@@ -121,7 +132,7 @@ pub fn update_routes(pop: &mut Population, graphs: &Graphs, supply: &Supply, cos
                     let t = &tv[i as usize];
                     let g = &graphs.by_mask[&vtypes[t.vtype as usize].vclass];
                     let cur = to_dense(supply, &routes[t.route() as usize]);
-                    let c_cur = costs.evaluate(&cur, t.depart_s) as f64;
+                    let c_cur = g.evaluate(costs, &cur, t.depart_s) as f64;
                     let before = w.settled;
                     let found = g.path(costs, w, supply.dense[t.o_edge as usize], supply.dense[t.d_edge as usize], t.depart_s, true);
                     settled.fetch_add(w.settled - before, std::sync::atomic::Ordering::Relaxed);
