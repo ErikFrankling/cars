@@ -591,6 +591,7 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
                     if v.state.first_teleports.is_none() {
                         v.state.first_teleports = Some(snapshot.teleports);
                         v.state.first_collisions = snapshot.collisions;
+                        v.state.first_arrived = snapshot.arrived;
                     }
                 }
                 let teleports = v.state.first_teleports.map(|t| snapshot.teleports - t);
@@ -606,6 +607,7 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
                         mpp: camera.metres_per_pixel,
                         teleports,
                         collisions,
+                        trips: teleports.map(|_| snapshot.arrived - v.state.first_arrived),
                         modes: &v.overlay,
                     },
                 );

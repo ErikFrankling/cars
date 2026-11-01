@@ -130,6 +130,7 @@ pub struct Snapshot {
     pub teleports: u32,
     pub collisions: u32,
     pub cj_phase: Vec<u32>,
+    pub arrived: u32,
     step: u64,
 }
 impl Snapshot {
@@ -142,6 +143,7 @@ impl Snapshot {
             teleports: 0,
             collisions: 0,
             cj_phase: Vec::new(),
+            arrived: 0,
             step: u64::MAX,
         }
     }
@@ -163,7 +165,11 @@ impl Snapshot {
             let c = sim.counters(g);
             self.teleports = c[4];
             self.collisions = c[7];
+            self.arrived = c[2];
             if let Some(cj) = &sim.coord {
+                // Whatever the auditor saw in a box counts as a collision on the frame.
+                let seen: Vec<u32> = sim.read(g, &cj.events, 1);
+                self.collisions += seen[0];
                 let js: Vec<cars_core::coord::GpuCjJunction> = sim.read(g, &cj.junctions, (cj.junctions.size() / std::mem::size_of::<cars_core::coord::GpuCjJunction>() as u64).max(1));
                 self.cj_phase = js.iter().map(|j| j.phase).collect();
             }
@@ -266,6 +272,7 @@ pub struct Overlay {
     collisions: u32,
     pub first_teleports: Option<u32>,
     pub first_collisions: u32,
+    pub first_arrived: u32,
 }
 
 fn corners(p: &Instance) -> [[f32; 2]; 4] {
@@ -665,6 +672,7 @@ pub struct Hud<'a> {
     pub mpp: f32,
     pub teleports: Option<u32>,
     pub collisions: Option<u32>,
+    pub trips: Option<u32>,
     pub modes: &'a [String],
 }
 
@@ -692,7 +700,8 @@ pub fn draw_hud(c: &mut Canvas, hud: &Hud) {
     c.label(24, h - 40, &line, 2, WHITE);
     if let (Some(a), Some(b)) = (hud.teleports, hud.collisions) {
         let color = if a + b > 0 { RED } else { [170, 180, 190] };
-        c.label(24, h - 64, &format!("teleports {a}  collisions {b} in this clip"), 2, color);
+        let trips = hud.trips.map_or(String::new(), |t| format!("  {t} trips done"));
+        c.label(24, h - 64, &format!("teleports {a}  collisions {b} in this clip{trips}"), 2, color);
     }
     let on = |s: &str| hud.modes.iter().any(|m| m == s || m == "all");
     let mut y = h - 88;

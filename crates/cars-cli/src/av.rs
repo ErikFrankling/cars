@@ -325,6 +325,20 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
             spawn_stops += 1;
         }
     }
+    let (mut loss_sum, mut loss_n) = (0f64, 0u64);
+    for o in out.iter().filter(|o| o.flags & 1 != 0 && o.arrive_step as u64 >= warm_step) {
+        loss_sum += o.time_loss as f64;
+        loss_n += 1;
+    }
+    // Gridlock is a failure with a location: lanes where cars have stood still for two minutes.
+    let mut stuck: std::collections::HashMap<u32, u32> = Default::default();
+    for v in vs.iter().filter(|v| v.flags & 1 == 0 && v.wait > 120.0) {
+        *stuck.entry(v.lane).or_default() += 1;
+    }
+    let mut stuck: Vec<(u32, u32)> = stuck.into_iter().collect();
+    stuck.sort_by_key(|x| std::cmp::Reverse(x.1));
+    let stuck_total: u32 = stuck.iter().map(|x| x.1).sum();
+    let stuck_where: Vec<(String, u32)> = stuck.iter().take(6).map(|&(l, n)| (net.lanes.get(l as usize).map_or("-".to_string(), |x| x.id.clone()), n)).collect();
     delays.sort_by(f32::total_cmp);
     let pct = |p: f64| delays.get(((delays.len().saturating_sub(1)) as f64 * p) as usize).copied().unwrap_or(0.0);
     let mean = |v: &[f32]| v.iter().map(|&x| x as f64).sum::<f64>() / v.len().max(1) as f64;
@@ -343,6 +357,9 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
         "p95": pct(0.95),
         "p99": pct(0.99),
         "trip": mean(&delays),
+        "time_loss": loss_sum / loss_n.max(1) as f64,
+        "stuck": stuck_total,
+        "stuck_where": stuck_where,
         "pending": pending,
         "growth": (q_last - q_at_warm) as f64 / span * 3600.0,
         "overlap": overlaps,

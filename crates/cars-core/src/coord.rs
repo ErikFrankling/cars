@@ -1123,3 +1123,93 @@ pub fn add_replica(w: &mut CoordWorld, base: &CoordWorld, lane0: u32, replica: u
     w.n_plan += base.n_plan;
     w.n_aud += base.n_aud;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wgpu::util::DeviceExt;
+
+    fn reference() -> serde_json::Value {
+        let p = concat!(env!("CARGO_MANIFEST_DIR"), "/../../research/truth/fig/d8/kinematics.json");
+        serde_json::from_slice(&std::fs::read(p).expect("run scripts/d8/kinematics_ref.py")).unwrap()
+    }
+
+    #[test]
+    fn travel_time_matches_python() {
+        let r = reference();
+        let f = |k: &str| r[k].as_f64().unwrap();
+        let m = Mov {
+            from: 0,
+            to: 0,
+            sim_link: 0,
+            chain: Vec::new(),
+            s: Vec::new(),
+            xy: Vec::new(),
+            p: f("p"),
+            vm: f("vm"),
+            v_lane: f("v_after"),
+            v_after: f("v_after"),
+            vk: [0.0; 6],
+            group: 0,
+        };
+        for row in r["times"].as_array().unwrap() {
+            let t = m.time(row["v0"].as_f64().unwrap(), row["s"].as_f64().unwrap(), f("a"));
+            assert!((t - row["t"].as_f64().unwrap()).abs() < 1e-3, "{row} got {t}");
+        }
+    }
+
+    // The closed forms as the coordinator kernels run them, on whatever Vulkan device is at hand.
+    #[test]
+    fn earliest_and_latest_match_python() {
+        let Ok(gpu) = pollster::block_on(crate::Gpu::headless(crate::GpuOptions { adapter_name: Some("llvmpipe".into()), ..Default::default() })) else {
+            eprintln!("no llvmpipe, skipped");
+            return;
+        };
+        let r = reference();
+        let rows = r["rows"].as_array().unwrap();
+        let src = include_str!("shaders/av_junction.wgsl");
+        let body = &src[src.find("fn earliest(").unwrap()..src.find("// Cruise speed").unwrap()];
+        let code = format!(
+            "const INF: f32 = 1e30;\n{body}\n@group(0) @binding(0) var<storage, read> inp: array<vec4f>;\n@group(0) @binding(1) var<storage, read_write> out: array<vec2f>;\n@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) id: vec3u) {{ if (id.x >= arrayLength(&inp)) {{ return; }} let q = inp[id.x]; out[id.x] = vec2f(earliest(q.x, q.y, q.z, {}, {}, {}), latest(q.x, q.y, q.z, {}, {})); }}",
+            r["vmax"], r["a"], r["b"], r["a"], r["b"]
+        );
+        let input: Vec<[f32; 4]> = rows.iter().map(|x| [x["d"].as_f64().unwrap() as f32, x["v"].as_f64().unwrap() as f32, x["ve"].as_f64().unwrap() as f32, 0.0]).collect();
+        let d = &gpu.device;
+        let inb = d.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: None, contents: bytemuck::cast_slice(&input), usage: wgpu::BufferUsages::STORAGE });
+        let outb = d.create_buffer(&wgpu::BufferDescriptor { label: None, size: input.len() as u64 * 8, usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC, mapped_at_creation: false });
+        let stage = d.create_buffer(&wgpu::BufferDescriptor { label: None, size: input.len() as u64 * 8, usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ, mapped_at_creation: false });
+        let module = gpu.shader("kinematics", &code);
+        let pipe = d.create_compute_pipeline(&wgpu::ComputePipelineDescriptor { label: None, layout: None, module: &module, entry_point: Some("main"), compilation_options: Default::default(), cache: None });
+        let group = d.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &pipe.get_bind_group_layout(0),
+            entries: &[wgpu::BindGroupEntry { binding: 0, resource: inb.as_entire_binding() }, wgpu::BindGroupEntry { binding: 1, resource: outb.as_entire_binding() }],
+        });
+        let mut enc = d.create_command_encoder(&Default::default());
+        {
+            let mut c = enc.begin_compute_pass(&Default::default());
+            c.set_pipeline(&pipe);
+            c.set_bind_group(0, &group, &[]);
+            c.dispatch_workgroups((input.len() as u32).div_ceil(64), 1, 1);
+        }
+        enc.copy_buffer_to_buffer(&outb, 0, &stage, 0, input.len() as u64 * 8);
+        gpu.queue.submit([enc.finish()]);
+        stage.slice(..).map_async(wgpu::MapMode::Read, |_| {});
+        gpu.wait();
+        let data = stage.slice(..).get_mapped_range().unwrap();
+        let got: Vec<[f32; 2]> = bytemuck::pod_collect_to_vec(&data[..]);
+        let mut worst = 0f64;
+        for (x, g) in rows.iter().zip(&got) {
+            let (te, tl) = (x["te"].as_f64().unwrap(), x["tl"].as_f64().unwrap());
+            // f32 tolerance widens the none/some boundary by a millimetre; those cases are not compared.
+            if (te < 0.0) == (g[0] < 0.0) {
+                worst = worst.max((te - g[0] as f64).abs());
+            }
+            if (tl < 0.0) == (g[1] < 0.0) && tl < 1e29 && g[1] < 1e29 {
+                worst = worst.max((tl - g[1] as f64).abs());
+            }
+        }
+        assert!(worst < 1e-3, "worst difference {worst} s");
+        eprintln!("earliest and latest within {worst:.6} s of Python over {} cases", rows.len());
+    }
+}
