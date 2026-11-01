@@ -71,6 +71,7 @@ const C_SHADOW_REFUSED: u32 = 20u;
 const C_UNGRANTED: u32 = 21u;
 const C_LC_REFUSED_ROOM: u32 = 22u;
 const C_DENIED: u32 = 23u;
+const C_LOST: u32 = 34u;
 const C_CONTACT: u32 = 24u;
 const C_CONTACT_KINDS: u32 = 25u;
 const CONTACT_LOG: u32 = 65536u;
@@ -659,7 +660,9 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
         }
         let link = pick_link(lane, route_i, ego.route_end);
         if (link == NONE) {
-            let va = stop_speed(speed, seen, ty.decel, true, pl_lane_vmax);
+            // Nothing stands at the end of a lane with no way on, so the certificate's margin need not keep a car
+            // off a lane too short to hold it: it has to get there to change lanes.
+            let va = stop_speed(speed, seen + select(0.0, 0.45, mu > 0.0), ty.decel, true, pl_lane_vmax);
             if (pl_n > 0u) { adapt_leave(pl_base + pl_n - 1u, va); }
             pl_v = min(va, pl_v);
             push_item(NONE, pl_v, pl_v, false, 0.0, 0.0, 0.0, seen, -1.0);
@@ -834,7 +837,8 @@ fn keep_clear(k: Link) -> bool {
 // MSLink::opened for a link further ahead, at planning time: what foes announced in the last step.
 fn foe_on_last_approach(link: u32, a: f32, va: f32, vl: f32, ego: Veh) -> bool {
     let k = links[link];
-    let l = a + (k.length + ty.length) / max((va + vl) * 0.5, EPS);
+    var l = a + (k.length + ty.length) / max((va + vl) * 0.5, EPS);
+    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor; }
     let impat = clamp(ty.impatience + ego.wait / P.time_to_impatience, 0.0, 1.0);
     for (var f = 0u; f < k.foe_count; f++) {
         let foe = foes[k.foe_start + f];
@@ -1061,7 +1065,9 @@ fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f3
     let state = link_state(link);
     if (have_red(state)) { return false; }
     if ((k.flags & L_CONT) != 0u) { return true; }
-    let l = a + (k.length + veh_len) / max((va + vl) * 0.5, EPS);
+    var l = a + (k.length + veh_len) / max((va + vl) * 0.5, EPS);
+    // Physical mode: go when the next foe is a critical gap away, Trafikverket's numbers rather than a crossing estimate.
+    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor; }
     let e_is_major_green = (k.flags & (L_EXIT_AFTER_IJ | L_INTERNAL_JUNCTION)) != 0u && link_state(k.entry) == CH_G;
     if ((have_priority(state) || e_is_major_green) && state != CH_Z) { return true; }
     if (state == CH_w && wait < dt) { return false; }
@@ -1340,7 +1346,7 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
     mu = P.mu;
     cert_on = (P.safety & 1u) != 0u;
     if ((P.safety & 2u) == 0u) { return; }
-    let claim = (v * dt * 2.0 + v * v / (2.0 * ty.decel) + v * ty.ph_tau + 2.0) * P.claim_scale;
+    let claim = (v * dt + v * v / (2.0 * ty.decel) + v * ty.ph_tau + 2.0) * P.claim_scale;
     if (items[base].dist > claim) { return; }
     ego_acc = e.acc;
     ph_setup(e);
@@ -1658,6 +1664,18 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
             cur[i] = e;
             return;
         }
+    }
+
+    // Physical mode, off by default: as Vissim at an emergency stop, a car that cannot make its lane is removed
+    // and counted. Never silently: this is a network or model fault with a place on the map.
+    if (mu > 0.0 && P.lost_after > 0.0 && e.wait > P.lost_after && first_lane == e.lane && (n == 0u || items[base].link == NONE)) {
+        let at = atomicAdd(&C[C_CONTACT], 1u) % CONTACT_LOG;
+        contacts[at] = Contact(G.step, e.trip, e.trip, e.lane, e.lane, 8u, e.wait, e.pos, e.pos, 0.0, 0.0, 0.0);
+        atomicAdd(&C[C_LOST], 1u);
+        e.flags |= F_REMOVED;
+        ph_mirror(&e, true);
+        cur[i] = e;
+        return;
     }
 
     // Teleport the head of a lane that has been stuck for too long.

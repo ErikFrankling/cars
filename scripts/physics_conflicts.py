@@ -58,6 +58,17 @@ def place(df, shape, length):
         rear = np.clip(pos - lens, 0, length[lane]) * scale
         fx, fy = np.interp(front, cum, p[:, 0]), np.interp(front, cum, p[:, 1])
         rx, ry = np.interp(rear, cum, p[:, 0]), np.interp(rear, cum, p[:, 1])
+        # The rear of a body just past a lane start is still on the lane before.
+        hanging = pos < lens
+        prev = df['prev_lane'].to_numpy()[idx]
+        for other in set(prev[hanging]):
+            q = shape.get(other)
+            if q is None or np.hypot(*(q[-1] - p[0])) > 4.0:
+                continue
+            mask = hanging & (prev == other)
+            c2 = np.concatenate(([0.0], np.cumsum(np.hypot(*np.diff(q, axis=0).T))))
+            at = np.clip((length[other] + pos[mask] - lens[mask]) * c2[-1] / max(length[other], 1e-3), 0, c2[-1])
+            rx[mask], ry[mask] = np.interp(at, c2, q[:, 0]), np.interp(at, c2, q[:, 1])
         k = np.clip(np.searchsorted(cum, front, side='right') - 1, 0, len(p) - 2)
         seg = p[k + 1] - p[k]
         dx, dy = fx - rx, fy - ry
@@ -92,12 +103,12 @@ def main():
     p.add_argument('--fcd', required=True)
     p.add_argument('--out', required=True)
     a = p.parse_args()
-    df = pd.read_csv(a.fcd, dtype={'trip': str, 'lane': str}, keep_default_na=False, usecols=lambda c: c in ('time', 'trip', 'lane', 'pos', 'speed', 'acc', 'length', 'width', 'offset'))
+    df = pd.read_csv(a.fcd, dtype={'trip': str, 'lane': str}, keep_default_na=False, usecols=lambda c: c in ('time', 'trip', 'lane', 'prev_lane', 'pos', 'speed', 'acc', 'length', 'width', 'offset'))
     for c in ('time', 'pos', 'speed', 'acc', 'length', 'width'):
         df[c] = pd.to_numeric(df[c])
     if 'offset' in df:
         df['offset'] = pd.to_numeric(df['offset'])
-    shape, length, nodes = read_net(a.net, set(df['lane']))
+    shape, length, nodes = read_net(a.net, set(df['lane']) | set(df['prev_lane']))
     df = df[df['lane'].isin(shape)].reset_index(drop=True)
     df['x'], df['y'], df['hx'], df['hy'] = place(df, shape, length)
     times = np.sort(df['time'].unique())
@@ -160,7 +171,7 @@ def main():
     out.to_csv(a.out, index=False, float_format='%.3f')
     summary = dict(interval=interval, conflicts=len(out), by_kind=out['kind'].value_counts().to_dict(), ttc_median=float(out['ttc'].median()) if len(out) else None, pet_median=float(out['pet'].median()) if len(out) else None,
                    ttc_zero=int(out['contact'].sum()), vehicle_seconds=float(len(df) * interval),
-                   conflicts_per_1000_vehicle_hours=len(out) / max(len(df) * interval / 3600, 1e-9) / 1000,
+                   conflicts_per_1000_vehicle_hours=1000 * len(out) / max(len(df) * interval / 3600, 1e-9),
                    note='Relative comparison between designs only. Not a crash rate; path crossings are under-represented.')
     Path(a.out).with_suffix('.json').write_text(json.dumps(summary, indent=1))
     print(json.dumps(summary))

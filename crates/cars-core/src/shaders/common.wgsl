@@ -87,6 +87,10 @@ struct Params {
     width_margin: f32,
     claim_scale: f32,
     queue_speed: f32,
+    lost_after: f32,
+    pad_a: f32,
+    pad_b: f32,
+    pad_c: f32,
 }
 
 struct Globals {
@@ -251,6 +255,7 @@ struct Link {
     before: u32,
     state: u32,
     from_lane: u32,
+    tc: f32,
 }
 
 struct Conflict {
@@ -500,7 +505,8 @@ fn ph_stop_driver(gap_total: f32, v: f32, b: f32, tau: f32) -> f32 {
     if (gap_total <= v * tau * 0.5) { return max(0.0, v - v * v / (2.0 * gap_total) * dt); }
     let bt = b * tau * 0.5;
     let v1 = -bt + sqrt(bt * bt + b * (2.0 * gap_total - tau * v));
-    return max(0.0, v + (v1 - v) / tau * dt);
+    // Never more than the whole way in one step, which a reaction time under dt would ask for.
+    return max(0.0, v + (v1 - v) * min(dt / tau, 1.0));
 }
 
 // The hardest the brakes allow by the end of this step. Below zero, the stop is inside the step.

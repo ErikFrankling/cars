@@ -263,9 +263,9 @@ impl Physics {
         let stuck_now = last.as_ref().map_or(0, |g| g["stuck"].as_u64().unwrap_or(0));
         let cycles_now = last.as_ref().and_then(|g| g["cycles"].as_array().map(|a| a.len())).unwrap_or(0);
         let mut text = format!(
-            "physics: collisions {collisions} incidents, {} contact samples ({}){}; teleports {}; certificate floor hits {}, no-brake {}, dead-end clamps {}, crossed without grant {}; shadows {}, refused {}, refused for room {}; denied bids {}\nenergy: {} trips, {km:.0} km, wheel {:.0} Wh/km, brake {:.0}, road {:.0}, combustion {:.2} l/100km, electric {:.0} Wh/km, books balance within {:.4}%\ngridlock: {stuck_now} vehicles stuck over {} s now, worst {}, {cycles_now} waiting cycles now",
+            "physics: collisions {collisions} incidents, {} contact samples ({}){}; teleports {}; certificate floor hits {}, no-brake {}, dead-end clamps {}, crossed without grant {}; lost on a wrong lane {}; shadows {}, refused {}, refused for room {}; denied bids {}\nenergy: {} trips, {km:.0} km, wheel {:.0} Wh/km, brake {:.0}, road {:.0}, combustion {:.2} l/100km, electric {:.0} Wh/km, books balance within {:.4}%\ngridlock: {stuck_now} vehicles stuck over {} s now, worst {}, {cycles_now} waiting cycles now",
             c[world::C_CONTACT], kinds.join(", "), if self.log_lost > 0 { format!(", {} log entries lost", self.log_lost) } else { String::new() }, c[4],
-            c[world::C_CERT_FLOOR], c[world::C_NO_BRAKE], c[world::C_DEAD_END], c[world::C_UNGRANTED], c[world::C_SHADOWS], c[world::C_SHADOW_REFUSED], c[world::C_LC_REFUSED_ROOM], c[world::C_DENIED],
+            c[world::C_CERT_FLOOR], c[world::C_NO_BRAKE], c[world::C_DEAD_END], c[world::C_UNGRANTED], c[world::C_LOST], c[world::C_SHADOWS], c[world::C_SHADOW_REFUSED], c[world::C_LC_REFUSED_ROOM], c[world::C_DENIED],
             trips, per_km(wheel), per_km(brake), per_km(road), if km > 0.0 { fuel * 100.0 / km } else { 0.0 }, per_km(ev), worst_balance * 100.0,
             self.gridlock_after, self.worst_stuck,
         );
@@ -279,7 +279,7 @@ impl Physics {
             "worst_incidents": list.iter().take(50).map(place).collect::<Vec<_>>(), "contact_log_lost": self.log_lost,
             "teleports": c[4], "lane_changes": c[6], "cert_floor": c[world::C_CERT_FLOOR], "no_brake": c[world::C_NO_BRAKE], "dead_end": c[world::C_DEAD_END], "ungranted": c[world::C_UNGRANTED],
             "shadows": c[world::C_SHADOWS], "shadow_refused": c[world::C_SHADOW_REFUSED], "lc_refused_room": c[world::C_LC_REFUSED_ROOM], "denied": c[world::C_DENIED], "overflow": c[5], "items_full": c[8],
-            "inserted": c[3], "arrived": c[2], "m_updates_per_s": m_updates, "wall_s": wall, "steps": done,
+            "lost": c[world::C_LOST], "inserted": c[3], "arrived": c[2], "m_updates_per_s": m_updates, "wall_s": wall, "steps": done,
             "stuck_lanes": stuck_list, "gridlock_end": last, "gridlock_series": self.gridlocks, "gridlock_worst_stuck": self.worst_stuck,
             "energy": {"trips": trips, "km": km, "wheel_wh_km": per_km(wheel), "brake_wh_km": per_km(brake), "road_wh_km": per_km(road), "pe_wh_km": per_km(pe), "ke_wh_km": per_km(ke), "fuel_l_100km": if km > 0.0 { fuel * 100.0 / km } else { 0.0 }, "ev_wh_km": per_km(ev), "balance_worst": worst_balance},
         });

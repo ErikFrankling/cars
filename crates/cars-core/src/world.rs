@@ -41,6 +41,9 @@ pub struct GpuParams {
     pub width_margin: f32,
     pub claim_scale: f32,
     pub queue_speed: f32,
+    /// Seconds at the end of a wrong lane before the vehicle is taken off and counted lost. 0 never.
+    pub lost_after: f32,
+    pub pad: [f32; 3],
 }
 
 #[repr(C)]
@@ -178,6 +181,8 @@ pub struct GpuLink {
     pub before: u32,
     pub state: u32,
     pub from_lane: u32,
+    /// Critical gap for a yielding movement in physical mode, seconds. 0 when it does not yield.
+    pub tc: f32,
 }
 
 #[repr(C)]
@@ -359,8 +364,9 @@ pub const C_LC_REFUSED_ROOM: usize = 22;
 pub const C_DENIED: usize = 23;
 pub const C_CONTACT: usize = 24;
 pub const C_CONTACT_KINDS: usize = 25;
+pub const C_LOST: usize = 34;
 /// Contact kinds, as counted from `C_CONTACT_KINDS`.
-pub const CONTACT_NAMES: [&str; 8] = ["same lane", "neighbour lane", "junction crossing", "junction merge", "junction diverge", "lane start", "other", "crossed without grant"];
+pub const CONTACT_NAMES: [&str; 9] = ["same lane", "neighbour lane", "junction crossing", "junction merge", "junction diverge", "lane start", "other", "crossed without grant", "lost on a wrong lane"];
 /// Kinds from here on are protocol breaches, not bodies touching.
 pub const CONTACT_BODIES: usize = 7;
 /// Sort key resolution: two vehicles on a lane are always further apart than this.
@@ -525,7 +531,7 @@ struct PhysRow {
 }
 
 fn phys_row(vclass: u32) -> PhysRow {
-    let car = PhysRow { m_ref: 1650., p_kw: 90., kappa: 0.775, cda: 0.68, crr: 0.0105, v_corner: 10., f_d: 0.55, eps: 0.05, b_lo: 7.0, b_hi: 11.3, t_r: 0.30, a0: 2.02, a1: 0.125, a_floor: 0.7, load: (0.9, 1.15), power_sd: 0.35 };
+    let car = PhysRow { m_ref: 1650., p_kw: 90., kappa: 0.775, cda: 0.68, crr: 0.0105, v_corner: 10., f_d: 0.55, eps: 0.05, b_lo: 8.3, b_hi: 11.3, t_r: 0.30, a0: 2.02, a1: 0.125, a_floor: 0.7, load: (0.9, 1.15), power_sd: 0.35 };
     let name = crate::net::VCLASSES.get(vclass.trailing_zeros() as usize).copied().unwrap_or("passenger");
     match name {
         "delivery" | "emergency" => PhysRow { m_ref: 2800., p_kw: 95., cda: 1.6, crr: 0.012, b_lo: 6.0, b_hi: 8.5, t_r: 0.47, load: (0.75, 1.15), power_sd: 0.2, ..car },
@@ -563,12 +569,14 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
     g.v_lat = num("phys.v_lat", 0.6);
     g.width = t.width;
-    g.ph_tau = num("phys.tau", cfg.tune("tau", 1.35));
+    g.ph_tau = num("phys.tau", cfg.tune("tau", 0.65));
     let automated = matches!(t.model, CfModel::Acc | CfModel::Cacc);
     g.exit_comply = num("phys.exit_comply", if automated { 1.0 } else { cfg.tune("exit_comply", 0.9) });
     // Gipps' two decelerations: what the driver plans with, and what it expects of the leader.
-    g.decel = num("phys.b_plan", cfg.tune("driver_b", t.decel));
-    g.b_assume = num("phys.b_assume", cfg.tune("leader_b", g.decel));
+    if t.model == CfModel::Krauss {
+        g.decel = num("phys.b_plan", cfg.tune("driver_b", 3.0));
+    }
+    g.b_assume = num("phys.b_assume", cfg.tune("leader_b", if t.model == CfModel::Krauss { 4.5 } else { g.decel }));
     // Leaders and tails are judged by their hardest possible stop.
     g.apparent = g.b_hi;
 }
@@ -637,7 +645,7 @@ impl World {
             speed_trace: cfg.speed_trace.clone(),
             ..Default::default()
         };
-        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 3.0)), crate::physics::zones(net, &topo, cfg.tune("zone_distance", 2.6))));
+        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 4.0)), crate::physics::zones(net, &topo, cfg.tune("zone_distance", 2.6))));
         w.vtypes = demand.vtypes.iter().map(|t| gpu_vtype(t, cfg.dt)).collect();
         if cfg.mu > 0.0 {
             for (g, t) in w.vtypes.iter_mut().zip(&demand.vtypes) {
@@ -707,6 +715,8 @@ impl World {
             width_margin: cfg.tune("width_margin", 0.1),
             claim_scale: cfg.tune("claim_scale", 1.0),
             queue_speed: cfg.tune("queue_speed", 5.0),
+            lost_after: cfg.tune("lost_after", 0.0),
+            pad: [0.0; 3],
         };
         w
     }
@@ -1024,6 +1034,7 @@ impl World {
                     before: l.internal_before.map(|b| b + lane0).unwrap_or(NONE),
                     state: l.state as u32,
                     from_lane: l.from_lane + lane0,
+                    tc: if cfg.mu > 0.0 { (critical_gap(net, topo, l) * cfg.tune("tc_scale", 1.0) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { 0.0 },
                 });
             }
         }
@@ -1124,6 +1135,31 @@ impl World {
             });
         }
     }
+}
+
+/// Trafikverket's base critical gaps, TRVMB Kapacitet: major left, minor right, straight, left, for give way
+/// and stop, on a 50 km/h major road, and 0.9 s more at 70 km/h. A critical gap runs from one major vehicle
+/// to the next at the conflict point; a driver can use it only after the first has cleared, which `tc_clear` takes off.
+fn critical_gap(net: &Net, topo: &Topology, l: &crate::topology::Link) -> f32 {
+    let entry = &topo.links[l.entry as usize];
+    let foes = if l.foe_links.is_empty() { &entry.foe_links } else { &l.foe_links };
+    if foes.is_empty() {
+        return 0.0;
+    }
+    let stop = matches!(entry.state, b's' | b'w');
+    // Turning left from a lane that also has right of way somewhere is the major road's left.
+    let major_left = topo.lane_links[entry.from_lane as usize].iter().any(|&k| matches!(topo.links[k as usize].state, b'M' | b'O'));
+    let base = match (entry.dir, stop) {
+        (b'l' | b'L' | b't', _) if major_left => 4.8,
+        (b'r' | b'R', false) => 5.0,
+        (b'r' | b'R', true) => 5.7,
+        (b'l' | b'L' | b't', false) => 5.3,
+        (b'l' | b'L' | b't', true) => 6.0,
+        (_, false) => 5.1,
+        (_, true) => 5.8,
+    };
+    let fast = foes.iter().map(|&f| net.lanes[topo.links[f as usize].from_lane as usize].speed).fold(0.0f32, f32::max);
+    base + 0.9 * ((fast - 50.0 / 3.6) / (20.0 / 3.6)).clamp(0.0, 1.0)
 }
 
 fn topo_exit_after_ij(topo: &Topology, id: u32) -> bool {

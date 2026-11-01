@@ -1125,11 +1125,27 @@ fn ph_lc_path(e: Veh, own: LcNeighbors, n: LcNeighbors, dest: u32) -> bool {
 
 // Can this body start a lane change here, at this speed, with the time a change takes?
 fn ph_lc_room(e: Veh, dest: u32) -> bool {
-    if ((e.phys >> 30u) != 0u || (e.flags & F_HAS_SHADOW) != 0u || e.pos < ty.length) { return false; }
-    let remaining = lanes[e.lane].length - e.pos;
+    if ((e.phys >> 30u) != 0u || (e.flags & F_HAS_SHADOW) != 0u || e.pos < min(ty.length, lanes[e.lane].length - 1.0)) { return false; }
     let w = lanes[dest].width;
-    if ((w / ty.v_lat + 1.0) * e.speed <= remaining) { return true; }
-    return (w / 1.1 + 1.0) * e.speed <= remaining;
+    let road = ph_lc_road(e, dest);
+    if (road < 0.0) {
+        let left = lanes[e.lane].length - e.pos;
+        return left >= w / 0.21256 && (w / ty.v_lat + 1.0) * e.speed <= left;
+    }
+    if ((w / ty.v_lat + 1.0) * e.speed <= road) { return true; }
+    return (w / 1.1 + 1.0) * e.speed <= road;
+}
+
+// Road left for a change into `dest`. Sideways motion carries over lane ends as long as the route goes on from
+// `dest`. Negative when it does not, as a change that cannot finish before the lane ends would stop halfway for good.
+fn ph_lc_road(e: Veh, dest: u32) -> f32 {
+    let k = pick_link(dest, e.route_i, e.route_end);
+    let remaining = lanes[e.lane].length - e.pos;
+    if (k == NONE) {
+        if (e.route_i + 1u >= e.route_end) { return remaining; }
+        return -1.0;
+    }
+    return remaining + continuation_length(links[k].to_lane, e.route_i + 1u, e.route_end);
 }
 
 fn lc_evaluate(i: u32) {
@@ -1253,7 +1269,8 @@ fn lc_commit(@builtin(global_invocation_id) id: vec3u) {
         cur[i].phys = (cur[i].phys & 0xffffu) | (dir << 30u);
         cur[i].flags |= F_HAS_SHADOW;
         let w = lanes[dest].width;
-        if ((w / vt.v_lat + 1.0) * cur[i].speed > lanes[cur[i].lane].length - cur[i].pos) { cur[i].flags |= F_LAT_FAST; }
+        ty = vt;
+        if ((w / vt.v_lat + 1.0) * cur[i].speed > ph_lc_road(cur[i], dest)) { cur[i].flags |= F_LAT_FAST; }
     }
     lc_plan[i].first = 0xffffffffu;
     cur[i].lane = dest;

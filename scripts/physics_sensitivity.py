@@ -23,23 +23,26 @@ def tune(pairs):
     return [x for k, v in pairs.items() for x in ('--tune', f'{k}={v}')]
 
 
+GRID = [(tau, b, bh, 4.17, lo) for tau in (0.4, 0.5, 0.6) for b, bh in ((3.0, 4.5), (2.5, 3.5), (3.0, 4.0)) for lo in (7.0, 8.3)] + [(1.35, 4.5, 4.5, 3.0, 7.0), (0.5, 3.0, 4.5, 3.0, 7.0)]
+
+
 def driver(a):
     """Gipps' form: gap = tau v + v^2/2 (1/b - 1/b_hat). The grid is what the two TRVMB targets leave open."""
     rows = []
-    for tau in (0.5, 0.7, 1.0, 1.35):
-        for b, bh in ((4.5, 4.5), (3.0, 4.5), (3.5, 6.0), (3.0, 6.0)):
-            for cap in (3.0, 4.17):
-                for radius in (6, 12):
-                    row = dict(tau=tau, b=b, b_hat=bh, curve_cap=cap, radius=radius)
+    for tau, b, bh, cap, b_lo in a.grid or GRID:
+        if True:
+            if True:
+                for radius in (None, 10):
+                    row = dict(tau=tau, b=b, b_hat=bh, curve_cap=cap, b_lo=b_lo, radius=radius)
                     for kind in ('through', 'right', 'left', 'double'):
-                        if kind == 'through' and radius != 6:
+                        if kind == 'through' and radius:
                             continue
                         d = Path(a.out) / f'driver-{kind}-{radius}'
                         d.mkdir(parents=True, exist_ok=True)
                         if not (d / 'net.xml').exists():
                             T.capacity_net(d, kind, radius)
                         for dt in (1.0, 0.1):
-                            flow, spacing, rep = T.saturation(d, kind, dt, tune(dict(tau=tau, driver_b=b, leader_b=bh, curve_cap=cap)), f't{dt}')
+                            flow, spacing, rep = T.saturation(d, kind, dt, tune(dict(tau=tau, driver_b=b, leader_b=bh, curve_cap=cap, car_b_lo=b_lo)), f't{dt}')
                             row[f'{kind}_{dt}'] = round(flow)
                             row['contacts'] = row.get('contacts', 0) + rep['collision_incidents']
                     rows.append(row)
@@ -81,6 +84,7 @@ def main():
     p.add_argument('--out', required=True)
     p.add_argument('--cars', default=str(ROOT / 'target/release/cars'))
     a = p.parse_args()
+    a.grid = None
     T.A = argparse.Namespace(cars=a.cars, out=a.out, tune_args=[], radius=None)
     Path(a.out).mkdir(parents=True, exist_ok=True)
     dict(driver=driver, invented=invented)[a.what](a)
