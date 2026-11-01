@@ -8,6 +8,7 @@ from opus_sim import ring,queue
 base=sys.argv[1]; P=dict(json.loads((OUT/'fit_params_all.json').read_text())[base]['params'])
 if 's0fix' in base: P['s0']=2.8
 if 'sqrt' in base: P['m']=.5
+if 'tau1' in base: P['tau_a']=1.0
 tr,va,te=split(False);out={}
 for sn,b in te.items():
     out[sn]={}

@@ -1,0 +1,50 @@
+{
+ "name": "s1",
+ "main": 900,
+ "ramp": 800,
+ "neck": 8.0,
+ "sigma": 0.5,
+ "teleport_after": 120,
+ "ramp_cars": 185,
+ "never_merged": 0,
+ "wait": {
+  "p10": 12.0,
+  "p50": 13.0,
+  "p90": 16.0,
+  "p99": 19.0,
+  "max": 21.0
+ },
+ "passes": {
+  "0": 151,
+  "1": 34
+ },
+ "stopped": 0.3675675675675676,
+ "v_cross_p50": 1.71,
+ "rem_cross_p50": 19.02000000000001,
+ "main_between_ramp": {
+  "0": 133,
+  "1": 201,
+  "2": 58,
+  "3": 7,
+  "4": 0,
+  "5": 0,
+  "6": 0,
+  "7": 0
+ },
+ "over7": 0,
+ "rl_mean": 0.8471177944862155,
+ "flow_vph": 1700.0,
+ "teleports": {
+  "total": "0",
+  "jam": "0",
+  "yield": "0",
+  "wrongLane": "0"
+ },
+ "vehicles": {
+  "loaded": "850",
+  "inserted": "850",
+  "running": "0",
+  "waiting": "0"
+ },
+ "collisions": 0
+}

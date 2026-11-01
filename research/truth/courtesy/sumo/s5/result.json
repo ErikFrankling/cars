@@ -1,0 +1,53 @@
+{
+ "name": "s5",
+ "main": 1180,
+ "ramp": 920,
+ "neck": 5.0,
+ "sigma": 0.5,
+ "teleport_after": 120,
+ "ramp_cars": 233,
+ "never_merged": 0,
+ "wait": {
+  "p10": 14.0,
+  "p50": 24.0,
+  "p90": 52.80000000000001,
+  "p99": 72.68,
+  "max": 85.0
+ },
+ "passes": {
+  "0": 100,
+  "1": 104,
+  "2": 22,
+  "3": 5,
+  "4": 2
+ },
+ "stopped": 0.9184549356223176,
+ "v_cross_p50": 0.0,
+ "rem_cross_p50": 43.53,
+ "main_between_ramp": {
+  "0": 305,
+  "1": 115,
+  "2": 26,
+  "3": 7,
+  "4": 4,
+  "5": 1,
+  "6": 1,
+  "7": 0
+ },
+ "over7": 1,
+ "rl_mean": 0.48478260869565215,
+ "flow_vph": 1959.9999999999998,
+ "teleports": {
+  "total": "0",
+  "jam": "0",
+  "yield": "0",
+  "wrongLane": "0"
+ },
+ "vehicles": {
+  "loaded": "1051",
+  "inserted": "1051",
+  "running": "115",
+  "waiting": "0"
+ },
+ "collisions": 0
+}

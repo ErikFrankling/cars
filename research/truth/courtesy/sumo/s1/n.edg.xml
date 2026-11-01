@@ -1,0 +1,7 @@
+<edges>
+<edge id="up" from="a" to="b" numLanes="2" speed="20"/>
+<edge id="merge" from="b" to="c" numLanes="2" speed="20"/>
+<edge id="down" from="c" to="d" numLanes="1" speed="20"/>
+<edge id="neck" from="d" to="e" numLanes="1" speed="8.0"/>
+<edge id="out" from="e" to="f" numLanes="1" speed="20"/>
+</edges>

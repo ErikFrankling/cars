@@ -1,0 +1,33 @@
+{
+ "name": "t1",
+ "approach_m": 150,
+ "vph": 1200,
+ "spill": 0,
+ "teleports": {
+  "total": "0",
+  "jam": "0",
+  "yield": "0",
+  "wrongLane": "0"
+ },
+ "vehicles": {
+  "loaded": "600",
+  "inserted": "600",
+  "running": "0",
+  "waiting": "0"
+ },
+ "cars_on_approach": 600,
+ "ended_approach_in_wrong_lane": 0,
+ "wrong_lane_time": {
+  "p50": 2.0,
+  "p90": 7.6000000000000005,
+  "p99": 8.86,
+  "max": 9.0
+ },
+ "stopped_in_wrong_lane_s": {
+  "p50": 0.0,
+  "p90": 0.0,
+  "p99": 0.0,
+  "max": 1.0
+ },
+ "share_stopped_wrong": 0.0016666666666666668
+}

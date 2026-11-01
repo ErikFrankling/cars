@@ -23,7 +23,7 @@ Grades: **FIELD** (real vehicles or operations), **SIMULATION** (assumed behavio
 | Chauffeur experiment +60% VMT | **Held** | 43 Sacramento households, one or two weeks. Trips +25%, and 85% of added trips were zero-occupancy. [Harb et al.](https://rosap.ntl.bts.gov/view/dot/65477). |
 | Shirado et al. graded "field-lab" | **Misdescribed** | Online participants remotely driving robot cars in a chicken-style task. Autosteering, specifically, stopped reciprocity from emerging, and the effect outlasted the assistance. [PNAS](https://pmc.ncbi.nlm.nih.gov/articles/PMC10743379/). |
 | Bullying study "unverified" | **Now opened** | A stated-intention survey, N=998, China and South Korea: more intent to bully AVs than human drivers. It measures intention, not road behaviour. [Liu et al.](https://www.sciencedirect.com/science/article/abs/pii/S0001457519312370). |
-| Thesis collisions "not reproduced here" | **Now reproduced** | 32,088–33,217 collisions per run, against 0 at baseline. See [section 8](#8-audit-of-the-thesis). |
+| Thesis collisions "not reproduced here" | **Now reproduced and refined** | 32,088–33,217 collisions per run against 0 at baseline. At a 0.1 s step they disappear and a smaller gain remains. See [section 8](#8-audit-of-the-thesis). |
 | "Bologna, then Stockholm" as first cities | **Replaced** | [Report 01](01-city-ground-truth.md) ranks Melbourne strongest and [report 02](02-stockholm-why-overloaded.md) shows Stockholm's demand is not usable yet. See the programme. |
 
 Numbers re-checked and correct: Ciuffo (10 vehicles, 30–60 km/h), OpenACC (16 vehicles, 11 ACC), Milanés (4 vehicles), CIRCLES engagement (38% → 78%), SFMTA (almost 600 incidents), the Cruise recall (1,194), Waymo's 7,000 dark signals, Soni (18 drivers), white-phase ranges (3.2–94.06% and 40.2–98.9%), pedestrian white phase (27% and 14.7%). Other carried entries are listed under [What remains unknown](#what-remains-unknown).
@@ -184,11 +184,37 @@ The pipeline never looked. `run_sweep.py` passes `--no-warnings`, `parse_results
 | IDM | 1,049–1,110 | 403,100 | −22.5% |
 | ACC | 0 | 403,900 | +29.7% |
 
-- **CACC is the clear artefact.** A separate seed 0 run with collision output logged 31,613 events: 1.3 per trip, 46% of vehicles at least once, up to 10 times for one car. Median closing speed 6.6 m/s (24 km/h), and 91% above 3 m/s, heaviest on `edge_up_78` and `edge_down_78`, and 72% of them in the third simulated hour. Its threshold is a 0.1 m gap, so these are real overlaps in model terms. The vanished 30,000 veh-km and the 5.3% drop in the "throughput" metric are the same teleports seen another way.
+- **CACC at 1 s is the clear numerical failure.** A separate seed 0 run with collision output logged 31,613 events: 1.3 per trip, 46% of vehicles at least once, up to 10 times for one car. Median closing speed 6.6 m/s (24 km/h), and 91% above 3 m/s, heaviest on `edge_up_78` and `edge_down_78`, and 72% of them in the third simulated hour. Its threshold is a 0.1 m gap, so these are real overlaps in model terms. The vanished 30,000 veh-km and the 5.3% drop in the "throughput" metric are the same teleports seen another way.
 - **Krauss is a softer case.** Its threshold is the full 1.5 m minGap. Events are low-speed (median closing 1.45 m/s), one per vehicle, almost all on on-ramp merges, and veh-km are unchanged. Merging at 1.5 m is unsafe but not a pile-up.
 - **Bologna is not affected.** Collisions are 0–2 per run. Its gains cannot be explained by teleports; they are explained by the next point. ACC at 100% in Bologna instead leaves 627 of 10,069 trips unfinished and 51 teleports.
 
-@@COLLISION_TESTS@@
+**So was the CACC gain an artefact? Partly, and not in the way we assumed.** Removing the collisions by shrinking the step does not give one answer:
+
+| I-80, 100% CACC | Collisions | Trips finished of 24,242 | Travel time | Same-step human baseline | Change |
+|---|---:|---:|---:|---:|---:|
+| `dt` 1 s (thesis repo), seeds 0–2 | 32,088–33,217 | 23,831 | 602–606 s | 698 s | **−13%** |
+| `dt` 0.5 s, seed 0 | 12,589 | 22,260 | 1,676 s | not run | collapse |
+| `dt` 0.2 s, seeds 0, 1 | **0** | 23,363; 23,646 | 1,514; 1,479 s | 683 s | **+119%** |
+| `dt` 0.1 s, seeds 0–2 | **0** | 23,835 | 641–646 s | 685 s | **−6%** |
+| `dt` 0.05 s, seed 0 | @@DT05@@ |
+| `dt` 1 s, collisions left in place (`warn`), seed 0, stopped early at 20,973 inserted | 196,778 events | 14,326 | 1,492 s, censored | 698 s | gridlock forming |
+
+The evidence runs are at 0.1 s, the step at which the SUMO CACC model behaves as documented. There CACC keeps a real, smaller gain, with clean trips and no teleports: travel time −6%, time loss −23%, speed +3%. So:
+
+- **The thesis's I-80 CACC number is unreliable, not simply false.** The direct finding that gains coincided with collision teleports holds. The stronger reading, that the gain is *only* an artefact, does not hold at 0.1 s. Roughly half the 1 s travel-time gain goes away.
+- **The model is not numerically converged over a range of steps.** A result that swings from −13% to +119% between steps is unfit to report without a convergence test. I do not know why 0.2 s collapses; the controller's constant-gain mode switching at low update rates is my guess, not a finding.
+- **Teleports were doing work.** With collisions left in place at 1 s, the road jams. Teleports were holding the corridor open.
+
+**All tiers at `dt` 0.1 s, I-80, 100%:**
+
+| Tier | `dt` 1 s travel time vs baseline | `dt` 0.1 s travel time vs baseline | Speed at 0.1 s | Note at 0.1 s |
+|---|---:|---:|---:|---|
+| IDM | −22.5% | **−19%** | +12% | 0 collisions. Robust. |
+| Krauss | −27.0% | **−13%** | +2% | 0 collisions, but 667 cars still not inserted and 1,216 unfinished, veh-km −1.8%. **The thesis's best I-80 tier (+20.8% speed) mostly vanishes**, and survivors flatter the mean. Left in place at 1 s (`warn`) it is +3.5% worse. |
+| CACC | −13.4% | **−6%** | +3% | 0 collisions, all served. |
+| ACC | +29.7% | **+24%** | −8% | 0 collisions. |
+
+Baseline at 0.1 s: 685 s, time loss 177 s (seed 1). One seed per tier except CACC; deterministic demand gives little seed spread here, as the CACC seeds show. A seed 0 baseline at 0.1 s and a Waymo-fit run were cut short by the machine and are excluded. Flagged in the ledger.
 
 ### C. The ring gain is arithmetic, not wave dissipation
 
@@ -207,6 +233,7 @@ On a closed ring, uniform speed is fixed by spacing: v = (L/N − length − min
 
 Data: [`thesis-audit/ring_windows.csv`](thesis-audit/ring_windows.csv), one seed; speeds in m/s, spread is the SD of 50 s detector means.
 
+- **The one-factor runs agree.** Human with τ=0.6 alone: 19.10 m/s (+55%). minGap=1.5 alone: 13.24 (+8%). Higher accel and decel: 12.31 (0%). speedDev=0: 12.32 (0%).
 - **The speed difference exists before any wave.** The +82% for Krauss is present at 1,000–2,000 s, before the disturbance, on a perfectly uniform ring. There is no spontaneous jam in the baseline, so nothing is being dissipated.
 - **The wave costs no mean speed.** Baseline mean is 12.39 before and 12.47 after. CACC's 85% gain in §4.1 is entirely the time gap.
 - **"Fully dissipate" is false for CACC.** §4.1 and §6 say CACC fully removes the wave. Its spread *grows* from 1.6 to 3.0 m/s over the last 1,600 s, more than the human baseline's in absolute terms, with speed dipping to 13.9 m/s. Krauss and IDM do damp it.
@@ -259,7 +286,7 @@ The human baseline is reasonable by this one measure, though uncalibrated and no
 | Ring, 100% | Mean speed | 12.3 m/s | 20.6 (+67%) | **8.3 (−33%)** |
 | Intersection, 100% | Time loss | 52 s | 42 s (−19%) | 55 s (+4%); demand-limited |
 
-Collisions in all these Waymo-fit runs: zero. The baseline is sensitive too: giving humans the field-fitted δ (τ 1.01, minGap 3.71) raises I-80 travel time from 698 to 759 s and time loss by a third. Against that baseline, Waymo fit is still +75% in travel time on I-80. I-80 Waymo-fit results are seeds 0 and 1; Bologna and the ring are seed 0.
+Collisions in all these Waymo-fit runs: zero. The baseline is sensitive too: giving humans the field-fitted δ (τ 1.01, minGap 3.71) raises I-80 travel time from 698 to 759 s and time loss by a third. It also raises Bologna's time loss by 39%, to 285 s. Against that baseline, Waymo fit is still +75% in travel time on I-80 and +15% in time loss in Bologna. I-80 Waymo-fit results are at the thesis's 1 s step, seeds 0 and 1, and IDM is stable there (no collisions, and IDM's own step results are close, above); @@WAYMO01@@ Bologna and the ring are seed 0 at 0.1 s.
 
 This is a stress test, not a prediction. The fit stops at 40 mph, and it may not hold on a freeway or behind another AV. It does show that the sign of the thesis's headline result is a modelling input.
 
@@ -283,6 +310,7 @@ This is a stress test, not a prediction. The fit stops at 40 mph, and it may not
 ### G. What survives
 
 - The contribution stated in §5.4, that the answer depends on the model, the share and the network and is not one number. It is stronger than the thesis knew.
+- IDM's I-80 gain survives a clean step. As an idealised upper bound, a 0.6 s gap really does remove this corridor's congestion in the model.
 - ACC and CACC differ from each other, and CACC's value depends on adjacency: the mid-share penalty is real in the model and matches the p² logic.
 - A low acceleration bound and long gaps slow a city, in the model.
 - GLOSA reduces stopping, in the model, while hardly changing travel time.
@@ -291,7 +319,7 @@ This is a stress test, not a prediction. The fit stops at 40 mph, and it may not
 ### H. What would have to change
 
 1. **Establish which run the PDF shows**, and issue a correction for §4.2, §4.4, §5.3 and §6 if it cannot be reproduced.
-2. **Rerun everything with `dt` 0.1 at most, warnings on, and collisions, teleports and veh-km in the results table.** Any run with collision teleports is reported as failed, never averaged.
+2. **Rerun I-80 at `dt` 0.1 at most, with a convergence check, warnings on, and collisions, teleports, unfinished trips and veh-km in the results table.** Any run with collision teleports is reported as failed, never averaged. On the evidence above, §4.2's ranking becomes IDM, Krauss, CACC, ACC, with gains of −19% to −6% and a 24% loss.
 3. **Replace the ring conclusion.** Say: at fixed density, mean speed is set by the assumed time gap. Wave suppression must be measured as spread and tested on a ring that makes its own waves.
 4. **Replace "throughput"** with completed trips, delay and person-hours, and test capacity by overloading.
 5. **Add field-fitted AV tiers.** Without them, IDM and Krauss are upper-bound idealisations, as §3.1.3 half says.
@@ -303,14 +331,15 @@ This is a stress test, not a prediction. The fit stops at 40 mph, and it may not
 
 ### What held
 
-- The named headline numbers: 7 of 7 and 6 → 25 mph, Stern's direction of effect, Waymo's 46% over the period, −18%, +60%. Also the draft's refusal to call any of them a citywide result, and its warning against treating simulated capacity as real.
+- The named headline numbers: 7 of 7 and 6 → 25 mph, Stern's direction of effect, Waymo's 46% over the period, −18%, +60%. The earlier finding that the I-80 CACC gain coincided with collision teleports. Also the draft's refusal to call any of them a citywide result, and its warning against treating simulated capacity as real.
 - The structure: controller, adjacency, behaviour, demand and failure are separate questions. The p² point. Keeping independent conservative AVs as a required comparison.
 
 ### What was wrong or missing
 
 - **Errors:** Stern's fuel method, Stern's "maxima" without the −2.5% throughput, Shirado's grade, the stale 46%, the suggested first cities. See [section 1](#1-what-was-corrected-in-the-first-draft).
 - **Omissions that mattered most:** the parameter table in Chen et al., which lets the simulator test a field-fitted AV directly; Li et al., showing capacity is a setting; Zheng's mixed-string result; the Wuhan and Presidio events; the 70-agent figure; Zhao's recognition result; Erhardt's natural experiment.
-- **The largest gap:** the draft treated the thesis finding as a user-supplied lead and proposed auditing it. The audit took a few hours of CPU and turned up five things beyond the collision artefact: unmatched figures, arithmetic presented as dissipation, a mechanism absent from the model, a metric that is not throughput, and a conclusion its own data contradicts.
+- **The largest gap:** the draft treated the thesis finding as a user-supplied lead and proposed auditing it. The audit took a few hours of CPU and turned up five things beyond the collision result: unmatched figures, arithmetic presented as dissipation, a mechanism absent from the model, a metric that is not throughput, and a conclusion its own data contradicts.
+- **The project's own framing also needed correcting.** "The gain is a collision artefact" is too strong. At a 0.1 s step CACC has no collisions and keeps a −6% travel-time gain. The real problem is a result with no numerical convergence, plus 0.6 s gaps with no field support.
 - **A report I checked is also imperfect:** SSTRP's "14.8% more empty miles" is really 45%.
 
 ### What remains unknown
@@ -332,7 +361,7 @@ Everything here is a **proposal**. Freeze it with a commit hash before looking a
 #### Step 0: replace the thesis's habits
 
 - No run counts as evidence if it has a collision teleport, an overlap, or lost demand. Collisions are reported with closing speed, and the run is marked failed. `collision.action=warn` may be used only as a diagnostic.
-- `dt` 0.1 or lower, with results stable to 1% against 0.05. Reaction time stays fixed in seconds, so it does not change with `dt`. 1 s steps are banned for ACC and CACC.
+- `dt` 0.1 or lower, with results stable to 1% against 0.05. A sweep across steps is required for each controller, since I-80 CACC shows that collisions gone does not mean converged. Reaction time stays fixed in seconds, so it does not change with `dt`. 1 s steps are banned for ACC and CACC.
 - Ledger for every run: requested = waiting + active + completed + failed.
 - Fixed demand is never the only answer. Capacity is tested by overload.
 
@@ -408,7 +437,7 @@ Secondary: bottleneck discharge and breakdown probability; network accumulation 
 
 Rules: same seed and demand in each panel. Show the real run from the preregistered set, not the best one. Persistent label saying *model result*, the AV class and the time gap. End each scene on the number and its interval.
 
-1. **"Thirty-three thousand crashes."** The thesis's own I-80, 100% CACC, with each teleport lit up and a counter beside the headline gain. Then the same run at `dt` 0.1. Needs no caveat; it is the most honest thing here.
+1. **"Thirty-three thousand crashes."** The thesis's own I-80, 100% CACC at 1 s, with each teleport lit up and a counter beside the headline gain. Then 0.2 s, jammed. Then 0.1 s, clean, a smaller gain. Three answers from one model, which is the point.
 2. **"The ruler."** A ring where nothing moves differently but a ruler between cars. τ 0.6, 1.0, 1.32. Speed changes with no wave ever present. Then Stern's ring making its own wave, one car absorbing it.
 3. **"One blue car."** Damper on I-24-like traffic with the variance trace behind it, fading by 1.4 km. Beside it, an eight-car commercial ACC platoon growing a 6 mph dip to 25 mph. Field numbers on screen as the target.
 4. **"Three kinds of no humans."** The city at 100% three times: Waymo-fit, thesis ideal, cooperative. Same demand. The viewer sees that "no humans" is not one thing.

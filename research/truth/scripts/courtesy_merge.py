@@ -19,7 +19,8 @@ def freeway_cohort(fr, ramp_lane, aux_lane, target):
             continue
         k = ch[-1] + 1
         # must have stayed in the target or further for 2 s
-        if b - a - k < 20 or np.any(l[k:k + 20] != target): continue
+        hz2 = 2 * fr.hz
+        if b - a - k < hz2 or np.any(l[k:k + hz2] != target): continue
         i0 = np.where(l[:k] == aux_lane)[0]
         if not len(i0): continue
         out.append((int(fr.vR[a]), int(fr.vID[a]), int(t[i0[0]]), int(t[k]), aux_lane, target, float(s[k]), float(fr.vV[a + k])))
@@ -64,7 +65,7 @@ def urban_cohort(fr, d):
 
 def walk(fr, r, vid, t0, tc, old, new, site, s_end):
     """Half-second states of the waiting car and its target-lane neighbours, ending 2 s after the crossing."""
-    rows = []; tq = np.arange(t0, tc + 1, int(STEP * fr.hz))
+    rows = []; tq = np.arange(tc, t0 - 1, -int(round(STEP * fr.hz)))[::-1]
     ve, se, ae, le = fr.series(r, vid, tq)
     Le = fr.vL[fr.track(r, vid)[0]]
     for i, t_ in enumerate(tq):
@@ -95,21 +96,33 @@ def episodes(steps, tc):
 def process(site):
     if site in ('us-101', 'i-80'):
         d = ngsim(C / 'ngsim-20261101' / f'{site}.csv'); d = d[d['lane'] > 0]
+    elif site == 'ht':
+        d = ht(); d = d[d['tr'] == 0]
     else:
         d = ngsim(T / 'opus-20261031-ngsim' / f'{site}.csv', urban=True)
         keep = d['dirn'].isin([2, 4]) & ((d['int_id'] > 0) | d['lane'].isin([1, 2, 3, 4, 11, 12]))
         d = d[keep].copy(); d['s'] = (d['s'] * np.where(d['dirn'] == 2, 1, -1)).astype('f4')
         d['lane'] = (d['lane'].astype('i4') + 100 * d['dirn'].astype('i4')).astype('i2')
         d.loc[d['int_id'] > 0, 'lane'] = 0
-    fr = Frames(d, 10)
-    if site == 'us-101': coh, never = freeway_cohort(fr, 7, 6, 5)
+    fr = Frames(d, 5 if site == 'ht' else 10)
+    ends_by = None
+    if site == 'ht':
+        coh, never = [], 0
+        for ramp, tgt in ((-9, -10), (10, 11)):
+            c, n = freeway_cohort(fr, ramp, ramp, tgt); coh += c; never += n
+    elif site == 'us-101': coh, never = freeway_cohort(fr, 7, 6, 5)
     elif site == 'i-80': coh, never = freeway_cohort(fr, 7, 7, 6)
     else: coh = urban_cohort(fr, d[d['lane'] != 0].pipe(lambda x: d)); never = 0
     print(site, 'cohort', len(coh), 'never-merged-in-view', never, flush=True)
     ends = np.array([c[6] for c in coh]) if coh else np.array([0.0])
     s_end = float(np.percentile(ends, 99.5)) if site in ('us-101', 'i-80') else None
+    if site == 'ht':
+        print('HT merge positions', np.histogram(ends, bins=np.arange(0, 6600, 200))[0].tolist(), flush=True)
     S, E, M = [], [], []
     for r, vid, t0, tc, old, new, sc, vc in coh:
+        if site == 'ht':
+            sc_all = np.array([c[6] for c in coh if c[4] == old]); near = sc_all[np.abs(sc_all - sc) < 400]
+            s_end = float(np.percentile(near, 99))
         rows = walk(fr, r, vid, t0, tc, old, new, site, s_end)
         S += rows; ep = episodes(rows, tc)
         for j, e in enumerate(ep):
@@ -120,7 +133,8 @@ def process(site):
             if not last:
                 ts = np.array([e['t1'] + 5])
                 vt, st, _, lt = fr.series(r, e['T'], ts); vm, sm, _, _ = fr.series(r, vid, ts)
-                if not (lt[0] == new and st[0] > sm[0]): e['outcome'] = 'left_lane'
+                if lt[0] != new: e['outcome'] = 'left_lane'
+                elif not st[0] > sm[0]: e['outcome'] = 'car_moved_ahead'
         E += ep
         M.append(dict(site=site, run=r, id=vid, t0=t0, tc=tc, old=old, new=new, s_c=sc, v_c=vc, rem_c=(s_end - sc) if s_end is not None else np.nan, wait=(tc - t0) / fr.hz,
                       passes=sum(e['outcome'] == 'passed' for e in ep), lags=len(ep)))

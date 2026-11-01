@@ -140,6 +140,7 @@ class Ring:
         self.min_gap = np.full(self.R, 1e9)
         self.min_tg = np.full(self.R, 1e9)
         self.interv = np.zeros(self.R)
+        self.sum_tg = np.zeros(self.R)
         self.coll_av_rear = np.zeros(self.R, bool)
         self.coll_h_rear = np.zeros(self.R, bool)
         self.live_t = np.zeros(self.R)
@@ -172,7 +173,12 @@ class Ring:
     def step(self, a_av=None, out_mem=None):
         c, h, dt = self.c, self.h, self.c.dt
         gap, vl = self.gaps()
-        if self.scale is None:
+        if getattr(h, "model", "idm") == "krauss":
+            vsafe = vl + (gap - vl * h.T) / ((self.v + vl) / (2.0 * h.b) + h.T)
+            des = np.minimum(np.minimum(self.v + h.a * dt, vsafe), h.v0)
+            des = des - h.sigma * h.a * dt * self.rng.random(des.shape)
+            a = (np.maximum(des, 0.0) - self.v) / dt
+        elif self.scale is None:
             a = idm(self.v, vl, gap, h)
         else:
             a = idm(self.v, vl, gap, h.with_(a=h.a * self.scale["a"], T=h.T * self.scale["T"]))
@@ -219,6 +225,7 @@ class Ring:
         self.sum_dist += self.v.sum(axis=1) * dt * al
         self.sum_acc += (ar[:, i] ** 2).mean(axis=1) * al
         self.sum_gap += gap1[:, i].mean(axis=1) * al
+        self.sum_tg += ((gap1[:, i] < self.v[:, i] * 1.0) & (self.v[:, i] > 1.0)).mean(axis=1) * al
         self.min_gap = np.where(al, np.minimum(self.min_gap, gap1[:, i].min(axis=1)), self.min_gap)
         tg = gap1[:, i] / np.maximum(self.v[:, i], 1.0)
         self.min_tg = np.where(al, np.minimum(self.min_tg, tg.min(axis=1)), self.min_tg)
@@ -234,6 +241,8 @@ REWARDS = {
     "speed": (1.0, 0.0, 0.0, 0.0, 0.0, 5.0),
     "energy": (0.0, 0.0, 1.0, 0.0, 0.0, 5.0),
     "energy_full": (1.0, 0.5, 0.5, 0.05, 0.5, 5.0),
+    # The same as full, plus a penalty on time under a 1 s time gap, as CIRCLES uses.
+    "full_tg": (1.0, 0.5, 0.0, 0.05, 0.5, 5.0, 0.5),
 }
 
 
@@ -254,6 +263,8 @@ def fitness_from(env, reward, horizon_steps):
         - w[4] * env.interv / nt
         - w[5] * (~env.alive)
     )
+    if len(w) > 6:
+        f = f - w[6] * env.sum_tg / nt
     return f
 
 
@@ -282,6 +293,7 @@ def summary(env, steps, cfg):
         wh_km=wh,
         acc_rms=np.sqrt(env.sum_acc / t),
         gap=env.sum_gap / t,
+        under_1s=env.sum_tg / t,
         min_gap=env.min_gap,
         min_tg=env.min_tg,
         shield=env.interv / t,
@@ -491,6 +503,7 @@ def test_matrix(act_factory, R=32, seed=777001, memory="ema", k=1):
         "humans b=2.5": (base, h.with_(b=2.5), {}, 1),
         "humans T=0.9": (base, h.with_(T=0.9), {}, 1),
         "noise x2": (base, h.with_(noise=0.4), {}, 1),
+        "Krauss humans": (base, h.with_(model="krauss", a=2.6, b=4.5, T=1.0, sigma=0.5, noise=0.0), {}, 1),
         "hetero humans": (base, h, dict(env_kw=dict(hetero=True)), 1),
         "dt=0.05": (base.with_(dt=0.05), h, {}, 1),
         "dt=0.5": (base.with_(dt=0.5), h, {}, 1),
@@ -651,6 +664,8 @@ def cmd_ppo(a):
             for _ in range(rep):
                 mv, ar = env.step(acc)
                 r += w[0] * mv / env.ue - w[1] * env.v.std(axis=1, ddof=1) / env.ue - w[3] * (ar[:, env.av] ** 2).mean(axis=1) / 9.0
+                if len(w) > 6:
+                    r -= w[6] * ((env.gaps()[0][:, env.av] < env.v[:, env.av]) & (env.v[:, env.av] > 1.0)).mean(axis=1)
             r = r / rep * (alive0 & env.alive)
             hit = alive0 & ~env.alive
             r = r - hit * w[5] * 20.0

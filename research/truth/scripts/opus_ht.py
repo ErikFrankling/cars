@@ -165,6 +165,12 @@ if GAPS:
     m=z.dropna(subset=['lead','lag'])
     lagok=(m['lag']-L)>=sg(m['vlag'],m['v']);leadok=(m['lead']-L)>=sg(m['v'],m['vlead'])
     res=dict(source='https://zenodo.org/records/18540070',n=len(z),both_known=len(m),lag_spacing=q(z['lag'],(1,5,10,25,50,75,90)),lead_spacing=q(z['lead'],(1,5,10,25,50,75,90)),lag_time_gap=q((z['lag']-L)/z['vlag'].clip(lower=.5),(1,5,10,25,50,75)),lead_time_gap=q((z['lead']-L)/z['v'].clip(lower=.5),(1,5,10,25,50,75)),lag_closing=q(z['vlag']-z['v'],(5,25,50,75,95)),lead_closing=q(z['v']-z['vlead'],(5,25,50,75,95)),secure=dict(lag_ok=float(lagok.mean()),lead_ok=float(leadok.mean()),both_ok=float((lagok&leadok).mean())),before_2s=dict(lag_time_gap=q((o2['lag']-L)/o2['vlag'].clip(lower=.5),(5,10,25,50)),lead_time_gap=q((o2['lead']-L)/o2['v'].clip(lower=.5),(5,10,25,50))))
+    grid={}
+    for tau in (0,.2,.4,.6,.8,1.0):
+        for mg in (.5,1.0,1.5,2.5):
+            a_=(m['lag']-L)>=sg(m['vlag'],m['v'],tau=tau,mg=mg);b_=(m['lead']-L)>=sg(m['v'],m['vlead'],tau=tau,mg=mg)
+            grid[f'tau{tau}_mg{mg}']=dict(lag=float(a_.mean()),lead=float(b_.mean()),both=float((a_&b_).mean()))
+    res['secure_gap_grid']=grid
     save('ht_gaps',res);print(json.dumps(res)[:1500]);sys.exit(0)
 P=pd.concat(allpairs,ignore_index=True)
 P['seg']=P['seg'].rank(method='dense').astype(int)-1

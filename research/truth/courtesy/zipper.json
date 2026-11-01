@@ -1,0 +1,128 @@
+{
+ "crossings": 1278,
+ "ramp": 560,
+ "s_end_m": 204.03056999999998,
+ "line_m": 219.03056999999998,
+ "runs": {
+  "0": [
+   {
+    "window": 0,
+    "veh": 150,
+    "ramp": 54,
+    "main": 96,
+    "ratio_main_per_ramp": 1.78,
+    "share_ramp": 0.36,
+    "mean_speed": 7.61,
+    "flow_vph": 1800
+   },
+   {
+    "window": 1,
+    "veh": 153,
+    "ramp": 61,
+    "main": 92,
+    "ratio_main_per_ramp": 1.51,
+    "share_ramp": 0.399,
+    "mean_speed": 8.11,
+    "flow_vph": 1836
+   },
+   {
+    "window": 2,
+    "veh": 149,
+    "ramp": 63,
+    "main": 86,
+    "ratio_main_per_ramp": 1.37,
+    "share_ramp": 0.423,
+    "mean_speed": 5.93,
+    "flow_vph": 1788
+   }
+  ],
+  "1": [
+   {
+    "window": 0,
+    "veh": 143,
+    "ramp": 66,
+    "main": 77,
+    "ratio_main_per_ramp": 1.17,
+    "share_ramp": 0.462,
+    "mean_speed": 6.92,
+    "flow_vph": 1716
+   },
+   {
+    "window": 1,
+    "veh": 139,
+    "ramp": 61,
+    "main": 78,
+    "ratio_main_per_ramp": 1.28,
+    "share_ramp": 0.439,
+    "mean_speed": 5.15,
+    "flow_vph": 1668
+   },
+   {
+    "window": 2,
+    "veh": 126,
+    "ramp": 62,
+    "main": 64,
+    "ratio_main_per_ramp": 1.03,
+    "share_ramp": 0.492,
+    "mean_speed": 4.12,
+    "flow_vph": 1512
+   },
+   {
+    "window": 3,
+    "veh": 149,
+    "ramp": 72,
+    "main": 77,
+    "ratio_main_per_ramp": 1.07,
+    "share_ramp": 0.483,
+    "mean_speed": 5.72,
+    "flow_vph": 1788
+   },
+   {
+    "window": 4,
+    "veh": 135,
+    "ramp": 66,
+    "main": 69,
+    "ratio_main_per_ramp": 1.05,
+    "share_ramp": 0.489,
+    "mean_speed": 5.69,
+    "flow_vph": 1620
+   },
+   {
+    "window": 5,
+    "veh": 128,
+    "ramp": 55,
+    "main": 73,
+    "ratio_main_per_ramp": 1.33,
+    "share_ramp": 0.43,
+    "mean_speed": 4.27,
+    "flow_vph": 1536
+   }
+  ]
+ },
+ "main_between_ramp": {
+  "n": 558,
+  "dist": {
+   "0": 145,
+   "1": 249,
+   "2": 103,
+   "3": 38,
+   "4": 9,
+   "5": 6,
+   "6": 3,
+   "7": 2
+  },
+  "over7": 3,
+  "mean": 1.25,
+  "median": 1.0
+ },
+ "geometric_if_random": {
+  "0": 244.5,
+  "1": 137.4,
+  "2": 77.2,
+  "3": 43.4,
+  "4": 24.4,
+  "5": 13.7,
+  "6": 7.7,
+  "7": 4.3
+ }
+}
