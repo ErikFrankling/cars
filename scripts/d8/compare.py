@@ -133,6 +133,34 @@ def faults():
         print(f"| {name} | {c['demand']:.0f} | {g.get('flow', -1):.0f} | {float(ref['flow']) if ref else float('nan'):.0f} | {g.get('delay', -1):.1f} | {float(ref['delay']) if ref else float('nan'):.1f} | {g.get('overlap')} | {g.get('cross_ungranted')} | {g.get('box_block', 0):.1f} |")
 
 
+def loss_plot():
+    gpu = defaultdict(dict)
+    for r in rows('faults'):
+        c, g = r['case'], r['result']
+        if c['fault'].startswith('loss') and 'delay' in g:
+            gpu[c['demand']][float(c['fault'][4:])] = g['delay']
+    if not gpu:
+        return
+    ref = defaultdict(dict)
+    for r in cpu('faults'):
+        if r.get('fault') == 'loss' and r.get('delay'):
+            ref[float(r['demand'])][float(r['x'])] = float(r['delay'])
+    fig, ax = plt.subplots(figsize=(6.5, 3.8))
+    for d, col in ((3000, '#3b6fb6'), (5000, '#1b9e77')):
+        xs = sorted(gpu[d])
+        ax.plot(xs, [gpu[d][x] for x in xs], 'o-', color=col, label=f'{d} veh/h, GPU')
+        xs = sorted(ref[d])
+        ax.plot(xs, [ref[d][x] for x in xs], 'x--', color=col, alpha=0.6, label=f'{d} veh/h, CPU')
+    ax.set_yscale('log')
+    ax.set_xlabel('Message loss')
+    ax.set_ylabel('Delay, s per vehicle')
+    ax.set_title('Loss costs time, not safety: 0 overlaps at every setting', fontsize=10)
+    ax.legend(frameon=False, fontsize=8)
+    ax.spines[['top', 'right']].set_visible(False)
+    fig.tight_layout()
+    fig.savefig(D8 / 'loss.png', dpi=140)
+
+
 def stalls():
     print('\n## Injected stalls in the box (reported separately)')
     print('| Case | veh/h | Stalls | Collision events | Per stall | CPU per stall |')
@@ -258,6 +286,7 @@ if __name__ == '__main__':
     capacity()
     demand()
     faults()
+    loss_plot()
     stalls()
     generic('t', 'T junction')
     generic('grid', 'Grid of 9 junctions')

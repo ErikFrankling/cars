@@ -91,17 +91,17 @@ def main():
         record(c, 'exit_blocked', net, rou, 640, 690, 720, 'Exit closed: the box stays clear', 'exit to the east closed for 390 s and full. Credits and point-of-no-return check on', extra=fault, overlay='grants,events', mpp=0.1, preview=pv)
         record(c, 'exit_blocked_unprotected', net, rou, 640, 690, 720, 'Same, with the exit checks off', 'the box locks up and bodies collide. This is the test that detects it', extra=fault + ['--cj-no-exit-check'], overlay='grants,events', mpp=0.1, preview=pv)
     if want('stall'):
-        net, rou = demand('j2', 5000, 'M', 500)
-        stall = ['--cj-stall-rate', '120', '--cj-warm', '100']
+        net, rou = demand('j2', 5000, 'M', 800, seed=2)
+        stall = ['--cj-stall-rate', '120', '--cj-warm', '100', '--seed', '2']
         # The run says when the contact happens, and the same arguments give the same run.
         GATE.enter()
-        out = subprocess.run([str(c), 'av', '--net', str(net), '--routes', str(rou), '--end', '500', '--cj', 'B1', *stall], capture_output=True, text=True)
+        out = subprocess.run([str(c), 'av', '--net', str(net), '--routes', str(rou), '--end', '800', '--cj', 'B1', *stall], capture_output=True, text=True)
         hits = json.loads(out.stdout.strip().splitlines()[-1])['overlaps']
         t = hits[0]['t'] if hits else 300.0
         print('first contact at', t, 'of', len(hits), flush=True)
         begin, end = max(t - 10, 100), t + 15
-        record(c, 'stall_level_a', net, rou, begin, end, 500, 'A car stalls in the box, Level A', 'an injected failure at 5000 veh/h. The specified rule does not cover it', extra=stall, overlay='grants,paths,events', mpp=0.07, preview=pv)
-        record(c, 'stall_level_b', net, rou, begin, end, 500, 'The same arrivals, Level B', 'the stall-tolerant margin: fewer contacts, less capacity. Not zero', extra=stall + ['--cj-level-b'], overlay='grants,paths,events', mpp=0.07, preview=pv)
+        record(c, 'stall_level_a', net, rou, begin, end, 800, 'A car stalls in the box, Level A', 'an injected failure at 5000 veh/h. The specified rule does not cover it', extra=stall, overlay='grants,paths,events', mpp=0.07, preview=pv)
+        record(c, 'stall_level_b', net, rou, begin, end, 800, 'The same arrivals, Level B', 'the stall-tolerant margin: fewer contacts, less capacity. Not zero', extra=stall + ['--cj-level-b'], overlay='grants,paths,events', mpp=0.07, preview=pv)
     if want('grid'):
         js = ','.join(f'{x}{y}' for x in 'BCD' for y in '123')
         net, rou = demand('grid2', 20000, 'M', 300)
