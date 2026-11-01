@@ -455,7 +455,7 @@ pub struct HumanParams {
 
 impl Default for HumanParams {
     fn default() -> Self {
-        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 0.65, gap_roundabout: 1.5, t_scale: 1.0, s0_scale: 1.2, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6, turn_min: 6.0, b_approach: 1.2, tau_approach: 2.0, overshoot: 1.4, standing: 0.5, see: 30.0, lc_slope: 1.0, stop_s0: 1.0, comfort: 1.5, stub: 15.0, gipps_b: 4.5, gipps_tau: 0.4, lead_far: -6.0, lag_far: -2.0 }
+        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 0.65, gap_roundabout: 1.5, t_scale: 1.0, s0_scale: 1.2, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6, turn_min: 8.0, b_approach: 1.2, tau_approach: 2.0, overshoot: 1.4, standing: 0.5, see: 30.0, lc_slope: 1.0, stop_s0: 1.0, comfort: 1.5, stub: 15.0, gipps_b: 4.5, gipps_tau: 0.4, lead_far: -6.0, lag_far: -2.0 }
     }
 }
 
