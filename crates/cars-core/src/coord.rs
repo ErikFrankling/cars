@@ -9,7 +9,7 @@ use crate::net::{EdgeFunc, Net};
 use crate::topology::{NONE, Topology};
 
 pub const K_LANE: u32 = 6;
-pub const K_BOX: u32 = 8;
+pub const K_BOX: u32 = 16;
 pub const N_CLASS: u32 = 6;
 pub const PLAN_MAX: u32 = 32;
 pub const AUD_MAX: u32 = 32;
@@ -249,7 +249,8 @@ pub struct GpuCjExit {
     pub block_t1: f32,
     pub cap_interval: f32,
     pub sink_ready: f32,
-    pub pad: [u32; 2],
+    pub seq: u32,
+    pub pad: u32,
 }
 
 #[repr(C)]

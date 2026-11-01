@@ -34,7 +34,7 @@
 @group(1) @binding(19) var<storage, read_write> cj_aud: array<CjAud>;
 
 const K_LANE: u32 = 6u;
-const K_BOX: u32 = 8u;
+const K_BOX: u32 = 16u;
 const N_CLASS: u32 = 6u;
 const PLAN_MAX: u32 = 32u;
 const AUD_MAX: u32 = 32u;
@@ -232,7 +232,6 @@ fn cj_pre(@builtin(global_invocation_id) id: vec3u) {
         atomicAdd(&cj_exits[x].n_box, 1u);
         atomicMin(&cj_apps[m.from_lane].box_tail, pack_box(s - cfg.length, e.speed));
         let slot = x * K_BOX + e.cj_seq % K_BOX;
-        if (cj_box[slot].stamp == G.step + 1u && cj_box[slot].veh != i) { stat(e.replica, S_BOX_OVERFLOW, 1u); }
         var b: CjBox;
         b.veh = i;
         b.seq = e.cj_seq;
@@ -323,10 +322,16 @@ fn cj_audit(@builtin(global_invocation_id) id: vec3u) {
     cj_junctions[j].aud_n = 0u;
     // Every body at or inside the box: those inside, those with a tail still in it, those at the line.
     for (var xi = J.exit_start; xi < J.exit_start + J.exit_count; xi++) {
+        var listed = 0u;
         for (var k = 0u; k < K_BOX; k++) {
             let b = cj_box[xi * K_BOX + k];
-            if (b.stamp == G.step + 1u) { aud_add(j, b.mov, b.s, b.trip, b.v); }
+            if (b.stamp == G.step + 1u) {
+                aud_add(j, b.mov, b.s, b.trip, b.v);
+                listed += 1u;
+            }
         }
+        // More cars in this box than the table shows: one was overwritten, and is hidden from followers.
+        if (listed != atomicLoad(&cj_exits[xi].n_box)) { stat(J.replica, S_BOX_OVERFLOW, 1u); }
         let sim = cj_exits[xi].sim_lane;
         if (seg[sim].stamp == G.step) {
             let last = min(seg[sim].first + 3u, seg[sim].end);
@@ -631,8 +636,9 @@ fn commit_real(j: u32, q: CjReq, mi: u32, k: u32, t: f32, deliver_now: bool) {
     cj_exits[m.to_lane].exit_ref = mi * N_CLASS + k;
     cj_exits[m.to_lane].exit_t = t;
     atomicAdd(&cj_exits[m.to_lane].n_committed, 1u);
-    let seq = cj_junctions[j].seq + 1u;
-    cj_junctions[j].seq = seq;
+    // Numbered per exit lane, so that cars in its box never share a table slot until K_BOX of them are in.
+    let seq = cj_exits[m.to_lane].seq + 1u;
+    cj_exits[m.to_lane].seq = seq;
     stat(cj_junctions[j].replica, S_GRANTS, 1u);
     cur[q.veh].cj_t_line = t;
     cur[q.veh].cj_v_line = cj_mov_k[mi * N_CLASS + k].vk;

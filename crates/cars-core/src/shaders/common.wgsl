@@ -511,7 +511,7 @@ struct CjExit {
     block_t1: f32,
     cap_interval: f32,
     sink_ready: f32,
-    pad0: u32,
+    seq: u32,
     pad1: u32,
 }
 
