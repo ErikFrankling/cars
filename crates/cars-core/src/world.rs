@@ -31,6 +31,8 @@ pub struct GpuParams {
     pub script_t0: f32,
     pub dummy_lane: u32,
     pub pad: f32,
+    pub meter_n: u32,
+    pub pad2: [u32; 3],
 }
 
 #[repr(C)]
@@ -87,6 +89,19 @@ pub struct GpuVeh {
     pub occ_right: f32,
     pub occ_best: f32,
     pub pad: u32,
+    pub cj_t_line: f32,
+    pub cj_v_line: f32,
+    pub cj_v_cruise: f32,
+    pub cj_link: u32,
+    pub cj_state: u32,
+    pub cj_zone_t: f32,
+    pub cj_seq: u32,
+    pub cj_hold: f32,
+    pub cj_v_cmd: f32,
+    pub cj_yield: f32,
+    pub cj_t_ms: u32,
+    pub cj_plan_ms: u32,
+    pub cj_rank: u32,
 }
 
 #[repr(C)]
@@ -277,6 +292,12 @@ pub struct SimConfig {
     pub ignore_blocker: f32,
     /// When the ring disturbance starts, in seconds. 0 turns it off.
     pub script_t0: f32,
+    /// Junctions run by the coordinator instead of SUMO's rules.
+    pub coord: Option<crate::coord::CoordConfig>,
+    /// One insertion queue per lane for trips with a fixed departure lane, instead of one per edge.
+    pub per_lane_queues: bool,
+    /// Hold new vehicles outside the network while this many are on it. 0 for no metering.
+    pub meter_n: u32,
 }
 
 impl Default for SimConfig {
@@ -295,6 +316,9 @@ impl Default for SimConfig {
             use_actuation: true,
             ignore_blocker: 1e9,
             script_t0: 0.0,
+            coord: None,
+            per_lane_queues: false,
+            meter_n: 0,
         }
     }
 }
@@ -336,6 +360,7 @@ pub struct World {
     pub n_edges_per_replica: u32,
     pub edge_is_normal: Vec<bool>,
     pub total_cells: u64,
+    pub coord: Option<crate::coord::CoordWorld>,
 }
 
 fn splitmix(state: &mut u64) -> u64 {
@@ -377,6 +402,7 @@ fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
         CfModel::Idm => 1,
         CfModel::Acc => 2,
         CfModel::Cacc => 3,
+        CfModel::Av => 4,
     };
     let delta = t.params.get("delta").and_then(|v| v.parse().ok()).unwrap_or(4.0);
     let stepping: f32 = t.params.get("stepping").and_then(|v| v.parse().ok()).unwrap_or(0.25);
@@ -410,8 +436,9 @@ fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
             t.params.get("collisionMinGapFactor").and_then(|v| v.parse().ok()).unwrap_or(match t.model {
                 CfModel::Krauss | CfModel::Eidm => 1.0,
                 CfModel::Idm | CfModel::Acc | CfModel::Cacc => 0.1,
+                CfModel::Av => 0.0,
             }),
-            0.0,
+            t.params.get("reactionTime").and_then(|v| v.parse().ok()).unwrap_or(0.3),
             0.0,
         ],
     }
@@ -432,8 +459,22 @@ impl World {
         }];
         let reps: &[Replica] = if replicas.is_empty() { &single } else { replicas };
         let mut key_base = 0u64;
+        let coord_base = cfg.coord.as_ref().map(|c| crate::coord::build(net, &topo, c, cfg.dt, cfg.seed));
+        if let Some(base) = &coord_base {
+            w.coord = Some(crate::coord::CoordWorld {
+                cfg: base.cfg,
+                ids: base.ids.clone(),
+                refused: base.refused.clone(),
+                mov_chain: base.mov_chain.clone(),
+                ..Default::default()
+            });
+        }
         for (ri, rep) in reps.iter().enumerate() {
-            w.append_replica(net, &topo, demand, cfg, rep, ri as u32, &mut key_base);
+            let lane0 = w.lanes.len() as u32;
+            w.append_replica(net, &topo, demand, cfg, rep, ri as u32, &mut key_base, coord_base.as_ref());
+            if let (Some(base), Some(out)) = (&coord_base, w.coord.as_mut()) {
+                crate::coord::add_replica(out, base, lane0, ri as u32);
+            }
         }
         // Teleporting vehicles wait on one extra lane that nothing connects to.
         w.lanes.push(GpuLane {
@@ -452,6 +493,29 @@ impl World {
         w.total_cells = key_base;
         let key_bits = 64 - (key_base + 2).leading_zeros();
         assert!(key_bits < 32, "too many sort cells: {key_base}");
+        if let Some(out) = w.coord.as_mut() {
+            out.cfg.n_junctions = out.junctions.len() as u32;
+            out.cfg.n_apps = out.apps.len() as u32;
+            out.cfg.n_exits = out.exits.len() as u32;
+            out.n_replicas = reps.len() as u32;
+            // Which coordinator record each simulated lane belongs to, in every replica.
+            out.lane_info = vec![crate::coord::GpuCjLaneInfo { app: NONE, exit: NONE, box_mov: NONE, s_offset: 0.0 }; w.lanes.len()];
+            if let Some(base) = &coord_base {
+                let per_lanes = net.lanes.len();
+                for r in 0..reps.len() {
+                    let (a0, e0, m0) = (r * base.apps.len(), r * base.exits.len(), r * base.links.len());
+                    for (l, i) in base.lane_info.iter().enumerate() {
+                        let shift = |x: u32, by: usize| if x == NONE { NONE } else { x + by as u32 };
+                        out.lane_info[r * per_lanes + l] = crate::coord::GpuCjLaneInfo {
+                            app: shift(i.app, a0),
+                            exit: shift(i.exit, e0),
+                            box_mov: shift(i.box_mov, m0),
+                            s_offset: i.s_offset,
+                        };
+                    }
+                }
+            }
+        }
         let n_trips = w.trips.len() as u32;
         let capacity = if cfg.capacity == 0 { n_trips } else { cfg.capacity.min(n_trips) };
         let sample_steps = ((cfg.sample_seconds / cfg.dt).round() as u32).max(1);
@@ -477,6 +541,8 @@ impl World {
             script_t0: cfg.script_t0,
             dummy_lane: w.lanes.len() as u32 - 1,
             pad: 0.0,
+            meter_n: cfg.meter_n,
+            pad2: [0; 3],
         };
         w
     }
@@ -491,6 +557,7 @@ impl World {
         rep: &Replica,
         ri: u32,
         key_base: &mut u64,
+        coord: Option<&crate::coord::CoordWorld>,
     ) {
         let lane0 = self.lanes.len() as u32;
         let edge0 = self.edges.len() as u32;
@@ -628,6 +695,12 @@ impl World {
             *key_base += cells;
         }
 
+        if let Some(c) = coord {
+            for &(l, f) in &c.lane_flags {
+                self.lanes[lane0 as usize + l as usize].flags |= f;
+            }
+        }
+
         // Links must sit contiguously per lane: rebuild them lane by lane.
         // Connection order within a lane is preserved.
         let mut remap = vec![0u32; topo.links.len()];
@@ -729,7 +802,10 @@ impl World {
                     flags |= 64;
                 }
                 flags |= (l.dir as u32) << 8;
-                if watched[id as usize] {
+                let coordinated = coord.is_some_and(|c| c.link_flags[id as usize] != 0);
+                if coordinated {
+                    flags |= crate::coord::L_COORD;
+                } else if watched[id as usize] {
                     flags |= 1 << 16;
                 }
                 self.links.push(GpuLink {
@@ -763,6 +839,7 @@ impl World {
         let _ = route0;
         let mut rng_state = rep.seed.wrapping_mul(0x2545F4914F6CDD1D) ^ (ri as u64 + 1);
         let mut by_edge: Vec<Vec<u32>> = vec![Vec::new(); net.edges.len()];
+        let mut by_lane: std::collections::BTreeMap<(u32, u32), Vec<u32>> = Default::default();
         let mut masks: std::collections::HashMap<(u32, u32), u32> = std::collections::HashMap::new();
         for (ti, t) in demand.trips.iter().enumerate() {
             if t.depart < cfg.begin_seconds as f64 {
@@ -831,7 +908,15 @@ impl World {
                 replica: ri,
                 pad: [0, mask, 0],
             });
-            by_edge[route[0] as usize].push(id);
+            match t.depart_lane {
+                DepartLane::Index(l) if cfg.per_lane_queues => by_lane.entry((route[0], l)).or_default().push(id),
+                _ => by_edge[route[0] as usize].push(id),
+            }
+        }
+        for ((e, _), list) in by_lane {
+            let next = self.queue_trips.len() as u32;
+            self.queue_trips.extend_from_slice(&list);
+            self.queues.push(GpuQueue { edge: e + edge0, next, end: self.queue_trips.len() as u32, pad: 0 });
         }
         for (e, list) in by_edge.into_iter().enumerate() {
             if list.is_empty() {

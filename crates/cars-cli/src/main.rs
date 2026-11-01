@@ -1,4 +1,6 @@
+#![recursion_limit = "512"]
 use clap::{Parser, Subcommand};
+mod av;
 mod junctions;
 mod overlay;
 mod record;
@@ -20,6 +22,8 @@ enum Command {
     Replay(replay::Args),
     /// List the busiest junctions of each kind.
     Junctions(junctions::Args),
+    /// Run coordinated junctions and report flow, delay, stops, collisions and failures as JSON.
+    Av(av::Args),
 }
 fn fail(name: &str, e: impl std::fmt::Display) -> ! {
     eprintln!("{name}: {e}");
@@ -36,6 +40,11 @@ fn main() {
         Command::Shot(a) => {
             if let Err(e) = record::run(a, true) {
                 fail("shot", e);
+            }
+        }
+        Command::Av(a) => {
+            if let Err(e) = av::run(a) {
+                fail("av", e);
             }
         }
         Command::Replay(a) => {

@@ -13,6 +13,8 @@ const STEP: &str = include_str!("shaders/step.wgsl");
 const LC: &str = include_str!("shaders/lc.wgsl");
 const CONTROL: &str = include_str!("shaders/control.wgsl");
 const SORT: &str = include_str!("shaders/sort.wgsl");
+const ROUTE: &str = include_str!("shaders/route.wgsl");
+const AV_JUNCTION: &str = include_str!("shaders/av_junction.wgsl");
 
 /// Bindings of the main layout, in binding order: (read only).
 const MAIN_BINDINGS: &[bool] = &[
@@ -26,7 +28,34 @@ const MAIN_BINDINGS: &[bool] = &[
     /*32 queue_trips*/ true, /*33 claims*/ false, /*34 last_detect*/ false, /*35 lc_plan*/ false,
 ];
 
+/// The coordinator's buffers and kernels, when any junction is coordinated.
+pub struct CoordSim {
+    pub stats: wgpu::Buffer,
+    pub events: wgpu::Buffer,
+    pub junctions: wgpu::Buffer,
+    group: wgpu::BindGroup,
+    /// The few main buffers it reads, for each order of prev and cur.
+    main: [wgpu::BindGroup; 2],
+    audit_on: bool,
+    uniform_tick: bool,
+    tick_steps: u64,
+    n_junctions: u32,
+    n_apps: u32,
+    n_exits: u32,
+    clear_exits: wgpu::ComputePipeline,
+    clear_apps: wgpu::ComputePipeline,
+    pre: wgpu::ComputePipeline,
+    audit: wgpu::ComputePipeline,
+    snapshot: wgpu::ComputePipeline,
+    propose: wgpu::ComputePipeline,
+    arbitrate: wgpu::ComputePipeline,
+    commit: wgpu::ComputePipeline,
+    perceive: wgpu::ComputePipeline,
+    apply: wgpu::ComputePipeline,
+}
+
 pub struct Sim {
+    pub coord: Option<CoordSim>,
     pub world_params: GpuParams,
     pub step: u64,
     pub buffers: Buffers,
@@ -344,10 +373,59 @@ impl Sim {
             sort_groups.push([all.clone(), all.clone(), all.clone(), all]);
         }
 
-        let main_src = format!("{COMMON}\n{STEP}\n{LC}");
+        let coord_parts = world.coord.as_ref().map(|cw| {
+            use crate::coord as cd;
+            let n_box = cw.exits.len() as u64 * cd::K_BOX as u64 * std::mem::size_of::<cd::GpuCjBox>() as u64;
+            let reps = cw.n_replicas.max(1) as u64;
+            let buffers = vec![
+                init("cj_cfg", bytemuck::bytes_of(&cw.cfg), wgpu::BufferUsages::UNIFORM),
+                init("cj_junctions", bytemuck::cast_slice(&cw.junctions), storage),
+                init("cj_links", bytemuck::cast_slice(&cw.links), storage),
+                init("cj_conflicts", bytemuck::cast_slice(&cw.conflicts), storage),
+                init("cj_times", bytemuck::cast_slice(&cw.times), storage),
+                init("cj_pairs", bytemuck::cast_slice(&cw.pairs), storage),
+                init("cj_head", bytemuck::cast_slice(&cw.head), storage),
+                init("cj_mov_k", bytemuck::cast_slice(&cw.mov_k), storage),
+                init("cj_rel", bytemuck::cast_slice(&cw.rel_init), storage),
+                init("cj_rel_s", bytemuck::cast_slice(&cw.rel_init), storage),
+                init("cj_apps", bytemuck::cast_slice(&cw.apps), storage),
+                init("cj_exits", bytemuck::cast_slice(&cw.exits), storage),
+                empty("cj_req", cw.n_req as u64 * std::mem::size_of::<cd::GpuCjReq>() as u64),
+                empty("cj_plan", cw.n_plan as u64 * 4),
+                empty("cj_box", n_box),
+                init("cj_lane_info", bytemuck::cast_slice(&cw.lane_info), storage),
+                empty("cj_stats", reps * cd::STATS_PER_REPLICA as u64 * 4),
+                empty("cj_events", (cd::EVENTS_MAX as u64 + 1) * 32),
+                init("cj_path", bytemuck::cast_slice(&cw.path), storage),
+                empty("cj_aud", cw.n_aud as u64 * std::mem::size_of::<cd::GpuCjAud>() as u64),
+                empty("cj_rel_ms", cw.rel_init.len() as u64 * 4),
+            ];
+            const RO: [bool; 21] = [
+                true, false, true, true, true, true, true, true, false, false, false, false, false, false, false, true, false, false, true, false, false,
+            ];
+            let entries: Vec<_> = RO
+                .iter()
+                .enumerate()
+                .map(|(b, &ro)| if b == 0 { uniform_entry(0) } else { storage_entry(b as u32, ro) })
+                .collect();
+            let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("coord"), entries: &entries });
+            let bind: Vec<_> = buffers
+                .iter()
+                .enumerate()
+                .map(|(i, b)| wgpu::BindGroupEntry { binding: i as u32, resource: b.as_entire_binding() })
+                .collect();
+            let group = device.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("coord"), layout: &layout, entries: &bind });
+            (buffers, layout, group)
+        });
+
+        let shader = |name: &str, builtin: &'static str| -> String {
+            std::env::var("CARS_SHADER_DIR").ok().and_then(|d| std::fs::read_to_string(format!("{d}/{name}")).ok()).unwrap_or_else(|| builtin.to_string())
+        };
+        let (common, route, step, lc) = (shader("common.wgsl", COMMON), shader("route.wgsl", ROUTE), shader("step.wgsl", STEP), shader("lc.wgsl", LC));
+        let main_src = format!("{common}\n{route}\n{step}\n{lc}");
         let main_module = gpu.shader("step", &main_src);
-        let control_module = gpu.shader("control", &format!("{COMMON}\n{CONTROL}"));
-        let sort_module = gpu.shader("sort", &format!("{COMMON}\n{SORT}"));
+        let control_module = gpu.shader("control", &format!("{common}\n{CONTROL}"));
+        let sort_module = gpu.shader("sort", &format!("{common}\n{SORT}"));
         let main_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("main"),
             bind_group_layouts: &[Some(&main_layout)],
@@ -415,6 +493,61 @@ impl Sim {
             scatter: s("scatter"),
         };
 
+        let coord = match (world.coord.as_ref(), coord_parts) {
+            (Some(cw), Some((buffers, cj_layout, group))) => {
+                let module = gpu.shader("av_junction", &format!("{common}\n{route}\n{}", shader("av_junction.wgsl", AV_JUNCTION)));
+                let main_entries = [
+                    uniform_entry(0),
+                    storage_entry(1, false),
+                    storage_entry(3, true),
+                    storage_entry(5, true),
+                    storage_entry(8, true),
+                    storage_entry(9, true),
+                    storage_entry(16, false),
+                    storage_entry(20, false),
+                ];
+                let main_small = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("coord main"), entries: &main_entries });
+                let small = |cur: &wgpu::Buffer| {
+                    let list: [(u32, &wgpu::Buffer); 8] =
+                        [(0, &params), (1, &globals), (3, &lanes), (5, &links), (8, &types), (9, &routes), (16, cur), (20, &seg)];
+                    let entries: Vec<_> = list.iter().map(|(i, b)| wgpu::BindGroupEntry { binding: *i, resource: b.as_entire_binding() }).collect();
+                    device.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("coord main"), layout: &main_small, entries: &entries })
+                };
+                let main = [small(&veh[1]), small(&veh[0])];
+                let pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("coord"),
+                    bind_group_layouts: &[Some(&main_small), Some(&cj_layout)],
+                    immediate_size: 0,
+                });
+                let k = |e: &str| make(&pl, &module, e);
+                let phases: std::collections::HashSet<u32> = cw.junctions.iter().map(|j| j.tick_phase).collect();
+                Some(CoordSim {
+                    stats: buffers[16].clone(),
+                    events: buffers[17].clone(),
+                    junctions: buffers[1].clone(),
+                    group,
+                    main,
+                    audit_on: cw.cfg.audit != 0,
+                    uniform_tick: phases.len() == 1,
+                    tick_steps: cw.cfg.tick_steps.max(1) as u64,
+                    n_junctions: cw.junctions.len() as u32,
+                    n_apps: cw.apps.len() as u32,
+                    n_exits: cw.exits.len() as u32,
+                    clear_exits: k("cj_clear_exits"),
+                    clear_apps: k("cj_clear_apps"),
+                    pre: k("cj_pre"),
+                    audit: k("cj_audit"),
+                    snapshot: k("cj_snapshot"),
+                    propose: k("cj_propose"),
+                    arbitrate: k("cj_arbitrate"),
+                    commit: k("cj_commit"),
+                    perceive: k("cj_perceive"),
+                    apply: k("cj_apply"),
+                })
+            }
+            _ => None,
+        };
+
         let buffers = Buffers {
             params,
             globals,
@@ -431,6 +564,7 @@ impl Sim {
             total_bytes: total_bytes.get(),
         };
         Ok(Self {
+            coord,
             world_params: p,
             step: 0,
             buffers,
@@ -497,6 +631,35 @@ impl Sim {
         c.dispatch_workgroups_indirect(ind, 24);
         c.set_pipeline(&p.clear_links);
         c.dispatch_workgroups(params.n_links.div_ceil(64), 1, 1);
+        if let Some(cj) = &self.coord {
+            c.set_bind_group(0, &cj.main[(self.step % 2) as usize], &[]);
+            c.set_bind_group(1, &cj.group, &[]);
+            c.set_pipeline(&cj.clear_exits);
+            c.dispatch_workgroups(cj.n_exits.div_ceil(64), 1, 1);
+            c.set_pipeline(&cj.clear_apps);
+            c.dispatch_workgroups(cj.n_apps.div_ceil(64), 1, 1);
+            c.set_pipeline(&cj.pre);
+            c.dispatch_workgroups_indirect(ind, 24);
+            if cj.audit_on {
+                c.set_pipeline(&cj.audit);
+                c.dispatch_workgroups(cj.n_junctions.div_ceil(16), 1, 1);
+            }
+            if !cj.uniform_tick || self.step % cj.tick_steps == 0 {
+                c.set_pipeline(&cj.snapshot);
+                c.dispatch_workgroups(cj.n_exits.div_ceil(64), 1, 1);
+                c.set_pipeline(&cj.propose);
+                c.dispatch_workgroups(cj.n_apps.div_ceil(64), 1, 1);
+                c.set_pipeline(&cj.arbitrate);
+                c.dispatch_workgroups(cj.n_junctions.div_ceil(16), 1, 1);
+                c.set_pipeline(&cj.commit);
+                c.dispatch_workgroups(cj.n_junctions.div_ceil(16), 1, 1);
+            }
+            c.set_pipeline(&cj.perceive);
+            c.dispatch_workgroups(cj.n_junctions.div_ceil(16), 1, 1);
+            c.set_pipeline(&cj.apply);
+            c.dispatch_workgroups_indirect(ind, 24);
+            c.set_bind_group(0, group, &[]);
+        }
         c.set_pipeline(&p.plan);
         c.dispatch_workgroups_indirect(ind, 24);
         c.set_pipeline(&p.lane_free_scan);
@@ -639,6 +802,28 @@ impl Sim {
         out
     }
 
+    /// The coordinator's statistics per replica, returned and reset.
+    pub fn take_coord_stats(&self, gpu: &Gpu) -> Vec<u32> {
+        let Some(cj) = &self.coord else { return Vec::new() };
+        let out = self.read(gpu, &cj.stats, cj.stats.size() / 4);
+        let mut enc = gpu.device.create_command_encoder(&Default::default());
+        enc.clear_buffer(&cj.stats, 0, None);
+        gpu.queue.submit([enc.finish()]);
+        out
+    }
+
+    /// Overlaps the auditor saw since the last call: (events, how many were dropped for lack of room).
+    pub fn take_coord_events(&self, gpu: &Gpu) -> (Vec<crate::coord::GpuCjEvent>, u32) {
+        let Some(cj) = &self.coord else { return (Vec::new(), 0) };
+        let raw: Vec<crate::coord::GpuCjEvent> = self.read(gpu, &cj.events, crate::coord::EVENTS_MAX as u64 + 1);
+        let n = raw[0].step;
+        let keep = n.min(crate::coord::EVENTS_MAX) as usize;
+        let mut enc = gpu.device.create_command_encoder(&Default::default());
+        enc.clear_buffer(&cj.events, 0, Some(32));
+        gpu.queue.submit([enc.finish()]);
+        (raw[1..=keep].to_vec(), n - keep as u32)
+    }
+
     /// Run one step with a GPU timer around every kernel. Returns (kernel, milliseconds).
     pub fn profile_step(&mut self, gpu: &Gpu) -> Vec<(String, f64)> {
         let period = gpu.queue.get_timestamp_period() as f64 * 1e-6;
@@ -724,6 +909,32 @@ impl Sim {
             c.set_pipeline(&p.clear_links);
             c.dispatch_workgroups(params.n_links.div_ceil(64), 1, 1);
         });
+        if let Some(cj) = &self.coord {
+            type K<'a> = (&'a str, &'a wgpu::ComputePipeline, Option<u32>);
+            let list: [K; 10] = [
+                ("cj_clear_x", &cj.clear_exits, Some(cj.n_exits.div_ceil(64))),
+                ("cj_clear_a", &cj.clear_apps, Some(cj.n_apps.div_ceil(64))),
+                ("cj_pre", &cj.pre, None),
+                ("cj_audit", &cj.audit, Some(cj.n_junctions.div_ceil(16))),
+                ("cj_snapshot", &cj.snapshot, Some(cj.n_exits.div_ceil(64))),
+                ("cj_propose", &cj.propose, Some(cj.n_apps.div_ceil(64))),
+                ("cj_arbitrate", &cj.arbitrate, Some(cj.n_junctions.div_ceil(16))),
+                ("cj_commit", &cj.commit, Some(cj.n_junctions.div_ceil(16))),
+                ("cj_perceive", &cj.perceive, Some(cj.n_junctions.div_ceil(16))),
+                ("cj_apply", &cj.apply, None),
+            ];
+            for (name, pipeline, size) in list {
+                pass(name, &mut |c| {
+                    c.set_bind_group(0, &cj.main[(self.step % 2) as usize], &[]);
+                    c.set_bind_group(1, &cj.group, &[]);
+                    c.set_pipeline(pipeline);
+                    match size {
+                        Some(n) => c.dispatch_workgroups(n, 1, 1),
+                        None => c.dispatch_workgroups_indirect(ind, 24),
+                    }
+                });
+            }
+        }
         pass("plan", &mut |c| {
             c.set_bind_group(0, group, &[]);
             c.set_pipeline(&p.plan);

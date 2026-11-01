@@ -43,7 +43,7 @@ pub struct Common {
     /// Simulation times of stills. With `cars shot` these are the point of the run.
     #[arg(long, value_delimiter = ',')]
     pub at: Vec<f32>,
-    #[arg(long,value_delimiter=',',value_parser=["all","leader","braking","speed","state","foes","events"])]
+    #[arg(long,value_delimiter=',',value_parser=["all","leader","braking","speed","state","foes","events","grants","paths","channel","brake","arrivals"])]
     pub overlay: Vec<String>,
     /// JSON with many cameras over one run, see RECORDING.md. Replaces --out.
     #[arg(long)]
@@ -101,6 +101,8 @@ pub struct Args {
     /// Where the simulation starts; the part before --begin runs without rendering.
     #[arg(long, default_value_t = 0.0)]
     sim_begin: f32,
+    #[command(flatten)]
+    coord: crate::av::CoordArgs,
 }
 #[derive(Deserialize, Default)]
 struct Script {
@@ -493,6 +495,9 @@ pub fn run(mut r: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
             capacity: r.capacity,
             time_to_teleport: r.time_to_teleport,
             ignore_blocker: r.ignore_junction_blocker,
+            per_lane_queues: r.coord.cj.is_some(),
+            meter_n: r.coord.cj_meter,
+            coord: r.coord.config()?,
             ..Default::default()
         },
         &[],
@@ -504,7 +509,7 @@ pub fn run(mut r: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
     let widths: Vec<f32> = demand.vtypes.iter().map(|t| t.width).collect();
     demand.routes = Vec::new();
     let gpu = pollster::block_on(Gpu::headless(GpuOptions {
-        adapter_name: Some("7900".into()),
+        adapter_name: Some(std::env::var("CARS_ADAPTER").unwrap_or("7900".into())),
         ..Default::default()
     }))?;
     let sim = Sim::new(&gpu, &world)?;
@@ -673,6 +678,7 @@ pub fn render(a: &Common, job: Job, dt: f32, sim_begin: f32, net: &Net, world: &
                     if v.state.first_teleports.is_none() {
                         v.state.first_teleports = Some(snapshot.teleports);
                         v.state.first_collisions = snapshot.collisions;
+                        v.state.first_arrived = snapshot.arrived;
                     }
                 }
                 let teleports = v.state.first_teleports.map(|t| snapshot.teleports - t);
@@ -688,6 +694,7 @@ pub fn render(a: &Common, job: Job, dt: f32, sim_begin: f32, net: &Net, world: &
                         mpp: camera.metres_per_pixel,
                         teleports,
                         collisions,
+                        trips: teleports.map(|_| snapshot.arrived - v.state.first_arrived),
                         modes: &v.overlay,
                     },
                 );
