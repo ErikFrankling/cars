@@ -1133,6 +1133,7 @@ fn ph_lc_room(e: Veh, dest: u32) -> bool {
     let road = ph_lc_road(e, dest);
     if (road < 0.0) {
         let left = lanes[e.lane].length - e.pos;
+        if (e.speed < 0.5 && left < 2.0) { return true; }
         return left >= w / 0.21256 && (w / ty.v_lat + 1.0) * e.speed <= left;
     }
     if ((w / ty.v_lat + 1.0) * e.speed <= road) { return true; }

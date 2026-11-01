@@ -62,6 +62,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Finite duration, 0.6 m/s, 1 s ends | ESTABLISHED | SimMobility [sm], field 5-8 s [ld1] [ld2] [rm], 11 §4.2 | `phys.v_lat` |
 | 1.1 m/s when short of road | ADAPTED | 11; I11's bound | |
 | Shadow on the old lane | ADAPTED | SUMO shadow lane [sf]; ours is a sorted clone, limit read in the same step | |
+| Sideways progress at a stand, 0.1 m/s, only at the end of a lane with no way on | ADAPTED | SUMO's lcMaxSpeedLatStanding exists for this; report 11's I11 forbids it, and without it a car stopped halfway stays there for good. Value is ours | `lat_standing` |
 | Heading limit 12° | ADAPTED | 11 §4.2, I11 | |
 | Old-lane leader must leave the forward travel a change takes | INVENTED | Stops a change halting across two lanes | `lc_path` |
 | No stopping for lane-change reservation while a change is under way | INVENTED | LC2013's blocker would hold the car at a stand, where it cannot finish | |

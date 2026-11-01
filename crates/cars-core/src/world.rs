@@ -48,6 +48,8 @@ pub struct GpuParams {
     pub lc_gap: f32,
     /// A body about to leave a zone holds it not: 0 never, 1 at merges, 2 everywhere.
     pub zone_time: u32,
+    pub lat_standing: f32,
+    pub pad: [f32; 3],
 }
 
 #[repr(C)]
@@ -723,6 +725,8 @@ impl World {
             zones_ahead: cfg.tune("zones_ahead", 0.0) as u32,
             lc_gap: cfg.tune("lc_gap", 0.6),
             zone_time: cfg.tune("zone_time", 1.0) as u32,
+            lat_standing: cfg.tune("lat_standing", 0.1),
+            pad: [0.0; 3],
         };
         w
     }

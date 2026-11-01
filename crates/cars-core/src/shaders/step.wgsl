@@ -1638,7 +1638,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         e.pos += ds;
         e.speed = v_next;
         ph_account(&e, speed, v_next, ds);
-        ph_lateral(&e, speed, v_next);
+        ph_lateral(&e, speed, v_next, n == 0u || items[base].link == NONE);
     } else {
         e.pos += v_next * dt;
         e.speed = v_next;
@@ -1839,14 +1839,16 @@ fn ph_lateral_done(t: f32, w: f32, v_lat: f32) -> f32 {
 }
 
 // Sideways progress of a lane change. It takes forward motion: at a stand the phase does not move.
-fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32) {
+fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32, lane_ends: bool) {
     let p = (*e).phys;
     if ((p >> 30u) == 0u) { return; }
     var v_lat = ty.v_lat;
     if (((*e).flags & F_LAT_FAST) != 0u) { v_lat = 1.1; }
     let w = lanes[(*e).lane].width;
     let total = w / v_lat + 1.0;
-    let rate = min(1.0, 0.5 * (v0 + v1) * 0.21256 / v_lat);
+    var rate = min(1.0, 0.5 * (v0 + v1) * 0.21256 / v_lat);
+    // Held at the end of a lane with no way on, a driver edges across. SUMO has lcMaxSpeedLatStanding for this.
+    if (lane_ends) { rate = max(rate, P.lat_standing / v_lat); }
     var u = f32((p >> 16u) & 0x3fffu) / 16383.0;
     u = min(1.0, u + rate * dt / total);
     if (u >= 1.0) {

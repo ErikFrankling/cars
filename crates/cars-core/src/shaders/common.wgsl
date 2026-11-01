@@ -91,6 +91,10 @@ struct Params {
     zones_ahead: u32,
     lc_gap: f32,
     zone_time: u32,
+    lat_standing: f32,
+    pad_x: f32,
+    pad_y: f32,
+    pad_z: f32,
 }
 
 struct Globals {
