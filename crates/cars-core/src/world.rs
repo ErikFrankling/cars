@@ -36,6 +36,11 @@ pub struct GpuParams {
     pub detect_every: u32,
     pub grid_mask: u32,
     pub trace_len: u32,
+    /// Bit 0 certificate, bit 1 junction arbiter, bit 2 exit-clear. All on unless a test turns one off.
+    pub safety: u32,
+    pub width_margin: f32,
+    pub claim_scale: f32,
+    pub queue_speed: f32,
 }
 
 #[repr(C)]
@@ -141,6 +146,8 @@ pub struct GpuZone {
     pub own_out: f32,
     pub foe_in: f32,
     pub foe_out: f32,
+    /// Least distance between the two centre lines.
+    pub dist: f32,
 }
 
 #[repr(C)]
@@ -213,6 +220,8 @@ pub struct GpuVType {
     pub lc_look_left: f32,
     pub lc_speed_gain_right: f32,
     pub collision_factor: f32,
+    /// Share of drivers of this type who keep the junction clear.
+    pub exit_comply: f32,
     pub pw_kg: f32,
     pub road_a: f32,
     pub road_c: f32,
@@ -229,7 +238,8 @@ pub struct GpuVType {
     pub width: f32,
     pub ph_tau: f32,
     pub m_ref: f32,
-    pub pad: [f32; 2],
+    /// How hard a driver assumes the leader will brake, Gipps' b-hat.
+    pub b_assume: f32,
 }
 
 #[repr(C)]
@@ -334,7 +344,7 @@ pub const SEG_BYTES: u64 = 16;
 pub const LCPLAN_BYTES: u64 = 16;
 pub const MAX_ITEMS: u64 = 8;
 pub const SLOTS: u64 = 8;
-pub const CONTACT_LOG: u64 = 4096;
+pub const CONTACT_LOG: u64 = 65536;
 pub const COUNTERS: u64 = 64;
 pub const MIRROR_BYTES: u64 = 16;
 pub const POSE_BYTES: u64 = 32;
@@ -350,7 +360,9 @@ pub const C_DENIED: usize = 23;
 pub const C_CONTACT: usize = 24;
 pub const C_CONTACT_KINDS: usize = 25;
 /// Contact kinds, as counted from `C_CONTACT_KINDS`.
-pub const CONTACT_NAMES: [&str; 7] = ["same lane", "neighbour lane", "junction crossing", "junction merge", "junction diverge", "lane start", "other"];
+pub const CONTACT_NAMES: [&str; 8] = ["same lane", "neighbour lane", "junction crossing", "junction merge", "junction diverge", "lane start", "other", "crossed without grant"];
+/// Kinds from here on are protocol breaches, not bodies touching.
+pub const CONTACT_BODIES: usize = 7;
 /// Sort key resolution: two vehicles on a lane are always further apart than this.
 const KEY_METRES: f32 = 2.5;
 
@@ -380,6 +392,14 @@ pub struct SimConfig {
     pub detect_every: u32,
     /// Desired speed per step for scripted vehicles, for driving-cycle checks.
     pub speed_trace: Vec<f32>,
+    /// Physical parameters a sensitivity test wants to move. See `tune`.
+    pub tune: Vec<(String, f32)>,
+}
+
+impl SimConfig {
+    pub fn tune(&self, name: &str, default: f32) -> f32 {
+        self.tune.iter().rev().find(|(k, _)| k == name).map_or(default, |(_, v)| *v)
+    }
 }
 
 impl Default for SimConfig {
@@ -401,6 +421,7 @@ impl Default for SimConfig {
             mu: 0.0,
             detect_every: 0,
             speed_trace: Vec::new(),
+            tune: Vec::new(),
         }
     }
 }
@@ -521,7 +542,7 @@ const G: f32 = 9.81;
 const RHO: f32 = 1.225;
 
 /// Fills in the physical half of a type. `phys.*` parameters on the vType override the table.
-fn physical_type(g: &mut GpuVType, t: &VType) {
+fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     let r = phys_row(t.vclass);
     let num = |key: &str, default: f32| t.params.get(key).and_then(|v| v.parse().ok()).unwrap_or(default);
     let m = num("phys.mass", r.m_ref);
@@ -533,7 +554,7 @@ fn physical_type(g: &mut GpuVType, t: &VType) {
     g.i_inv = 1.0 / (1.0 + num("phys.eps", r.eps));
     g.trac = num("phys.f_d", r.f_d) * G;
     g.v_corner = num("phys.v_corner", r.v_corner);
-    g.b_lo = num("phys.b_lo", r.b_lo);
+    g.b_lo = num("phys.b_lo", if r.m_ref == 1650.0 { cfg.tune("car_b_lo", r.b_lo) } else { r.b_lo });
     g.b_hi = num("phys.b_hi", r.b_hi);
     g.t_r = num("phys.t_r", r.t_r);
     // A type that asks for less than the measured driver keeps its own acceleration.
@@ -542,7 +563,12 @@ fn physical_type(g: &mut GpuVType, t: &VType) {
     g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
     g.v_lat = num("phys.v_lat", 0.6);
     g.width = t.width;
-    g.ph_tau = num("phys.tau", 1.35);
+    g.ph_tau = num("phys.tau", cfg.tune("tau", 1.35));
+    let automated = matches!(t.model, CfModel::Acc | CfModel::Cacc);
+    g.exit_comply = num("phys.exit_comply", if automated { 1.0 } else { cfg.tune("exit_comply", 0.9) });
+    // Gipps' two decelerations: what the driver plans with, and what it expects of the leader.
+    g.decel = num("phys.b_plan", cfg.tune("driver_b", t.decel));
+    g.b_assume = num("phys.b_assume", cfg.tune("leader_b", g.decel));
     // Leaders and tails are judged by their hardest possible stop.
     g.apparent = g.b_hi;
 }
@@ -611,11 +637,11 @@ impl World {
             speed_trace: cfg.speed_trace.clone(),
             ..Default::default()
         };
-        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net), crate::physics::zones(net, &topo)));
+        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 3.0)), crate::physics::zones(net, &topo, cfg.tune("zone_distance", 2.6))));
         w.vtypes = demand.vtypes.iter().map(|t| gpu_vtype(t, cfg.dt)).collect();
         if cfg.mu > 0.0 {
             for (g, t) in w.vtypes.iter_mut().zip(&demand.vtypes) {
-                physical_type(g, t);
+                physical_type(g, t, cfg);
             }
         }
         w.n_edges_per_replica = net.edges.len() as u32;
@@ -677,6 +703,10 @@ impl World {
             detect_every: if cfg.mu > 0.0 { cfg.detect_every } else { 0 },
             grid_mask: (capacity.max(16) as u64 * 2).next_power_of_two() as u32 - 1,
             trace_len: cfg.speed_trace.len() as u32,
+            safety: (cfg.tune("certificate", 1.0) as u32) | ((cfg.tune("arbiter", 1.0) as u32) << 1) | ((cfg.tune("exit_clear", 1.0) as u32) << 2) | ((cfg.tune("lc_path", 1.0) as u32) << 3),
+            width_margin: cfg.tune("width_margin", 0.1),
+            claim_scale: cfg.tune("claim_scale", 1.0),
+            queue_speed: cfg.tune("queue_speed", 5.0),
         };
         w
     }

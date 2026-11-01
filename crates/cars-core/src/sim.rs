@@ -28,7 +28,7 @@ const MAIN_BINDINGS: &[bool] = &[
     /*36 mirror*/ false, /*37 energy*/ false, /*38 junction_bid*/ false, /*39 inbound*/ false,
     /*40 hard_limit*/ false, /*41 zones*/ true, /*42 speed_trace*/ true, /*43 entrant_front*/ false,
     /*44 poses*/ false, /*45 grid_head*/ false, /*46 grid_next*/ false, /*47 shape_points*/ true,
-    /*48 contacts*/ false,
+    /*48 contacts*/ false, /*49 occ_width*/ false,
 ];
 
 pub struct Sim {
@@ -228,6 +228,7 @@ impl Sim {
         let energy = empty("energy", when(physical, p.n_trips as u64 * std::mem::size_of::<GpuTripEnergy>() as u64));
         let junction_bid = empty("junction_bid", when(physical, p.n_lanes as u64 * 4));
         let inbound = empty("inbound", when(physical, p.n_lanes as u64 * 4));
+        let occ_width = empty("occ_width", when(physical, p.n_lanes as u64 * 4));
         let hard_limit_init = vec![0xffu8; when(physical, p.n_trips as u64 * 4) as usize];
         let hard_limit = init("hard_limit", &hard_limit_init, storage);
         let zones = init("zones", bytemuck::cast_slice(&world.zones), storage);
@@ -238,7 +239,7 @@ impl Sim {
         let grid_head = empty("grid_head", when(detecting, (p.grid_mask as u64 + 1) * 4));
         let grid_next = empty("grid_next", when(detecting, cap * 4));
         let shape_points = init("shape_points", bytemuck::cast_slice(&world.shape_points), storage);
-        let contacts = empty("contacts", when(detecting, CONTACT_LOG * std::mem::size_of::<GpuContact>() as u64));
+        let contacts = empty("contacts", when(physical, CONTACT_LOG * std::mem::size_of::<GpuContact>() as u64));
 
         // Layouts.
         let main_layout = {
@@ -312,7 +313,7 @@ impl Sim {
                 &items, &slots, &link_count, &partial, &tail, &entrant, &trip_out, &series, &edge_acc,
                 &unused, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
                 &mirror, &energy, &junction_bid, &inbound, &hard_limit, &zones, &speed_trace, &entrant_front,
-                &poses, &grid_head, &grid_next, &shape_points, &contacts,
+                &poses, &grid_head, &grid_next, &shape_points, &contacts, &occ_width,
             ];
             let entries: Vec<_> = list
                 .iter()
@@ -690,7 +691,7 @@ impl Sim {
 
     /// The contact log, as far as it was written.
     pub fn contacts(&self, gpu: &Gpu) -> Vec<GpuContact> {
-        if self.world_params.detect_every == 0 {
+        if self.world_params.mu <= 0.0 {
             return Vec::new();
         }
         self.read(gpu, &self.buffers.contacts, CONTACT_LOG)

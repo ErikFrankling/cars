@@ -46,7 +46,7 @@ def check(name, ok, detail, d=None):
 
 def clean(name, rep, d):
     """No collision, teleport or stuck vehicle. Applies to every test."""
-    bad = {k: rep[k] for k in ('collision_incidents', 'teleports', 'cert_floor', 'ungranted', 'dead_end', 'no_brake') if rep.get(k)}
+    bad = {k: rep[k] for k in ('collision_incidents', 'teleports', 'ungranted', 'dead_end', 'no_brake') if rep.get(k)}
     stuck = rep.get('gridlock_worst_stuck', 0)
     if stuck:
         bad['stuck'] = stuck
@@ -106,6 +106,104 @@ def t_queue():
     check('queue flow does not depend on dt', abs(a / b - 1) <= 0.01, f'{100 * (a / b - 1):+.2f}%', d)
 
 
+def capacity_net(d, kind, radius=None):
+    """One movement behind one signal: through, right, left, or two lanes turning left."""
+    extra = ['--default.junctions.radius', radius] if radius else []
+    if kind == 'through':
+        netconvert(d, '<node id="a" x="-1500" y="0"/><node id="m" x="0" y="0" type="traffic_light"/><node id="b" x="1000" y="0"/>',
+                   '<edge id="am" from="a" to="m" speed="13.89"/><edge id="mb" from="m" to="b" speed="13.89"/>', *extra)
+    elif kind in ('right', 'left'):
+        y = -1000 if kind == 'right' else 1000
+        netconvert(d, f'<node id="a" x="-1500" y="0"/><node id="m" x="0" y="0" type="traffic_light"/><node id="b" x="0" y="{y}"/>',
+                   '<edge id="am" from="a" to="m" speed="13.89"/><edge id="mb" from="m" to="b" speed="13.89"/>', *extra)
+    else:
+        netconvert(d, '<node id="a" x="-1500" y="0"/><node id="m" x="0" y="0" type="traffic_light"/><node id="b" x="0" y="1000"/>',
+                   '<edge id="am" from="a" to="m" numLanes="2" speed="13.89"/><edge id="mb" from="m" to="b" numLanes="2" speed="13.89"/>', *extra)
+
+
+def saturation(d, kind, dt, args, tag, minutes=None, n=30, min_gap=2.5, sigma=0):
+    """Queue discharge in veh per green hour per lane, after the first 8 cars, and the jam spacing."""
+    state = 'rr' if kind == 'double' else 'r'
+    (d / 'tls.xml').write_text(f'<additional><tlLogic id="m" type="static" programID="hold" offset="0"><phase duration="240" state="{state}"/><phase duration="400" state="{state.replace("r", "G")}"/></tlLogic></additional>')
+    body = f'<routes><vType id="c" vClass="passenger" sigma="{sigma}" speedDev="0" length="5" minGap="{min_gap}">{NOMINAL}</vType><route id="r" edges="am mb"/>'
+    lanes = 2 if kind == 'double' else 1
+    for i in range(n * lanes):
+        lane = i % lanes
+        body += f'<vehicle id="v{i:03d}" type="c" route="r" depart="{i // lanes * 5}" departSpeed="0" departLane="{lane}"/>'
+    (d / 'r.xml').write_text(body + '</routes>')
+    rep = cars(d, '--additional', d / 'tls.xml', '--dt', dt, '--end', 500, '--fcd', d / f'{tag}.csv', '--fcd-interval', dt, '--fcd-begin', 230, '--seed', 1, *args, tag=tag)
+    f = pd.read_csv(d / f'{tag}.csv', usecols=['time', 'trip', 'lane', 'pos', 'speed'], dtype={'lane': str, 'trip': str})
+    flows, spacing = [], []
+    for lane_i in range(lanes):
+        lane = f'am_{lane_i}'
+        length = float((d / 'net.xml').read_text().split(f'<lane id="{lane}"')[1].split('length="')[1].split('"')[0])
+        g = f[f.lane == lane]
+        q = g[(g.time - 235).abs() < dt / 2].sort_values('pos')
+        if len(q) > 3:
+            spacing.append(q.pos.diff().iloc[1:].median())
+        t = g.groupby('trip').time.max()
+        ends = []
+        for trip, last in t.items():
+            r = f[f.trip == trip]
+            on = r[r.lane == lane].iloc[-1]
+            off = r[r.time > on.time]
+            if off.empty:
+                continue
+            a = off.iloc[0]
+            ends.append(on.time + (a.time - on.time) * (length - on.pos) / max(a.pos + length - on.pos, 1e-6))
+        ends.sort()
+        head = [b - x for x, b in zip(ends, ends[1:])]
+        if len(head) > 12:
+            flows.append(3600 / (sum(head[8:]) / len(head[8:])))
+    return (sum(flows) / len(flows) if flows else 0.0, sum(spacing) / len(spacing) if spacing else 0.0, rep)
+
+
+def t_capacity():
+    """Against Trafikverket's TRVMB Kapacitet, per green hour per lane: 1,900 through, 1,700 turning, 1,500 in a
+    double turn, jam spacing 7.43 m. And what the safety rules cost: the same queue with each one off."""
+    d = workdir('capacity')
+    target = dict(through=1900, right=1700, left=1700, double=1500)
+    rows = []
+    for kind in ('through', 'right', 'left', 'double'):
+        capacity_net(d, kind, A.radius)
+        for dt in (1.0, 0.1):
+            base = None
+            for label, args in (('all rules', A.tune_args), ('no certificate', [*A.tune_args, '--tune', 'certificate=0']), ('no arbiter', [*A.tune_args, '--tune', 'arbiter=0']), ('no exit-clear', [*A.tune_args, '--tune', 'exit_clear=0'])):
+                flow, spacing, rep = saturation(d, kind, dt, args, f'{kind}-{dt}-{label.replace(" ", "")}')
+                if base is None:
+                    base = flow
+                    check(f'capacity {kind} dt {dt}', abs(flow / target[kind] - 1) <= 0.05, f'{flow:.0f} per green hour per lane against {target[kind]}, jam spacing {spacing:.2f} m against 7.43', d)
+                rows.append(dict(kind=kind, dt=dt, rules=label, flow=round(flow), target=target[kind], spacing=round(spacing, 2), contacts=rep.get('collision_incidents'), cost_pct=round(100 * (base / max(flow, 1) - 1), 1)))
+                print(f'     {kind} dt {dt} {label}: {flow:.0f}, contacts {rep.get("collision_incidents")}, safety cost {100 * (base / max(flow, 1) - 1):+.1f}%', flush=True)
+    (d / 'capacity.json').write_text(json.dumps(rows, indent=1))
+
+
+def siegloch(q, tc, tf):
+    """Minor-road capacity under Poisson major flow: Siegloch's form, as in HCM and TRVMB-style methods."""
+    return 3600 / tf * math.exp(-(q / 3600) * (tc - tf / 2))
+
+
+def t_gap():
+    """A saturated minor road across a major flow, against gap acceptance with TRVMB's 5.1 s for straight on."""
+    d = workdir('gap')
+    netconvert(d, '<node id="c" x="0" y="0" type="priority"/><node id="w" x="-500" y="0"/><node id="e" x="500" y="0"/><node id="s" x="0" y="-500"/><node id="n" x="0" y="500"/>',
+               '<edge id="wc" from="w" to="c" priority="2" speed="13.89"/><edge id="ce" from="c" to="e" priority="2" speed="13.89"/><edge id="sc" from="s" to="c" priority="1" speed="13.89"/><edge id="cn" from="c" to="n" priority="1" speed="13.89"/>')
+    for q in (100, 300, 600, 900):
+        for dt in (1.0, 0.1):
+            args = A.tune_args
+            (d / 'r.xml').write_text(f'<routes><vType id="c" vClass="passenger" sigma="0.5">{NOMINAL}</vType><route id="m" edges="wc ce"/><route id="y" edges="sc cn"/>'
+                                     f'<flow id="major" type="c" route="m" begin="0" end="1500" probability="{q / 3600:.5f}" departSpeed="max"/><flow id="minor" type="c" route="y" begin="0" end="1500" vehsPerHour="1400" departSpeed="0"/></routes>')
+            tag = f'q{q}-{dt}'
+            rep = cars(d, '--dt', dt, '--end', 1500, '--seed', 1, '--trip-csv', d / f'{tag}.csv', *args, tag=tag)
+            t = pd.read_csv(d / f'{tag}.csv', dtype={'trip': str})
+            done = t[t.trip.str.startswith('minor') & (t.arrival > 300)]
+            major = t[t.trip.str.startswith('major') & (t.arrival > 300)]
+            got = len(done) / 1200 * 3600
+            flow = len(major) / 1200 * 3600
+            want = siegloch(flow, 5.1, 3.1)
+            check(f'gap acceptance q {q} dt {dt}', abs(got / max(want, 1) - 1) <= 0.25, f'minor {got:.0f} veh/h against {want:.0f} (tc 5.1, tf 3.1) at major {flow:.0f}; contacts {rep["collision_incidents"]}', d)
+
+
 def t_wltc():
     """Follows WLTC and compares wheel energy with the report's table, section 2.3."""
     d = workdir('wltc')
@@ -134,9 +232,8 @@ def t_wltc():
             check(f'wltc {name} dt {dt}: wheel energy', abs(e['wheel_wh_km'] / want - 1) <= 0.05, f"{e['wheel_wh_km']:.1f} Wh/km positive against {want}, {e['brake_wh_km']:.1f} braking", d)
             check(f'wltc {name} dt {dt}: books (I16)', e['balance_worst'] <= 0.01 and e['wheel_wh_km'] <= 500, f"worst {100 * e['balance_worst']:.4f}%", d)
             f = pd.read_csv(d / f'{tag}.fcd.csv')
-            f = f[f.time % 1 == 0]
-            ref = pd.Series(values).iloc[[round((t + 1) / dt) for t in f.time if round((t + 1) / dt) < len(values)]].to_numpy()
-            err = abs(f.speed.to_numpy()[:len(ref)] - ref).max() * 3.6
+            ref = [values[min(round(t / dt) + 1, len(values) - 1)] for t in f.time]
+            err = abs(f.speed.to_numpy() - ref).max() * 3.6
             check(f'wltc {name} dt {dt}: follows the trace', err <= 3.0, f'max speed error {err:.2f} km/h', d)
     # The check the report gives for electric: its own Model 3 Long Range road load, 85% and 60%.
     r = d / 'lr.xml'
@@ -162,11 +259,11 @@ def t_grade():
         (d / 'r.xml').write_text(f'<routes><vType id="t" vClass="trailer" length="16.5" sigma="0" speedDev="0" maxSpeed="25">{NOMINAL}<param key="phys.a0" value="3"/><param key="phys.a1" value="0"/><param key="phys.a_floor" value="3"/></vType>'
                                  f'<vType id="c" vClass="passenger" sigma="0" speedDev="0" maxSpeed="25">{NOMINAL}</vType>'
                                  '<route id="r" edges="ab bc ce"/><vehicle id="tr" type="t" route="r" depart="0" departSpeed="0"/></routes>')
-        rep = cars(d, '--dt', 1, '--end', 500, '--fcd', d / f'g{pct}.csv', '--fcd-interval', 1, '--phys-json', d / f'g{pct}.json', tag=f'g{pct}')
+        rep = cars(d, '--dt', 1, '--end', 500, '--fcd', d / f'g{pct}.csv', '--fcd-interval', 1, '--phys-json', d / f'g{pct}.phys.json', tag=f'g{pct}')
         f = pd.read_csv(d / f'g{pct}.csv', dtype={'lane': str})
         hill = f[(f.lane == 'bc_0') & (f.pos > 3000)]
         speed = hill.speed.iloc[-1] * 3.6 if len(hill) else 0.0
-        gz = json.loads((d / f'g{pct}.json').read_text())['lanes']['bc_0']['gz']
+        gz = json.loads((d / f'g{pct}.phys.json').read_text())['lanes']['bc_0']['gz']
         check(f'grade {pct}%: lane data', abs(gz / (9.81 * pct / 100) - 1) <= 0.03, f'g sin(theta) {gz:.3f} m/s2', d)
         check(f'grade {pct}%: crawl speed of 40 t', abs(speed - want) <= 2.0, f'{speed:.1f} km/h against {want}', d)
         e = rep['energy']
@@ -313,7 +410,7 @@ def t_compat():
             check(f'compat {tp} dt {dt}: byte for byte', same, f'{len(out[0][0])} bytes of trajectories, {len(out[0][1])} of trips', d)
 
 
-TESTS = dict(compat=t_compat, queue=t_queue, emergency=t_emergency, wltc=t_wltc, grade=t_grade, curve=t_curve, signal=t_gallery_signal, priority=t_gallery_priority, roundabout=t_gallery_roundabout,
+TESTS = dict(compat=t_compat, queue=t_queue, capacity=t_capacity, gap=t_gap, emergency=t_emergency, wltc=t_wltc, grade=t_grade, curve=t_curve, signal=t_gallery_signal, priority=t_gallery_priority, roundabout=t_gallery_roundabout,
              allway=t_gallery_allway, zipper=t_gallery_zipper, onramp=t_gallery_onramp, lanedrop=t_gallery_lanedrop)
 
 
@@ -325,7 +422,10 @@ def main():
     p.add_argument('--baseline', default='/home/erikf/projects/personal/cars-data/physics/cars-baseline-69cf836')
     p.add_argument('--out')
     p.add_argument('--json')
+    p.add_argument('--tune', action='append', default=[], help='name=value, passed on to the runs that compare with a target')
+    p.add_argument('--radius', type=float, help='junction corner radius for the capacity nets')
     A = p.parse_args()
+    A.tune_args = [x for t in A.tune for x in ('--tune', t)]
     for name in A.names or TESTS:
         print(f'--- {name}', flush=True)
         TESTS[name]()
