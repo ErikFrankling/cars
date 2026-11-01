@@ -140,23 +140,97 @@ flags, prev_lane and depart_step. A bbox keeps lanes touching it, so leaving it 
 gap in the trajectory, which the physics report treats as it does a teleport.
 
 `scripts/intersection_gallery.py` writes small generated junctions and real ones at the Berlin
-and Stockholm morning peak. It takes vehicles entering in the warmup hour from its own edge CSV,
-cached with the junction lists and view files under `cache/`. Finished files are skipped;
-delete one to redo it. City clips warm up for one hour from 07:00, not from a whole day, so
-queues can be shorter than in a full run.
+and Stockholm morning peak. Each place is one traced run, drawn afterwards. It takes vehicles
+entering in the warmup hour from that run's edge CSV, cached with the trace, junction lists and
+view files under `cache/`. Finished files are skipped; delete one to redo it. City clips warm up
+for one hour from 07:00, not from a whole day, so queues can be shorter than in a full run.
 
-`scripts/physics_qa.py` writes `report.md`, `summary.json`, `distributions.png`, `vehicles.csv`
+`scripts/physics_qa.py` reads a trace (`--trace f.trace`, optionally `--begin`, `--end`) or an FCD
+(`--fcd f.csv`), and writes `report.md`, `summary.json`, `distributions.png`, `vehicles.csv`
 and a CSV per finding. It reports, it does not judge: thresholds are the graded ones from
 `research/truth/11-vehicle-physics.md`. Curvature is the heading change over a 5 m window of
 lane polyline, so read a single lane's peak as a place to go and look.
 
-Reproducing what a report found: `--overlay events` prints `event <time> <kind> at <x>,<y>` to
-stderr, so a debug clip tells where to look in itself. Frames carry the FCD's time labels, and
-`--sim-end` takes the `--end` of a `cars run`, because demand is cut at the end time and changing it
-changes the simulation. Small nets then replay the same run. City runs do not repeat: two identical
+Reproducing what a report found: use a trace, below. City runs do not repeat: two identical
 `cars run` commands on Stockholm differed by about 200 vehicles an hour in, so an incident in an FCD
-file will not be there in a later clip of the same command. Record with `--overlay events` and read
-that run's log instead.
+file will not be there in a later clip of the same command. `cars record` still simulates while
+drawing: `--overlay events` prints `event <time> <kind> at <x>,<y>` to stderr, frames carry the FCD's
+time labels, and `--sim-end` takes the `--end` of a `cars run`, because demand is cut at the end
+time and changing it changes the simulation.
+
+## Traces: simulate once, look afterwards
+
+```sh
+# Simulate, keeping one window of it. Without --trace nothing is read back and nothing changes.
+cars run --net n.xml --routes r.xml --dt 1 --begin 25200 --end 29000 \
+  --trace f.trace --trace-begin 28800 --trace-end 29000 [--trace-bbox x0,y0,x1,y1] [--trace-stride 1]
+# What happened in it, with places.
+python3 scripts/cars_trace.py events f.trace --net n.xml
+# Draw that exact moment, in that very run. No routes, no simulation, no simulation buffers.
+cars replay --net n.xml --trace f.trace --at 28912 --center 1500,800 --metres-per-pixel .08 --overlay all --out incident.png
+# All the camera, overlay and output options of `cars record` and `cars shot`.
+cars replay --net n.xml --trace f.trace --begin 28900 --end 28920 --junction c --overlay all --out c.mp4
+cars replay --net n.xml --trace f.trace --views views.json
+# Check the physics of the same run the pictures show.
+python3 scripts/physics_qa.py --net n.xml --trace f.trace --out qa/
+```
+
+`--begin` and `--end` of a replay default to the trace's window, and `--net` and `--additional` must
+be those of the run: a hash in the file says so. Start a trace about 5 s before you want to look,
+so a lane change in progress is drawn right. A bbox keeps lanes touching it, and only their signals:
+others are drawn as off. The copy still covers the whole vehicle buffer, so a small bbox saves disk
+but not much time. With a stride, a vehicle taken off and put back between two frames is not
+flagged; the frame's counters still move.
+
+Replay draws what `cars record` draws, from the same formulas on the CPU, and uploads the poses per
+frame. What is different, because a trace does not hold the engine's plan:
+
+- `leader`, `braking`, `foes` and `state` use the link the route asks for on the vehicle's lane, then
+  on through links with no choice, ending at a red or yellow signal, or beyond braking distance once
+  past the junction. The engine may have picked another link to the same edge, and it plans further,
+  so a leader beyond the next choice is not found. A vehicle with no recorded link shows no plan.
+- `state` metres are to the end of the lane at this step. `cars record` shows them from the plan made
+  before the step moved the vehicle.
+- A vehicle is drawn from the step it is inserted. `cars record` draws it one step later.
+- Waiting time is in whole seconds, and saturates at 255.
+
+An event in a frame labelled t flashes as the picture moves on from t, because pictures run one step
+behind, and the vehicle is already gone from that frame.
+
+Cost, RX 7900 XT, no other GPU work. Stockholm 07:00 to 07:30 is 3.00 s without a trace and 3.24 s
+tracing its last 600 steps, full net, about 12 300 vehicles: 0.4 ms a frame, 152 MB, 20.7 bytes a
+vehicle step. Charlottenburg 07:00 to 09:00 is 9.6 s without and 12.2 s tracing all 7200 steps: tracing
+every step gives up batching several steps in a submission, so a small net pays relatively more. A
+600 s bbox window on it costs 0.2 s. Stride 5 on Stockholm costs 0.04 s and 33 MB.
+
+A trace file is `CARSTRC1`, a u32 byte count and a JSON header (`net_hash`, `dt`, `sim_begin`,
+`stride`, window, `bbox`, `time_to_teleport`, `dummy_lane`, `vtypes`, `tls` with each signal's phase
+state strings), space padded to 4 bytes. Then frames, nothing else, so a run cut short still reads
+up to its last whole frame. All little endian:
+
+| Frame part | Contents |
+|---|---|
+| head, 32 bytes | `TRFR`, step, records, name bytes, teleports, collisions, running (u32), mean speed (f32). The last four are for the whole net. A frame after `step` steps is labelled `sim_begin + (step-1)*dt`, as FCD. |
+| names | Trips and lanes seen for the first time: u32 number, top bit set for a lane; u32 length; UTF-8; padded to 4. |
+| phases | u16 per signal in `tls`, padded to 4. |
+| records, 20 bytes each | below |
+
+| Field | Bits |
+|---|---|
+| word 0 | trip number (24), flags (8): 1 lane changed, 2 teleport, 4 collision, 8 will pass, 16 have to wait, 32 wants left, 64 wants right, 128 on junction |
+| word 1 | lane (24), vehicle type (8) |
+| word 2 | previous lane (24, all ones for none), waiting seconds (8) |
+| word 3 | position in 1/256 m (24), next link as an index into the lane's links (6, 63 for none) |
+| word 4 | acceleration in 1/256 m/s² (i16), speed in 1/512 m/s (u16) |
+
+A vehicle teleported or collided on this step keeps its last lane and position, with its flag and no
+speed, for one frame. Teleport or collision comes from which engine counter moved; when both did in
+one frame, from whether it had waited up to `time_to_teleport`. A collision on the last edge of a
+route counts as an arrival, and only the counter sees it.
+
+The GPU thread only asks for finished state to be copied between submissions, to staging buffers of
+its own, and the next wait for the simulation delivers them. Reading them and writing the file happen
+on the writer's thread.
 
 ## Coordinated junctions
 

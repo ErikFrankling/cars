@@ -131,6 +131,9 @@ pub struct Snapshot {
     pub collisions: u32,
     pub cj_phase: Vec<u32>,
     pub arrived: u32,
+    /// Trips a trace says collided. Without one, a vehicle going to the dummy lane counts as a
+    /// collision when the engine's counter moved.
+    pub collided: Option<std::collections::HashSet<u32>>,
     step: u64,
 }
 impl Snapshot {
@@ -144,7 +147,21 @@ impl Snapshot {
             collisions: 0,
             cj_phase: Vec::new(),
             arrived: 0,
+            collided: None,
             step: u64::MAX,
+        }
+    }
+    /// Index vehicles by lane, for a snapshot filled in from a trace.
+    pub fn index(&mut self) {
+        self.by_lane.clear();
+        for (i, v) in self.vs.iter().enumerate() {
+            if v.flags & F_REMOVED == 0 && v.replica == 0 {
+                self.by_lane.entry(v.lane).or_default().push(i);
+            }
+        }
+        let vs = &self.vs;
+        for list in self.by_lane.values_mut() {
+            list.sort_by(|&a, &b| vs[a].pos.total_cmp(&vs[b].pos));
         }
     }
     pub fn update(&mut self, g: &Gpu, sim: &Sim, r: &Renderer) {
@@ -152,16 +169,7 @@ impl Snapshot {
             self.step = sim.step;
             self.vs = sim.vehicles(g);
             self.items = sim.read(g, &sim.buffers.items, self.vs.len() as u64 * 8);
-            self.by_lane.clear();
-            for (i, v) in self.vs.iter().enumerate() {
-                if v.flags & F_REMOVED == 0 && v.replica == 0 {
-                    self.by_lane.entry(v.lane).or_default().push(i);
-                }
-            }
-            let vs = &self.vs;
-            for list in self.by_lane.values_mut() {
-                list.sort_by(|&a, &b| vs[a].pos.total_cmp(&vs[b].pos));
-            }
+            self.index();
             let c = sim.counters(g);
             self.teleports = c[4];
             self.collisions = c[7];
@@ -458,7 +466,7 @@ impl Overlay {
                 if on("events")
                     && let Some(p) = self.previous.remove(&v.trip)
                 {
-                    let collided = snap.collisions > self.collisions;
+                    let collided = snap.collided.as_ref().map_or(snap.collisions > self.collisions, |set| set.contains(&v.trip));
                     let name = if collided { "COLLISION" } else { "TELEPORT" };
                     eprintln!("event {time:.1} {name} at {:.1},{:.1}", p[0], p[1]);
                     self.flashes.push((p, time, name));

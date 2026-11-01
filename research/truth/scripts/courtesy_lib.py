@@ -24,7 +24,11 @@ def ngsim(path, urban=False):
                a=(d['v_acc'].values * FT).astype('f4'), L=(d['v_length'].values * FT).astype('f4'), cls=d['v_class'].values.astype('i1'))
     if urban:
         out.update(int_id=d['int_id'].values.astype('i2'), section=d['section_id'].values.astype('i2'), dirn=d['direction'].values.astype('i1'), move=d['movement'].values.astype('i1'))
-    return pd.DataFrame(out)
+    f = pd.DataFrame(out).sort_values(['run', 'id', 't']).reset_index(drop=True)
+    # ids are reused across the 15 minute periods: a 5 s hole starts a new vehicle
+    new = np.r_[True, (f['id'].values[1:] != f['id'].values[:-1]) | (f['run'].values[1:] != f['run'].values[:-1]) | (np.diff(f['t'].values) > 50)]
+    f['id'] = (np.cumsum(new) - 1).astype('i4')
+    return f
 
 
 def tgsim(name):
@@ -48,6 +52,21 @@ def tgsim(name):
     # lane key separates opposite directions that share a lane number
     out['lane'] = (out['lane'] * out['sgn']).astype('i2')
     return out.drop(columns=['x', 'sgn']).reset_index(drop=True)
+
+
+def ht():
+    """DLR HT blocks prepared by courtesy_ht.py. Lane key: direction times (lane+10). 5 Hz. Run is 0: ids are unique over the day."""
+    P=[]
+    for f in sorted((C/'derived-20261101').glob('ht_*.npz')):
+        z=np.load(f)
+        P.append(pd.DataFrame(dict(run=np.zeros(len(z['id']),'i2'),t=z['ti'].astype('i4'),id=z['id'],lane=(z['dir'].astype('i4')*(z['lane'].astype('i4')+10)).astype('i2'),s=z['s'],lat=z['rel'],v=z['v'],L=z['L'],tr=z['tr'])))
+    d=pd.concat(P,ignore_index=True)
+    # id values exceed 32 bits, so they are ranked; acceleration comes from speed
+    d['id']=pd.factorize(d['id'])[0].astype('i4')
+    d=d.sort_values(['id','t']).reset_index(drop=True)
+    a=np.gradient(d['v'].values)*5.0; brk=np.r_[True,d['id'].values[1:]!=d['id'].values[:-1]]; a[brk]=0
+    d['a']=pd.Series(a).rolling(5,center=True,min_periods=1).mean().values.astype('f4')
+    return d
 
 
 class Frames:

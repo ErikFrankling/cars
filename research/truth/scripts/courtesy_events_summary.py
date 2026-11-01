@@ -16,33 +16,40 @@ def flag(df, col, gcol='gfl_4'):
 def bins(x, b): return np.digitize(np.nan_to_num(x, nan=-1e9), b) - 1
 
 
-def strat_rate(ev, ct, col):
-    """Control rate reweighted to the events' speed and gap-to-leader mix, within one site."""
-    ev = ev.copy(); ct = ct.copy()
-    for d in (ev, ct):
-        d['vb'] = bins(d['vf'].values, VB); d['gb'] = bins(d['gfl_4'].values, [-1e9, 5, 10, 20, 40, 1e9])
-        d['y'] = flag(d, col)
-    r = ct.groupby(['vb', 'gb'])['y'].agg(['mean', 'size'])
-    w = ev.groupby(['vb', 'gb']).size().rename('n').reset_index()
-    w = w.merge(r, on=['vb', 'gb'], how='left')
-    ok = w['size'].fillna(0) >= 15
-    return float(ev['y'].mean()), float((w['mean'] * w['n'])[ok].sum() / max(1, w['n'][ok].sum())), float(w['n'][ok].sum() / max(1, w['n'].sum()))
+def strata(d):
+    """Follower speed, gap to its leader, relative speed to it, and what that leader does next: a control pair in the same cell has the same reason to brake."""
+    return (bins(d['vf'].values, VB) * 1000 + bins(d['gfl_4'].values, [-1e9, 5, 10, 20, 40, 1e9]) * 100 + bins((d['vl_4'] - d['vf']).values, [-1e9, -1.5, 0, 1.5, 1e9]) * 10 + bins(d['dL_pre'].values, [-1e9, -3, -1, 1, 3, 1e9]))
 
 
-def block(ev, ct, label):
-    """ev and ct may hold several sites: controls are reweighted site by site and pooled by event count."""
+def cell_table(ct):
+    t = {}
+    for s, c in ct.groupby('site'):
+        g = pd.DataFrame(dict(k=strata(c), f_pre=flag(c, 'dF_pre'), f_post=flag(c, 'dF_post'), d_pre=c['dF_pre'].values, d_post=c['dF_post'].values)).groupby('k')
+        m = g.mean(); m['n'] = g.size(); t[s] = m[m['n'] >= 8]
+    return t
+
+
+def block(ev, CT, label=''):
+    """Observed minus expected: the expected value is the control mean of the event's own cell, at the event's own site."""
     o = {'n': int(len(ev))}
     if len(ev) < 15: return o
-    for col, name in (('dF_pre', 'open_before'), ('dF_post', 'open_after')):
-        rows = []
-        for s, e in ev.groupby('site'):
-            c = ct[ct['site'] == s]
-            if len(c) < 200: continue
-            rows.append((len(e),) + strat_rate(e, c, col))
-        if not rows: continue
-        rows = np.array(rows); w = rows[:, 0]
-        o[name] = dict(rate=round(float((rows[:, 1] * w).sum() / w.sum()), 3), control=round(float((rows[:, 2] * w).sum() / w.sum()), 3))
-        o[name]['excess'] = round(o[name]['rate'] - o[name]['control'], 3)
+    rows = []
+    for s, e in ev.groupby('site'):
+        if s not in CT: continue
+        k = strata(e); t = CT[s]; ok = np.isin(k, t.index.values)
+        c = t.reindex(k[ok])
+        rows.append(pd.DataFrame(dict(y_pre=flag(e, 'dF_pre')[ok], y_post=flag(e, 'dF_post')[ok], x_pre=e['dF_pre'].values[ok], x_post=e['dF_post'].values[ok], c_y_pre=c['f_pre'].values, c_y_post=c['f_post'].values, c_x_pre=c['d_pre'].values, c_x_post=c['d_post'].values)))
+    if not rows: return o
+    r = pd.concat(rows, ignore_index=True); o['matched'] = int(len(r))
+    if len(r) < 15: return o
+    rng = np.random.default_rng(11)
+    diffs = r[['y_pre', 'y_post', 'x_pre', 'x_post']].astype(float).values - r[['c_y_pre', 'c_y_post', 'c_x_pre', 'c_x_post']].values
+    bs = np.array([diffs[rng.integers(0, len(diffs), len(diffs))].mean(0) for _ in range(400)])
+    ci = lambda i: [round(float(np.percentile(bs[:, i], 2.5)), 3), round(float(np.percentile(bs[:, i], 97.5)), 3)]
+    o['open_before'] = dict(rate=round(float(r['y_pre'].mean()), 3), control=round(float(r['c_y_pre'].mean()), 3), excess=round(float(diffs[:, 0].mean()), 3), ci=ci(0))
+    o['open_after'] = dict(rate=round(float(r['y_post'].mean()), 3), control=round(float(r['c_y_post'].mean()), 3), excess=round(float(diffs[:, 1].mean()), 3), ci=ci(1))
+    o['holdback_before_m'] = dict(obs=round(float(r['x_pre'].mean()), 3), control=round(float(r['c_x_pre'].mean()), 3), excess=round(float(diffs[:, 2].mean()), 3), ci=ci(2))
+    o['holdback_after_m'] = dict(obs=round(float(r['x_post'].mean()), 3), control=round(float(r['c_x_post'].mean()), 3), excess=round(float(diffs[:, 3].mean()), 3), ci=ci(3))
     y1 = flag(ev, 'dF_pre'); y2 = flag(ev, 'dF_post')
     o['coop'] = round(float(y1.mean()), 3); o['forced'] = round(float((~y1 & y2).mean()), 3); o['free'] = round(float((~y1 & ~y2).mean()), 3)
     o['lag0'] = q(ev['lag0']); o['lead0'] = q(ev['lead0']); o['vf'] = q(ev['vf'])
@@ -63,15 +70,21 @@ def main(sites):
     E, K = load(sites)
     out = {'sites': sites, 'events': int(len(E)), 'controls': int(len(K))}
     L = E[(E['L'] >= 0) & (E['l_same'] == 1) & E['gfl_4'].notna()]
-    K2 = K[K['l_same'] == 1]
-    out['by_site'] = {s: block(L[L['site'] == s], K2[K2['site'] == s], s) for s in sites}
-    out['all'] = block(L, K2, 'all')
-    out['by_speed'] = {f'{VB[i]}-{VB[i+1]}': block(L[bins(L['vf'].values, VB) == i], K2[bins(K2['vf'].values, VB) == i], '') for i in range(len(VB) - 1)}
+    K2 = K[K['l_same'] == 1]; CT = cell_table(K2)
+    out['by_site'] = {s: block(L[L['site'] == s], CT) for s in sites}
+    out['all'] = block(L, CT)
+    out['by_speed'] = {f'{VB[i]}-{VB[i+1]}': block(L[bins(L['vf'].values, VB) == i], CT) for i in range(len(VB) - 1)}
     dv = (L['vf'] - L['ve_4']).values
-    out['by_relspeed_follower_minus_changer'] = {f'{DB[i]}..{DB[i+1]}': block(L[bins(dv, DB) == i], K2, '') for i in range(len(DB) - 1)}
-    out['by_lag_gap_-4s'] = {f'{GB[i]}..{GB[i+1]}': block(L[bins(L['lag_4'].values, GB) == i], K2, '') for i in range(len(GB) - 1)}
+    out['by_relspeed_follower_minus_changer'] = {f'{DB[i]}..{DB[i+1]}': block(L[bins(dv, DB) == i], CT) for i in range(len(DB) - 1)}
+    out['by_lag_gap_-4s'] = {f'{GB[i]}..{GB[i+1]}': block(L[bins(L['lag_4'].values, GB) == i], CT) for i in range(len(GB) - 1)}
+    forced = {'i-80': (7, 6), 'us-101': (6, 5)}
+    for site, (a, b) in forced.items():
+        if site in sites: out['forced_' + site] = block(L[(L['site'] == site) & (L['old'] == a) & (L['new'] == b)], CT)
+    if 'ht' in sites: out['forced_ht'] = block(L[(L['site'] == 'ht') & (((L['old'] == -9) & (L['new'] == -10)) | ((L['old'] == 10) & (L['new'] == 11)))], CT)
+    # everything except these, at low speed
     urban = L[L['site'].isin(['lankershim', 'peachtree'])]; fw = L[~L['site'].isin(['lankershim', 'peachtree'])]
-    out['urban'] = block(urban, K2, ''); out['freeway'] = block(fw, K2, '')
+    out['ht_only_excluded_from_us'] = block(L[L['site'] != 'ht'], CT)
+    out['urban'] = block(urban, CT); out['freeway'] = block(fw, CT)
     # event-locked mean acceleration against the control, in 1 s bins
     acols = [c for c in E.columns if c.startswith('a_')]
     prof = {}

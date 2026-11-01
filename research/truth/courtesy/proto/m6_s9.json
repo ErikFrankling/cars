@@ -1,0 +1,44 @@
+{
+ "name": "m6_s9",
+ "off": false,
+ "seed": 9,
+ "main": 1200,
+ "ramp": 900,
+ "neck": 5.0,
+ "ramp_cars": 450,
+ "never": 0,
+ "wait": {
+  "p10": 9.0,
+  "p50": 32.5,
+  "p90": 43.0,
+  "p99": 53.0
+ },
+ "wait_max": 59.0,
+ "main_between_ramp": {
+  "0": 147,
+  "1": 222,
+  "2": 63,
+  "3": 13,
+  "4": 4,
+  "5": 0,
+  "6": 0,
+  "7": 0
+ },
+ "rl_mean": 0.9,
+ "flow_vph": 1902,
+ "collisions": 0,
+ "decel_over_limit": 2,
+ "wait_over_120": 0,
+ "requests": 5679,
+ "yields": 4715,
+ "lag_commit": [
+  1.04,
+  1.58,
+  2.1
+ ],
+ "lead_commit": [
+  0.87,
+  1.97,
+  3.29
+ ]
+}

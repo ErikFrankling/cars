@@ -1,0 +1,44 @@
+{
+ "name": "m2",
+ "off": true,
+ "seed": 7,
+ "main": 1100,
+ "ramp": 1000,
+ "neck": 5.0,
+ "ramp_cars": 450,
+ "never": 0,
+ "wait": {
+  "p10": 1.0,
+  "p50": 8.0,
+  "p90": 89.0,
+  "p99": 1317.3
+ },
+ "wait_max": 1765.0,
+ "main_between_ramp": {
+  "0": 139,
+  "1": 250,
+  "2": 32,
+  "3": 6,
+  "4": 7,
+  "5": 9,
+  "6": 0,
+  "7": 4
+ },
+ "rl_mean": 1.0,
+ "flow_vph": 1800,
+ "collisions": 0,
+ "decel_over_limit": 1,
+ "wait_over_120": 165,
+ "requests": 0,
+ "yields": 0,
+ "lag_commit": [
+  8.04,
+  53.91,
+  59.39
+ ],
+ "lead_commit": [
+  2.89,
+  4.25,
+  6.09
+ ]
+}

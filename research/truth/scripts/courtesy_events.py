@@ -20,6 +20,9 @@ def load(site):
             x, y = sorted((a % 100, b % 100))
             return (y - x == 1 and y <= 4) or (x, y) == (1, 11) or (x, y) == (11, 12)
         return d, adj
+    if site == 'ht':
+        d = ht(); d = d[d['tr'] == 0]
+        return d, lambda a, b: abs(a - b) == 1 and a * b > 0
     d = tgsim(site); d = d[d['auto'] == 0]
     return d, lambda a, b: abs(a - b) == 1 and a * b > 0 and {abs(a), abs(b)} not in ({3, 4}, {12, 13}) and max(abs(a), abs(b)) < 20
 
@@ -53,7 +56,7 @@ def metrics(r, new, tc, vf, sf, af, lf, vl, sl, ll, Ll, e=None):
 
 def run(site):
     d, adj = load(site)
-    fr = Frames(d, 10)
+    fr = Frames(d, 5 if site == 'ht' else 10)
     print(site, 'rows', len(d), 'vehicles', len(fr.veh), flush=True)
     lcs = lane_changes(fr, adj)
     print(site, 'lane changes', len(lcs), flush=True)
@@ -92,7 +95,7 @@ def run(site):
         if b is not None:
             j = np.searchsorted(b, tc); near = False
             for jj in (j - 1, j):
-                if 0 <= jj < len(b) and abs(int(b[jj]) - tc) <= 100: near = True
+                if 0 <= jj < len(b) and abs(int(b[jj]) - tc) <= 10 * fr.hz: near = True
             if near: continue
         tq, vf, sf, af, lf, vl, sl, al, ll = series_row(fr, r, tc, F, L)
         if not (np.all(lf[idx(-4):idx(4) + 1] == lane) and np.all(ll[idx(-4):idx(4) + 1] == lane)): continue

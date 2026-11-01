@@ -51,6 +51,12 @@ for name,tt in (('at_crossing',m),):
     lagok=(tt['lag_gap']>=sg(tt['vlag'],tt['v']))
     leadok=(tt['lead_gap']>=sg(tt['v'],tt['vlead']))
     out['sumo_default_secure_gap_test']=dict(n=len(tt),lag_ok=float(lagok.mean()),lead_ok=float(leadok.mean()),both_ok=float((lagok&leadok).mean()),note='fraction of observed changes that SUMO default secure gaps would allow at label crossing; crossing is mid-manoeuvre so this is a lower bound on the gap at decision time')
+grid={}
+for tau in (0,.2,.4,.6,.8,1.0):
+    for mg in (.5,1.0,1.5,2.5):
+        a_=(m['lag_gap']>=sg(m['vlag'],m['v'],tau=tau,mg=mg));b_=(m['lead_gap']>=sg(m['v'],m['vlead'],tau=tau,mg=mg))
+        grid[f'tau{tau}_mg{mg}']=dict(lag=float(a_.mean()),lead=float(b_.mean()),both=float((a_&b_).mean()))
+out['secure_gap_grid']=grid
 # imposed deceleration under IDM(+) on the new follower
 def idm_dec(g,v,vl,a=1.5,b=2.0,T=1.2,s0=2.0): 
     ss=s0+np.maximum(0,v*T+v*(v-vl)/(2*np.sqrt(a*b)));return a*(1-(ss/np.maximum(g,.5))**2)

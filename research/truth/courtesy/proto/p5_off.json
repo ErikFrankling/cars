@@ -1,0 +1,28 @@
+{
+ "name": "p5",
+ "off": true,
+ "seed": 7,
+ "approach": 30,
+ "vph": 2000,
+ "spill": 1,
+ "cars": 238,
+ "unfinished": 70,
+ "wrong_time": {
+  "p50": 730.0,
+  "p90": 1620.2000000000003,
+  "p99": 1943.1999999999994,
+  "max": 1988.0
+ },
+ "stopped_wrong": {
+  "p90": 1247.6,
+  "p99": 1600.12,
+  "max": 1705.0
+ },
+ "share_stopped_wrong": 0.542,
+ "wrong_lane_teleports": 61,
+ "missed_turns": 0,
+ "collisions": 0,
+ "decel_over_limit": 138,
+ "requests": 0,
+ "yields": 0
+}

@@ -1,0 +1,29 @@
+{
+ "name": "p6_s9",
+ "off": false,
+ "seed": 9,
+ "approach": 150,
+ "vph": 2000,
+ "spill": 1,
+ "cars": 1000,
+ "unfinished": 0,
+ "wrong_time": {
+  "p50": 20.0,
+  "p90": 311.60000000000014,
+  "p99": 357.96000000000004,
+  "max": 380.0
+ },
+ "stopped_wrong": {
+  "p90": 119.0,
+  "p99": 163.0,
+  "max": 190.0
+ },
+ "share_stopped_wrong": 0.339,
+ "wrong_lane_teleports": 0,
+ "missed_turns": 0,
+ "swaps": 128,
+ "collisions": 0,
+ "decel_over_limit": 210,
+ "requests": 27761,
+ "yields": 20970
+}

@@ -1,0 +1,29 @@
+{
+ "name": "p3",
+ "off": false,
+ "seed": 7,
+ "approach": 60,
+ "vph": 2000,
+ "spill": 0,
+ "cars": 1000,
+ "unfinished": 0,
+ "wrong_time": {
+  "p50": 147.0,
+  "p90": 246.0,
+  "p99": 267.13,
+  "max": 322.0
+ },
+ "stopped_wrong": {
+  "p90": 94.0,
+  "p99": 133.0,
+  "max": 178.0
+ },
+ "share_stopped_wrong": 0.557,
+ "wrong_lane_teleports": 0,
+ "missed_turns": 0,
+ "swaps": 203,
+ "collisions": 0,
+ "decel_over_limit": 430,
+ "requests": 35248,
+ "yields": 23754
+}

@@ -8,7 +8,8 @@ def split(us_only=False,train_only=False):
     if cached.exists():
         import pickle
         d=pickle.load(open(cached,'rb'))
-        un=lambda x:Batch(x['s'].astype('f8'),x['v'].astype('f8'),x['vl'].astype('f8'),x['a0'].astype('f8'),x['meta'])
+        # initial acceleration from the first second of speed: provider acceleration columns are unreliable (see QC)
+        un=lambda x:Batch(x['s'].astype('f8'),x['v'].astype('f8'),x['vl'].astype('f8'),np.clip((x['v'][10].astype('f8')-x['v'][0])/1.0,-3,3),x['meta'])
         if train_only: return un(d['train']),None,{}
         if 'HT_all_external' in d['test']:
             x=d['test']['HT_all_external'];k=np.arange(0,x['s'].shape[1],2)
@@ -43,7 +44,7 @@ def mk(name):
         idm=(lambda b,p:idm_family(b,vr(p,b)),BOUND,IN),idmplus=(lambda b,p:idm_family(b,vr(p,b),plus=True),BOUND,IN),hdm=(lambda b,p:hdm(b,vr(p,b)),BOUND,IN+['Tr']),
         gipps=(lambda b,p:gipps(b,{**vr(p,b),'tau':p['T']},0.5),BOUND,IN),idm_lag=(lambda b,p:idm_family(b,vr(p,b)),BOUND,IN+['tau_a']),idmplus_lag=(lambda b,p:idm_family(b,vr(p,b),plus=True),BOUND,IN+['tau_a']),
         helly=(lambda b,p:helly(b,vr(p,b)),BOUND,H),helly_lag=(lambda b,p:helly(b,vr(p,b)),BOUND,H+['tau_a']),helly_asym=(lambda b,p:helly(b,vr(p,b)),BOUND,H+['k2c']),helly_ghr=(lambda b,p:helly(b,vr(p,b)),BOUND,H+['m']),helly_ghr_lag=(lambda b,p:helly(b,vr(p,b)),BOUND,H+['m','tau_a']),helly_ghr_asym=(lambda b,p:helly(b,vr(p,b)),BOUND,H+['m','k2c']),
-        helly_sqrt=(lambda b,p:helly(b,{**vr(p,b),'m':0.5}),BOUND,H),helly_sqrt_s0fix=(lambda b,p:helly(b,{**vr(p,b),'m':0.5,'s0':2.8}),BOUND,['k1','k2','T','amax','bmax','gamma']),helly_ghr_s0fix=(lambda b,p:helly(b,{**vr(p,b),'s0':2.8}),BOUND,['k1','k2','T','amax','bmax','gamma','m']),helly_ghr_s0fix_lag=(lambda b,p:helly(b,{**vr(p,b),'s0':2.8}),BOUND,['k1','k2','T','amax','bmax','gamma','m','tau_a']))
+        helly_sqrt=(lambda b,p:helly(b,{**vr(p,b),'m':0.5}),BOUND,H),helly_sqrt_s0fix_tau1=(lambda b,p:helly(b,{**vr(p,b),'m':0.5,'s0':2.8,'tau_a':1.0}),BOUND,['k1','k2','T','amax','bmax','gamma']),helly_sqrt_s0fix_lag=(lambda b,p:helly(b,{**vr(p,b),'m':0.5,'s0':2.8}),BOUND,['k1','k2','T','amax','bmax','gamma','tau_a']),helly_sqrt_s0fix=(lambda b,p:helly(b,{**vr(p,b),'m':0.5,'s0':2.8}),BOUND,['k1','k2','T','amax','bmax','gamma']),helly_ghr_s0fix=(lambda b,p:helly(b,{**vr(p,b),'s0':2.8}),BOUND,['k1','k2','T','amax','bmax','gamma','m']),helly_ghr_s0fix_lag=(lambda b,p:helly(b,{**vr(p,b),'s0':2.8}),BOUND,['k1','k2','T','amax','bmax','gamma','m','tau_a']))
     return table[name]
 MODELS=['krauss_dt1','krauss_dt01','gipps','idm','idmplus','hdm','idm_lag','idmplus_lag','helly','helly_lag','helly_asym','helly_ghr','helly_ghr_lag','helly_ghr_asym','helly_ghr_s0fix','helly_ghr_s0fix_lag']
 def main(which,us_only,tag):
