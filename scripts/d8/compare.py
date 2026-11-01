@@ -16,7 +16,14 @@ def rows(part):
     p = D8 / f'{part}.jsonl'
     if not p.exists():
         return []
-    return [json.loads(l) for l in p.read_text().splitlines()]
+    # Two devices can reach the same case while the lock is contended: keep the first.
+    seen, out = set(), []
+    for l in p.read_text().splitlines():
+        r = json.loads(l)
+        if r['key'] not in seen:
+            seen.add(r['key'])
+            out.append(r)
+    return out
 
 
 def cpu(name):

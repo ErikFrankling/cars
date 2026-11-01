@@ -11,7 +11,7 @@ work.mkdir(parents=True, exist_ok=True)
 rng = random.Random(8)
 out = D8 / 'verify.jsonl'
 with out.open('w') as f:
-    for part, n in (('stalls', 3), ('t', 4), ('grid', 6), ('meter_seeds', 6)):
+    for part, n in (('demand', 6), ('faults', 4), ('stalls', 3), ('t', 3), ('grid', 5), ('meter_seeds', 5)):
         rows = [json.loads(l) for l in (D8 / f'{part}.jsonl').read_text().splitlines()]
         for r in rng.sample(rows, n):
             g = run_case(r['case'], work, cars)

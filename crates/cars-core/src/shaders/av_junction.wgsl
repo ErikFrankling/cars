@@ -42,6 +42,7 @@ const STATS_PER_REPLICA: u32 = 32u;
 const EVENTS_MAX: u32 = 4095u;
 const INF: f32 = 1e30;
 const HEARD_NOTHING: f32 = 20.0;
+const FOE_DWELL: f32 = 3.0;
 
 const S_LOSS: u32 = 0u;
 const S_STOPS: u32 = 1u;
@@ -807,7 +808,7 @@ fn abort_on_lane(q: u32, mi: u32, replica: u32) {
 }
 
 // A foe on movement `f`, entering at foe_in: brake for the body at (t_clear) if it can still stop.
-fn yield_foes(j: u32, f: u32, foe_in: f32, t_clear: f32) {
+fn yield_foes(j: u32, f: u32, foe_in: f32, t_clear: f32, t_in: f32) {
     let fm = cj_links[f];
     let sim = cj_apps[fm.from_lane].sim_lane;
     let len = cj_apps[fm.from_lane].length;
@@ -823,7 +824,7 @@ fn yield_foes(j: u32, f: u32, foe_in: f32, t_clear: f32) {
             if (to_conf > 80.0) { break; }
             if ((e.cj_state & CJ_STATE_MASK) != CJ_FIRM || e.cj_link != f || to_conf <= 0.5) { continue; }
             let vq = max(e.speed, 0.5);
-            if (t_clear > to_conf / vq - 0.1 && to_conf >= e.speed * cfg.t_r + e.speed * e.speed / (2.0 * cfg.b_e)) {
+            if (t_clear > to_conf / vq - 0.1 && to_conf / vq + FOE_DWELL > t_in && to_conf >= e.speed * cfg.t_r + e.speed * e.speed / (2.0 * cfg.b_e)) {
                 cur[idx].cj_yield = min(cur[idx].cj_yield, foe_in - 0.5);
             }
         }
@@ -835,7 +836,7 @@ fn yield_foes(j: u32, f: u32, foe_in: f32, t_clear: f32) {
         let to_conf = foe_in - b.s;
         if (to_conf <= 0.5 || to_conf > 80.0) { continue; }
         let vq = max(b.v, 0.5);
-        if (t_clear > to_conf / vq - 0.1 && to_conf >= b.v * cfg.t_r + b.v * b.v / (2.0 * cfg.b_e)) {
+        if (t_clear > to_conf / vq - 0.1 && to_conf / vq + FOE_DWELL > t_in && to_conf >= b.v * cfg.t_r + b.v * b.v / (2.0 * cfg.b_e)) {
             cur[b.veh].cj_yield = min(cur[b.veh].cj_yield, foe_in - 0.5);
         }
     }
@@ -986,7 +987,44 @@ fn cj_perceive(@builtin(global_invocation_id) id: vec3u) {
                 let cf = cj_conflicts[c];
                 if (b.s - cfg.length >= cf.s_out || b.s < cf.s_in - 0.5) { continue; }
                 let t_clear = (cf.s_out + cfg.length - b.s) / max(b.v, 0.5);
-                yield_foes(j, cf.foe, cf.foe_s_in, t_clear);
+                yield_foes(j, cf.foe, cf.foe_s_in, t_clear, -INF);
+            }
+        }
+        // A car held up on the exit with its tail still across a conflict is a body in the road too.
+        let sim = cj_exits[x].sim_lane;
+        if (seg[sim].stamp == G.step) {
+            let last = min(seg[sim].first + 3u, seg[sim].end);
+            for (var q = seg[sim].first; q < last; q++) {
+                let e = cur[q];
+                if (e.pos > cfg.length + 1.0 || e.prev_lane == NONE) { continue; }
+                let mi = cj_lane_info[e.prev_lane].box_mov;
+                if (mi == NONE || cj_links[mi].to_lane != x) { continue; }
+                let m = cj_links[mi];
+                let s_tail = m.path_len + e.pos;
+                for (var c = m.conf_start; c < m.conf_start + m.conf_count; c++) {
+                    let cf = cj_conflicts[c];
+                    if (s_tail - cfg.length >= cf.s_out) { continue; }
+                    yield_foes(j, cf.foe, cf.foe_s_in, (cf.s_out + cfg.length - s_tail) / max(e.speed, 0.5), -INF);
+                }
+            }
+        }
+    }
+    // A car that has missed its slot and can no longer stop will enter anyway, later than reserved.
+    for (var a = Jn.app_start; a < Jn.app_start + Jn.app_count; a++) {
+        let sim = cj_apps[a].sim_lane;
+        if (seg[sim].stamp != G.step) { continue; }
+        let first = seg[sim].first;
+        var idx = seg[sim].end;
+        for (var n = 0u; n < 3u && idx > first; n++) {
+            idx -= 1u;
+            let e = cur[idx];
+            if ((e.cj_state & CJ_STATE_MASK) != CJ_FIRM || (e.cj_state & CJ_LATE) == 0u) { continue; }
+            let m = cj_links[e.cj_link];
+            let s = e.pos - cj_apps[a].length;
+            let v = max(e.speed, 0.5);
+            for (var c = m.conf_start; c < m.conf_start + m.conf_count; c++) {
+                let cf = cj_conflicts[c];
+                yield_foes(j, cf.foe, cf.foe_s_in, (cf.s_out + cfg.length - s) / v, (cf.s_in - s) / v);
             }
         }
     }
