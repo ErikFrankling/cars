@@ -54,6 +54,10 @@ pub struct Args {
     begin: f32,
     #[arg(long, default_value_t = 3600.0)]
     end: f32,
+    /// The --end of a `cars run` to reproduce. Demand is cut there, so the same value gives the
+    /// same simulation; pictures stop at --end regardless.
+    #[arg(long)]
+    sim_end: Option<f32>,
     #[arg(long, default_value_t = 0)]
     seed: u64,
     #[arg(long, default_value_t = 0)]
@@ -294,13 +298,12 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
     }
     let videos = specs.iter().any(|s| s.out.is_some());
     let last_shot = specs.iter().flat_map(|s| s.shots.iter().copied()).fold(f32::MIN, f32::max);
-    if !videos {
-        if last_shot == f32::MIN {
-            return Err("nothing to do: give --at".into());
-        }
-        a.end = last_shot + 2.0 * a.dt;
+    if !videos && last_shot == f32::MIN {
+        return Err("nothing to do: give --at".into());
     }
+    let frames_end = a.end;
     a.end = a.end.max(last_shot + 2.0 * a.dt);
+    let demand_end = a.sim_end.unwrap_or(if videos { frames_end } else { last_shot + 2.0 * a.dt }).max(a.end);
     let spf = a.steps_per_frame.unwrap_or(1);
     let close = a.views.is_some() || a.junction.is_some() || a.follow.is_some() || !videos;
     if !close && a.title.is_empty() {
@@ -354,14 +357,14 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
     for p in &a.additional {
         net.load_additional(p)?;
     }
-    let mut demand = Demand::load(&net, &a.routes, &a.additional, a.seed, Some(a.end as f64))?;
+    let mut demand = Demand::load(&net, &a.routes, &a.additional, a.seed, Some(demand_end as f64))?;
     let mut world = World::build(
         &net,
         &demand,
         &SimConfig {
             dt: a.dt,
             begin_seconds: a.sim_begin,
-            end_seconds: a.end,
+            end_seconds: demand_end,
             seed: a.seed,
             capacity: a.capacity,
             time_to_teleport: a.time_to_teleport,

@@ -149,3 +149,11 @@ queues can be shorter than in a full run.
 and a CSV per finding. It reports, it does not judge: thresholds are the graded ones from
 `research/truth/11-vehicle-physics.md`. Curvature is the heading change over a 5 m window of
 lane polyline, so read a single lane's peak as a place to go and look.
+
+Reproducing what a report found: `--overlay events` prints `event <time> <kind> at <x>,<y>` to
+stderr, so a debug clip tells where to look in itself. Frames carry the FCD's time labels, and
+`--sim-end` takes the `--end` of a `cars run`, because demand is cut at the end time and changing it
+changes the simulation. Small nets then replay the same run. City runs do not repeat: two identical
+`cars run` commands on Stockholm differed by about 200 vehicles an hour in, so an incident in an FCD
+file will not be there in a later clip of the same command. Record with `--overlay events` and read
+that run's log instead.

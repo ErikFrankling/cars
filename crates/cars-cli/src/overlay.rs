@@ -301,7 +301,9 @@ impl Overlay {
                     && let Some(p) = self.previous.remove(&v.trip)
                 {
                     let collided = snap.collisions > self.collisions;
-                    self.flashes.push((p, time, if collided { "COLLISION" } else { "TELEPORT" }));
+                    let name = if collided { "COLLISION" } else { "TELEPORT" };
+                    eprintln!("event {time:.1} {name} at {:.1},{:.1}", p[0], p[1]);
+                    self.flashes.push((p, time, name));
                 }
                 continue;
             }
@@ -421,7 +423,9 @@ impl Overlay {
                     && gap < -0.05
                     && k < snap.poses.len()
                 {
-                    self.flashes.push((rear(k), time, "OVERLAP"));
+                    let p = rear(k);
+                    eprintln!("event {time:.1} GAP {gap:.2} at {:.1},{:.1}", p[0], p[1]);
+                    self.flashes.push((p, time, "OVERLAP"));
                 }
             }
         }
@@ -435,7 +439,9 @@ impl Overlay {
                     }
                     if rectangles_touch(&snap.poses[i], &snap.poses[k]) {
                         let (p, q) = (snap.poses[i].xy, snap.poses[k].xy);
-                        self.flashes.push(([(p[0] + q[0]) * 0.5, (p[1] + q[1]) * 0.5], time, "OVERLAP"));
+                        let m = [(p[0] + q[0]) * 0.5, (p[1] + q[1]) * 0.5];
+                        eprintln!("event {time:.1} BODY at {:.1},{:.1}", m[0], m[1]);
+                        self.flashes.push((m, time, "OVERLAP"));
                     }
                 }
             }
