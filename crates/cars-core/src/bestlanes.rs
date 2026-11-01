@@ -56,7 +56,7 @@ pub fn depart_mask(net: &Net, topo: &Topology, route: &[u32], vt: &VType) -> u32
                     a[k] > 0.0
                         && topo.lane_links[lane(k) as usize].iter().any(|&l| {
                             let lk = &topo.links[l as usize];
-                            lk.to_edge == ne && allowed(lk.to_lane)
+                            lk.to_edge == ne && lk.allow & vt.vclass == vt.vclass
                         })
                 }
             };
@@ -105,7 +105,7 @@ pub fn depart_mask(net: &Net, topo: &Topology, route: &[u32], vt: &VType) -> u32
                     if ok[k] {
                         for &l in &topo.lane_links[lane(k) as usize] {
                             let lk = &topo.links[l as usize];
-                            if lk.to_edge != ne || !allowed(lk.to_lane) {
+                            if lk.to_edge != ne || lk.allow & vt.vclass != vt.vclass {
                                 continue;
                             }
                             let m = (net.lanes[lk.to_lane as usize].index as usize).min(MAX_LANES - 1);
@@ -152,7 +152,7 @@ pub fn depart_mask(net: &Net, topo: &Topology, route: &[u32], vt: &VType) -> u32
                     }
                     for &l in &topo.lane_links[lane(k) as usize] {
                         let lk = &topo.links[l as usize];
-                        if lk.to_edge != ne {
+                        if lk.to_edge != ne || lk.allow & vt.vclass != vt.vclass {
                             continue;
                         }
                         let m = (net.lanes[lk.to_lane as usize].index as usize).min(MAX_LANES - 1);

@@ -155,3 +155,72 @@ fn distributions_routing_and_defaults() {
     assert_eq!(cut.dropped.after_end, 2);
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+#[test]
+fn connection_permissions() {
+    let dir = std::env::temp_dir().join(format!("cars-conn-perms-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let np = dir.join("net.xml");
+    // a_0 -> b_0 bans passenger; a_1 -> b_1 is free; a -> c only by bus; a -> d -> c is the way around.
+    std::fs::write(
+        &np,
+        r#"<net>
+      <edge id=":j_0" function="internal"><lane id=":j_0_0" index="0" speed="10" length="5" disallow="passenger"/></edge>
+      <edge id=":j_1" function="internal"><lane id=":j_1_0" index="0" speed="10" length="5"/></edge>
+      <edge id=":j_2" function="internal"><lane id=":j_2_0" index="0" speed="10" length="5" allow="bus"/></edge>
+      <edge id=":j_3" function="internal"><lane id=":j_3_0" index="0" speed="10" length="5"/></edge>
+      <edge id=":k_0" function="internal"><lane id=":k_0_0" index="0" speed="10" length="5"/></edge>
+      <edge id="a"><lane id="a_0" index="0" speed="10" length="100"/><lane id="a_1" index="1" speed="10" length="100"/></edge>
+      <edge id="b"><lane id="b_0" index="0" speed="10" length="100"/><lane id="b_1" index="1" speed="10" length="100"/></edge>
+      <edge id="c"><lane id="c_0" index="0" speed="10" length="100"/></edge>
+      <edge id="d"><lane id="d_0" index="0" speed="10" length="100"/></edge>
+      <connection from="a" to="b" fromLane="0" toLane="0" via=":j_0_0" disallow="passenger"/>
+      <connection from="a" to="b" fromLane="1" toLane="1" via=":j_1_0"/>
+      <connection from="a" to="c" fromLane="1" toLane="0" via=":j_2_0" allow="bus"/>
+      <connection from="a" to="d" fromLane="1" toLane="0" via=":j_3_0"/>
+      <connection from="d" to="c" fromLane="0" toLane="0" via=":k_0_0"/>
+      <connection from=":j_0" to="b" fromLane="0" toLane="0"/>
+      <connection from=":j_1" to="b" fromLane="0" toLane="1"/>
+      <connection from=":j_2" to="c" fromLane="0" toLane="0"/>
+      <connection from=":j_3" to="d" fromLane="0" toLane="0"/>
+      <connection from=":k_0" to="c" fromLane="0" toLane="0"/>
+    </net>"#,
+    )
+    .unwrap();
+    let rp = dir.join("routes.xml");
+    std::fs::write(
+        &rp,
+        r#"<routes>
+      <vType id="bus" vClass="bus"/>
+      <vType id="car" vClass="passenger"/>
+      <vehicle id="legal" type="car" depart="0"><route edges="a b"/></vehicle>
+      <vehicle id="banned" type="car" depart="0"><route edges="a c"/></vehicle>
+      <vehicle id="bus" type="bus" depart="0"><route edges="a c"/></vehicle>
+      <trip id="around" type="car" from="a" to="c" depart="0"/>
+      <trip id="direct" type="bus" from="a" to="c" depart="0"/>
+    </routes>"#,
+    )
+    .unwrap();
+    let net = Net::load(&np).unwrap();
+    let d = Demand::load(&net, &[rp], &[], 7, None).unwrap();
+    assert_eq!(d.dropped.banned_connection, 1, "{}", d.summary());
+    assert_eq!(d.dropped.unconnected, 0, "{}", d.summary());
+    let route = |id: &str| {
+        let t = d.trips.iter().find(|t| d.ids[t.id as usize] == id).unwrap();
+        d.routes[t.route as usize].iter().map(|&e| net.edges[e as usize].id.as_str()).collect::<Vec<_>>()
+    };
+    assert_eq!(route("around"), ["a", "d", "c"]);
+    assert_eq!(route("direct"), ["a", "c"]);
+    assert_eq!(route("bus"), ["a", "c"]);
+
+    let topo = cars_core::topology::Topology::build(&net);
+    let vt = |id: &str| &d.vtypes[d.vtype_index[id] as usize];
+    let edge = |id: &str| net.edge_index[id];
+    let mask = |id: &str, route: &[&str]| {
+        let r: Vec<u32> = route.iter().map(|e| edge(e)).collect();
+        cars_core::bestlanes::depart_mask(&net, &topo, &r, vt(id))
+    };
+    assert_eq!(mask("car", &["a", "b"]), 0b10, "only lane 1 reaches b legally");
+    assert_eq!(mask("bus", &["a", "b"]), 0b11);
+    std::fs::remove_dir_all(dir).ok();
+}

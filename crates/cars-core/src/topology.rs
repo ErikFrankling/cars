@@ -29,6 +29,8 @@ pub struct Link {
     pub keep_clear: bool,
     pub length: f32,
     pub visibility: f32,
+    /// Classes that may drive this link.
+    pub allow: u32,
     pub foe_links: Vec<u32>,
     pub foe_lanes: Vec<u32>,
     pub conflicts: Vec<Conflict>,
@@ -216,6 +218,7 @@ impl Topology {
                 keep_clear: c.keep_clear,
                 length,
                 visibility: if c.state == b'Z' { 100.0 } else { c.visibility },
+                allow: net.conn_allow(c),
                 foe_links: Vec::new(),
                 foe_lanes: Vec::new(),
                 conflicts: Vec::new(),
