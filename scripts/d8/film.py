@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The D8 clips. Shares the GPU lock in five minute turns. Usage: film.py [--only name,name] [--preview]
 Real runs, no hidden teleports: time_to_teleport 0, the auditor on, its count on the HUD."""
-import argparse, subprocess, sys
+import argparse, json, subprocess, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -86,13 +86,22 @@ def main():
         net, rou = demand('j2', 4200, 'M', 400)
         record(c, 'paths_and_slots', net, rou, 300, 330, 400, 'Planned paths and granted slots', '4200 veh/h, 2 lanes with turns, half speed', overlay='grants,paths,events', speed=0.5, mpp=0.07, preview=pv)
     if want('exit'):
-        net, rou = demand('j2', 3000, 'M', 400)
-        record(c, 'exit_blocked', net, rou, 305, 345, 400, 'Exit closed: the box stays clear', 'exit to the east closed from 250 s, credits and point-of-no-return check on', extra=['--cj-exit-fault', 'B1C1:250:800'], overlay='grants,events', mpp=0.1, preview=pv)
-        record(c, 'exit_blocked_unprotected', net, rou, 305, 345, 400, 'Same, with the exit checks off', 'the box locks up and bodies collide. This is the test that detects it', extra=['--cj-exit-fault', 'B1C1:250:800', '--cj-no-exit-check'], overlay='grants,events', mpp=0.1, preview=pv)
+        net, rou = demand('j2', 3000, 'M', 720)
+        fault = ['--cj-exit-fault', 'B1C1:250:800']
+        record(c, 'exit_blocked', net, rou, 640, 690, 720, 'Exit closed: the box stays clear', 'exit to the east closed for 390 s and full. Credits and point-of-no-return check on', extra=fault, overlay='grants,events', mpp=0.1, preview=pv)
+        record(c, 'exit_blocked_unprotected', net, rou, 640, 690, 720, 'Same, with the exit checks off', 'the box locks up and bodies collide. This is the test that detects it', extra=fault + ['--cj-no-exit-check'], overlay='grants,events', mpp=0.1, preview=pv)
     if want('stall'):
-        net, rou = demand('j2', 3000, 'M', 400)
-        record(c, 'stall_level_a', net, rou, 260, 330, 400, 'A car stalls in the box, Level A', 'an injected failure. The specified rule does not cover this', extra=['--cj-stall-rate', '120', '--cj-warm', '250'], overlay='grants,events', mpp=0.09, preview=pv)
-        record(c, 'stall_level_b', net, rou, 260, 330, 400, 'A car stalls in the box, Level B', 'the stall-tolerant margin. Fewer collisions, less capacity', extra=['--cj-stall-rate', '120', '--cj-warm', '250', '--cj-level-b'], overlay='grants,events', mpp=0.09, preview=pv)
+        net, rou = demand('j2', 5000, 'M', 500)
+        stall = ['--cj-stall-rate', '120', '--cj-warm', '100']
+        # The run says when the contact happens, and the same arguments give the same run.
+        GATE.enter()
+        out = subprocess.run([str(c), 'av', '--net', str(net), '--routes', str(rou), '--end', '500', '--cj', 'B1', *stall], capture_output=True, text=True)
+        hits = json.loads(out.stdout.strip().splitlines()[-1])['overlaps']
+        t = hits[0]['t'] if hits else 300.0
+        print('first contact at', t, 'of', len(hits), flush=True)
+        begin, end = max(t - 10, 100), t + 15
+        record(c, 'stall_level_a', net, rou, begin, end, 500, 'A car stalls in the box, Level A', 'an injected failure at 5000 veh/h. The specified rule does not cover it', extra=stall, overlay='grants,paths,events', mpp=0.07, preview=pv)
+        record(c, 'stall_level_b', net, rou, begin, end, 500, 'The same arrivals, Level B', 'the stall-tolerant margin: fewer contacts, less capacity. Not zero', extra=stall + ['--cj-level-b'], overlay='grants,paths,events', mpp=0.07, preview=pv)
     if want('grid'):
         js = ','.join(f'{x}{y}' for x in 'BCD' for y in '123')
         net, rou = demand('grid2', 20000, 'M', 300)

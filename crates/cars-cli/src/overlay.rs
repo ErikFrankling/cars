@@ -401,7 +401,8 @@ impl Overlay {
                     }
                     CJ_ADVISED => {
                         c.ring(p, 11.0, 1.5, AMBER, 0.7);
-                        c.label(p[0] as i32 + 13, p[1] as i32 - 16, &format!("{:.0} km/h {t_left:.0}s", v.cj_v_cruise * 3.6), 1, AMBER);
+                        let text = if t_left < 0.0 { "holding".to_string() } else { format!("{:.0} km/h {t_left:.0}s", v.cj_v_cruise * 3.6) };
+                        c.label(p[0] as i32 + 13, p[1] as i32 - 16, &text, 1, AMBER);
                     }
                     CJ_PENDING => {
                         c.ring(p, 11.0, 2.0, MAGENTA, 1.0);
@@ -709,8 +710,9 @@ pub fn draw_hud(c: &mut Canvas, hud: &Hud) {
     c.label(24, h - 40, &line, 2, WHITE);
     if let (Some(a), Some(b)) = (hud.teleports, hud.collisions) {
         let color = if a + b > 0 { RED } else { [170, 180, 190] };
-        let trips = hud.trips.map_or(String::new(), |t| format!("  {t} trips done"));
-        c.label(24, h - 64, &format!("teleports {a}  collisions {b} in this clip{trips}"), 2, color);
+        let trips = hud.trips.map_or(String::new(), |t| format!("  {t} trips"));
+        let text = if w < 900 { format!("teleports {a} collisions {b}{trips}") } else { format!("teleports {a}  collisions {b} in this clip{trips} done") };
+        c.label(24, h - 64, &text, 2, color);
     }
     let on = |s: &str| hud.modes.iter().any(|m| m == s || m == "all");
     let mut y = h - 88;
