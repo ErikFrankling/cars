@@ -1,0 +1,547 @@
+edge,name,tag,terminal,tag_lanes,net_lanes,tag_excl,base_excl,after_excl,changed
+-1052246502#0,Magelungsvägen,through|right,1,2,2,1,0,1,1
+-1052246502#1,Magelungsvägen,through|right,1,2,2,1,0,0,0
+-1153510111#2,Älvsjövägen,left|through,1,2,2,1,0,1,1
+-1259514204#1,Norr Mälarstrand,left;through|right,1,2,2,1,0,1,1
+-1259514216#3,Norr Mälarstrand,left|through,1,2,2,1,0,1,1
+-1290416658#1,Vasavägen,left|right,1,2,2,2,1,2,1
+-1337074702#2,Gamla Tyresövägen,left|through;right,1,2,2,1,0,1,1
+-1337074703#1,Gamla Tyresövägen,left;through|right,1,2,2,1,0,1,1
+-1337074703#2,Gamla Tyresövägen,left;through|right,1,2,2,1,0,0,0
+-1337074704#3,Sockenvägen,through|right,1,2,2,1,0,1,1
+-1337246972,Arenavägen,through|right,1,2,2,1,0,1,1
+-1339511507,Älvsjövägen,left|through,1,2,2,1,0,1,1
+-1340804513#2,Älvkällevägen,left|right,1,2,2,2,1,2,1
+-1389423046#2,Bromstensvägen,left|through;right,1,2,2,1,0,0,1
+-28984384#2,Norrviksvägen,left|right,1,2,2,2,1,2,1
+-312131828#1,Lejonvägen,through|right,1,2,2,1,0,1,1
+-458916885#2,Kilabergsvägen,left|right|right,1,3,3,3,2,3,1
+-610272064#1,Palmfeltsvägen,left|right,1,2,2,2,1,2,1
+-688500952#1,Kvarnhagsvägen,left,1,1,1,1,0,1,1
+100905132#1,Västerbroplan,through|right,1,2,2,1,0,0,0
+103047297#0,,left|through|right,1,3,3,2,0,0,0
+103047297#1,,left|through|right,1,3,3,2,1,1,0
+1056858017#0,Stockholmsvägen,left|through,1,2,2,1,0,0,0
+1060199809#0,Strömgatan,through|right,1,2,2,1,0,0,0
+1060199809#2,Strömgatan,through|right,1,2,2,1,0,1,1
+1062049773#0,Fleminggatan,left;through|through;right,1,2,2,0,0,0,0
+1062049773#1,Fleminggatan,left;through|through;right,1,2,2,0,0,0,1
+1062844587#0,Skeppsbron,none|left|through,1,3,3,1,0,1,1
+106919278#0,Ringvägen,through|through;right,0,2,2,0,0,0,0
+107182115#0,,right,1,1,1,1,0,0,0
+107182120#0,,left,1,1,1,1,0,0,0
+107182120#1,,left,1,1,1,1,0,0,0
+107182123#0,Västberga Allé,left|left,1,2,2,2,2,2,0
+107182124#0,Västberga Allé,right,1,1,1,1,1,1,0
+110107986#3,Hornsgatan,left;through|through;right,0,2,2,0,0,0,0
+1113023716#1,Folkungagatan,through|through|right,1,3,3,1,0,1,1
+112319696#0,Värmdövägen,left|through|through,1,3,3,1,0,1,1
+1127123768,Vikdalsvägen,merge_to_right|through,1,2,2,0,0,0,1
+1135628444#1,Älvsjövägen,through|right,1,2,2,1,0,1,1
+1142050913,Örbyleden,through|through|right,1,3,3,1,1,1,0
+1142050918#1,Magelungsvägen,left|through,1,2,2,1,0,1,1
+1142050928#0,Magelungsvägen,left|through;right,1,2,2,1,0,0,0
+1142050928#2,Magelungsvägen,left|through;right,1,2,2,1,0,1,1
+1142103449#1,Torkel Knutssonsgatan,left;through|right,1,2,2,1,0,1,1
+1142103461#0,Älvsjövägen,left|through|through;right,1,3,3,1,0,1,1
+1153510092#0,Huddingevägen,through|through,1,2,2,0,0,0,0
+1153510092#1,Huddingevägen,through|through,1,2,2,0,0,0,0
+1153510110,Älvsjövägen,through|right,0,2,2,1,0,0,0
+1153510118#0,Älvsjövägen,left|through|through,1,3,3,1,0,1,1
+11638722#1,Hammarbybacken,through;left|through;right,1,2,2,0,0,0,1
+1171009010#0,Tritonvägen,left|through|through;right,1,3,3,1,0,1,1
+117481550,Folkungagatan,through|through|right;through,0,3,3,0,0,0,0
+1176264165#0,Skärholmsvägen,left|through|through,1,3,3,1,0,1,1
+1178443070,Örbyleden,left|through|through|right,1,4,4,2,1,1,0
+1178443071#0,Örbyleden,through|slight_right,0,2,2,1,0,0,0
+1178583796#0,Gudöbroleden,left|through,1,2,2,1,0,0,0
+1178583796#1,Gudöbroleden,left|through,1,2,2,1,0,1,1
+1190260128#0,Lidingövägen,left|through|through;right,1,3,3,1,0,0,0
+1190260128#1,Lidingövägen,left|through|through;right,1,3,3,1,0,1,1
+120309472#0,Gustavslundsvägen,right|right,1,2,2,2,0,2,1
+120358581#0,Åbyvägen,left,1,1,1,1,1,1,0
+120358584#0,Åbyvägen,left|left,1,2,2,2,0,0,0
+120358584#1,Åbyvägen,left|left,1,2,2,2,0,0,0
+120395057#0,Vallgatan,right,1,1,1,1,0,0,0
+120395057#1,Vallgatan,right,1,1,1,1,0,0,0
+1214120715#0,Bromstensvägen,through|through;right,1,2,2,0,0,0,0
+1214120719#0,Gamla Bromstensvägen,left|right,1,2,2,2,0,0,0
+1214120719#1,Gamla Bromstensvägen,left|right,1,2,2,2,1,2,1
+1214400486,Enebybergsvägen,left|through|through,1,3,3,1,0,0,0
+1214400490,Enebybergsvägen,through|through;right,1,2,2,0,0,0,1
+1214400494#0,Enebybergsvägen,left|left;through,1,2,2,1,0,1,1
+121449591#0,Åbyvägen,through|through,1,2,2,0,0,0,0
+121449591#1,Åbyvägen,through|through,1,2,2,0,0,0,0
+1214647668,Edsbergsvägen,left|through|through;right,0,3,3,1,0,1,1
+121762746#0,Magelungsvägen,left|through|through;right,1,3,3,1,0,1,1
+1218035422#0,Enebybergsvägen,left|through,1,2,2,1,0,1,1
+1222997361,Enköpingsvägen,left|through|,0,3,3,1,0,0,0
+1222997367#0,Ursviksvägen,left|left|through,1,3,3,2,1,2,1
+1222997368#1,Enköpingsvägen,left|through|right,1,3,3,2,0,2,1
+123457689#0,Svartlösakopplet,left|left;through;right,1,2,2,1,0,1,1
+1243218614#0,Ringvägen,left|none|none,1,3,3,1,0,1,1
+1243218616#1,Ringvägen,through|through|right,1,3,3,1,0,1,1
+1243218618#1,Ringvägen,left|through|right,1,3,3,2,0,0,0
+1243218618#2,Ringvägen,left|through|right,1,3,3,2,0,0,0
+1243218624#0,Folkungagatan,left|right,1,2,2,2,0,0,0
+1243218624#1,Folkungagatan,left|right,1,2,2,2,1,1,0
+1243218627#0,Folkungagatan,left|right|right,1,3,3,3,0,0,0
+1243218627#1,Folkungagatan,left|right|right,1,3,3,3,0,1,1
+1243253622#0,Hornsgatan,left|left|through|right,1,4,4,3,0,0,0
+1243253622#1,Hornsgatan,left|left|through|right,1,4,4,3,3,2,1
+1243253623#0,Hornsgatan,through|right,1,2,2,1,0,0,0
+1243253623#1,Hornsgatan,through|right,1,2,2,1,0,0,0
+1243253625#0,Hornsgatan,left;through|none|right,1,3,3,1,1,1,0
+1243253626#0,Hornsgatan,left|through;right,1,2,2,1,0,0,0
+1243253626#1,Hornsgatan,left|through;right,1,2,2,1,0,1,1
+1243253627#0,Hornsgatan,left;through|none|right,1,3,3,1,1,1,0
+1243253628#0,Hornsgatan,left|through,1,2,2,1,0,0,0
+1243253631#2,Hornsgatan,through|right,1,2,2,1,0,1,1
+1244140451#0,Ringvägen,left;through|through;right,1,2,2,0,0,0,0
+1244140451#1,Ringvägen,left;through|through;right,1,2,2,0,0,0,0
+1244140452#0,Ringvägen,through|through;right,0,2,2,0,0,0,0
+1244140452#1,Ringvägen,through|through;right,1,2,2,0,0,0,1
+1244140456#0,Ringvägen,through|through;right,1,2,2,0,0,0,0
+1244140456#1,Ringvägen,through|through;right,1,2,2,0,0,0,1
+1244140457#2,Ringvägen,through|through;right,1,2,2,0,0,0,1
+1244140458#0,Ringvägen,through;left|through,1,2,3,0,0,0,0
+1244140458#1,Ringvägen,through;left|through,1,2,3,0,0,0,0
+1244910887#0,Magelungsvägen,left|through|right,1,3,3,2,0,2,1
+1259514205#0,Norr Mälarstrand,left|through,1,2,2,1,0,1,1
+1259514210#0,Norr Mälarstrand,left|through;right,1,2,2,1,0,0,0
+1272998916#0,Huddingevägen,through|through|right,1,3,3,1,0,1,1
+1275505349#0,Sofielundsvägen,left|through;right,0,2,2,1,0,0,0
+1275505350#0,Sofielundsvägen,left;through|through|right,1,3,3,1,0,0,0
+1279041470#0,Tegnérgatan,through;right,0,1,1,0,0,0,0
+1279473657,Adolf Fredriks Kyrkogata,left|right,1,2,2,2,2,2,0
+1279745315#1,Mäster Samuelsgatan,left|through;right,1,2,1,1,0,0,0
+1279845002,Regeringsgatan,through|right;next_right,1,2,2,0,0,0,0
+1279895966,Nybrohamnen,through|slight_right,1,2,2,1,1,1,0
+1282112470,Slottskajen,left|right,1,2,2,2,0,0,0
+1282845695#0,Sofielundsvägen,left|through,1,2,2,1,0,1,1
+1285834640,Hornsgatan,left;through|through;right,0,2,2,0,0,0,0
+129633057#0,Spånga Kyrkväg,left|right,1,2,2,2,1,2,1
+1311870787#0,Viksjöleden,left|through|through;right,1,3,3,1,0,1,1
+1311870791#0,Viksjöleden,left|through|through;right,1,3,3,1,0,1,1
+1336285494#0,Götgatan,none|through|right,1,3,3,1,1,1,0
+1336953298#0,Hammarbybacken,left|through|right,1,3,3,2,1,2,1
+1336953299#3,Olaus Magnus Väg,left|left;through;right,1,2,2,1,0,1,1
+1336953302#0,Hammarbybacken,through|through|right|right,1,4,4,2,0,0,0
+1336953302#1,Hammarbybacken,through|through|right|right,1,4,4,2,1,1,0
+1336955958#0,Sockenvägen,through|right,1,2,2,1,0,1,1
+1337074701#0,Sockenvägen,left|through;right,1,2,2,1,0,1,1
+1337246971#0,Arenavägen,left|through,1,2,2,1,0,1,1
+1337246974#0,Skärholmsvägen,left|through|through,1,3,3,1,0,1,1
+1337246977#1,Skärholmsvägen,through|through|right,1,3,3,1,0,1,1
+1337263701#0,Strandvägen,left|left|through,1,3,3,2,1,2,1
+1337695394#1,Valhallavägen,left|left;through|through;right,1,3,3,1,0,0,0
+1337695400#1,Valhallavägen,left|through,1,2,2,1,0,1,1
+1337695402#1,Valhallavägen,through|none|right,1,3,3,1,1,1,0
+1337695410#0,Valhallavägen,left;through|through,1,2,2,0,0,0,0
+1337695411#1,Valhallavägen,through|none|right,1,3,3,1,1,1,0
+1337936880#0,Kungsholmstorg,left;through|right,1,2,2,1,2,2,0
+1337963906#0,Fleminggatan,none|through;right,1,2,2,0,0,0,0
+1337963906#3,Fleminggatan,none|through;right,1,2,2,0,0,0,1
+1337963909#1,Fleminggatan,left;through|right,1,2,2,1,0,1,1
+1337963915,Narvavägen,through;right|right,1,2,2,1,0,0,0
+1337996477#0,Huddingevägen,through|through|right,1,3,3,1,0,1,1
+1337996479#0,Huddingevägen,left|left|through|through,1,4,4,2,1,2,1
+1337996482#0,Huddingevägen,left|through|through,1,3,3,1,0,1,1
+1338326460#0,Sockenvägen,left|through,1,2,2,1,0,1,1
+1339003480#0,Solnavägen,left|through|through;right,1,3,3,1,0,0,0
+1339003480#2,Solnavägen,left|through|through;right,1,3,3,1,0,1,1
+1339178189#0,Sockenvägen,left|through|right,1,3,2,2,0,0,0
+1339178191#0,Huddingevägen,left|through|through,1,3,3,1,0,1,1
+1339181745#0,Örbyleden,left|through|through;right,1,3,3,1,0,0,0
+1339181745#1,Örbyleden,left|through|through;right,1,3,3,1,0,1,1
+1339181747#0,Örbyleden,left|through|through;right,1,3,3,1,0,0,0
+1339181747#1,Örbyleden,left|through|through;right,1,3,3,1,0,1,1
+1339181752#0,Örbyleden,left|through|none,1,3,3,1,1,1,0
+1339181753,Örbyleden,left|through|through|right,1,4,4,2,0,0,0
+1339498323#0,Örbyleden,left|through|through;right,1,3,3,1,0,0,0
+1339498323#1,Örbyleden,left|through|through;right,1,3,3,1,0,1,1
+1339498324#0,Örbyleden,left|through|through;right,1,3,3,1,0,1,1
+1339498326#1,Örbyleden,through|through|through;right,1,3,3,0,0,0,1
+1339498327#0,Örbyleden,left|through|through;right,1,3,3,1,0,0,0
+1339498327#2,Örbyleden,left|through|through;right,1,3,3,1,0,1,1
+1339511504#0,Magelungsvägen,left|through|through;right,1,3,3,1,0,0,0
+1339601556#0,Magelungsvägen,left|through|through;right,1,3,3,1,0,0,0
+1339601556#1,Magelungsvägen,left|through|through;right,1,3,3,1,0,0,0
+1339757804#1,Skärholmsvägen,left|through|through,1,3,3,1,0,1,1
+1339757805#2,Skärholmsvägen,left|through|through|right,1,4,4,2,1,2,1
+1339757809#0,Lidingövägen,left|through|through;right,1,3,3,1,0,0,0
+1339757809#1,Lidingövägen,left|through|through;right,1,3,3,1,0,1,1
+1340235990#0,Norrbyvägen,left|through|through;right,1,3,3,1,0,0,0
+1340235990#2,Norrbyvägen,left|through|through;right,1,3,3,1,0,1,1
+1340235991#0,Ulvsundavägen,left|through|through|right,1,4,4,2,1,2,1
+1340235995#1,Ulvsundavägen,left|through|through|right,1,4,4,2,1,2,1
+1340235999#0,Köpsvängen,left|through|right,1,3,3,2,0,0,0
+1340235999#2,Köpsvängen,left|through|right,1,3,3,2,0,2,1
+1340236000#1,Ulvsundavägen,left|through|through,1,3,3,1,0,1,1
+1340236001#0,Ulvsundavägen,left|through|through|right,1,4,4,2,0,0,0
+1340236001#2,Ulvsundavägen,left|through|through|right,1,4,4,2,1,2,1
+1340241526#0,Ulvsundavägen,left;through|through;right|none,1,3,3,0,0,0,1
+1340241530#0,Ulvsundavägen,left|through|through,1,3,3,1,0,0,0
+1340241530#1,Ulvsundavägen,left|through|through,1,3,3,1,0,1,1
+1340244985#1,Huddingevägen,through|through;right,1,2,2,0,0,0,1
+1340287712#0,Huddingevägen,left|through|through,1,3,3,1,0,1,1
+1340631280,Folkungagatan,left|left|through|through|through,1,5,5,2,1,2,1
+1340804516#0,Hammarbyvägen,left|left;right,1,2,2,2,1,2,1
+1341005050#0,Magelungsvägen,left|through|through;right,1,3,3,1,0,0,0
+1342107779#0,Magelungsvägen,left|through,1,2,2,1,0,1,1
+1342107781#0,Magelungsvägen,left|through,1,2,2,1,0,1,1
+1342749867#0,Skärholmsvägen,through|slight_right,1,2,2,1,0,0,0
+1342749873#0,Skärholmsvägen,left|through|through;right,1,3,3,1,0,0,0
+1342749873#2,Skärholmsvägen,left|through|through;right,1,3,3,1,0,1,1
+1342749874#0,Skärholmsvägen,left|through|through|right,1,4,4,2,2,2,0
+134464732#0,Folkungavägen,left|through;right,1,2,2,1,0,0,0
+134464732#1,Folkungavägen,left|through;right,1,2,2,1,0,1,1
+1389423043#0,Bromstensvägen,left|through|right,1,3,3,2,0,0,0
+1389423043#3,Bromstensvägen,left|through|right,1,3,3,2,0,1,1
+1389423054#1,Spångavägen,through;left|right,1,2,2,1,1,1,0
+139190853#0,Karlavägen,through|right,1,2,2,1,0,0,0
+139190853#1,Karlavägen,through|right,1,2,2,1,0,1,1
+140726419,Götgatan,none|through|right,1,3,3,1,0,0,0
+140726423#0,Ringvägen,left;through|through|through,1,3,3,0,0,0,0
+140726423#1,Ringvägen,left;through|through|through,1,3,3,0,0,0,1
+1433771150,Huddingevägen,left|through|through,1,3,3,1,0,1,1
+146243262#0,Skärholmsvägen,left|through|through,1,3,3,1,0,1,1
+146532697#0,Ingemarsgatan,right,1,1,1,1,0,0,0
+146532697#2,Ingemarsgatan,right,1,1,1,1,0,0,0
+146789569#2,Ringvägen,through|through;right,0,2,2,0,0,0,1
+146789571#1,Ringvägen,left|through|none,1,3,3,1,0,0,0
+146789571#3,Ringvägen,left|through|none,1,3,3,1,0,1,1
+148000421#0,Ingemarsgatan,left|left,1,2,2,2,0,0,0
+148000421#2,Ingemarsgatan,left|left,1,2,2,2,0,0,0
+149521738#0,Hanstavägen,left|through|through;right,1,3,3,1,0,1,1
+150850866#0,Älvsjövägen,through|through;right,1,2,2,0,0,0,0
+150850866#1,Älvsjövägen,through|through;right,1,2,2,0,0,0,1
+150851856#0,Älvsjövägen,left|through|through,1,3,3,1,0,1,1
+151083824#2,Ringvägen,left;through|through,1,2,2,0,0,0,0
+151083824#4,Ringvägen,left;through|through,1,2,2,0,0,0,1
+151083833#0,Ringvägen,left;through|through,0,2,2,0,0,0,0
+151083833#2,Ringvägen,left;through|through,1,2,2,0,0,0,1
+151083834#2,Ringvägen,left;through|none|right,1,3,3,1,0,1,1
+151083835#0,Ringvägen,left|left|none|through;right,1,4,4,2,0,0,0
+151083835#2,Ringvägen,left|left|none|through;right,1,4,4,2,2,2,0
+151884974#0,Hornsgatan,through|right,1,2,2,1,0,0,0
+151884974#1,Hornsgatan,through|right,1,2,2,1,0,1,1
+151884975#2,Hornsgatan,through|right,1,2,2,1,0,1,1
+152099178#0,Åbyvägen,right|right,1,2,2,2,0,0,0
+152258687#2,Ringvägen,left|through|through,1,3,3,1,0,1,1
+154922250#1,Sankt Eriksgatan,through|none|right,1,3,3,1,0,1,1
+155580373#0,Lidingövägen,left|left,1,2,2,2,0,0,0
+155906876#0,Magelungsvägen,left|through|through;right,1,3,3,1,0,1,1
+157437861#0,Hornsgatan,through|through|right,1,3,3,1,0,0,0
+157437861#1,Hornsgatan,through|through|right,1,3,3,1,0,0,0
+158718659#0,Tegelviksslingan,left|left;right,1,2,2,2,1,2,1
+161366798#1,Torsgatan,left|through|through;right,1,3,3,1,0,1,1
+161533473#0,Åbyvägen,left,1,1,1,1,0,0,0
+161533473#1,Åbyvägen,left,1,1,1,1,1,1,0
+161533478#0,Götalandsviadukten,right,1,1,1,1,0,0,0
+161533478#1,Götalandsviadukten,right,1,1,1,1,0,0,0
+162177597#0,Vasagatan,left|through|through,1,3,3,1,0,0,0
+162177597#2,Vasagatan,left|through|through,1,3,3,1,0,0,0
+16628222,Folkungagatan,left|through|right,0,3,3,2,1,2,1
+166994679#1,Ringvägen,through|through;right,1,2,2,0,0,0,1
+168898892#0,Lilla Västerbron,left;through|right|none,1,3,3,1,1,1,0
+178204654#0,Hornsgatan,left|through;right,1,2,2,1,0,1,1
+179695931#0,Fleminggatan,through|none|right,1,3,3,1,0,0,0
+179695931#1,Fleminggatan,through|none|right,1,3,3,1,0,1,1
+190803736#0,Olof Palmes Gata,left|right,1,2,2,2,1,2,1
+19827767#0,Sockenvägen,through|right,1,2,2,1,0,1,1
+19828185#0,Sockenvägen,left|through,1,2,2,1,0,1,1
+198659501#0,Magelungsvägen,through|right,1,2,2,1,0,1,1
+19876661#0,Drottningholmsvägen,left|left|through;right,1,3,3,2,0,0,0
+19876661#2,Drottningholmsvägen,left|left|through;right,1,3,3,2,1,2,1
+212085605#1,Slottskajen,left|right,1,2,2,2,1,2,1
+212456661#2,Sveavägen,through|through|right,1,3,3,1,0,0,0
+21557175#0,,left|through,1,2,2,1,1,1,1
+2182232#0,Grosshandlarvägen,left|through|right,1,3,3,2,2,2,1
+224502631#0,Husbyavfarten,left|left,1,2,2,2,2,2,0
+227047342#1,Glömstavägen,right,1,1,1,1,0,0,0
+22736465#1,Södra Herserudskopplet,left;through|right,1,2,2,1,1,1,0
+23170876#0,Örbyleden,left|through|through;right,1,3,3,1,0,0,0
+23170876#1,Örbyleden,left|through|through;right,1,3,3,1,0,0,0
+233571098#0,Folkungavägen,left|through|through,1,3,3,1,0,1,1
+233761091#0,Solna kyrkväg,through,1,1,1,0,1,1,1
+23512493#0,Frögatan,left|through,1,2,2,1,0,1,1
+237853933#0,Ringvägen,left;through|right;through,1,2,2,0,0,0,0
+237853933#2,Ringvägen,left;through|right;through,1,2,2,0,0,0,0
+237991716#0,Ringvägen,left|through|right,1,3,3,2,0,0,0
+237991716#1,Ringvägen,left|through|right,1,3,3,2,0,2,1
+246439392#0,Torsgatan,left|through|through;right,1,3,3,1,0,0,0
+246439392#1,Torsgatan,left|through|through;right,1,3,3,1,0,1,1
+249421907#0,Sockenvägen,left|through,1,2,2,1,0,1,1
+251673440#0,Hornsgatan,through,1,1,1,0,0,0,1
+252271457#0,Vattenverksvägen,right,1,1,1,1,0,0,0
+254760947#0,Frösundaleden,through|through;slight_right,0,2,2,0,0,0,0
+265010929#0,,left;through,1,1,1,0,0,0,1
+269310409#0,Kellgrensgatan,left|left|through|right,1,4,4,3,0,0,0
+269310409#1,Kellgrensgatan,left|left|through|right,1,4,4,3,2,3,1
+270327158#0,Vallgatan,left|left|left;through,1,3,3,2,0,0,0
+270327158#1,Vallgatan,left|left|left;through,1,3,3,2,2,2,1
+278522909#0,Lidingövägen,left|left|through|through,1,4,4,2,1,2,1
+282543511#0,Kvarnbacksvägen,left|through|through;right,1,3,3,1,0,0,0
+282543511#1,Kvarnbacksvägen,left|through|through;right,1,3,3,1,0,1,1
+28274855#0,Västerbron,left|through|none,1,3,3,1,0,0,0
+28274855#2,Västerbron,left|through|none,1,3,3,1,0,0,0
+283013620#0,Enköpingsvägen,through|through|right,1,3,3,1,0,1,1
+283013627,Ursviksvägen,left|left|through|right,1,4,4,3,1,1,0
+28407369#0,Parkeringsvägen,left|left,1,2,2,2,1,2,1
+285873155#0,Jägmästargatan,left;through|right,1,2,2,1,0,0,0
+290848917#0,Lidingövägen,left|left;through,1,2,2,1,0,0,0
+291464493#0,Karlbergsvägen,left|left|through|right,1,4,4,3,0,0,0
+291464493#2,Karlbergsvägen,left|left|through|right,1,4,4,3,2,3,1
+291464501#0,Sankt Eriksgatan,through|through,1,2,2,0,0,0,1
+291464526#0,Vasagatan,through|right,1,2,2,1,0,1,1
+293243646#0,,through|through;right,1,2,2,0,0,0,0
+298266718#0,Danderydsvägen,left|through,1,2,2,1,0,1,1
+299985119#1,Gjörwellsgatan,left|left;through;right,1,2,2,1,0,1,1
+299985127#0,Rålambshovsleden,left|through|through,1,3,3,1,0,0,0
+299985131#0,Rålambsvägen,left;through|through;right,1,2,2,0,0,0,0
+299985131#2,Rålambsvägen,left;through|through;right,1,2,2,0,0,0,1
+299985135#0,Rålambsvägen,left;through|through|,1,3,3,0,0,0,0
+299985135#2,Rålambsvägen,left;through|through|,1,3,3,0,1,2,1
+30132025#0,,right,1,1,1,1,0,0,0
+30132025#1,,right,1,1,1,1,0,0,0
+30132025#2,,right,1,1,1,1,0,0,0
+304664959#0,Ulvsundavägen,left|through|through|right,1,4,4,2,1,2,1
+311372773#0,,left|through;right,1,2,2,1,0,1,1
+313881454#0,Lejonvägen,left|through,1,2,2,1,0,1,1
+315196051#0,Hjorthagsavfarten,left,1,1,1,1,0,0,0
+323585846#0,Skvaltans väg,left|through|right,1,3,3,2,0,0,0
+323585846#1,Skvaltans väg,left|through|right,1,3,3,2,1,1,0
+331779918#0,Södra Hamnvägen,through|right,1,2,2,1,0,0,0
+331779918#1,Södra Hamnvägen,through|right,1,2,2,1,0,1,1
+343738662#0,Drottningholmsvägen,through|through;right,1,2,2,0,0,0,0
+355777384#1,Vallgatan,through,1,1,1,0,0,0,0
+35583988#0,Vasagatan,through|right,1,2,2,1,0,1,1
+3566546#0,Torsgatan,right,1,1,1,1,0,0,0
+3566546#2,Torsgatan,right,1,1,1,1,0,0,0
+35870153#0,Bergshamravägen,through|through,1,2,2,0,0,0,1
+373696162#0,Skärholmsvägen,left|through|through,1,3,3,1,0,0,0
+388606448#0,Folkungagatan,left|through|through|through,1,4,4,1,0,1,1
+388606450#0,Londonviadukten,through|through|right;through,1,3,3,0,0,0,1
+388606451#0,Londonviadukten,through|through|right,1,3,3,1,0,1,1
+388606456#0,Värmdövägen,left;through|through|through|right,1,4,4,1,0,1,1
+39236693,Stadsgårdsleden,left|through|through|through,1,4,4,1,0,1,1
+40292864#0,Drottningholmsvägen,left|left,1,2,2,2,1,2,1
+40490923#0,Akallalänken,left|through|through,1,3,3,1,0,0,0
+40490923#2,Akallalänken,left|through|through,1,3,3,1,0,1,1
+4079648#0,Oxenstiernsgatan,left|right,1,2,2,2,1,2,1
+41018642#0,,left|left;right,1,2,2,2,0,0,0
+41018642#1,,left|left;right,1,2,2,2,2,2,1
+41123416#1,Sankt Eriksgatan,through|through|right,1,3,3,1,1,1,0
+41123422#0,Sankt Eriksgatan,through|through|right,1,3,3,1,0,0,0
+41123422#1,Sankt Eriksgatan,through|through|right,1,3,3,1,0,1,1
+41510350#1,Valhallavägen,through|through|right,1,3,3,1,0,1,1
+41567782#0,Engelbrektsgatan,right|right,1,2,2,2,2,2,0
+41568952#1,Ringvägen,left|through|through,1,3,3,1,0,1,1
+41568994,Valhallavägen,left;through|through,1,2,2,0,0,0,0
+41568996#0,Valhallavägen,left;through|through|right,1,3,3,1,1,1,1
+41574208#2,Vasagatan,through|right,1,2,2,1,0,0,0
+41575727#1,Sankt Eriksgatan,through|through;right,1,2,2,0,0,0,1
+41679268#1,Regeringsgatan,through|right;next_right,1,2,2,0,0,0,0
+4198212#0,Turebergsleden,through|through,1,2,2,0,0,0,0
+43054913#0,Värmdövägen,left|through|through|right,1,4,4,2,0,0,0
+43054913#1,Värmdövägen,left|through|through|right,1,4,4,2,0,2,1
+43157758#1,Drottningholmsvägen,left|through|through,1,3,3,1,1,1,0
+43160908#1,Alviksplan,left|through,1,2,2,1,0,1,1
+43997935#0,Avfart Trafikplats Frösunda,left,1,1,1,1,0,1,1
+4490202#0,Hamngatan,through|right,1,2,2,1,0,1,1
+456655411#0,Nybohovsbacken,left|right,1,2,2,2,0,1,1
+456655416#0,Södertäljevägen,left|left|through,1,3,3,2,2,2,0
+456854841,Årstabergsvägen,left|left|right|right,1,4,4,4,2,2,0
+458914941#0,Hägerstensvägen,left|through|through,1,3,3,1,0,0,0
+458914941#1,Hägerstensvägen,left|through|through,1,3,3,1,1,1,0
+458964190#0,Åbyvägen,left|through|through;right,1,3,3,1,0,0,0
+458964201#0,Årstabergsvägen,left|through,1,2,2,1,0,1,1
+458964202#0,Årstabergsvägen,left|through,1,2,2,1,0,1,1
+458964204#0,Årstabergsvägen,left|through|through;right,1,3,3,1,0,0,0
+458964204#1,Årstabergsvägen,left|through|through;right,1,3,3,1,0,1,1
+458964205#0,Årstabergsvägen,left|through|through;right,1,3,3,1,0,0,0
+458964205#2,Årstabergsvägen,left|through|through;right,1,3,3,1,0,1,1
+45902504#0,Vikdalsvägen,left|through,0,2,2,1,0,0,0
+45902504#2,Vikdalsvägen,left|through,0,2,2,1,0,0,0
+45902504#4,Vikdalsvägen,left|through,0,2,2,1,0,0,0
+4718562#1,Stockholmsvägen,left|through,1,2,2,1,0,1,1
+4741677#0,Örbyleden,left|through|through,1,3,3,1,0,1,1
+47982915#0,Kallhällsleden,left|through,1,2,2,1,0,0,0
+47982915#1,Kallhällsleden,left|through,1,2,2,1,0,0,0
+4801651#0,,left|left;through,1,2,2,1,0,1,1
+493758758#0,Hornsgatan,through|through;right,1,2,2,0,0,0,1
+501714993#0,Frösundaleden,left|through|through,1,3,3,1,0,1,1
+503316305#1,Frösundaleden,left|left|through|through;right,1,4,4,2,1,2,1
+503316306#0,Frösundaleden,left|through|through|right,1,4,4,2,0,0,0
+503316306#2,Frösundaleden,left|through|through|right,1,4,4,2,1,2,1
+515526714#0,Guldfjärdsplan,left|through|through,1,3,3,1,0,0,0
+551540032#0,Frösundaleden,left|through|through|right,1,4,4,2,0,0,0
+551540032#1,Frösundaleden,left|through|through|right,1,4,4,2,0,2,1
+56065991#0,Örbyleden,left|left|right|right,1,4,4,4,3,4,1
+56817454#0,Åbyvägen,through|through;right,1,2,2,0,0,0,1
+56817476#0,Huddingevägen,left|through|through,1,3,3,1,0,1,1
+570489141#0,Kolonnvägen,left|left;through,1,2,2,1,0,1,1
+577459648#1,Östbergavägen,left|through,1,2,2,1,0,1,1
+58107585#1,Örbyleden,through|through;right,1,2,2,0,0,0,0
+581704135#0,Strandvägen,left|through|through;right,1,3,3,1,1,1,0
+581704136#0,Strandvägen,through;slight_left|through;slight_right,1,2,2,0,0,0,0
+609793170#0,Götgatan,through|right,1,2,1,1,0,0,0
+609793170#1,Götgatan,through|right,1,2,1,1,0,0,0
+609945093#0,Nynäsvägen,left|through;right,1,2,2,1,1,1,0
+6174454#0,,left,1,1,1,1,0,1,1
+621961424#0,Olaus Magnus Väg,through;left|right,1,2,2,1,0,1,1
+623904457#0,Magelungsvägen,left|through|through,1,3,3,1,0,1,1
+623904459#0,Magelungsvägen,left|through|through;right,1,3,3,1,0,0,0
+624726387#0,Lidingövägen,right|right,1,2,2,2,0,0,0
+624726390#2,Lidingövägen,left|left;through|right,0,3,3,2,0,0,0
+624726391#0,Tegeluddsvägen,left|left;through,1,2,2,1,1,2,1
+624726395#0,Lidingövägen,left|left|through|through,1,4,4,2,0,0,0
+62778438#0,Baron Rålambs väg,through|right,1,2,2,1,1,1,0
+636586775#0,Hjulstavägen,left|through,1,2,2,1,0,1,1
+636586782#0,Hjulstavägen,left|through,1,2,2,1,0,1,1
+636586783#0,Hjulstavägen,left|through,1,2,2,1,0,1,1
+659383325#0,Viksjöleden,left|through|through,1,3,3,1,0,1,1
+659383328#0,Viksjöleden,left|through|through;right,1,3,3,1,0,1,1
+672151501#0,Roslagsvägen,left,1,1,1,1,0,0,0
+672151501#1,Roslagsvägen,left,1,1,1,1,0,0,0
+672151501#2,Roslagsvägen,left,1,1,1,1,0,0,0
+682607995#0,Månskärsvägen,left;through|right,1,2,2,1,0,0,0
+682607995#1,Månskärsvägen,left;through|right,1,2,2,1,0,0,0
+688039063,Rålambshovsleden,through|through,1,2,2,0,0,0,0
+688245109#0,Hallundavägen,left|through|through,1,3,3,1,0,0,0
+688245109#1,Hallundavägen,left|through|through,1,3,3,1,0,1,1
+688245115#0,Hallundavägen,left|through|through,1,3,3,1,0,1,1
+688500954#0,Kvarnhagsvägen,right,1,1,1,1,0,0,0
+688500956#0,Hågelbyleden,left|through|through,1,3,3,1,0,1,1
+688500957#0,Hågelbyleden,through;right,1,1,1,0,0,0,1
+688500960#1,Tumbakopplet,left|right,1,2,2,2,1,2,1
+688500969#1,Hågelbyleden,through|through;right,1,2,2,0,0,0,1
+688500979#0,Hågelbyleden,through|through,1,2,2,0,0,0,0
+688500985#0,Kumla gårdsväg,left|left|right,1,3,3,3,0,0,0
+688500985#2,Kumla gårdsväg,left|left|right,1,3,3,3,3,3,0
+688500999#1,Kumla gårdsväg,right|right,1,2,1,2,0,0,0
+688500999#2,Kumla gårdsväg,right|right,1,2,1,2,0,0,0
+688501003#0,Albyvägen,left|right,1,2,2,2,1,2,1
+688501007#0,Hågelbyleden,left|through|through,1,3,3,1,0,1,1
+688733374#0,Hågelbyleden,left|through;right,1,2,2,1,0,1,1
+688733380#0,Hågelbyleden,left|through|through;right,1,3,3,1,0,0,0
+688733380#1,Hågelbyleden,left|through|through;right,1,3,3,1,0,1,1
+688733384#0,Kumla gårdsväg,left;through|right,1,2,2,1,0,1,1
+693380560#1,Videgårdsvägen,left|left;right,1,2,2,2,1,2,1
+696507345#0,Uppsalavägen,slight_left|through|through,1,3,3,1,0,0,0
+709683942#0,Frösundaleden,left|through|through,1,3,3,1,0,1,1
+709683943#0,Frösundaleden,left|through|through;right,1,3,3,1,0,0,0
+709683943#2,Frösundaleden,left|through|through;right,1,3,3,1,0,1,1
+709683945#0,Frösundaleden,left|through|through|right,1,4,4,2,1,2,1
+709684615#0,Frösundaleden,left|through|through,1,3,3,1,0,1,1
+709684616#1,Frösundaleden,through|through;right,1,2,2,0,0,0,1
+715443466#0,Videgårdsvägen,left|through|through;right,1,3,3,1,0,0,0
+724589687#2,Per Hallströms Väg,left;through|right,1,2,2,1,0,1,1
+72609226#0,Långholmsgatan,through|through|right|none,1,4,4,1,1,1,0
+739526722#0,Olof Palmes Gata,left;through|right,1,2,2,1,0,0,0
+739526722#2,Olof Palmes Gata,left;through|right,1,2,2,1,0,1,1
+744152223#0,Söder Mälarstrand,left|through,1,2,2,1,0,0,0
+744152231#0,Söder Mälarstrand,through|through;right,1,2,2,0,0,0,0
+744152231#1,Söder Mälarstrand,through|through;right,1,2,2,0,0,0,1
+749079351#0,Söder Mälarstrand,left|through,1,2,2,1,0,0,0
+750458396#0,Karolinska vägen,left|through;right,1,2,2,1,0,0,0
+750458396#2,Karolinska vägen,left|through;right,1,2,2,1,0,1,1
+750458400#0,Tomtebodavägen,left|through;right,1,2,2,1,0,0,0
+750458400#2,Tomtebodavägen,left|through;right,1,2,2,1,0,1,1
+75538933#0,Roslagsvägen,through|through,1,2,2,0,0,0,0
+75538933#2,Roslagsvägen,through|through,1,2,2,0,0,0,0
+767712140,Hornsgatan,through|right,1,2,2,1,1,1,0
+771769738,Frösundaleden,left|left|through|through;right,1,4,4,2,0,0,0
+772949926#0,Parkeringsvägen,right,1,1,1,1,0,0,0
+772949938#1,Åbyvägen,through|through;right,1,2,2,0,0,0,1
+772949939#0,Åbyvägen,left|through|through,1,3,3,1,0,1,1
+772949940#0,Åbyvägen,right,1,1,1,1,0,0,0
+772949941#0,Åbyvägen,left,1,1,1,1,1,1,0
+772949964#1,Åbyvägen,left|through|through,1,3,3,1,0,1,1
+772949967#1,Åbyvägen,through|through,1,2,2,0,0,0,1
+772949970#0,Åbyvägen,left|through|through,1,3,3,1,0,1,1
+772949971#0,Åbyvägen,left|through|through;right,1,3,3,1,0,1,1
+773885884#0,Kungens Kurvaleden,through|right|right,1,3,3,2,0,0,0
+773885884#1,Kungens Kurvaleden,through|right|right,1,3,3,2,1,2,1
+773885885#0,Kungens Kurvaleden,left|through|through,1,3,3,1,0,0,0
+773885885#1,Kungens Kurvaleden,left|through|through,1,3,3,1,0,1,1
+773885891#0,Videgårdsvägen,left|through|through;right,1,3,3,1,0,0,0
+773885894,Videgårdsvägen,left|through|through;right,1,3,3,1,0,0,0
+773885909#1,Månskärsvägen,left;through;right|,1,2,2,0,0,0,0
+773885927#0,Skärholmsvägen,left|through|through;right,1,3,3,1,0,0,0
+773885927#1,Skärholmsvägen,left|through|through;right,1,3,3,1,0,1,1
+775667870,Frösundaviks allé,left|through,1,2,2,1,1,1,0
+776492448#0,Folkungagatan,none|through;right,1,2,2,0,0,0,0
+776492448#1,Folkungagatan,none|through;right,1,2,2,0,0,0,1
+777141998,Glömstavägen,left|left,1,2,2,2,1,2,1
+777142024#0,Katrinebergsvägen,left|left;right,1,2,2,2,1,2,1
+777142026#0,Glömstavägen,left|through|through,1,3,3,1,0,1,1
+777142028#0,Glömstavägen,left|through,1,2,2,1,0,1,1
+777142034#0,Glömstavägen,merge_to_right|,0,2,2,0,0,0,0
+777142047#0,Glömstavägen,through|through|right,1,3,3,1,0,0,0
+777142047#3,Glömstavägen,through|through|right,1,3,3,1,0,1,1
+788022973#0,Enebybergsvägen,left|through,1,2,2,1,0,1,1
+8021477,Huddingevägen,left|through|through,1,3,3,1,0,1,1
+804574485#0,Roslagsvägen,left|||right,1,4,4,2,0,0,0
+804574509#0,Roslagsvägen,left|through|through|right,1,4,4,2,0,0,0
+804574509#1,Roslagsvägen,left|through|through|right,1,4,4,2,1,2,1
+804598769,Enköpingsvägen,left|through|through,1,3,3,1,0,1,1
+804598773#0,Bergshamravägen,through|through,1,2,2,0,0,0,0
+804669072#0,Frösundaleden,left|through|through|right,1,4,4,2,0,0,0
+804669072#1,Frösundaleden,left|through|through|right,1,4,4,2,0,2,1
+804669076#0,Frösundaleden,left|through|through|right,1,4,4,2,0,0,0
+804669076#1,Frösundaleden,left|through|through|right,1,4,4,2,0,2,1
+804669079,Frösundaleden,left|through|through,0,3,3,1,0,1,1
+8117758#0,Huddingevägen,left|through|through;right,1,3,3,1,0,1,1
+815542259#0,Åstorpsringen,through|right,1,2,2,1,0,0,0
+815542261#0,Garagevägen,left|right,1,2,2,2,0,0,0
+815542261#1,Garagevägen,left|right,1,2,2,2,1,2,1
+823061086#0,Ågesta Broväg,left|through;right,1,2,2,1,0,0,0
+823061086#1,Ågesta Broväg,left|through;right,1,2,2,1,0,1,1
+823061088#0,Ågesta Broväg,left|through;right,1,2,2,1,0,0,0
+823061088#1,Ågesta Broväg,left|through;right,1,2,2,1,0,1,1
+825115065#1,Rosenlundsgatan,left|right,1,2,2,2,1,2,1
+826546053#0,Vattenverksvägen,left;through,1,1,1,0,0,0,1
+826546069#0,,left;through,1,1,1,0,0,0,1
+826546070#0,Värmdövägen,through|,1,2,2,0,0,0,1
+826546072#0,Värmdövägen,through|,1,2,2,0,0,0,1
+826546073#0,Värmdövägen,through|,1,2,2,0,0,0,1
+828566355#0,Enköpingsvägen,left|through|through,1,3,3,1,0,1,1
+836036314#0,Tegnérgatan,left,1,1,1,1,0,0,0
+836036314#1,Tegnérgatan,left,1,1,1,1,0,0,0
+836036315#1,Tegnérgatan,through;right,1,1,1,0,0,0,0
+836036318#0,Barnhusbron,left|through,1,2,2,1,0,1,1
+846143223#0,Frösundaleden,through|through|right,1,3,3,1,0,0,0
+846143223#2,Frösundaleden,through|through|right,1,3,3,1,0,1,1
+85292119#0,Långholmsgatan,through|through;right,1,2,2,0,0,0,0
+85292119#1,Långholmsgatan,through|through;right,1,2,2,0,0,0,0
+86498438#0,Personnevägen,left|through,1,2,2,1,0,0,0
+86498438#1,Personnevägen,left|through,1,2,2,1,1,1,0
+865330750#0,Oxenstiernsgatan,left|through,1,2,2,1,0,0,0
+865330750#3,Oxenstiernsgatan,left|through,1,2,2,1,0,0,0
+88293606#0,Hornsgatsavfarten,left|right,1,2,2,2,2,2,0
+884134678#0,,right,1,1,1,1,0,0,0
+884134679,Huddingevägen,through|through,1,2,2,0,0,0,1
+88774566#0,Riddarfjärdsavfarten,left|left|right,1,3,3,3,3,3,0
+951438999#0,,right,1,1,1,1,0,0,0
+951439000#0,Sankt Eriksgatan,left|through|through;right,1,3,3,1,0,0,0
+951439000#2,Sankt Eriksgatan,left|through|through;right,1,3,3,1,0,1,1
+951439004#2,Torsgatan,through,1,1,1,0,0,0,1
+971365782#0,Enköpingsvägen,left|through,1,2,2,1,0,0,0
+971681651#0,Folkungavägen,through|through,1,2,2,0,0,0,0
+971681652#0,Folkungavägen,left|left|through,1,3,3,2,1,2,1
+971681668#0,Enköpingsvägen,left|through|through;right,1,3,3,1,0,1,1
+971681683#0,Enköpingsvägen,left|left|through,1,3,3,2,1,2,1
+971681687,Enköpingsvägen,left|through,1,2,2,1,0,0,0
+972375157#0,Akallalänken,left|through|through;right,1,3,3,1,0,1,1
+972375159#0,Akallalänken,left|through|through;right,1,3,3,1,0,1,1
+972375174#0,Norrviksvägen,left|through,1,2,2,1,0,0,0
+972375174#1,Norrviksvägen,left|through,1,2,2,1,0,1,1
+972375179#0,Norrviksvägen,through|right,1,2,2,1,0,1,1
+977427715#0,Torshamnsgatan,left|left|through,1,3,3,2,1,2,1
+979661324#0,Nettovägen,left|through;right,1,2,2,1,0,1,1
+979661328#0,Veddestavägen,left|through,1,2,2,1,0,1,1
+979661334#0,Järfällavägen,left|through;right,1,2,2,1,0,0,0
+979661334#1,Järfällavägen,left|through;right,1,2,2,1,0,1,1
+997221675#1,Karlsbodavägen,left|through,1,2,2,1,0,1,1

@@ -1,0 +1,137 @@
+{
+  "directory": "/home/erikf/projects/personal/cars-data/truth/stockholm/audit-20261031T215944Z",
+  "total_bytes": 4950852,
+  "fetches": [
+    {
+      "file": "city-count-sample.json",
+      "url": "https://openstreetgs.stockholm.se/geoservice/api/wfs?service=WFS&version=1.1.0&request=GetFeature&typeName=od_gis:Trafikflode_Motorfordon&maxFeatures=3&outputFormat=application/json&srsName=EPSG:4326",
+      "status": 200,
+      "bytes": 4874,
+      "sha256": "4761ff2a6ab0192a7429f34d89185881bba54f64f55f8f3d285439ba46758c5f",
+      "content_type": "application/json",
+      "final_url": "https://openstreetgs.stockholm.se/geoservice/api/wfs?service=WFS&version=1.1.0&request=GetFeature&typeName=od_gis:Trafikflode_Motorfordon&maxFeatures=3&outputFormat=application/json&srsName=EPSG:4326"
+    },
+    {
+      "file": "rvu2024.pdf",
+      "url": "https://www.regionstockholm.se/49e914/contentassets/d6c4da12e11843c0ab8249c297dfd8fe/resvaneundersokning_for_stockholmsregionen_2024.pdf",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "file": "city-climate2024.pdf",
+      "url": "https://meetingspublic.stockholm.se/welcome-sv/namnder-styrelser/miljo-och-halsoskyddsnamnden/mote-2025-06-10/agenda/13-2025-10981-bilaga-1-uppfoljning-av-stockholms-stads-klimatmal-2023-och-2024pdf?downloadMode=open",
+      "status": 200,
+      "bytes": 625880,
+      "sha256": "2597ac80c598263a0695adece7cdbd21163a007cbe595f9e456e0b056904d386",
+      "content_type": "application/pdf",
+      "final_url": "https://meetingspublic.stockholm.se/welcome-sv/namnder-styrelser/miljo-och-halsoskyddsnamnden/mote-2025-06-10/agenda/13-2025-10981-bilaga-1-uppfoljning-av-stockholms-stads-klimatmal-2023-och-2024pdf?downloadMode=open"
+    },
+    {
+      "file": "cordon2024.html",
+      "url": "https://www.transportstyrelsen.se/sv/om-oss/statistik-och-analys/statistik-inom-vagtrafik/trangselskatt-statistik/stockholm/statistik-2024/",
+      "status": 200,
+      "bytes": 198619,
+      "sha256": "27394d4b232e5ff3825371796e3b556d2ccd314938904aaa5d67eb625f99272a",
+      "content_type": "text/html; charset=utf-8",
+      "final_url": "https://www.transportstyrelsen.se/sv/om-oss/statistik-och-analys/statistik-inom-vagtrafik/trangselskatt-statistik/stockholm/statistik-2024/"
+    },
+    {
+      "file": "api-info.html",
+      "url": "https://www.trafikverket.se/e-tjanster/trafikverkets-oppna-api-for-trafikinformation/",
+      "status": 200,
+      "bytes": 71012,
+      "sha256": "e98117d894150cc2799bd75ef36949663bcba2865c59cc1b43d5ac448fcaa5d1",
+      "content_type": "text/html; charset=utf-8",
+      "final_url": "https://www.trafikverket.se/e-tjanster/trafikverkets-oppna-api-for-trafikinformation/"
+    },
+    {
+      "file": "api-data.html",
+      "url": "https://data.trafikverket.se/",
+      "status": 200,
+      "bytes": 19450,
+      "sha256": "a63fe9ad7a2258a7d2ddbfebaa72eb08cc9a9f61940f534759f9039378d08114",
+      "content_type": "text/html",
+      "final_url": "https://data.trafikverket.se/"
+    },
+    {
+      "file": "nvdb.html",
+      "url": "https://www.nvdb.se/sv/kund/hamta-aktuella-data/",
+      "status": 200,
+      "bytes": 11733,
+      "sha256": "b3b40df48a1768449a6a5e8e73b9ec05928ea7e884db6fb220819fd301b97a65",
+      "content_type": "text/html; charset=utf-8",
+      "final_url": "https://www.nvdb.se/sv/kund/hamta-aktuella-data/"
+    },
+    {
+      "file": "vti969.pdf",
+      "url": "https://trafikverket.diva-portal.org/smash/get/diva2%3A1699487/FULLTEXT01.pdf",
+      "status": 200,
+      "bytes": 2107737,
+      "sha256": "2cb619a2a32cb05d16f63ff13ed850d4006fc8f28e60aff05597bed233a5e5d6",
+      "content_type": "application/pdf",
+      "final_url": "https://trafikverket.diva-portal.org/smash/get/diva2%3A1699487/FULLTEXT01.pdf"
+    },
+    {
+      "file": "scb-api-root.json",
+      "url": "https://api.scb.se/OV0104/v1/doris/sv/ssd/AM",
+      "status": 200,
+      "bytes": 2201,
+      "sha256": "d37b8bcee462c2f7d97e03c9ce9ed2950145d1aa12c1e8c5583a9775ef48420a",
+      "content_type": "application/json; charset=utf-8",
+      "final_url": "https://api.scb.se/OV0104/v1/doris/sv/ssd/AM"
+    },
+    {
+      "file": "scb-deso.html",
+      "url": "https://www.scb.se/hitta-statistik/regional-statistik-och-kartor/regionala-indelningar/demografiska-statistikomraden-deso/deso-tabellerna-i-ssd--information-och-instruktioner/",
+      "status": 200,
+      "bytes": 41231,
+      "sha256": "d60f3fe0211e26486c8780dbe32c837aa5cf94524a23531777ab95c73067c5bc",
+      "content_type": "text/html; charset=utf-8",
+      "final_url": "https://www.scb.se/hitta-statistik/regional-statistik-och-kartor/regionala-indelningar/demografiska-statistikomraden-deso/deso-tabellerna-i-ssd--information-och-instruktioner/"
+    },
+    {
+      "file": "kilometres.html",
+      "url": "https://www.trafa.se/vagtrafik/korstrackor/",
+      "status": 200,
+      "bytes": 65523,
+      "sha256": "90f1142528139272494c2588d3c38cc4077ec6101e33b9195b070daeab9586d1",
+      "content_type": "text/html; charset=utf-8",
+      "final_url": "https://www.trafa.se/vagtrafik/korstrackor/"
+    },
+    {
+      "file": "vkm.html",
+      "url": "https://www.trafa.se/vagtrafik/trafikarbete/",
+      "status": 200,
+      "bytes": 59844,
+      "sha256": "b4b39eee25b190efdefa2180b71f4973290d9bba37b8cd91e2774708f43f2a00",
+      "content_type": "text/html; charset=utf-8",
+      "final_url": "https://www.trafa.se/vagtrafik/trafikarbete/"
+    },
+    {
+      "file": "sampers.html",
+      "url": "https://bransch.trafikverket.se/tjanster/system-och-verktyg/Prognos--och-analysverktyg/Sampers/",
+      "status": 200,
+      "bytes": 130370,
+      "sha256": "3388004e1d5b0dcbc6a7dc9cb665b524efa6da45f904a125c800d3c0bc1c9356",
+      "content_type": "text/html; charset=utf-8",
+      "final_url": "https://bransch.trafikverket.se/tjanster/system-och-verktyg/Prognos--och-analysverktyg/Sampers/"
+    },
+    {
+      "file": "tomtom.html",
+      "url": "https://www.tomtom.com/traffic-index/city/stockholm/",
+      "status": 200,
+      "bytes": 1568532,
+      "sha256": "098df1dce2d2d619fdd4b38aefc177e41be55486512e13579319c46aafc1d132",
+      "content_type": "text/html",
+      "final_url": "https://www.tomtom.com/traffic-index/city/stockholm/"
+    },
+    {
+      "file": "post-kth.html",
+      "url": "https://www.byv.kth.se/en/avd/transportvetenskap/forskning-urban-mobi/prediktions-och-scenariobaserad-trafikledning-post-1.876335",
+      "status": 200,
+      "bytes": 43846,
+      "sha256": "6ded84600a0ba51619b777181452d15528f910ee76434cce56b6883ddb132ade",
+      "content_type": "text/html;charset=UTF-8",
+      "final_url": "https://www.byv.kth.se/en/avd/transportvetenskap/forskning-urban-mobi/prediktions-och-scenariobaserad-trafikledning-post-1.876335"
+    }
+  ]
+}

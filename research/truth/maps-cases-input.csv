@@ -1,0 +1,21 @@
+case,label,lat,lon,r,junction
+1,Trafikplats Fredhäll (Essingeleden/Drottningholmsvägen),59.328592,18.008713,120,4405645705
+2,Trafikplats Kristineberg ramp merge,59.335837,18.009981,120,2745595522
+3,Trafikplats Stora Essingen ramp terminal,59.322052,17.995994,100,206139553
+4,Trafikplats Lilla Essingen (Essinge Brogata),59.324988,18.004264,100,29020561
+5,Trafikplats Nybohov merge,59.308828,18.008624,100,146927911
+6,Slussen north: Skeppsbron/Slussplan,59.321776,18.074240,80,
+7,Slussen south: Katarinavägen/Stadsgårdsleden,59.319327,18.072737,80,
+8,Norrtull: Norrtullsavfarten/Uppsalavägen,59.351129,18.042448,90,
+9,Sveaplan,59.350218,18.050363,100,
+10,Roslagstull roundabout,59.351593,18.056174,110,2453067331
+11,Fridhemsplan: Drottningholmsvägen/S:t Eriksgatan,59.332126,18.031201,60,
+12,S:t Eriksgatan/Fleminggatan,59.334478,18.032525,60,
+13,Lindhagensplan roundabout,59.331690,18.019000,140,208343357
+14,Västerbroplan (city timing trial site),59.328237,18.022217,140,21760826
+15,Gullmarsplan west arm (Johanneshovsvägen signals),59.299067,18.078818,150,cluster_6018434024_6018434039
+16,Johanneshovsavfarten ramp signal,59.292504,18.085426,60,4880682303
+17,Trafikplats Kungens Kurva north merge,59.278788,17.918935,120,1593635928
+18,Trafikplats Kungens Kurva south merge,59.269352,17.910784,120,119751
+19,Hornstull: Hornsgatan/Långholmsgatan,59.315237,18.034306,70,
+20,Tegelbacken: Vasagatan/Tegelbacken,59.328562,18.061181,70,

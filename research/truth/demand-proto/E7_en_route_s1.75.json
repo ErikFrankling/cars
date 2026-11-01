@@ -1,0 +1,94 @@
+{
+ "rows": [
+  {
+   "scenario": "normal",
+   "nav_share": 0.0,
+   "mean_tt_s": 207.33553849535662,
+   "p95_tt_s": 414.3394408347188,
+   "unfinished": 0.0,
+   "reroutes_per_navigator": 0.0,
+   "flow_on_incident_links": 7449.0
+  },
+  {
+   "scenario": "normal",
+   "nav_share": 0.1,
+   "mean_tt_s": 206.78839563821376,
+   "p95_tt_s": 410.74243289761387,
+   "unfinished": 0.0,
+   "reroutes_per_navigator": 0.01119047619047619,
+   "flow_on_incident_links": 7443.0
+  },
+  {
+   "scenario": "normal",
+   "nav_share": 0.3,
+   "mean_tt_s": 205.9130384953566,
+   "p95_tt_s": 406.7520406923596,
+   "unfinished": 0.0,
+   "reroutes_per_navigator": 0.010992063492063492,
+   "flow_on_incident_links": 7446.0
+  },
+  {
+   "scenario": "normal",
+   "nav_share": 0.6,
+   "mean_tt_s": 205.40446706678517,
+   "p95_tt_s": 405.23068975423087,
+   "unfinished": 0.0,
+   "reroutes_per_navigator": 0.00875,
+   "flow_on_incident_links": 7446.0
+  },
+  {
+   "scenario": "normal",
+   "nav_share": 1.0,
+   "mean_tt_s": 204.58637182868995,
+   "p95_tt_s": 402.5491446780558,
+   "unfinished": 0.0,
+   "reroutes_per_navigator": 0.008404761904761904,
+   "flow_on_incident_links": 7448.0
+  },
+  {
+   "scenario": "incident",
+   "nav_share": 0.0,
+   "mean_tt_s": 635.6997646858329,
+   "p95_tt_s": 2534.413212305648,
+   "unfinished": 0.0,
+   "reroutes_per_navigator": 0.0,
+   "flow_on_incident_links": 7449.0
+  },
+  {
+   "scenario": "incident",
+   "nav_share": 0.1,
+   "mean_tt_s": 562.1885742096423,
+   "p95_tt_s": 2302.894536452491,
+   "unfinished": 0.0,
+   "reroutes_per_navigator": 0.2092857142857143,
+   "flow_on_incident_links": 7078.0
+  },
+  {
+   "scenario": "incident",
+   "nav_share": 0.3,
+   "mean_tt_s": 428.13952659059476,
+   "p95_tt_s": 1809.6044200340032,
+   "unfinished": 0.0,
+   "reroutes_per_navigator": 0.16420634920634922,
+   "flow_on_incident_links": 6387.0
+  },
+  {
+   "scenario": "incident",
+   "nav_share": 0.6,
+   "mean_tt_s": 296.31791944773755,
+   "p95_tt_s": 969.1593353765326,
+   "unfinished": 0.0,
+   "reroutes_per_navigator": 0.1268452380952381,
+   "flow_on_incident_links": 5440.0
+  },
+  {
+   "scenario": "incident",
+   "nav_share": 1.0,
+   "mean_tt_s": 256.3742884953566,
+   "p95_tt_s": 673.3311872784511,
+   "unfinished": 0.0,
+   "reroutes_per_navigator": 0.1133095238095238,
+   "flow_on_incident_links": 4988.5
+  }
+ ]
+}

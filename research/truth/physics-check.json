@@ -1,0 +1,1756 @@
+{
+ "values": {
+  "adac_b": {
+   "dry 100": [
+    8.91,
+    8.297
+   ],
+   "wet asphalt 80": [
+    7.035,
+    6.067
+   ],
+   "wet concrete 80": [
+    6.413,
+    5.299
+   ],
+   "snow 30": [
+    3.507,
+    3.157
+   ],
+   "ice 20": [
+    0.843,
+    0.714
+   ]
+  },
+  "adac_mu": {
+   "dry 100": [
+    0.908,
+    0.846
+   ],
+   "wet asphalt 80": [
+    0.717,
+    0.618
+   ],
+   "wet concrete 80": [
+    0.654,
+    0.54
+   ],
+   "snow 30": [
+    0.357,
+    0.322
+   ],
+   "ice 20": [
+    0.086,
+    0.073
+   ]
+  },
+  "nhtsa_table1": [
+   {
+    "mph": 45,
+    "published_ft": 144,
+    "formula_ft": 144.4
+   },
+   {
+    "mph": 50,
+    "published_ft": 176,
+    "formula_ft": 176.4
+   },
+   {
+    "mph": 55,
+    "published_ft": 212,
+    "formula_ft": 211.7
+   },
+   {
+    "mph": 60,
+    "published_ft": 250,
+    "formula_ft": 250.1
+   }
+  ],
+  "nhtsa_ramp_numeric_vs_formula_m": [
+   76.251,
+   76.25
+  ],
+  "nhtsa_vs_plots": {
+   "Sterling+braked trailer 186 ft": {
+    "plot_g": 0.78,
+    "formula_ft_at_plot_g": 176.0,
+    "implied_steady_g": 0.732,
+    "implied_steady_mps2": 7.19
+   },
+   "Volvo+control trailer 249 ft": {
+    "plot_g": 0.45,
+    "formula_ft_at_plot_g": 284.8,
+    "implied_steady_g": 0.52,
+    "implied_steady_mps2": 5.1
+   },
+   "Peterbilt+control trailer 250 ft": {
+    "plot_g": 0.52,
+    "formula_ft_at_plot_g": 251.0,
+    "implied_steady_g": 0.522,
+    "implied_steady_mps2": 5.12
+   }
+  },
+  "altoona_van_brake_fit": {
+   "t_r_s": 0.474,
+   "b_mps2": 7.72,
+   "rmse_m": 0.172,
+   "published_ft": [
+    23.19,
+    49.4,
+    82.05,
+    101.31
+   ]
+  }
+ },
+ "quintic": {
+  "numeric_peaks_T4": {
+   "v": 1.6406,
+   "a": 1.2638,
+   "j": 985.323
+  },
+  "closed_forms_T4": {
+   "v": 1.640625,
+   "a": 1.2629537138523064,
+   "j": 3.28125
+  },
+  "endpoint_values": {
+   "f(0)": 0.0,
+   "f(1)": 1.0,
+   "f'(0)": 0.0,
+   "f'(1)": 0,
+   "f''(1)": 0,
+   "jerk_at_endpoints_nonzero": 60
+  },
+  "occupation": [
+   {
+    "lane_m": 3.5,
+    "veh_m": 1.8,
+    "centre_travel_m": 1.8,
+    "occupied_fraction_of_T": 0.29,
+    "T_for_T_occ_4.01": 13.8,
+    "T_for_T_occ_3.0": 10.3,
+    "peak_vlat_T_occ_4.01": 0.475,
+    "peak_vlat_T_occ_3.0": 0.635,
+    "peak_alat_T_occ_3.0": 0.189
+   },
+   {
+    "lane_m": 3.66,
+    "veh_m": 1.8,
+    "centre_travel_m": 1.8,
+    "occupied_fraction_of_T": 0.276,
+    "T_for_T_occ_4.01": 14.5,
+    "T_for_T_occ_3.0": 10.9,
+    "peak_vlat_T_occ_4.01": 0.472,
+    "peak_vlat_T_occ_3.0": 0.631,
+    "peak_alat_T_occ_3.0": 0.179
+   },
+   {
+    "lane_m": 3.25,
+    "veh_m": 1.8,
+    "centre_travel_m": 1.8,
+    "occupied_fraction_of_T": 0.316,
+    "T_for_T_occ_4.01": 12.7,
+    "T_for_T_occ_3.0": 9.5,
+    "peak_vlat_T_occ_4.01": 0.48,
+    "peak_vlat_T_occ_3.0": 0.641,
+    "peak_alat_T_occ_3.0": 0.208
+   },
+   {
+    "lane_m": 3.5,
+    "veh_m": 2.55,
+    "centre_travel_m": 2.55,
+    "occupied_fraction_of_T": 0.443,
+    "T_for_T_occ_4.01": 9.0,
+    "T_for_T_occ_3.0": 6.8,
+    "peak_vlat_T_occ_4.01": 0.725,
+    "peak_vlat_T_occ_3.0": 0.969,
+    "peak_alat_T_occ_3.0": 0.441
+   }
+  ],
+  "T4_occupation_s": 1.16,
+  "T6_occupation_s": 1.74,
+  "ten_ninety_fraction": 0.5067,
+  "shapes": [
+   {
+    "shape": "quintic",
+    "T_s": 4.0,
+    "straddle_s": 1.16,
+    "t10_90_s": 2.03,
+    "peak_vlat": 1.641,
+    "peak_alat": 1.263
+   },
+   {
+    "shape": "quintic",
+    "T_s": 6.28,
+    "straddle_s": 1.82,
+    "t10_90_s": 3.18,
+    "peak_vlat": 1.045,
+    "peak_alat": 0.512
+   },
+   {
+    "shape": "quintic",
+    "T_s": 10.0,
+    "straddle_s": 2.9,
+    "t10_90_s": 5.07,
+    "peak_vlat": 0.656,
+    "peak_alat": 0.202
+   },
+   {
+    "shape": "quintic",
+    "T_s": 11.0,
+    "straddle_s": 3.19,
+    "t10_90_s": 5.57,
+    "peak_vlat": 0.597,
+    "peak_alat": 0.167
+   },
+   {
+    "shape": "quintic",
+    "T_s": 13.8,
+    "straddle_s": 4.0,
+    "t10_90_s": 6.99,
+    "peak_vlat": 0.476,
+    "peak_alat": 0.106
+   },
+   {
+    "shape": "trapezoid",
+    "T_s": 8.78,
+    "travel_m": 3.5,
+    "straddle_s": 4.0,
+    "t10_90_s": 6.22,
+    "peak_vlat": 0.45,
+    "peak_alat": 0.707
+   },
+   {
+    "shape": "trapezoid",
+    "T_s": 7.36,
+    "travel_m": 3.5,
+    "straddle_s": 3.27,
+    "t10_90_s": 5.09,
+    "peak_vlat": 0.55,
+    "peak_alat": 0.864
+   },
+   {
+    "shape": "trapezoid",
+    "T_s": 6.83,
+    "travel_m": 3.5,
+    "straddle_s": 3.0,
+    "t10_90_s": 4.67,
+    "peak_vlat": 0.6,
+    "peak_alat": 0.942
+   },
+   {
+    "shape": "trapezoid",
+    "T_s": 6.0,
+    "travel_m": 3.5,
+    "straddle_s": 2.57,
+    "t10_90_s": 4.0,
+    "peak_vlat": 0.7,
+    "peak_alat": 1.1
+   }
+  ],
+  "curvilinear_acc_rms_error": {
+   "at": 6e-05,
+   "an": 5e-05
+  },
+  "lane_change_feasibility": [
+   {
+    "v": 1,
+    "T": 4,
+    "heading_deg": 58.6,
+    "R_min_m": 0.8,
+    "yaw_rate_deg_s": 72.4
+   },
+   {
+    "v": 1,
+    "T": 6,
+    "heading_deg": 47.6,
+    "R_min_m": 1.8,
+    "yaw_rate_deg_s": 32.2
+   },
+   {
+    "v": 1,
+    "T": 10,
+    "heading_deg": 33.3,
+    "R_min_m": 4.9,
+    "yaw_rate_deg_s": 11.6
+   },
+   {
+    "v": 2,
+    "T": 4,
+    "heading_deg": 39.4,
+    "R_min_m": 3.2,
+    "yaw_rate_deg_s": 36.2
+   },
+   {
+    "v": 2,
+    "T": 6,
+    "heading_deg": 28.7,
+    "R_min_m": 7.1,
+    "yaw_rate_deg_s": 16.1
+   },
+   {
+    "v": 2,
+    "T": 10,
+    "heading_deg": 18.2,
+    "R_min_m": 19.8,
+    "yaw_rate_deg_s": 5.8
+   },
+   {
+    "v": 3,
+    "T": 4,
+    "heading_deg": 28.7,
+    "R_min_m": 7.1,
+    "yaw_rate_deg_s": 24.1
+   },
+   {
+    "v": 3,
+    "T": 6,
+    "heading_deg": 20.0,
+    "R_min_m": 16.0,
+    "yaw_rate_deg_s": 10.7
+   },
+   {
+    "v": 3,
+    "T": 10,
+    "heading_deg": 12.3,
+    "R_min_m": 44.5,
+    "yaw_rate_deg_s": 3.9
+   },
+   {
+    "v": 5,
+    "T": 4,
+    "heading_deg": 18.2,
+    "R_min_m": 19.8,
+    "yaw_rate_deg_s": 14.5
+   },
+   {
+    "v": 5,
+    "T": 6,
+    "heading_deg": 12.3,
+    "R_min_m": 44.5,
+    "yaw_rate_deg_s": 6.4
+   },
+   {
+    "v": 5,
+    "T": 10,
+    "heading_deg": 7.5,
+    "R_min_m": 123.7,
+    "yaw_rate_deg_s": 2.3
+   },
+   {
+    "v": 8,
+    "T": 4,
+    "heading_deg": 11.6,
+    "R_min_m": 50.7,
+    "yaw_rate_deg_s": 9.0
+   },
+   {
+    "v": 8,
+    "T": 6,
+    "heading_deg": 7.8,
+    "R_min_m": 114.0,
+    "yaw_rate_deg_s": 4.0
+   },
+   {
+    "v": 8,
+    "T": 10,
+    "heading_deg": 4.7,
+    "R_min_m": 316.7,
+    "yaw_rate_deg_s": 1.4
+   },
+   {
+    "v": 14,
+    "T": 4,
+    "heading_deg": 6.7,
+    "R_min_m": 155.2,
+    "yaw_rate_deg_s": 5.2
+   },
+   {
+    "v": 14,
+    "T": 6,
+    "heading_deg": 4.5,
+    "R_min_m": 349.2,
+    "yaw_rate_deg_s": 2.3
+   },
+   {
+    "v": 14,
+    "T": 10,
+    "heading_deg": 2.7,
+    "R_min_m": 969.9,
+    "yaw_rate_deg_s": 0.8
+   },
+   {
+    "v": 25,
+    "T": 4,
+    "heading_deg": 3.8,
+    "R_min_m": 494.9,
+    "yaw_rate_deg_s": 2.9
+   },
+   {
+    "v": 25,
+    "T": 6,
+    "heading_deg": 2.5,
+    "R_min_m": 1113.5,
+    "yaw_rate_deg_s": 1.3
+   },
+   {
+    "v": 25,
+    "T": 10,
+    "heading_deg": 1.5,
+    "R_min_m": 3092.9,
+    "yaw_rate_deg_s": 0.5
+   }
+  ]
+ },
+ "longitudinal": {
+  "kappa_ice": 0.775,
+  "kappa_ev": 0.83,
+  "cars": [
+   {
+    "car": "Dacia Sandero SCe 65",
+    "kg": 1089,
+    "kW": 49,
+    "declared_0_100": 16.7,
+    "model_0_100": 17.07,
+    "err_pct": 2.2,
+    "loo_0_100": 17.62,
+    "dt1_heun": 17.08,
+    "dt1_euler": 16.38,
+    "declared_vmax": 158,
+    "model_vmax_kmh": 151.0,
+    "a_50": 2.02,
+    "a_100": 0.72
+   },
+   {
+    "car": "VW Golf 1.5 TSI 85 kW",
+    "kg": 1307,
+    "kW": 85,
+    "declared_0_100": 9.9,
+    "model_0_100": 10.73,
+    "err_pct": 8.4,
+    "loo_0_100": 10.88,
+    "dt1_heun": 10.77,
+    "dt1_euler": 10.12,
+    "declared_vmax": 203,
+    "model_vmax_kmh": 191.0,
+    "a_50": 3.06,
+    "a_100": 1.3
+   },
+   {
+    "car": "Volvo XC90 3.2 AWD",
+    "kg": 2202,
+    "kW": 179,
+    "declared_0_100": 9.5,
+    "model_0_100": 8.13,
+    "err_pct": -14.5,
+    "loo_0_100": 7.91,
+    "dt1_heun": 8.18,
+    "dt1_euler": 7.55,
+    "declared_vmax": 210,
+    "model_vmax_kmh": 215.0,
+    "a_50": 3.98,
+    "a_100": 1.78
+   },
+   {
+    "car": "Volvo XC90 T6 AWD",
+    "kg": 2060,
+    "kW": 228,
+    "declared_0_100": 6.5,
+    "model_0_100": 5.89,
+    "err_pct": -9.4,
+    "loo_0_100": 5.85,
+    "dt1_heun": 5.95,
+    "dt1_euler": 5.33,
+    "declared_vmax": 230,
+    "model_vmax_kmh": 235.0,
+    "a_50": 5.46,
+    "a_100": 2.5
+   },
+   {
+    "car": "Tesla Model 3 RWD",
+    "kg": 1836,
+    "kW": 208,
+    "declared_0_100": 6.1,
+    "model_0_100": 6.11,
+    "err_pct": 0.2,
+    "loo_0_100": null,
+    "dt1_heun": 6.14,
+    "dt1_euler": 5.79,
+    "declared_vmax": 201,
+    "model_vmax_kmh": 287.0,
+    "a_50": 5.47,
+    "a_100": 2.84
+   }
+  ],
+  "golf_first_gear_force_note": {
+   "ratio": 14.697199999999999,
+   "N_at_175Nm_r0.316": 7488,
+   "a_m1300": 5.76,
+   "tyre_limit_fwd_mu1": 5.4
+  },
+  "arboc": {
+   "mass_kg": 3797,
+   "measured_s": [
+    2.45,
+    4.39,
+    6.44,
+    9.07,
+    12.63
+   ],
+   "fit_eff_wheel_kW": 136.0,
+   "fit_a_launch": 2.2,
+   "model_s": [
+    2.25,
+    4.52,
+    6.84,
+    9.3,
+    12.56
+   ],
+   "rmse_s": 0.23
+  },
+  "trucks_ite": [
+   {
+    "lb_hp": 100,
+    "kW_at_36t": 592,
+    "published_ft_s2": [
+     2.9,
+     2.3,
+     2.2,
+     2.0,
+     1.6
+    ],
+    "model_ft_s2": [
+     4.06,
+     4.06,
+     3.87,
+     3.38,
+     2.88
+    ],
+    "inc_published": [
+     2.1,
+     1.5,
+     1.0,
+     0.6
+    ],
+    "inc_model": [
+     3.53,
+     2.45,
+     1.8,
+     1.36
+    ]
+   },
+   {
+    "lb_hp": 200,
+    "kW_at_36t": 296,
+    "published_ft_s2": [
+     1.8,
+     1.6,
+     1.5,
+     1.2,
+     1.0
+    ],
+    "model_ft_s2": [
+     1.94,
+     1.94,
+     1.83,
+     1.57,
+     1.28
+    ],
+    "inc_published": [
+     1.3,
+     0.8,
+     0.5,
+     0.4
+    ],
+    "inc_model": [
+     1.66,
+     1.1,
+     0.75,
+     0.49
+    ]
+   },
+   {
+    "lb_hp": 300,
+    "kW_at_36t": 197,
+    "published_ft_s2": [
+     1.3,
+     1.3,
+     1.2,
+     1.1,
+     0.6
+    ],
+    "model_ft_s2": [
+     1.23,
+     1.23,
+     1.15,
+     0.96,
+     0.75
+    ],
+    "inc_published": [
+     1.0,
+     0.6,
+     0.3,
+     null
+    ],
+    "inc_model": [
+     1.03,
+     0.64,
+     0.39,
+     0.2
+    ]
+   },
+   {
+    "lb_hp": 400,
+    "kW_at_36t": 148,
+    "published_ft_s2": [
+     1.3,
+     1.2,
+     1.1,
+     0.7,
+     null
+    ],
+    "model_ft_s2": [
+     0.88,
+     0.87,
+     0.81,
+     0.66,
+     0.46
+    ],
+    "inc_published": [
+     0.9,
+     0.4,
+     null,
+     null
+    ],
+    "inc_model": [
+     0.72,
+     0.42,
+     0.21,
+     0.06
+    ]
+   }
+  ],
+  "yang2016": {
+   "measured_heavy_median_ft_s2": 1.96,
+   "p15": 1.56,
+   "p85": 2.24,
+   "measured_exit_mph": 31,
+   "model": [
+    {
+     "veh": "40 t 300 kW",
+     "avg_ft_s2_0_500ft": 1.65,
+     "exit_mph": 27.7
+    },
+    {
+     "veh": "28 t 300 kW",
+     "avg_ft_s2_0_500ft": 2.24,
+     "exit_mph": 32.3
+    },
+    {
+     "veh": "14 t 300 kW empty artic",
+     "avg_ft_s2_0_500ft": 3.75,
+     "exit_mph": 41.8
+    },
+    {
+     "veh": "18 t 220 kW rigid",
+     "avg_ft_s2_0_500ft": 2.47,
+     "exit_mph": 33.9
+    }
+   ]
+  },
+  "crawl": [
+   {
+    "veh": "40 t 300 kW",
+    "crawl_kmh_0pct": 129.3,
+    "crawl_kmh_2pct": 75.2,
+    "crawl_kmh_3pct": 58.5,
+    "crawl_kmh_5pct": 39.3,
+    "crawl_kmh_8pct": 25.9
+   },
+   {
+    "veh": "60 t 400 kW",
+    "crawl_kmh_0pct": 137.6,
+    "crawl_kmh_2pct": 70.7,
+    "crawl_kmh_3pct": 53.5,
+    "crawl_kmh_5pct": 35.2,
+    "crawl_kmh_8pct": 23.1
+   },
+   {
+    "veh": "18 t 220 kW",
+    "crawl_kmh_0pct": 124.1,
+    "crawl_kmh_2pct": 93.1,
+    "crawl_kmh_3pct": 79.8,
+    "crawl_kmh_5pct": 59.5,
+    "crawl_kmh_8pct": 41.2
+   },
+   {
+    "veh": "car 1,588 kg 90 kW",
+    "crawl_kmh_0pct": ">140",
+    "crawl_kmh_2pct": ">140",
+    "crawl_kmh_3pct": ">140",
+    "crawl_kmh_5pct": ">140",
+    "crawl_kmh_8pct": 135.3
+   }
+  ]
+ },
+ "wltc_stats": {
+  "a_max_central": 1.583,
+  "d_max_central": -1.486,
+  "seconds": 1800,
+  "km": 23.266,
+  "vmax_kmh": 131.3,
+  "a_max": 1.667,
+  "d_max": -1.5,
+  "v_at_amax_kmh": 8.6,
+  "idle_share": 0.13,
+  "cross_check": {
+   "au_samples": 1801,
+   "greenncap_samples": 1800,
+   "max_abs_diff_kmh": 0.0,
+   "mismatch_points": 0,
+   "au_missing": []
+  }
+ },
+ "wltc_tracking": [
+  {
+   "veh": "Dacia Sandero SCe 65",
+   "dt": 0.1,
+   "max_speed_err_kmh": 0.0,
+   "share_gt_2kmh": 0.0,
+   "share_saturated": 0.0,
+   "end_distance_err_m": 0.0,
+   "peak_wheel_kW": 37.6,
+   "wheel_Wh_per_km_pos": 128.0,
+   "wheel_Wh_per_km_neg": -29.3
+  },
+  {
+   "veh": "VW Golf 1.5 TSI 85 kW",
+   "dt": 0.1,
+   "max_speed_err_kmh": 0.0,
+   "share_gt_2kmh": 0.0,
+   "share_saturated": 0.0,
+   "end_distance_err_m": 0.0,
+   "peak_wheel_kW": 40.2,
+   "wheel_Wh_per_km_pos": 134.1,
+   "wheel_Wh_per_km_neg": -36.8
+  },
+  {
+   "veh": "Volvo XC90 3.2 AWD",
+   "dt": 0.1,
+   "max_speed_err_kmh": 0.0,
+   "share_gt_2kmh": 0.0,
+   "share_saturated": 0.0,
+   "end_distance_err_m": 0.0,
+   "peak_wheel_kW": 64.3,
+   "wheel_Wh_per_km_pos": 213.2,
+   "wheel_Wh_per_km_neg": -61.0
+  },
+  {
+   "veh": "Volvo XC90 T6 AWD",
+   "dt": 0.1,
+   "max_speed_err_kmh": 0.0,
+   "share_gt_2kmh": 0.0,
+   "share_saturated": 0.0,
+   "end_distance_err_m": 0.0,
+   "peak_wheel_kW": 61.4,
+   "wheel_Wh_per_km_pos": 204.6,
+   "wheel_Wh_per_km_neg": -56.6
+  },
+  {
+   "veh": "Tesla Model 3 RWD",
+   "dt": 0.1,
+   "max_speed_err_kmh": 0.0,
+   "share_gt_2kmh": 0.0,
+   "share_saturated": 0.0,
+   "end_distance_err_m": 0.0,
+   "peak_wheel_kW": 51.8,
+   "wheel_Wh_per_km_pos": 156.6,
+   "wheel_Wh_per_km_neg": -54.8
+  },
+  {
+   "veh": "fleet mean 1,588+75 kg 90 kW",
+   "dt": 0.1,
+   "max_speed_err_kmh": 0.0,
+   "share_gt_2kmh": 0.0,
+   "share_saturated": 0.0,
+   "end_distance_err_m": 0.0,
+   "peak_wheel_kW": 46.3,
+   "wheel_Wh_per_km_pos": 153.5,
+   "wheel_Wh_per_km_neg": -44.2
+  },
+  {
+   "veh": "van 2.8 t 95 kW",
+   "dt": 0.1,
+   "max_speed_err_kmh": 2.68,
+   "share_gt_2kmh": 0.0033,
+   "share_saturated": 0.0139,
+   "end_distance_err_m": -7.0,
+   "peak_wheel_kW": 73.6,
+   "wheel_Wh_per_km_pos": 299.7,
+   "wheel_Wh_per_km_neg": -68.3
+  },
+  {
+   "veh": "truck 18 t 220 kW",
+   "dt": 0.1,
+   "max_speed_err_kmh": 27.08,
+   "share_gt_2kmh": 0.1147,
+   "share_saturated": 0.1717,
+   "end_distance_err_m": -583.7,
+   "peak_wheel_kW": 187.0,
+   "wheel_Wh_per_km_pos": 1243.6,
+   "wheel_Wh_per_km_neg": -573.1
+  },
+  {
+   "veh": "truck 40 t 300 kW",
+   "dt": 0.1,
+   "max_speed_err_kmh": 40.35,
+   "share_gt_2kmh": 0.2774,
+   "share_saturated": 0.3597,
+   "end_distance_err_m": -1695.1,
+   "peak_wheel_kW": 255.0,
+   "wheel_Wh_per_km_pos": 2231.9,
+   "wheel_Wh_per_km_neg": -1238.6
+  },
+  {
+   "veh": "Dacia Sandero SCe 65",
+   "dt": 1.0,
+   "max_speed_err_kmh": 0.0,
+   "share_gt_2kmh": 0.0,
+   "share_saturated": 0.0,
+   "end_distance_err_m": 0.0,
+   "peak_wheel_kW": 37.1,
+   "wheel_Wh_per_km_pos": 128.0,
+   "wheel_Wh_per_km_neg": -29.3
+  },
+  {
+   "veh": "VW Golf 1.5 TSI 85 kW",
+   "dt": 1.0,
+   "max_speed_err_kmh": 0.0,
+   "share_gt_2kmh": 0.0,
+   "share_saturated": 0.0,
+   "end_distance_err_m": 0.0,
+   "peak_wheel_kW": 39.8,
+   "wheel_Wh_per_km_pos": 134.1,
+   "wheel_Wh_per_km_neg": -36.8
+  },
+  {
+   "veh": "Volvo XC90 3.2 AWD",
+   "dt": 1.0,
+   "max_speed_err_kmh": 0.0,
+   "share_gt_2kmh": 0.0,
+   "share_saturated": 0.0,
+   "end_distance_err_m": 0.0,
+   "peak_wheel_kW": 63.6,
+   "wheel_Wh_per_km_pos": 213.2,
+   "wheel_Wh_per_km_neg": -61.0
+  },
+  {
+   "veh": "Volvo XC90 T6 AWD",
+   "dt": 1.0,
+   "max_speed_err_kmh": 0.0,
+   "share_gt_2kmh": 0.0,
+   "share_saturated": 0.0,
+   "end_distance_err_m": 0.0,
+   "peak_wheel_kW": 60.7,
+   "wheel_Wh_per_km_pos": 204.6,
+   "wheel_Wh_per_km_neg": -56.6
+  },
+  {
+   "veh": "Tesla Model 3 RWD",
+   "dt": 1.0,
+   "max_speed_err_kmh": 0.0,
+   "share_gt_2kmh": 0.0,
+   "share_saturated": 0.0,
+   "end_distance_err_m": 0.0,
+   "peak_wheel_kW": 50.7,
+   "wheel_Wh_per_km_pos": 156.6,
+   "wheel_Wh_per_km_neg": -54.8
+  },
+  {
+   "veh": "fleet mean 1,588+75 kg 90 kW",
+   "dt": 1.0,
+   "max_speed_err_kmh": 0.0,
+   "share_gt_2kmh": 0.0,
+   "share_saturated": 0.0,
+   "end_distance_err_m": 0.0,
+   "peak_wheel_kW": 45.8,
+   "wheel_Wh_per_km_pos": 153.5,
+   "wheel_Wh_per_km_neg": -44.2
+  },
+  {
+   "veh": "van 2.8 t 95 kW",
+   "dt": 1.0,
+   "max_speed_err_kmh": 2.7,
+   "share_gt_2kmh": 0.0033,
+   "share_saturated": 0.0128,
+   "end_distance_err_m": -7.2,
+   "peak_wheel_kW": 73.6,
+   "wheel_Wh_per_km_pos": 299.7,
+   "wheel_Wh_per_km_neg": -68.4
+  },
+  {
+   "veh": "truck 18 t 220 kW",
+   "dt": 1.0,
+   "max_speed_err_kmh": 27.2,
+   "share_gt_2kmh": 0.1167,
+   "share_saturated": 0.1661,
+   "end_distance_err_m": -588.4,
+   "peak_wheel_kW": 187.0,
+   "wheel_Wh_per_km_pos": 1240.5,
+   "wheel_Wh_per_km_neg": -570.3
+  },
+  {
+   "veh": "truck 40 t 300 kW",
+   "dt": 1.0,
+   "max_speed_err_kmh": 40.48,
+   "share_gt_2kmh": 0.2806,
+   "share_saturated": 0.3511,
+   "end_distance_err_m": -1710.5,
+   "peak_wheel_kW": 255.0,
+   "wheel_Wh_per_km_pos": 2218.8,
+   "wheel_Wh_per_km_neg": -1226.6
+  }
+ ],
+ "epa_tcl_2025": {
+  "n_unique": 1076,
+  "etw_kg": [
+   1531.0,
+   1814.0,
+   2155.0,
+   2495.0,
+   2948.0
+  ],
+  "rated_kW": [
+   110.0,
+   168.0,
+   227.0,
+   315.0,
+   496.0
+  ],
+  "W_per_kg": [
+   62.3,
+   83.6,
+   102.7,
+   132.3,
+   210.4
+  ],
+  "A_over_mg": [
+   0.0056,
+   0.0067,
+   0.0079,
+   0.0096,
+   0.0125
+  ],
+  "CdA_from_C_m2": [
+   0.549,
+   0.7,
+   0.837,
+   1.004,
+   1.321
+  ],
+  "F_at_100kmh_N": [
+   461.0,
+   554.0,
+   627.0,
+   720.0,
+   949.0
+  ],
+  "corr_log_m_log_kW": 0.561,
+  "percentiles": [
+   5,
+   25,
+   50,
+   75,
+   95
+  ],
+  "examples": [
+   {
+    "name": "Tesla Model 3 Long Range AWD-E",
+    "hp": 397.0,
+    "etw_lb": 4250.0,
+    "A": 30.98,
+    "B": 0.1596,
+    "C": 0.0141
+   },
+   {
+    "name": "Tesla Model 3 Long Range RWD",
+    "hp": 302.0,
+    "etw_lb": 4250.0,
+    "A": 27.02,
+    "B": 0.2873,
+    "C": 0.0122
+   },
+   {
+    "name": "Tesla Model 3 Long Range RWD-I",
+    "hp": 286.0,
+    "etw_lb": 4250.0,
+    "A": 28.55,
+    "B": 0.2956,
+    "C": 0.01271
+   },
+   {
+    "name": "Tesla Model 3 Performance AWD",
+    "hp": 510.0,
+    "etw_lb": 4250.0,
+    "A": 40.56,
+    "B": 0.1527,
+    "C": 0.0145
+   },
+   {
+    "name": "Tesla Model 3 Standard RWD (18in Wheels)",
+    "hp": 305.0,
+    "etw_lb": 4000.0,
+    "A": 27.99,
+    "B": 0.1172,
+    "C": 0.01335
+   },
+   {
+    "name": "Tesla Model 3 Standard RWD (19in Wheels)",
+    "hp": 305.0,
+    "etw_lb": 4000.0,
+    "A": 32.44,
+    "B": 0.0535,
+    "C": 0.01532
+   },
+   {
+    "name": "TOYOTA COROLLA",
+    "hp": 169.0,
+    "etw_lb": 3375.0,
+    "A": 24.992,
+    "B": 0.19062,
+    "C": 0.018321
+   },
+   {
+    "name": "TOYOTA COROLLA",
+    "hp": 169.0,
+    "etw_lb": 3250.0,
+    "A": 19.823,
+    "B": 0.18907,
+    "C": 0.017233
+   },
+   {
+    "name": "TOYOTA COROLLA CROSS",
+    "hp": 169.0,
+    "etw_lb": 3500.0,
+    "A": 24.254,
+    "B": 0.09452,
+    "C": 0.024514
+   },
+   {
+    "name": "TOYOTA COROLLA CROSS AWD",
+    "hp": 169.0,
+    "etw_lb": 3625.0,
+    "A": 24.85,
+    "B": 0.28503,
+    "C": 0.023361
+   },
+   {
+    "name": "TOYOTA COROLLA CROSS HYBRID AWD",
+    "hp": 150.0,
+    "etw_lb": 3750.0,
+    "A": 23.22,
+    "B": 0.20531,
+    "C": 0.023361
+   },
+   {
+    "name": "TOYOTA COROLLA HATCHBACK",
+    "hp": 169.0,
+    "etw_lb": 3500.0,
+    "A": 25.318,
+    "B": 0.28637,
+    "C": 0.01714
+   },
+   {
+    "name": "TOYOTA COROLLA HATCHBACK",
+    "hp": 169.0,
+    "etw_lb": 3375.0,
+    "A": 19.72,
+    "B": 0.27921,
+    "C": 0.016453
+   },
+   {
+    "name": "TOYOTA COROLLA HYBRID",
+    "hp": 97.0,
+    "etw_lb": 3375.0,
+    "A": 18.924,
+    "B": 0.25989,
+    "C": 0.015516
+   },
+   {
+    "name": "TOYOTA COROLLA HYBRID",
+    "hp": 97.0,
+    "etw_lb": 3500.0,
+    "A": 26.675,
+    "B": 0.30183,
+    "C": 0.017919
+   },
+   {
+    "name": "TOYOTA COROLLA HYBRID AWD",
+    "hp": 97.0,
+    "etw_lb": 3500.0,
+    "A": 23.883,
+    "B": 0.32724,
+    "C": 0.014468
+   },
+   {
+    "name": "TOYOTA COROLLA HYBRID AWD",
+    "hp": 97.0,
+    "etw_lb": 3625.0,
+    "A": 29.82,
+    "B": 0.33343,
+    "C": 0.015551
+   },
+   {
+    "name": "TOYOTA COROLLA XSE",
+    "hp": 169.0,
+    "etw_lb": 3500.0,
+    "A": 25.922,
+    "B": 0.19178,
+    "C": 0.018379
+   },
+   {
+    "name": "TOYOTA GR COROLLA",
+    "hp": 300.0,
+    "etw_lb": 3625.0,
+    "A": 42.616,
+    "B": 0.3033,
+    "C": 0.019602
+   },
+   {
+    "name": "Volkswagen Golf R",
+    "hp": 315.0,
+    "etw_lb": 3750.0,
+    "A": 36.52,
+    "B": 0.3526,
+    "C": 0.01892
+   },
+   {
+    "name": "Volvo XC90 B5 AWD",
+    "hp": 247.0,
+    "etw_lb": 5000.0,
+    "A": 33.91,
+    "B": 0.2239,
+    "C": 0.02715
+   },
+   {
+    "name": "Volvo XC90 B6 AWD",
+    "hp": 295.0,
+    "etw_lb": 5000.0,
+    "A": 39.79,
+    "B": 0.2239,
+    "C": 0.02715
+   },
+   {
+    "name": "Volvo XC90 T8 AWD Recharge",
+    "hp": 312.0,
+    "etw_lb": 5500.0,
+    "A": 42.51,
+    "B": 0.354,
+    "C": 0.02482
+   }
+  ]
+ },
+ "tesla_wltc_energy": {
+  "m_1936": {
+   "pos_Wh_km": 143.5,
+   "neg_Wh_km": -54.9,
+   "battery_Wh_km_eta0.85_regen0.6": 140.9
+  },
+  "m_1928": {
+   "pos_Wh_km": 143.2,
+   "neg_Wh_km": -54.5,
+   "battery_Wh_km_eta0.85_regen0.6": 140.6
+  },
+  "declared_Wh_km": 132
+ },
+ "euler_implied": [
+  {
+   "kmh": 15,
+   "b": 4.5,
+   "dt": 1.0,
+   "euler_m": 0.0,
+   "implied_b": "inf",
+   "continuous_m": 1.93,
+   "ballistic_m": 1.93
+  },
+  {
+   "kmh": 15,
+   "b": 4.5,
+   "dt": 0.1,
+   "euler_m": 1.72,
+   "implied_b": 5.03,
+   "continuous_m": 1.93,
+   "ballistic_m": 1.93
+  },
+  {
+   "kmh": 15,
+   "b": 7.0,
+   "dt": 1.0,
+   "euler_m": 0.0,
+   "implied_b": "inf",
+   "continuous_m": 1.24,
+   "ballistic_m": 1.24
+  },
+  {
+   "kmh": 15,
+   "b": 7.0,
+   "dt": 0.1,
+   "euler_m": 1.03,
+   "implied_b": 8.4,
+   "continuous_m": 1.24,
+   "ballistic_m": 1.24
+  },
+  {
+   "kmh": 15,
+   "b": 9.0,
+   "dt": 1.0,
+   "euler_m": 0.0,
+   "implied_b": "inf",
+   "continuous_m": 0.96,
+   "ballistic_m": 0.96
+  },
+  {
+   "kmh": 15,
+   "b": 9.0,
+   "dt": 0.1,
+   "euler_m": 0.77,
+   "implied_b": 11.32,
+   "continuous_m": 0.96,
+   "ballistic_m": 0.96
+  },
+  {
+   "kmh": 30,
+   "b": 4.5,
+   "dt": 1.0,
+   "euler_m": 3.83,
+   "implied_b": 9.06,
+   "continuous_m": 7.72,
+   "ballistic_m": 7.72
+  },
+  {
+   "kmh": 30,
+   "b": 4.5,
+   "dt": 0.1,
+   "euler_m": 7.3,
+   "implied_b": 4.75,
+   "continuous_m": 7.72,
+   "ballistic_m": 7.72
+  },
+  {
+   "kmh": 30,
+   "b": 7.0,
+   "dt": 1.0,
+   "euler_m": 1.33,
+   "implied_b": 26.04,
+   "continuous_m": 4.96,
+   "ballistic_m": 4.96
+  },
+  {
+   "kmh": 30,
+   "b": 7.0,
+   "dt": 0.1,
+   "euler_m": 4.55,
+   "implied_b": 7.64,
+   "continuous_m": 4.96,
+   "ballistic_m": 4.96
+  },
+  {
+   "kmh": 30,
+   "b": 9.0,
+   "dt": 1.0,
+   "euler_m": 0.0,
+   "implied_b": "inf",
+   "continuous_m": 3.86,
+   "ballistic_m": 3.86
+  },
+  {
+   "kmh": 30,
+   "b": 9.0,
+   "dt": 0.1,
+   "euler_m": 3.45,
+   "implied_b": 10.06,
+   "continuous_m": 3.86,
+   "ballistic_m": 3.86
+  },
+  {
+   "kmh": 50,
+   "b": 4.5,
+   "dt": 1.0,
+   "euler_m": 14.67,
+   "implied_b": 6.58,
+   "continuous_m": 21.43,
+   "ballistic_m": 21.43
+  },
+  {
+   "kmh": 50,
+   "b": 4.5,
+   "dt": 0.1,
+   "euler_m": 20.74,
+   "implied_b": 4.65,
+   "continuous_m": 21.43,
+   "ballistic_m": 21.43
+  },
+  {
+   "kmh": 50,
+   "b": 7.0,
+   "dt": 1.0,
+   "euler_m": 6.89,
+   "implied_b": 14.0,
+   "continuous_m": 13.78,
+   "ballistic_m": 13.78
+  },
+  {
+   "kmh": 50,
+   "b": 7.0,
+   "dt": 0.1,
+   "euler_m": 13.09,
+   "implied_b": 7.37,
+   "continuous_m": 13.78,
+   "ballistic_m": 13.78
+  },
+  {
+   "kmh": 50,
+   "b": 9.0,
+   "dt": 1.0,
+   "euler_m": 4.89,
+   "implied_b": 19.73,
+   "continuous_m": 10.72,
+   "ballistic_m": 10.72
+  },
+  {
+   "kmh": 50,
+   "b": 9.0,
+   "dt": 0.1,
+   "euler_m": 10.03,
+   "implied_b": 9.61,
+   "continuous_m": 10.72,
+   "ballistic_m": 10.72
+  },
+  {
+   "kmh": 70,
+   "b": 4.5,
+   "dt": 1.0,
+   "euler_m": 32.78,
+   "implied_b": 5.77,
+   "continuous_m": 42.01,
+   "ballistic_m": 42.01
+  },
+  {
+   "kmh": 70,
+   "b": 4.5,
+   "dt": 0.1,
+   "euler_m": 41.04,
+   "implied_b": 4.61,
+   "continuous_m": 42.01,
+   "ballistic_m": 42.01
+  },
+  {
+   "kmh": 70,
+   "b": 7.0,
+   "dt": 1.0,
+   "euler_m": 17.89,
+   "implied_b": 10.57,
+   "continuous_m": 27.01,
+   "ballistic_m": 27.01
+  },
+  {
+   "kmh": 70,
+   "b": 7.0,
+   "dt": 0.1,
+   "euler_m": 26.04,
+   "implied_b": 7.26,
+   "continuous_m": 27.01,
+   "ballistic_m": 27.01
+  },
+  {
+   "kmh": 70,
+   "b": 9.0,
+   "dt": 1.0,
+   "euler_m": 11.89,
+   "implied_b": 15.9,
+   "continuous_m": 21.0,
+   "ballistic_m": 21.0
+  },
+  {
+   "kmh": 70,
+   "b": 9.0,
+   "dt": 0.1,
+   "euler_m": 20.04,
+   "implied_b": 9.43,
+   "continuous_m": 21.0,
+   "ballistic_m": 21.0
+  },
+  {
+   "kmh": 100,
+   "b": 4.5,
+   "dt": 1.0,
+   "euler_m": 72.17,
+   "implied_b": 5.35,
+   "continuous_m": 85.73,
+   "ballistic_m": 85.73
+  },
+  {
+   "kmh": 100,
+   "b": 4.5,
+   "dt": 0.1,
+   "euler_m": 84.35,
+   "implied_b": 4.57,
+   "continuous_m": 85.73,
+   "ballistic_m": 85.73
+  },
+  {
+   "kmh": 100,
+   "b": 7.0,
+   "dt": 1.0,
+   "euler_m": 41.33,
+   "implied_b": 9.33,
+   "continuous_m": 55.11,
+   "ballistic_m": 55.11
+  },
+  {
+   "kmh": 100,
+   "b": 7.0,
+   "dt": 0.1,
+   "euler_m": 53.73,
+   "implied_b": 7.18,
+   "continuous_m": 55.11,
+   "ballistic_m": 55.11
+  },
+  {
+   "kmh": 100,
+   "b": 9.0,
+   "dt": 1.0,
+   "euler_m": 29.33,
+   "implied_b": 13.15,
+   "continuous_m": 42.87,
+   "ballistic_m": 42.87
+  },
+  {
+   "kmh": 100,
+   "b": 9.0,
+   "dt": 0.1,
+   "euler_m": 41.48,
+   "implied_b": 9.3,
+   "continuous_m": 42.87,
+   "ballistic_m": 42.87
+  }
+ ],
+ "certificate": {
+  "dt_1.0": {
+   "trials": 11977,
+   "collisions": 0,
+   "min_gap_m": 0.357,
+   "brake_floor_active_steps": 13217,
+   "worst": {
+    "f": "van",
+    "l": "truck_empty",
+    "grade": -0.027,
+    "mu": 0.073,
+    "v": 18.41,
+    "vl": 34.11,
+    "g0": 0.6,
+    "a_prev": 1.53,
+    "min_gap": 0.357
+   }
+  },
+  "dt_0.1": {
+   "trials": 11979,
+   "collisions": 0,
+   "min_gap_m": 0.468,
+   "brake_floor_active_steps": 274236,
+   "worst": {
+    "f": "truck_full",
+    "l": "bus",
+    "grade": 0.062,
+    "mu": 0.32,
+    "v": 35.26,
+    "vl": 14.79,
+    "g0": 156.67,
+    "a_prev": -1.26,
+    "min_gap": 0.468
+   }
+  }
+ },
+ "krauss_adversary": {
+  "dt_1.0": {
+   "trials": 4000,
+   "collisions": 252,
+   "share": 0.063,
+   "min_gap_m": -6.05
+  },
+  "dt_0.1": {
+   "trials": 4000,
+   "collisions": 0,
+   "share": 0.0,
+   "min_gap_m": 0.0
+  }
+ },
+ "payoff_queue": [
+  {
+   "scenario": "A SUMO Krauss Euler a=2.6, sigma 0",
+   "dt": 1.0,
+   "sat_headway_s": 1.54,
+   "veh_h_lane": 2338,
+   "lost_time_s": 2.26,
+   "first_cross_s": 0.38
+  },
+  {
+   "scenario": "A2 SUMO Krauss Euler a=2.6, sigma 0.5",
+   "dt": 1.0,
+   "sat_headway_s": 1.823,
+   "veh_h_lane": 1975,
+   "lost_time_s": 3.27,
+   "first_cross_s": 0.52
+  },
+  {
+   "scenario": "B Ballistic, same constants",
+   "dt": 1.0,
+   "sat_headway_s": 1.54,
+   "veh_h_lane": 2338,
+   "lost_time_s": 2.76,
+   "first_cross_s": 0.77
+  },
+  {
+   "scenario": "C Ballistic, power cap only (min(2.6, cap))",
+   "dt": 1.0,
+   "sat_headway_s": 1.54,
+   "veh_h_lane": 2338,
+   "lost_time_s": 2.76,
+   "first_cross_s": 0.77
+  },
+  {
+   "scenario": "D Ballistic, measured a=2.02-0.125v",
+   "dt": 1.0,
+   "sat_headway_s": 1.556,
+   "veh_h_lane": 2313,
+   "lost_time_s": 4.58,
+   "first_cross_s": 0.99
+  },
+  {
+   "scenario": "E D plus certificate gap",
+   "dt": 1.0,
+   "sat_headway_s": 1.935,
+   "veh_h_lane": 1861,
+   "lost_time_s": 2.92,
+   "first_cross_s": 0.99
+  },
+  {
+   "scenario": "F E plus jerk 3 m/s3",
+   "dt": 1.0,
+   "sat_headway_s": 1.935,
+   "veh_h_lane": 1861,
+   "lost_time_s": 2.92,
+   "first_cross_s": 0.99
+  },
+  {
+   "scenario": "G E on +3% grade",
+   "dt": 1.0,
+   "sat_headway_s": 1.959,
+   "veh_h_lane": 1837,
+   "lost_time_s": 3.38,
+   "first_cross_s": 1.06
+  },
+  {
+   "scenario": "H E on +6% grade",
+   "dt": 1.0,
+   "sat_headway_s": 2.005,
+   "veh_h_lane": 1796,
+   "lost_time_s": 3.89,
+   "first_cross_s": 1.14
+  },
+  {
+   "scenario": "E2 E with driver tau 1.35 s",
+   "dt": 1.0,
+   "sat_headway_s": 1.934,
+   "veh_h_lane": 1861,
+   "lost_time_s": 4.53,
+   "first_cross_s": 0.99
+  },
+  {
+   "scenario": "T1 turn at lane speed 6.13 m/s",
+   "dt": 1.0,
+   "sat_headway_s": 2.223,
+   "veh_h_lane": 1619,
+   "lost_time_s": 1.85,
+   "first_cross_s": 0.99
+  },
+  {
+   "scenario": "T2 turn at curve speed 4.66 m/s",
+   "dt": 1.0,
+   "sat_headway_s": 2.609,
+   "veh_h_lane": 1380,
+   "lost_time_s": 1.47,
+   "first_cross_s": 0.99
+  },
+  {
+   "scenario": "I E with 10% 40 t trucks",
+   "dt": 1.0,
+   "sat_headway_s": 2.388,
+   "veh_h_lane": 1507,
+   "lost_time_s": 1.62,
+   "first_cross_s": 0.99
+  },
+  {
+   "scenario": "J I on +3% grade",
+   "dt": 1.0,
+   "sat_headway_s": 3.094,
+   "veh_h_lane": 1164,
+   "lost_time_s": 1.15,
+   "first_cross_s": 1.06
+  },
+  {
+   "scenario": "K SUMO constants with 10% trucks",
+   "dt": 1.0,
+   "sat_headway_s": 2.0,
+   "veh_h_lane": 1800,
+   "lost_time_s": 1.09,
+   "first_cross_s": 0.38
+  },
+  {
+   "scenario": "A SUMO Krauss Euler a=2.6, sigma 0",
+   "dt": 0.1,
+   "sat_headway_s": 1.561,
+   "veh_h_lane": 2306,
+   "lost_time_s": 1.55,
+   "first_cross_s": 0.83
+  },
+  {
+   "scenario": "A2 SUMO Krauss Euler a=2.6, sigma 0.5",
+   "dt": 0.1,
+   "sat_headway_s": 1.582,
+   "veh_h_lane": 2276,
+   "lost_time_s": 2.13,
+   "first_cross_s": 0.87
+  },
+  {
+   "scenario": "B Ballistic, same constants",
+   "dt": 0.1,
+   "sat_headway_s": 1.565,
+   "veh_h_lane": 2301,
+   "lost_time_s": 2.85,
+   "first_cross_s": 0.88
+  },
+  {
+   "scenario": "C Ballistic, power cap only (min(2.6, cap))",
+   "dt": 0.1,
+   "sat_headway_s": 1.565,
+   "veh_h_lane": 2301,
+   "lost_time_s": 2.85,
+   "first_cross_s": 0.88
+  },
+  {
+   "scenario": "D Ballistic, measured a=2.02-0.125v",
+   "dt": 0.1,
+   "sat_headway_s": 1.58,
+   "veh_h_lane": 2278,
+   "lost_time_s": 4.81,
+   "first_cross_s": 1.01
+  },
+  {
+   "scenario": "E D plus certificate gap",
+   "dt": 0.1,
+   "sat_headway_s": 1.58,
+   "veh_h_lane": 2278,
+   "lost_time_s": 4.81,
+   "first_cross_s": 1.01
+  },
+  {
+   "scenario": "F E plus jerk 3 m/s3",
+   "dt": 0.1,
+   "sat_headway_s": 1.58,
+   "veh_h_lane": 2278,
+   "lost_time_s": 5.09,
+   "first_cross_s": 1.28
+  },
+  {
+   "scenario": "G E on +3% grade",
+   "dt": 0.1,
+   "sat_headway_s": 1.626,
+   "veh_h_lane": 2214,
+   "lost_time_s": 5.37,
+   "first_cross_s": 1.1
+  },
+  {
+   "scenario": "H E on +6% grade",
+   "dt": 0.1,
+   "sat_headway_s": 1.751,
+   "veh_h_lane": 2056,
+   "lost_time_s": 5.62,
+   "first_cross_s": 1.21
+  },
+  {
+   "scenario": "E2 E with driver tau 1.35 s",
+   "dt": 0.1,
+   "sat_headway_s": 1.941,
+   "veh_h_lane": 1855,
+   "lost_time_s": 4.79,
+   "first_cross_s": 1.01
+  },
+  {
+   "scenario": "T1 turn at lane speed 6.13 m/s",
+   "dt": 0.1,
+   "sat_headway_s": 2.246,
+   "veh_h_lane": 1603,
+   "lost_time_s": 2.06,
+   "first_cross_s": 1.01
+  },
+  {
+   "scenario": "T2 turn at curve speed 4.66 m/s",
+   "dt": 0.1,
+   "sat_headway_s": 2.632,
+   "veh_h_lane": 1368,
+   "lost_time_s": 1.67,
+   "first_cross_s": 1.01
+  },
+  {
+   "scenario": "I E with 10% 40 t trucks",
+   "dt": 0.1,
+   "sat_headway_s": 2.322,
+   "veh_h_lane": 1551,
+   "lost_time_s": 1.76,
+   "first_cross_s": 1.01
+  },
+  {
+   "scenario": "J I on +3% grade",
+   "dt": 0.1,
+   "sat_headway_s": 2.914,
+   "veh_h_lane": 1235,
+   "lost_time_s": 1.44,
+   "first_cross_s": 1.1
+  },
+  {
+   "scenario": "K SUMO constants with 10% trucks",
+   "dt": 0.1,
+   "sat_headway_s": 1.796,
+   "veh_h_lane": 2004,
+   "lost_time_s": 1.3,
+   "first_cross_s": 0.83
+  }
+ ],
+ "payoff_grade": [
+  {
+   "case": "constants, any grade, 10% trucks",
+   "flow_veh_h": 2586
+  },
+  {
+   "case": "physics flat, 10% trucks",
+   "flow_veh_h": 2228
+  },
+  {
+   "case": "physics 3%, 0% trucks",
+   "flow_veh_h": 2372
+  },
+  {
+   "case": "physics 3%, 10% trucks",
+   "flow_veh_h": 2230
+  },
+  {
+   "case": "physics 5%, 10% trucks",
+   "flow_veh_h": 1926
+  },
+  {
+   "case": "physics 3%, 5% trucks",
+   "flow_veh_h": 2288
+  }
+ ]
+}

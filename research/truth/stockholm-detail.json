@@ -1,0 +1,665 @@
+{
+  "teleport_locations": {
+    "121541578#2": {
+      "name": "Hornsgatan",
+      "type": "highway.tertiary",
+      "junction": "cluster_119080_12002692279_1696595538_1696595541_#4more",
+      "lanes": 2,
+      "position": [
+        18.069263381081015,
+        59.31967560744074
+      ]
+    },
+    "292226238": {
+      "name": "Ulvsundaplan",
+      "type": "highway.primary",
+      "junction": "35975833",
+      "lanes": 3,
+      "position": [
+        17.969069409187817,
+        59.334381936840515
+      ]
+    },
+    "27886944#2": {
+      "name": "Ulvsundaplan",
+      "type": "highway.primary",
+      "junction": "248751396",
+      "lanes": 3,
+      "position": [
+        17.968436450841118,
+        59.33471464587112
+      ]
+    },
+    "1051328781": {
+      "name": "Valhallavägen",
+      "type": "highway.secondary",
+      "junction": "38565748",
+      "lanes": 3,
+      "position": [
+        18.05887136003939,
+        59.35028781311726
+      ]
+    },
+    ":9091487480_1": {
+      "name": null,
+      "type": null,
+      "junction": null,
+      "lanes": 1,
+      "position": null
+    },
+    "27886944#3": {
+      "name": "Ulvsundaplan",
+      "type": "highway.primary",
+      "junction": "193817",
+      "lanes": 3,
+      "position": [
+        17.96869364744733,
+        59.33442123340014
+      ]
+    },
+    "983246940#0": {
+      "name": "Nekvägen",
+      "type": "highway.residential",
+      "junction": "10092224155",
+      "lanes": 1,
+      "position": [
+        17.91169106670344,
+        59.37627896052213
+      ]
+    },
+    "343738662#1": {
+      "name": "Drottningholmsvägen",
+      "type": "highway.secondary",
+      "junction": "362850409",
+      "lanes": 2,
+      "position": [
+        17.96816922390475,
+        59.334542633565015
+      ]
+    },
+    ":cluster_248913930_32909087_10": {
+      "name": null,
+      "type": null,
+      "junction": null,
+      "lanes": 1,
+      "position": null
+    },
+    "1259514218#0": {
+      "name": "Norr Mälarstrand",
+      "type": "highway.tertiary",
+      "junction": "7577152400",
+      "lanes": 2,
+      "position": [
+        18.03151777295919,
+        59.32824233438523
+      ]
+    },
+    "-42315076": {
+      "name": "Verkstadsgatan",
+      "type": "highway.secondary_link",
+      "junction": "1550182458",
+      "lanes": 1,
+      "position": [
+        18.032459359873286,
+        59.31790251250275
+      ]
+    },
+    "1340241525#2": {
+      "name": "Ulvsundavägen",
+      "type": "highway.primary",
+      "junction": "365386506",
+      "lanes": 3,
+      "position": [
+        17.966863285190968,
+        59.33633812651717
+      ]
+    },
+    "997221673#0": {
+      "name": "Ulvsundavägen",
+      "type": "highway.primary",
+      "junction": "10076565801",
+      "lanes": 2,
+      "position": [
+        17.957363177055928,
+        59.352371339940326
+      ]
+    },
+    ":2367678788_7": {
+      "name": null,
+      "type": null,
+      "junction": null,
+      "lanes": 1,
+      "position": null
+    },
+    ":32909088_3": {
+      "name": null,
+      "type": null,
+      "junction": null,
+      "lanes": 1,
+      "position": null
+    },
+    "23052278#2": {
+      "name": "Drottningholmsvägen",
+      "type": "highway.secondary",
+      "junction": "3505461462",
+      "lanes": 2,
+      "position": [
+        17.96717281216332,
+        59.33484830287166
+      ]
+    },
+    "121762746#0": {
+      "name": "Magelungsvägen",
+      "type": "highway.secondary",
+      "junction": "cluster_257783069_257783165_499480239_5544726_#3more",
+      "lanes": 3,
+      "position": [
+        18.096046227770977,
+        59.2356448058507
+      ]
+    },
+    "1153510126": {
+      "name": "Södertäljevägen",
+      "type": "highway.motorway",
+      "junction": "119732",
+      "lanes": 4,
+      "position": [
+        17.986903834607297,
+        59.28891412163112
+      ]
+    },
+    "804574485#0": {
+      "name": "Roslagsvägen",
+      "type": "highway.primary",
+      "junction": "821824973",
+      "lanes": 4,
+      "position": [
+        18.056049115321876,
+        59.35695636280985
+      ]
+    },
+    "111647358#3": {
+      "name": null,
+      "type": "highway.secondary_link",
+      "junction": "1271462246",
+      "lanes": 2,
+      "position": [
+        18.019420871292755,
+        59.302664338783806
+      ]
+    },
+    "-983246940#1": {
+      "name": "Nekvägen",
+      "type": "highway.residential",
+      "junction": "9091487480",
+      "lanes": 1,
+      "position": [
+        17.911504957367647,
+        59.37617241320928
+      ]
+    },
+    "804574487": {
+      "name": "Roslagsvägen",
+      "type": "highway.primary",
+      "junction": "cluster_441492_724944777",
+      "lanes": 3,
+      "position": [
+        18.05596121588931,
+        59.35971209325019
+      ]
+    },
+    "458964204#1": {
+      "name": "Årstabergsvägen",
+      "type": "highway.tertiary",
+      "junction": "cluster_1271462348_1271462870_1271463058_1271463077_#1more",
+      "lanes": 3,
+      "position": [
+        18.025916565494015,
+        59.301475327834204
+      ]
+    },
+    "42315076": {
+      "name": "Verkstadsgatan",
+      "type": "highway.secondary_link",
+      "junction": "655272",
+      "lanes": 1,
+      "position": [
+        18.03259331766663,
+        59.31793012564108
+      ]
+    },
+    ":9091487480_4": {
+      "name": null,
+      "type": null,
+      "junction": null,
+      "lanes": 1,
+      "position": null
+    },
+    ":32909088_5": {
+      "name": null,
+      "type": null,
+      "junction": null,
+      "lanes": 1,
+      "position": null
+    },
+    "121443995#0": {
+      "name": "Årstabergsvägen",
+      "type": "highway.tertiary",
+      "junction": "cluster_1271462243_1271462637_1271462730_1271462860_#4more",
+      "lanes": 2,
+      "position": [
+        18.02957704053138,
+        59.298813919411316
+      ]
+    },
+    "1259514218#2": {
+      "name": "Norr Mälarstrand",
+      "type": "highway.tertiary",
+      "junction": "208297869",
+      "lanes": 2,
+      "position": [
+        18.031407408818826,
+        59.32825101391509
+      ]
+    },
+    "628589394#2": {
+      "name": "Götgatan",
+      "type": "highway.tertiary",
+      "junction": "cluster_1546340742_1546340788_247204818_25666978_#1more",
+      "lanes": 2,
+      "position": [
+        18.072521076297253,
+        59.31570569140615
+      ]
+    },
+    "1340236001#2": {
+      "name": "Ulvsundavägen",
+      "type": "highway.primary",
+      "junction": "cluster_9040483959_9040483960_9040483969_9040483970",
+      "lanes": 4,
+      "position": [
+        17.958854604857557,
+        59.35421922138325
+      ]
+    },
+    ":cluster_248913930_32909087_9": {
+      "name": null,
+      "type": null,
+      "junction": null,
+      "lanes": 1,
+      "position": null
+    },
+    ":9091487480_3": {
+      "name": null,
+      "type": null,
+      "junction": null,
+      "lanes": 1,
+      "position": null
+    }
+  },
+  "signal_motorway_through": [],
+  "signal_motorway_ramps": 35,
+  "projected_bbox_corners_lonlat": [
+    [
+      17.66084223179514,
+      59.19685192345428
+    ],
+    [
+      18.28810577466879,
+      59.45670253125747
+    ]
+  ],
+  "osm_highway_ways": {
+    "unclassified": 3654,
+    "residential": 18324,
+    "tertiary": 5241,
+    "pedestrian": 1212,
+    "footway": 49872,
+    "service": 28485,
+    "cycleway": 15143,
+    "secondary": 3597,
+    "steps": 7686,
+    "living_street": 1748,
+    "tertiary_link": 111,
+    "path": 13310,
+    "track": 1417,
+    "secondary_link": 308,
+    "motorway_link": 829,
+    "motorway": 741,
+    "primary": 380,
+    "trunk": 133,
+    "bridleway": 262,
+    "trunk_link": 145,
+    "primary_link": 177,
+    "construction": 296,
+    "road": 36,
+    "platform": 711,
+    "raceway": 11,
+    "busway": 42,
+    "elevator": 75,
+    "corridor": 85,
+    "proposed": 185
+  },
+  "osm_motorway_attributes": {
+    "with_lanes": 1435,
+    "with_maxspeed": 1547,
+    "missing_lanes": 135,
+    "missing_maxspeed": 23
+  },
+  "osm_tunnel_way_names": [
+    [
+      "unnamed",
+      3689
+    ],
+    [
+      "Gärdestunneln",
+      16
+    ],
+    [
+      "Centrala mellanplanet",
+      14
+    ],
+    [
+      "Förbifart Stockholm",
+      10
+    ],
+    [
+      "Klaratunneln",
+      9
+    ],
+    [
+      "Norrtullstunneln",
+      9
+    ],
+    [
+      "Söderledstunneln",
+      8
+    ],
+    [
+      "Hammarbytunneln",
+      8
+    ],
+    [
+      "Årstatunneln",
+      8
+    ],
+    [
+      "Bergshamravägen",
+      6
+    ],
+    [
+      "Hanstavägen",
+      6
+    ],
+    [
+      "Blekholmstunneln",
+      5
+    ],
+    [
+      "Hjorthagsvägen",
+      5
+    ],
+    [
+      "Kvarnholmsvägen",
+      5
+    ],
+    [
+      "Galaxtunneln",
+      5
+    ],
+    [
+      "Koppartunneln",
+      4
+    ],
+    [
+      "Hötorgsgången",
+      4
+    ],
+    [
+      "Fullersta Parkväg",
+      4
+    ],
+    [
+      "Hagsätra Torg",
+      4
+    ],
+    [
+      "Magelungsvägen",
+      4
+    ],
+    [
+      "Sturegallerian",
+      4
+    ],
+    [
+      "Arenaslingan",
+      4
+    ],
+    [
+      "Stjärntorgstrappan",
+      4
+    ],
+    [
+      "Gävlegatan",
+      4
+    ],
+    [
+      "Sveaborgsgatan",
+      3
+    ],
+    [
+      "Bagartunneln",
+      3
+    ],
+    [
+      "Skräddartunneln",
+      3
+    ],
+    [
+      "Riddarfjärdsavfarten",
+      3
+    ],
+    [
+      "Törnskogstunneln",
+      3
+    ],
+    [
+      "Idrottsstigen",
+      3
+    ]
+  ],
+  "hourly_summary": [
+    {
+      "time": "3600",
+      "running": "1062",
+      "inserted": "14913",
+      "arrived": "13848",
+      "teleports": "64",
+      "wall": "4.129"
+    },
+    {
+      "time": "7200",
+      "running": "577",
+      "inserted": "23718",
+      "arrived": "23140",
+      "teleports": "113",
+      "wall": "8.138"
+    },
+    {
+      "time": "10800",
+      "running": "393",
+      "inserted": "29909",
+      "arrived": "29518",
+      "teleports": "128",
+      "wall": "12.010"
+    },
+    {
+      "time": "14400",
+      "running": "348",
+      "inserted": "34896",
+      "arrived": "34550",
+      "teleports": "134",
+      "wall": "15.808"
+    },
+    {
+      "time": "18000",
+      "running": "626",
+      "inserted": "43657",
+      "arrived": "43027",
+      "teleports": "142",
+      "wall": "19.780"
+    },
+    {
+      "time": "21600",
+      "running": "864",
+      "inserted": "56127",
+      "arrived": "55265",
+      "teleports": "177",
+      "wall": "23.888"
+    },
+    {
+      "time": "25200",
+      "running": "6502",
+      "inserted": "134471",
+      "arrived": "127976",
+      "teleports": "1113",
+      "wall": "28.825"
+    },
+    {
+      "time": "28800",
+      "running": "16996",
+      "inserted": "272417",
+      "arrived": "255424",
+      "teleports": "5676",
+      "wall": "35.060"
+    },
+    {
+      "time": "32400",
+      "running": "20344",
+      "inserted": "394849",
+      "arrived": "374501",
+      "teleports": "14574",
+      "wall": "42.052"
+    },
+    {
+      "time": "36000",
+      "running": "18281",
+      "inserted": "481622",
+      "arrived": "463342",
+      "teleports": "25309",
+      "wall": "49.345"
+    },
+    {
+      "time": "39600",
+      "running": "16360",
+      "inserted": "557584",
+      "arrived": "541219",
+      "teleports": "35254",
+      "wall": "56.386"
+    },
+    {
+      "time": "43200",
+      "running": "17410",
+      "inserted": "639365",
+      "arrived": "621945",
+      "teleports": "45341",
+      "wall": "63.461"
+    },
+    {
+      "time": "46800",
+      "running": "18826",
+      "inserted": "726449",
+      "arrived": "707626",
+      "teleports": "56237",
+      "wall": "70.567"
+    },
+    {
+      "time": "50400",
+      "running": "19856",
+      "inserted": "813299",
+      "arrived": "793446",
+      "teleports": "67530",
+      "wall": "77.697"
+    },
+    {
+      "time": "54000",
+      "running": "21696",
+      "inserted": "904987",
+      "arrived": "883295",
+      "teleports": "80121",
+      "wall": "84.908"
+    },
+    {
+      "time": "57600",
+      "running": "27659",
+      "inserted": "1018202",
+      "arrived": "990553",
+      "teleports": "95104",
+      "wall": "92.546"
+    },
+    {
+      "time": "61200",
+      "running": "40322",
+      "inserted": "1159978",
+      "arrived": "1119634",
+      "teleports": "116643",
+      "wall": "100.753"
+    },
+    {
+      "time": "64800",
+      "running": "44776",
+      "inserted": "1270485",
+      "arrived": "1225706",
+      "teleports": "146151",
+      "wall": "109.147"
+    },
+    {
+      "time": "68400",
+      "running": "50937",
+      "inserted": "1382394",
+      "arrived": "1331449",
+      "teleports": "180335",
+      "wall": "117.577"
+    },
+    {
+      "time": "72000",
+      "running": "44964",
+      "inserted": "1452765",
+      "arrived": "1407801",
+      "teleports": "213489",
+      "wall": "125.939"
+    },
+    {
+      "time": "75600",
+      "running": "37640",
+      "inserted": "1507392",
+      "arrived": "1469765",
+      "teleports": "240952",
+      "wall": "134.077"
+    },
+    {
+      "time": "79200",
+      "running": "30793",
+      "inserted": "1553154",
+      "arrived": "1522368",
+      "teleports": "262836",
+      "wall": "141.982"
+    },
+    {
+      "time": "82800",
+      "running": "26951",
+      "inserted": "1601735",
+      "arrived": "1574791",
+      "teleports": "280544",
+      "wall": "149.773"
+    },
+    {
+      "time": "86400",
+      "running": "21833",
+      "inserted": "1637124",
+      "arrived": "1615297",
+      "teleports": "294409",
+      "wall": "157.152"
+    }
+  ]
+}

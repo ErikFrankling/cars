@@ -1,0 +1,6 @@
+[
+ ["melbourne-large","https://opendata.transport.vic.gov.au/dataset/331b846b-1e18-415f-a3f3-ce4198d86c82/resource/001ace40-280b-462d-b580-7a79e70185fb/download/traffic_signal_volume_data_october_2026.zip"],
+ ["pneuma-readme","https://zenodo.org/records/10491409/files/README.html?download=1"],
+ ["berlin-readme-list","https://mdhopendata.blob.core.windows.net/verkehrsdetektion/?restype=container&comp=list&prefix=read&maxresults=20"],
+ ["norway-new-points","https://www.trafikkdata.no/api/?query=%7BtrafficRegistrationPoints%7Bid%20name%7D%7D"]
+]

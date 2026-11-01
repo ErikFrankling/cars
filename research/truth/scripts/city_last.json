@@ -1,0 +1,9 @@
+[
+ ["ndw-config","https://opendata.ndw.nu/reistijden_configuratie_meetlocaties.xml.gz"],
+ ["ndw-speed-config","https://opendata.ndw.nu/snelheden_en_intensiteiten_configuratie_meetlocaties.xml.gz"],
+ ["madrid-large","https://datos.madrid.es/dataset/208627-0-transporte-ptomedida-historico/resource/208627-0-transporte-ptomedida-historico-zip/download/208627-0-transporte-ptomedida-historico-zip.zip"],
+ ["finland-station-data","https://tie.digitraffic.fi/api/tms/v1/stations/101/data"],
+ ["pneuma-original-meta","https://zenodo.org/api/records/10491409"],
+ ["norway-points","https://trafikkdata-api.atlas.vegvesen.no/?query=%7BtrafficRegistrationPoints%7Bid%20name%7D%7D"],
+ ["melbourne-api","https://opendata.transport.vic.gov.au/api/3/action/package_show?id=traffic-signal-volume-data"]
+]

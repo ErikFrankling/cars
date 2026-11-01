@@ -1,0 +1,805 @@
+{
+ "features": 63047,
+ "crs": {
+  "type": "name",
+  "properties": {
+   "name": "urn:ogc:def:crs:EPSG::4326"
+  }
+ },
+ "fields": [
+  "antal_mätdygn",
+  "datum_för_slut_av_perioden",
+  "datum_för_start_av_perioden",
+  "eftermiddagsmax_trafikflöde",
+  "förmiddagsmax_trafikflöde",
+  "hastighet_85-percentil",
+  "hastighet_medel",
+  "hastighet_median",
+  "id",
+  "metod_för_datainsamling",
+  "metod_för_årstrafikberäkning",
+  "mätplats",
+  "namn",
+  "nodes_nvdb_key",
+  "nvdb_key",
+  "nvdb_view_date",
+  "riktning",
+  "riktningsbeskrivning",
+  "riktningsuppdelad",
+  "senast_ändrad",
+  "skapad",
+  "trafikflöde_00-01__fordon_dygn__alla_fordon",
+  "trafikflöde_00-01__fordon_dygn__tunga_fordon",
+  "trafikflöde_01-02__fordon_dygn__alla_fordon",
+  "trafikflöde_01-02__fordon_dygn__tunga_fordon",
+  "trafikflöde_02-03__fordon_dygn__alla_fordon",
+  "trafikflöde_02-03__fordon_dygn__tunga_fordon",
+  "trafikflöde_03-04__fordon_dygn__alla_fordon",
+  "trafikflöde_03-04__fordon_dygn__tunga_fordon",
+  "trafikflöde_04-05__fordon_dygn__alla_fordon"
+ ],
+ "metod_för_datainsamling": {
+  "Uppmätt": 63047
+ },
+ "metod_för_årstrafikberäkning": {
+  "ÅMVD": 63047
+ },
+ "riktningsuppdelad": {
+  "true": 38674,
+  "false": 24373
+ },
+ "riktning": {
+  "Mot": 24583,
+  "Med": 23436,
+  "Båda": 15028
+ },
+ "by_end_year": {
+  "1991": 508,
+  "1992": 1483,
+  "1993": 1995,
+  "1994": 1403,
+  "1995": 1478,
+  "1996": 1050,
+  "1997": 841,
+  "1998": 1505,
+  "1999": 1014,
+  "2000": 1110,
+  "2001": 1378,
+  "2002": 1149,
+  "2003": 822,
+  "2004": 45,
+  "2005": 81,
+  "2006": 1241,
+  "2007": 1067,
+  "2008": 1362,
+  "2009": 1203,
+  "2010": 1200,
+  "2011": 1196,
+  "2012": 1792,
+  "2013": 2154,
+  "2014": 1937,
+  "2015": 2239,
+  "2016": 2334,
+  "2017": 1714,
+  "2018": 1983,
+  "2019": 2017,
+  "2020": 1444,
+  "2021": 1798,
+  "2022": 1326,
+  "2023": 1418,
+  "2024": 1890,
+  "2025": 1851,
+  "2026": 14019
+ },
+ "measured": 63047,
+ "measured_by_end_year": {
+  "1991": 508,
+  "1992": 1483,
+  "1993": 1995,
+  "1994": 1403,
+  "1995": 1478,
+  "1996": 1050,
+  "1997": 841,
+  "1998": 1505,
+  "1999": 1014,
+  "2000": 1110,
+  "2001": 1378,
+  "2002": 1149,
+  "2003": 822,
+  "2004": 45,
+  "2005": 81,
+  "2006": 1241,
+  "2007": 1067,
+  "2008": 1362,
+  "2009": 1203,
+  "2010": 1200,
+  "2011": 1196,
+  "2012": 1792,
+  "2013": 2154,
+  "2014": 1937,
+  "2015": 2239,
+  "2016": 2334,
+  "2017": 1714,
+  "2018": 1983,
+  "2019": 2017,
+  "2020": 1444,
+  "2021": 1798,
+  "2022": 1326,
+  "2023": 1418,
+  "2024": 1890,
+  "2025": 1851,
+  "2026": 14019
+ },
+ "sites_all": 4053,
+ "sites_measured": 4053,
+ "measured_days": {
+  "n": 63047,
+  "quantiles": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   2.0,
+   3.0,
+   4.0,
+   4.0,
+   5.0,
+   5.0,
+   5.0,
+   5.0,
+   5.0,
+   6.0,
+   9.0,
+   21.0,
+   180.0,
+   211.0
+  ],
+  "max": 245,
+  "hist": {
+   "0": 29472,
+   "5": 20986,
+   "10": 2392,
+   "15": 680,
+   "20": 270,
+   "25": 141,
+   "30": 135,
+   "35": 77,
+   "40": 102,
+   "45": 35,
+   "50": 55,
+   "55": 26,
+   "60": 62,
+   "65": 97,
+   "70": 74,
+   "75": 110,
+   "80": 103,
+   "85": 52,
+   "90": 63,
+   "95": 36,
+   "100": 65,
+   "105": 6,
+   "110": 31,
+   "115": 99,
+   "120": 38,
+   "125": 94,
+   "130": 60,
+   "135": 104,
+   "140": 94,
+   "145": 93
+  },
+  "null": 0
+ },
+ "flow_fields": [
+  "trafikflöde_00-01__fordon_dygn__alla_fordon",
+  "trafikflöde_01-02__fordon_dygn__alla_fordon",
+  "trafikflöde_02-03__fordon_dygn__alla_fordon",
+  "trafikflöde_03-04__fordon_dygn__alla_fordon",
+  "trafikflöde_04-05__fordon_dygn__alla_fordon",
+  "trafikflöde_05-06__fordon_dygn__alla_fordon",
+  "trafikflöde_06-07__fordon_dygn__alla_fordon",
+  "trafikflöde_06-18__fordon_tidperiod__alla_fordon",
+  "trafikflöde_07-08__fordon_dygn__alla_fordon",
+  "trafikflöde_08-09__fordon_dygn__alla_fordon",
+  "trafikflöde_09-10__fordon_dygn__alla_fordon",
+  "trafikflöde_10-11__fordon_dygn__alla_fordon",
+  "trafikflöde_11-12__fordon_dygn__alla_fordon",
+  "trafikflöde_12-13__fordon_dygn__alla_fordon",
+  "trafikflöde_13-14__fordon_dygn__alla_fordon",
+  "trafikflöde_14-15__fordon_dygn__alla_fordon",
+  "trafikflöde_15-16__fordon_dygn__alla_fordon",
+  "trafikflöde_16-17__fordon_dygn__alla_fordon",
+  "trafikflöde_17-18__fordon_dygn__alla_fordon",
+  "trafikflöde_18-19__fordon_dygn__alla_fordon",
+  "trafikflöde_18-22__fordon_tidperiod__alla_fordon",
+  "trafikflöde_19-20__fordon_dygn__alla_fordon",
+  "trafikflöde_20-21__fordon_dygn__alla_fordon",
+  "trafikflöde_21-22__fordon_dygn__alla_fordon",
+  "trafikflöde_22-06__fordon_tidperiod__alla_fordon",
+  "trafikflöde_22-23__fordon_dygn__alla_fordon",
+  "trafikflöde_23-24__fordon_dygn__alla_fordon",
+  "trafikflöde__fordon_dygn__alla_fordon"
+ ],
+ "hourly_fields": 24,
+ "measured_with_full_hourly": 63047,
+ "measured_with_speed": 31040,
+ "measured_with_heavy": 63047,
+ "measured_directional": {
+  "true": 38674,
+  "false": 24373
+ },
+ "y2019": {
+  "features": 2017,
+  "sites": 559,
+  "directional_sites": 559,
+  "median_days": 5,
+  "ge_30d_sites": 96,
+  "with_speed": 1366
+ },
+ "y2022": {
+  "features": 1326,
+  "sites": 390,
+  "directional_sites": 390,
+  "median_days": 5.0,
+  "ge_30d_sites": 83,
+  "with_speed": 937
+ },
+ "y2023": {
+  "features": 1418,
+  "sites": 420,
+  "directional_sites": 420,
+  "median_days": 5.0,
+  "ge_30d_sites": 68,
+  "with_speed": 989
+ },
+ "y2024": {
+  "features": 1890,
+  "sites": 522,
+  "directional_sites": 522,
+  "median_days": 5.0,
+  "ge_30d_sites": 69,
+  "with_speed": 1466
+ },
+ "y2025": {
+  "features": 1851,
+  "sites": 509,
+  "directional_sites": 509,
+  "median_days": 5,
+  "ge_30d_sites": 63,
+  "with_speed": 1430
+ },
+ "y2026": {
+  "features": 14019,
+  "sites": 406,
+  "directional_sites": 406,
+  "median_days": 5,
+  "ge_30d_sites": 61,
+  "with_speed": 9495
+ },
+ "site_years_hist": {
+  "1": 1310,
+  "2": 958,
+  "3": 586,
+  "4": 377,
+  "5": 188,
+  "6": 92,
+  "7": 53,
+  "8": 34,
+  "9": 30,
+  "10": 29,
+  "11": 154,
+  "12": 37,
+  "13": 26,
+  "14": 25,
+  "15": 16,
+  "16": 18,
+  "17": 11,
+  "18": 18,
+  "19": 19,
+  "20": 15,
+  "21": 11,
+  "22": 2,
+  "23": 4,
+  "24": 5,
+  "25": 3,
+  "26": 3,
+  "27": 2,
+  "28": 2,
+  "29": 2,
+  "30": 3,
+  "31": 6,
+  "32": 8,
+  "33": 6
+ },
+ "sites_2023on": 967,
+ "length_km_2023on_one_per_site": 199.2,
+ "bbox_2023on": [
+  17.799775,
+  59.232598,
+  18.195381,
+  59.428297
+ ],
+ "top_streets_2023on": [
+  [
+   "cykelväg",
+   421
+  ],
+  [
+   "Ringvägen",
+   290
+  ],
+  [
+   "Strandvägen",
+   284
+  ],
+  [
+   "Valhallavägen",
+   271
+  ],
+  [
+   "Ulvsundavägen",
+   266
+  ],
+  [
+   "Magelungsvägen",
+   258
+  ],
+  [
+   "Bergslagsvägen",
+   245
+  ],
+  [
+   "Skärholmsvägen",
+   244
+  ],
+  [
+   "Magnus Ladulåsgatan",
+   231
+  ],
+  [
+   "Drottningholmsvägen",
+   229
+  ],
+  [
+   "Sockenvägen",
+   224
+  ],
+  [
+   "Akallalänken",
+   210
+  ],
+  [
+   "Hornsgatan",
+   204
+  ],
+  [
+   "Örbyleden",
+   198
+  ],
+  [
+   "Älvsjövägen",
+   187
+  ],
+  [
+   "Lövstavägen",
+   174
+  ],
+  [
+   "Skanstullsbron",
+   168
+  ],
+  [
+   "Hammarbyvägen",
+   164
+  ],
+  [
+   "Cedersdalsgatan",
+   158
+  ],
+  [
+   "Liljeholmsbron",
+   154
+  ],
+  [
+   "Götgatan",
+   151
+  ],
+  [
+   "Mäster Samuelsgatan",
+   150
+  ],
+  [
+   "Farstavägen",
+   147
+  ],
+  [
+   "Perstorpsvägen",
+   144
+  ],
+  [
+   "Huvudstaleden",
+   144
+  ]
+ ],
+ "corridor_samples": {
+  "Essingeleden": [
+   [
+    "Hägerstensvägen 2024 ÅMVD Från Ramper från/till Essingeleden till Kilabergsvägen",
+    10,
+    40
+   ],
+   [
+    "Hägerstensvägen 2024 ÅMVD Från Ramper från/till Essingeleden till Kilabergsvägen",
+    10,
+    40
+   ],
+   [
+    "Hägerstensvägen 2024 ÅMVD Från Kilabergsvägen till Ramper från/till Essingeleden",
+    10,
+    40
+   ],
+   [
+    "Hägerstensvägen 2024 ÅMVD Från Kilabergsvägen till Ramper från/till Essingeleden",
+    10,
+    40
+   ],
+   [
+    "Hägerstensvägen 2024 ÅMVD Från Kilabergsvägen till Ramper från/till Essingeleden",
+    10,
+    40
+   ],
+   [
+    "Hägerstensvägen 2024 ÅMVD Från Kilabergsvägen till Ramper från/till Essingeleden",
+    10,
+    40
+   ],
+   [
+    "Mariebergsavfarten 2024 ÅMVD Från Essingeleden E4N till Lindhagenplan",
+    45,
+    null
+   ],
+   [
+    "Mariebergsavfarten 2024 ÅMVD Från Essingeleden E4N till Lindhagenplan",
+    45,
+    null
+   ]
+  ],
+  "Norra länken": [
+   [
+    "Solnabron 2024 ÅMVD Från Norra Stationsgatan till Norra Länken",
+    218,
+    null
+   ],
+   [
+    "Solnabron 2024 ÅMVD Från Norra Stationsgatan till Norra Länken",
+    218,
+    null
+   ],
+   [
+    "Solnabron 2024 ÅMVD Från Norra Stationsgatan till Norra Länken",
+    218,
+    null
+   ],
+   [
+    "Solnabron 2024 ÅMVD Från Norra Stationsgatan till Norra Länken",
+    218,
+    null
+   ],
+   [
+    "Solnabron 2024 ÅMVD Från Norra Länken till Norra Stationsgatan",
+    225,
+    null
+   ],
+   [
+    "Solnabron 2024 ÅMVD Från Norra Länken till Norra Stationsgatan",
+    225,
+    null
+   ],
+   [
+    "Solnabron 2024 ÅMVD Från Norra Länken till Norra Stationsgatan",
+    225,
+    null
+   ],
+   [
+    "Solnabron 2024 ÅMVD Från Norra Länken till Norra Stationsgatan",
+    225,
+    null
+   ]
+  ],
+  "Södra länken": [],
+  "Hornsgatan": [
+   [
+    "Torkel Knutssonsgatan 2024 ÅMVD Från Hornsgatan till Krukmakargatan",
+    5,
+    21
+   ],
+   [
+    "Torkel Knutssonsgatan 2024 ÅMVD Från Krukmakargatan till Hornsgatan",
+    5,
+    21
+   ],
+   [
+    "Rosenlundsgatan 2024 ÅMVD Från Krukmakargatan till Hornsgatan",
+    10,
+    25
+   ],
+   [
+    "Rosenlundsgatan 2024 ÅMVD Från Hornsgatan till Krukmakargatan",
+    10,
+    25
+   ],
+   [
+    "Hornsgatan 2024 ÅMVD Från Hornsgatspuckeln östra till Bellmansgatan",
+    5,
+    35
+   ],
+   [
+    "Hornsgatan 2024 ÅMVD Från Bellmansgatan till Hornsgatspuckeln östra",
+    5,
+    35
+   ],
+   [
+    "Hornsgatan 2024 ÅMVD Totalt",
+    5,
+    35
+   ],
+   [
+    "Hornsgatan 2024 ÅMVD Från Ringvägen till Varvsgatan",
+    8,
+    33
+   ]
+  ],
+  "Valhallavägen": [
+   [
+    "Valhallavägen 2024 ÅMVD Från Ingemarsgatan till Frejgatan",
+    5,
+    40
+   ],
+   [
+    "Valhallavägen 2024 ÅMVD Från Ingemarsgatan till Frejgatan",
+    5,
+    40
+   ],
+   [
+    "Valhallavägen 2024 ÅMVD Från Ingemarsgatan till Frejgatan",
+    5,
+    40
+   ],
+   [
+    "Valhallavägen 2024 ÅMVD Från Frejgatan till Ingemarsgatan",
+    5,
+    40
+   ],
+   [
+    "Valhallavägen 2024 ÅMVD Från Frejgatan till Ingemarsgatan",
+    5,
+    40
+   ],
+   [
+    "Valhallavägen 2024 ÅMVD Från Frejgatan till Ingemarsgatan",
+    5,
+    40
+   ],
+   [
+    "Valhallavägen 2024 ÅMVD Totalt",
+    5,
+    40
+   ],
+   [
+    "Valhallavägen 2024 ÅMVD Totalt",
+    5,
+    40
+   ]
+  ],
+  "Sveavägen": [
+   [
+    "Sveavägen 2025 ÅMVD Totalt",
+    7,
+    30
+   ],
+   [
+    "Sveavägen 2024 ÅMVD Från Rådmansgatan till Kungstensgatan",
+    6,
+    35
+   ],
+   [
+    "Sveavägen 2024 ÅMVD Från Kungstensgatan till Rådmansgatan",
+    6,
+    35
+   ],
+   [
+    "Sveavägen 2024 ÅMVD Totalt",
+    6,
+    35
+   ],
+   [
+    "Sveavägen 2024 ÅMVD Från Odengatan till Surbrunnsgatan",
+    3,
+    32
+   ],
+   [
+    "Sveavägen 2024 ÅMVD Totalt",
+    3,
+    32
+   ],
+   [
+    "Sveavägen 2024 ÅMVD Från Adolf Fredriks Kyrkogata till Kammakargatan",
+    5,
+    40
+   ],
+   [
+    "Sveavägen 2024 ÅMVD Från Kammakargatan till Adolf Fredriks Kyrkogata",
+    5,
+    40
+   ]
+  ],
+  "Klarastrandsleden": [
+   [
+    "Klarastrandsleden 2024 ÅMVD Från Tegelbacken till Klarastrandsleden",
+    5,
+    37
+   ],
+   [
+    "Klarastrandsleden 2024 ÅMVD Från Tegelbacken till Klarastrandsleden",
+    5,
+    37
+   ],
+   [
+    "Klarastrandsleden 2024 ÅMVD Från Tegelbacken till Klarastrandsleden",
+    5,
+    37
+   ],
+   [
+    "Klarastrandsleden 2024 ÅMVD Från Tegelbacken till Klarastrandsleden",
+    5,
+    37
+   ],
+   [
+    "Klarastrandsleden 2024 ÅMVD Från Klarastrandsleden till Tegelbacken",
+    5,
+    37
+   ],
+   [
+    "Klarastrandsleden 2024 ÅMVD Från Klarastrandsleden till Tegelbacken",
+    5,
+    37
+   ],
+   [
+    "Klarastrandsleden 2024 ÅMVD Från Pampaslänken till Klarastrandskopplet",
+    5,
+    47
+   ],
+   [
+    "Klarastrandsleden 2024 ÅMVD Från Klarastrandskopplet till Pampaslänken",
+    4,
+    47
+   ]
+  ],
+  "E4": [
+   [
+    "Mariebergsavfarten 2024 ÅMVD Från Essingeleden E4N till Lindhagenplan",
+    45,
+    null
+   ],
+   [
+    "Mariebergsavfarten 2024 ÅMVD Från Essingeleden E4N till Lindhagenplan",
+    45,
+    null
+   ],
+   [
+    "Mariebergsavfarten 2024 ÅMVD Från Essingeleden E4N till Lindhagenplan",
+    45,
+    null
+   ],
+   [
+    "Mariebergsavfarten 2024 ÅMVD Från Essingeleden E4N till Lindhagenplan",
+    45,
+    null
+   ],
+   [
+    "Fredhällspåfarten från Lindhagenplan 2024 ÅMVD Från Lindhagenplan till E4 södergående",
+    207,
+    null
+   ],
+   [
+    "Fredhällspåfarten från Lindhagenplan 2024 ÅMVD Från Lindhagenplan till E4 södergående",
+    207,
+    null
+   ],
+   [
+    "avfart E4S till Torshamnsgatan 2024 ÅMVD Från E4 till Torshamnsgatan",
+    5,
+    59
+   ],
+   [
+    "avfart E4S till Torshamnsgatan 2024 ÅMVD Från E4 till Torshamnsgatan",
+    5,
+    59
+   ]
+  ],
+  "Roslagsvägen": [
+   [
+    "Bergshamra Tpl ramp mot Stockholm 2024 ÅMVD Från Bergshamravägen till Roslagsvägen s-ut",
+    5,
+    50
+   ],
+   [
+    "Bergshamra Tpl ramp från Stockholm 2024 ÅMVD Från Roslagsvägen till Bergshamravägen",
+    5,
+    38
+   ],
+   [
+    "Bergshamra Tpl ramp från Stockholm 2024 ÅMVD Från Roslagsvägen till Bergshamravägen",
+    5,
+    38
+   ],
+   [
+    "Roslagsvägen 2024 ÅMVD Från Stadsgränsen till Åminnevägen",
+    240,
+    null
+   ],
+   [
+    "Roslagsvägen 2024 ÅMVD Från Åminnevägen till Stadsgränsen",
+    240,
+    null
+   ],
+   [
+    "Roslagsvägen 2024 ÅMVD Totalt",
+    240,
+    null
+   ],
+   [
+    "Frescatiavfarten 2024 ÅMVD Från Roslagsvägen Norrgående till Ekhagsrondellen",
+    5,
+    null
+   ],
+   [
+    "Frescatiavfarten 2024 ÅMVD Från Roslagsvägen Norrgående till Ekhagsrondellen",
+    5,
+    null
+   ]
+  ],
+  "Nynäsvägen": [
+   [
+    "Nynäsvägen 2024 ÅMVD Från Örbyleden/Tyresövägen till Tallkrogsmotet",
+    3,
+    null
+   ],
+   [
+    "Nynäsvägen 2024 ÅMVD Från Örbyleden/Tyresövägen till Tallkrogsmotet",
+    3,
+    null
+   ],
+   [
+    "Nynäsvägen 2024 ÅMVD Från Tallkrogsmotet till Örbyleden/Tyresövägen",
+    3,
+    null
+   ],
+   [
+    "Nynäsvägen 2024 ÅMVD Från Tallkrogsmotet till Örbyleden/Tyresövägen",
+    3,
+    null
+   ],
+   [
+    "Nynäsvägen 2024 ÅMVD Från Stadsgränsen till Ågestamotet",
+    3,
+    null
+   ],
+   [
+    "Nynäsvägen 2024 ÅMVD Från Stadsgränsen till Ågestamotet",
+    3,
+    null
+   ],
+   [
+    "Nynäsvägen 2024 ÅMVD Från Ågestamotet till Stadsgränsen",
+    3,
+    null
+   ],
+   [
+    "Nynäsvägen 2024 ÅMVD Från Ågestamotet till Stadsgränsen",
+    3,
+    null
+   ]
+  ]
+ }
+}

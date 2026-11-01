@@ -1,0 +1,106 @@
+[
+  {
+    "path": "/home/erikf/projects/personal/cars-data/stockholm/stockholm.net.xml",
+    "sha256": "3171eb231e186b63b7c6e0f53b2654067d7fc8b429ac001d6c56c8013d82c0d0",
+    "edges": 76609,
+    "external_junctions": 34885,
+    "junction_types": {
+      "priority": 22194,
+      "traffic_light": 1922,
+      "right_before_left": 10674,
+      "dead_end": 95
+    },
+    "internal_edges": 215551,
+    "tls": 1922,
+    "tls_types": {
+      "actuated": 1922
+    },
+    "cycles": {
+      "90.0": 1922
+    },
+    "zero_offsets": 1922,
+    "cycles_outside_30_180": 0,
+    "signal_approaches": 3690,
+    "approaches_with_turn_only_lanes": 205,
+    "bad_link_indices": 0,
+    "disconnected_lanes": 544,
+    "location": {
+      "netOffset": "-651972.09,-6565003.78",
+      "convBoundary": "0.00,0.00,34380.08,30511.31",
+      "origBoundary": "17.226752,59.181558,18.979225,59.786579",
+      "projParameter": "+proj=utm +zone=33 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+    },
+    "osm_signal_approaches_with_turn_tags": 556
+  },
+  {
+    "path": "/home/erikf/projects/personal/cars-data/best/berlin.net.xml",
+    "sha256": "73c6651c8d517c2ae81a9c9cbd9991cdfa3b55975fbedaec8f8df668dc3d8860",
+    "edges": 71324,
+    "external_junctions": 28547,
+    "junction_types": {
+      "right_before_left": 9878,
+      "priority": 15633,
+      "traffic_light": 2875,
+      "dead_end": 74,
+      "zipper": 87
+    },
+    "internal_edges": 159982,
+    "tls": 2344,
+    "tls_types": {
+      "actuated": 2344
+    },
+    "cycles": {
+      "90.0": 2246,
+      "68.0": 2,
+      "94.0": 30,
+      "84.0": 1,
+      "101.0": 1,
+      "92.0": 5,
+      "76.0": 1,
+      "96.0": 8,
+      "98.0": 10,
+      "121.0": 1,
+      "113.0": 1,
+      "72.0": 2,
+      "95.0": 1,
+      "65.0": 1,
+      "102.0": 2,
+      "56.0": 1,
+      "130.0": 1,
+      "63.0": 3,
+      "104.0": 2,
+      "80.0": 2,
+      "88.0": 3,
+      "99.0": 1,
+      "73.0": 1,
+      "77.0": 1,
+      "70.0": 1,
+      "82.0": 1,
+      "164.0": 1,
+      "81.0": 2,
+      "71.0": 1,
+      "74.0": 2,
+      "83.0": 1,
+      "93.0": 1,
+      "112.0": 1,
+      "60.0": 1,
+      "50.0": 1,
+      "64.0": 1,
+      "91.0": 1,
+      "89.0": 1,
+      "105.0": 1
+    },
+    "zero_offsets": 2344,
+    "cycles_outside_30_180": 0,
+    "signal_approaches": 8000,
+    "approaches_with_turn_only_lanes": 2352,
+    "bad_link_indices": 0,
+    "disconnected_lanes": 756,
+    "location": {
+      "netOffset": "-372355.98,-5804722.35",
+      "convBoundary": "-2894.04,-5893.63,43222.84,32365.28",
+      "origBoundary": "13.122591,52.383149,13.502221,52.618113",
+      "projParameter": "+proj=utm +zone=33 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+    }
+  }
+]

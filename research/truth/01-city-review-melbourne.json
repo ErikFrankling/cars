@@ -1,0 +1,74 @@
+{
+ "signals_rows": 5066,
+ "signal_columns": [
+  "SITE_NO",
+  "SITE_NAME",
+  "TYPE",
+  "MUNICIPALITY",
+  "LATITUDE",
+  "LONGITUDE"
+ ],
+ "signals_melb_bbox": 4303,
+ "bbox": [
+  -38.25,
+  -37.45,
+  144.55,
+  145.55
+ ],
+ "sig_col_TYPE": [
+  [
+   "INT",
+   3404
+  ],
+  [
+   "POS",
+   1399
+  ],
+  [
+   "FLASH PX",
+   263
+  ]
+ ],
+ "day": "VSDATA_20261020.csv",
+ "rows": 119699,
+ "neg_values": 411168,
+ "rows_with_neg": 6385,
+ "rows_all_nonpos": 73643,
+ "melb_rows": 97384,
+ "melb_live": 36638,
+ "melb_nonpos": 58145,
+ "melb_neg": 3475,
+ "melb_sites_in_file": 3867,
+ "melb_sites_with_ge1_live_detector": 3707,
+ "melb_sites_ge4_live": 3428,
+ "melb_live_detectors_per_site_median": 9,
+ "melb_live_peak15_q50_q95_max": [
+  63,
+  210,
+  759
+ ],
+ "tirtl_sites": 406,
+ "tirtl_cols": [
+  "site",
+  "site_description",
+  "latitude",
+  "longitude"
+ ],
+ "tirtl_melb": 382,
+ "tirtl_zip": [
+  "TIRTLDATA_20261020.csv",
+  "TIRTLDATA_20261010.csv",
+  "TIRTLDATA_20261014.csv"
+ ],
+ "tirtl_row": {
+  "date": "2026-10-20",
+  "time_bin": "0:00",
+  "site": "2",
+  "heading": "W",
+  "vehicle_class": "1",
+  "speed_bin": "75km/hr to < 80km/hr",
+  "volume": "2"
+ },
+ "tirtl_rows_scanned": 1103481,
+ "tirtl_active_sites_scanned": 278
+}

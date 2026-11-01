@@ -1,0 +1,9 @@
+{
+ "r4_n7_ramps.rou.gz": {
+  "vehicles_0600_1830": 1041369,
+  "cordon_crossings": 331298,
+  "essingeleden": 58905,
+  "total": 390203,
+  "ratio_to_real": 0.9731330553449583
+ }
+}

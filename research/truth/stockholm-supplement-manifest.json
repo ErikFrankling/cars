@@ -1,0 +1,58 @@
+{
+  "directory": "/home/erikf/projects/personal/cars-data/truth/stockholm/supplement-20261031T220134Z",
+  "fetches": [
+    {
+      "file": "sampers-stockholm-validation2018.pdf",
+      "url": "https://bransch.trafikverket.se/contentassets/d7cf7d727fb2488aab9fa9d24387c7c8/externa-rapporter/2018/validering_o_kansl_analys_sampers_stockholm_ver1p1_180410.pdf",
+      "error": "HTTP Error 404: File not found"
+    },
+    {
+      "file": "dynameq-stockholm-manual.pdf",
+      "url": "https://bransch.trafikverket.se/contentassets/38911a0f4c0e4ee9a507272aba8d640c/dynameq-storstockholm-anvandarhandledning.pdf",
+      "status": 200,
+      "bytes": 1724270,
+      "sha256": "028899b5cd56a1b6040aa2dfaa7f774e0f2c44d2f4fc3e4389faf66c67ffee63",
+      "content_type": "application/pdf"
+    },
+    {
+      "file": "vissim-stockholm2010.pdf",
+      "url": "https://kth.diva-portal.org/smash/get/diva2%3A321836/FULLTEXT01.pdf",
+      "status": 200,
+      "bytes": 6138270,
+      "sha256": "edb78e940070e6e5ab53e799eb0e303515a93668d8550afa5baa95e02977455c",
+      "content_type": "application/pdf"
+    },
+    {
+      "file": "national-rvu2024.pdf",
+      "url": "https://www.trafa.se/globalassets/statistik/resvanor/2025/resvanor-i-sverige-2024.pdf",
+      "status": 200,
+      "bytes": 170642,
+      "sha256": "306de53be5e52e9754ce1e04b855fbb1f427d82ac9ca06697cadfe93ed428f9e",
+      "content_type": "application/pdf"
+    },
+    {
+      "file": "mcs-tms-map.html",
+      "url": "https://vtf.trafikverket.se/SeTrafikfloden",
+      "status": 200,
+      "bytes": 8530,
+      "sha256": "237221956d2f0d706b11c7aa310cd6bb860c932b162a7acbd5ad373bd2057652",
+      "content_type": "text/html; charset=utf-8"
+    },
+    {
+      "file": "api-datamodel.html",
+      "url": "https://data.trafikverket.se/documentation/datacache/data-model",
+      "status": 200,
+      "bytes": 19450,
+      "sha256": "a63fe9ad7a2258a7d2ddbfebaa72eb08cc9a9f61940f534759f9039378d08114",
+      "content_type": "text/html"
+    },
+    {
+      "file": "scb-rams.json",
+      "url": "https://api.scb.se/OV0104/v1/doris/sv/ssd/AM/AM0207",
+      "status": 200,
+      "bytes": 1000,
+      "sha256": "50350fee92a246ed24c1bb5760aa1fc5041306d6d7cb9b527a7bf100b99d6efe",
+      "content_type": "application/json; charset=utf-8"
+    }
+  ]
+}

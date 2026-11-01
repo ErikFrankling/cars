@@ -1,0 +1,367 @@
+{
+ "tt_national_by_equipment": [
+  [
+   "fcd",
+   59966
+  ],
+  [
+   "lus",
+   7375
+  ],
+  [
+   "anpr",
+   333
+  ]
+ ],
+ "tt_amsterdam_all_vertices_in_bbox": 3642,
+ "tt_amsterdam_by_equipment": [
+  [
+   "fcd",
+   3037
+  ],
+  [
+   "lus",
+   605
+  ]
+ ],
+ "tt_a10_named": 134,
+ "tt_a10_by_equipment": [
+  [
+   "fcd",
+   134
+  ]
+ ],
+ "tt_a10_prefixes": [
+  [
+   "ABM01",
+   96
+  ],
+  [
+   "PNH03",
+   18
+  ],
+  [
+   "GAD03",
+   13
+  ],
+  [
+   "RWS08",
+   5
+  ],
+  [
+   "RWS09",
+   2
+  ]
+ ],
+ "tt_a10_chord_km_sum_fcd": 349.4,
+ "tt_a10_examples": [
+  [
+   "ABM01_A10_HRL_CP_S102",
+   "fcd",
+   "A10 Noord HRL tussen Coenplein en afrit S102"
+  ],
+  [
+   "ABM01_A10_LiafrS107_A4reS107",
+   "fcd",
+   "A10 West HRL tussen S107 en A4 S107"
+  ],
+  [
+   "ABM01_A10_LiafrS109_A2afrN522",
+   "fcd",
+   "A10 tussen A10 Zuid HRL en A2 HRR afr N522"
+  ],
+  [
+   "ABM01_A10_LiafrS112_GWEG_in",
+   "fcd",
+   "A10 Tussen A10 oost afr S112 en S112 Gooiseweg Stad in"
+  ],
+  [
+   "ABM01_A10_ReafrS108_A2_ReafrS107",
+   "fcd",
+   "A10 Zuid HRR tussen S108 en A4 S107"
+  ],
+  [
+   "ABM01_A10_ReafrS112_S112NZ_ZO",
+   "fcd",
+   "A10 Tussen HRR afr S112 en S122 NZ ZO"
+  ],
+  [
+   "ABM01_A10_litoeS116_knpt_CP",
+   "fcd",
+   "A10 Noord HRL tussen S116 en Coenplein"
+  ],
+  [
+   "ABM01_A10_re_toeS116_afrS114",
+   "fcd",
+   "A10 tussen HRR toe S116 en afr S114"
+  ],
+  [
+   "ABM01_A10_reafrS116_toeS116",
+   "fcd",
+   "A10 Noord HRR tussen afr S116 en toerit S116"
+  ],
+  [
+   "ABM01_A10li_LiafrS106_LitoeS106",
+   "fcd",
+   "A10 li_tussen_A10 West HRL afr S106_en_A10 West HRL toe S106"
+  ],
+  [
+   "ABM01_A10li_LitoeS106_LiafrS107",
+   "fcd",
+   "A10 li_tussen_A10 West HRL toe S106_en_A10 West HRL afr S107"
+  ],
+  [
+   "ABM01_A2_LIafrN522_LIafrA10",
+   "fcd",
+   "A2_tussen_A2 HRL afrit N522_en_A2 HRL A10"
+  ]
+ ],
+ "tt_ams_prefixes": [
+  [
+   "GAD03",
+   1282
+  ],
+  [
+   "RWS01",
+   605
+  ],
+  [
+   "ABM01",
+   573
+  ],
+  [
+   "RWS08",
+   572
+  ],
+  [
+   "PNH03",
+   251
+  ],
+  [
+   "RTT01",
+   165
+  ],
+  [
+   "RWS04",
+   113
+  ],
+  [
+   "RWS09",
+   81
+  ]
+ ],
+ "point_ams": 1559,
+ "point_ams_equipment": [
+  [
+   "lus",
+   1559
+  ]
+ ],
+ "point_ams_prefix": [
+  [
+   "RWS01",
+   1412
+  ],
+  [
+   "GEO0B",
+   51
+  ],
+  [
+   "GEO0K",
+   41
+  ],
+  [
+   "PNH02",
+   37
+  ],
+  [
+   "GZS01",
+   12
+  ],
+  [
+   "GAD02",
+   6
+  ]
+ ],
+ "point_ams_with_flow": 1559,
+ "point_ams_with_speed": 1559,
+ "point_ams_rws": 1412,
+ "point_ams_rws_lanes": [
+  [
+   "1",
+   660
+  ],
+  [
+   "2",
+   339
+  ],
+  [
+   "3",
+   196
+  ],
+  [
+   "4",
+   140
+  ],
+  [
+   "5",
+   62
+  ],
+  [
+   "6",
+   13
+  ],
+  [
+   "7",
+   2
+  ]
+ ],
+ "point_a10_monibas_id": 79,
+ "point_a10_examples": [
+  [
+   "RWS01_MONIBAS_0100vwa0036ra",
+   "lus",
+   "0100vwa0036ra",
+   "2"
+  ],
+  [
+   "RWS01_MONIBAS_0100vwa0138ra",
+   "lus",
+   "0100vwa0138ra",
+   "1"
+  ],
+  [
+   "RWS01_MONIBAS_0100vwa0146ra",
+   "lus",
+   "0100vwa0146ra",
+   "1"
+  ],
+  [
+   "RWS01_MONIBAS_0100vwa0172ra",
+   "lus",
+   "0100vwa0172ra",
+   "2"
+  ],
+  [
+   "RWS01_MONIBAS_0100vwa0195ra",
+   "lus",
+   "0100vwa0195ra",
+   "2"
+  ],
+  [
+   "RWS01_MONIBAS_0100vwb0129ra",
+   "lus",
+   "0100vwb0129ra",
+   "1"
+  ],
+  [
+   "RWS01_MONIBAS_0100vwb0140ra",
+   "lus",
+   "0100vwb0140ra",
+   "1"
+  ],
+  [
+   "RWS01_MONIBAS_0100vwb0147ra",
+   "lus",
+   "0100vwb0147ra",
+   "1"
+  ]
+ ],
+ "point_examples": [
+  [
+   "GAD02_Amstd_31_0",
+   "lus",
+   "Michiel de Ruijtertunnel Richting West",
+   "2"
+  ],
+  [
+   "GAD02_Amstd_31_2",
+   "lus",
+   "Michiel de Ruijtertunnel Richting Oost",
+   "2"
+  ],
+  [
+   "GAD02_Amstd_33_0",
+   "lus",
+   "SpaarndammerTunnel Richting West",
+   "2"
+  ],
+  [
+   "GAD02_Amstd_33_2",
+   "lus",
+   "SpaarndammerTunnel Richting Oost",
+   "2"
+  ],
+  [
+   "GAD02_Amstd_34_0",
+   "lus",
+   "IJ-Tunnel Richting Noord",
+   "2"
+  ],
+  [
+   "GAD02_Amstd_34_2",
+   "lus",
+   "IJ-Tunnel Richting Zuid",
+   "2"
+  ]
+ ],
+ "live_sites_total": 20598,
+ "live_time": [
+  [
+   "2026-10-31T22:11:00Z",
+   14832
+  ],
+  [
+   "2026-10-31T22:12:00Z",
+   5766
+  ]
+ ],
+ "live_ams_reporting": 1559,
+ "live_ams_flow_positive": 1247,
+ "tt_live_type": [
+  [
+   "reconstituted",
+   59966
+  ],
+  [
+   null,
+   7375
+  ],
+  [
+   "estimated",
+   202
+  ],
+  [
+   "best",
+   131
+  ]
+ ],
+ "tt_live_ams": 3642,
+ "tt_live_ams_valid": 3558,
+ "tt_live_numberOfInputValues": [
+  [
+   100,
+   45854
+  ],
+  [
+   99,
+   8544
+  ],
+  [
+   0,
+   7406
+  ],
+  [
+   6,
+   4289
+  ],
+  [
+   13,
+   4001
+  ],
+  [
+   20,
+   3230
+  ]
+ ]
+}

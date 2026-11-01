@@ -1,0 +1,27 @@
+site,label,lat,lon,r
+s01_fredhall,Trafikplats Fredhäll,59.330800,18.010000,330
+s02_kristineberg,Trafikplats Kristineberg,59.335000,18.010500,330
+s03_st_essingen,Trafikplats Stora Essingen,59.320500,17.997000,330
+s04_li_essingen,Trafikplats Lilla Essingen,59.324900,18.003000,260
+s05_nybohov,Trafikplats Nybohov,59.308828,18.008624,300
+s06_slussen_n,Slussen north,59.321776,18.074240,170
+s07_slussen_s,Slussen south,59.319600,18.072737,170
+s08_norrtull,Norrtull,59.351000,18.042800,220
+s09_sveaplan,Sveaplan,59.350218,18.050363,150
+s10_roslagstull,Roslagstull,59.351593,18.056174,190
+s11_fridhemsplan,Fridhemsplan,59.332126,18.031201,140
+s12_steriks_fleming,S:t Eriksgatan/Fleminggatan,59.334478,18.032525,130
+s13_lindhagensplan,Lindhagensplan,59.331690,18.019000,220
+s14_sl_arsta,Södra länken Årsta,59.296129,18.041865,260
+s15_sl_hammarby,Södra länken Hammarby,59.297747,18.094131,260
+s16_sl_nynas,Södra länken Nynäsvägen,59.292504,18.085426,260
+s17_kk_north,Kungens kurva north,59.278788,17.918935,300
+s18_kk_south,Kungens kurva south,59.269352,17.910784,300
+s19_hornstull,Hornstull,59.315237,18.034306,130
+s20_tegelbacken,Tegelbacken,59.328562,18.061181,170
+x21_vasterbroplan,Västerbroplan,59.328300,18.021700,170
+x22_gullmarsplan,Gullmarsplan,59.299070,18.079370,190
+b23_danderyd,Danderydsvägen 802 veh/h screen edge,59.446144,17.950753,120
+b24_steriksplan,Sankt Eriksgatan 866 veh/h screen edge,59.341289,18.037707,120
+b25_drottningholm,Drottningholmsvägen 1330 veh/h screen edge,59.333441,17.977040,130
+m26_gustav_adolf,Gustav Adolfs torg/Norrbro (signals in register not in net),59.329300,18.068400,120

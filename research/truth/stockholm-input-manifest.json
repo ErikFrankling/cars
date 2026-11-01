@@ -1,0 +1,62 @@
+[
+  {
+    "file": "/home/erikf/projects/personal/cars-data/stockholm/stockholm.net.xml",
+    "size": 203800583,
+    "mtime_ns": 1793459894770539295,
+    "sha256": "3171eb231e186b63b7c6e0f53b2654067d7fc8b429ac001d6c56c8013d82c0d0"
+  },
+  {
+    "file": "/home/erikf/projects/personal/cars-data/stockholm/stockholm.rou.gz",
+    "size": 33220776,
+    "mtime_ns": 1793460353450411995,
+    "sha256": "56ccbf400128993abbe3693a3d104d4bb5faeba086a630a8f50d231afe606f40"
+  },
+  {
+    "file": "/home/erikf/projects/personal/cars-data/stockholm/stockholm60.rou.gz",
+    "size": 30152583,
+    "mtime_ns": 1793466768989996575,
+    "sha256": "57c54ff3f546d4eea370ae2502dd24cc6c09b9a05d9e88ebcb0433583184c6f2"
+  },
+  {
+    "file": "/home/erikf/projects/personal/cars-data/stockholm/trafikflode_motorfordon.geojson",
+    "size": 24045434,
+    "mtime_ns": 1793448766866458933,
+    "sha256": "f8d9f1ef8ad730ffdd80ba8ada3e6a7811e6451e50d718bb4eaeadca5ad34384"
+  },
+  {
+    "file": "/home/erikf/projects/personal/cars-data/stockholm/count_matches.csv",
+    "size": 3982584,
+    "mtime_ns": 1793459949293404966,
+    "sha256": "e844dfb6854db13221b6513c757316eecfab01893f8d0dcbbd490c94135811bd"
+  },
+  {
+    "file": "/home/erikf/projects/personal/cars-data/stockholm/demand_fit.json",
+    "size": 1028,
+    "mtime_ns": 1793460353455762622,
+    "sha256": "640a705e5ec06660abfbdda0b649b38ee16154ff535c2975c3eefe2f7ce38f4d"
+  },
+  {
+    "file": "/home/erikf/projects/personal/cars-data/stockholm/cars.summary.csv",
+    "size": 55055,
+    "mtime_ns": 1793482346700366671,
+    "sha256": "64c3feb6b93175ad182eb280065a1d6d074c4cc9e16c75b240a61e0910919046"
+  },
+  {
+    "file": "/home/erikf/projects/personal/cars-data/stockholm/cars.edges.csv",
+    "size": 25385111,
+    "mtime_ns": 1793482347439364983,
+    "sha256": "2616c7f474b7068a1927a764970e6b7d922df6aa6a0352c2ae2aeffa76539279"
+  },
+  {
+    "file": "/home/erikf/projects/personal/cars-data/stockholm/cars.trips.csv",
+    "size": 74205761,
+    "mtime_ns": 1793482347396365081,
+    "sha256": "09492ff8fa9102f68c2fa8fcbb031070834ec8df259e26fa9dd90f44ef484b61"
+  },
+  {
+    "file": "/home/erikf/projects/personal/cars-data/stockholm/cars.log",
+    "size": 6631,
+    "mtime_ns": 1793460737341480670,
+    "sha256": "62ab08ee719557c3780997232e864675f216f760d2e0731d11caa038e8199947"
+  }
+]

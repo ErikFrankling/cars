@@ -1,0 +1,214 @@
+{
+  "source": "https://github.com/CATS-Lab/Filed-Experiment-Data-HIGH_Sim",
+  "events": [
+    {
+      "id": 3,
+      "crossing_time": 64012.765625,
+      "old_lane": 1,
+      "new_lane": 0,
+      "duration10_90_s": 3.1015629999965313,
+      "width_m": 3.500189087999999,
+      "peak_1s_lateral_mps": 1.0685038320000002,
+      "speed_mps": 15.50194512,
+      "supplied_front_headway_m": -0.3048
+    },
+    {
+      "id": 27,
+      "crossing_time": 64010.101563,
+      "old_lane": 1,
+      "new_lane": 0,
+      "duration10_90_s": 5.5,
+      "width_m": 3.6632601359999994,
+      "peak_1s_lateral_mps": 0.6278575200000005,
+      "speed_mps": 18.283549920000002,
+      "supplied_front_headway_m": 15.25831848
+    },
+    {
+      "id": 28,
+      "crossing_time": 64022.265625,
+      "old_lane": 2,
+      "new_lane": 1,
+      "duration10_90_s": 4.898437000003469,
+      "width_m": 3.2923886400000004,
+      "peak_1s_lateral_mps": 0.6587032800000001,
+      "speed_mps": 30.7092096,
+      "supplied_front_headway_m": 190.40307360000003
+    },
+    {
+      "id": 29,
+      "crossing_time": 64007.332031,
+      "old_lane": 1,
+      "new_lane": 0,
+      "duration10_90_s": 6.53125,
+      "width_m": 3.70805964,
+      "peak_1s_lateral_mps": 0.5899403999999997,
+      "speed_mps": 18.288,
+      "supplied_front_headway_m": 22.394600880000002
+    },
+    {
+      "id": 30,
+      "crossing_time": 64046.433594,
+      "old_lane": 0,
+      "new_lane": 1,
+      "duration10_90_s": 5.402343999994628,
+      "width_m": 3.849255192,
+      "peak_1s_lateral_mps": 0.7038746400000004,
+      "speed_mps": 13.787445120000001,
+      "supplied_front_headway_m": 61.313872800000006
+    },
+    {
+      "id": 32,
+      "crossing_time": 64045.0,
+      "old_lane": 1,
+      "new_lane": 2,
+      "duration10_90_s": 3.933593000001565,
+      "width_m": 3.1826301599999995,
+      "peak_1s_lateral_mps": 0.8210397599999997,
+      "speed_mps": 24.284299920000002,
+      "supplied_front_headway_m": -0.3048
+    },
+    {
+      "id": 40,
+      "crossing_time": 64042.367188,
+      "old_lane": 2,
+      "new_lane": 1,
+      "duration10_90_s": 4.097656000005372,
+      "width_m": 3.8134137600000004,
+      "peak_1s_lateral_mps": 0.9200388000000004,
+      "speed_mps": 29.543867760000005,
+      "supplied_front_headway_m": 111.50589840000002
+    },
+    {
+      "id": 48,
+      "crossing_time": 64059.5,
+      "old_lane": 1,
+      "new_lane": 2,
+      "duration10_90_s": 5.066406000005372,
+      "width_m": 4.289907600000001,
+      "peak_1s_lateral_mps": 0.8246059200000007,
+      "speed_mps": 21.60983232,
+      "supplied_front_headway_m": -0.3048
+    },
+    {
+      "id": 58,
+      "crossing_time": 64014.601563,
+      "old_lane": 1,
+      "new_lane": 2,
+      "duration10_90_s": 6.0,
+      "width_m": 3.72105936,
+      "peak_1s_lateral_mps": 0.6088989600000003,
+      "speed_mps": 24.24187176,
+      "supplied_front_headway_m": -0.3048
+    },
+    {
+      "id": 73,
+      "crossing_time": 64074.332031,
+      "old_lane": 1,
+      "new_lane": 0,
+      "duration10_90_s": 6.332031999998435,
+      "width_m": 3.6812860080000007,
+      "peak_1s_lateral_mps": 0.5574791999999995,
+      "speed_mps": 21.73486128,
+      "supplied_front_headway_m": 22.63347264
+    },
+    {
+      "id": 81,
+      "crossing_time": 64051.5,
+      "old_lane": 1,
+      "new_lane": 0,
+      "duration10_90_s": 5.867188000003807,
+      "width_m": 4.246540656,
+      "peak_1s_lateral_mps": 0.6806945999999998,
+      "speed_mps": 19.17204192,
+      "supplied_front_headway_m": 51.742238400000005
+    },
+    {
+      "id": 82,
+      "crossing_time": 64047.867188,
+      "old_lane": 2,
+      "new_lane": 1,
+      "duration10_90_s": 5.765625,
+      "width_m": 3.6502847999999997,
+      "peak_1s_lateral_mps": 0.6193840800000006,
+      "speed_mps": 23.55652896,
+      "supplied_front_headway_m": -0.3048
+    },
+    {
+      "id": 82,
+      "crossing_time": 64059.535156,
+      "old_lane": 1,
+      "new_lane": 0,
+      "duration10_90_s": 5.597656000005372,
+      "width_m": 3.2177614080000003,
+      "peak_1s_lateral_mps": 0.5397855600000003,
+      "speed_mps": 19.926604800000003,
+      "supplied_front_headway_m": 16.947794400000003
+    },
+    {
+      "id": 83,
+      "crossing_time": 64071.699219,
+      "old_lane": 0,
+      "new_lane": 1,
+      "duration10_90_s": 6.699219000001904,
+      "width_m": 3.5041697760000003,
+      "peak_1s_lateral_mps": 0.47372016000000006,
+      "speed_mps": 14.276344320000002,
+      "supplied_front_headway_m": -0.3048
+    },
+    {
+      "id": 85,
+      "crossing_time": 64070.734375,
+      "old_lane": 1,
+      "new_lane": 0,
+      "duration10_90_s": 6.199219000001904,
+      "width_m": 3.7656820799999995,
+      "peak_1s_lateral_mps": 0.5713811280000001,
+      "speed_mps": 12.577450080000002,
+      "supplied_front_headway_m": 186.662568
+    },
+    {
+      "id": 86,
+      "crossing_time": 64069.300781,
+      "old_lane": 2,
+      "new_lane": 1,
+      "duration10_90_s": 6.101562000003469,
+      "width_m": 3.4953854400000006,
+      "peak_1s_lateral_mps": 0.6078626399999996,
+      "speed_mps": 30.34308384,
+      "supplied_front_headway_m": -0.3048
+    },
+    {
+      "id": 87,
+      "crossing_time": 64026.734375,
+      "old_lane": 1,
+      "new_lane": 0,
+      "duration10_90_s": 7.066406000005372,
+      "width_m": 3.070811232,
+      "peak_1s_lateral_mps": 0.3894734400000006,
+      "speed_mps": 14.251777440000001,
+      "supplied_front_headway_m": 77.272896
+    },
+    {
+      "id": 89,
+      "crossing_time": 64150.464844,
+      "old_lane": 1,
+      "new_lane": 0,
+      "duration10_90_s": 7.167969000001904,
+      "width_m": 2.8962095999999997,
+      "peak_1s_lateral_mps": 0.35920679999999994,
+      "speed_mps": 20.4813408,
+      "supplied_front_headway_m": 79.18704000000001
+    }
+  ],
+  "n": 18,
+  "duration10_90_s": {
+    "p05": 3.80878850000081,
+    "p50": 5.816406500001904,
+    "p95": 7.081640450004852
+  },
+  "peak_1s_lateral_mps": {
+    "p05": 0.3849334440000005,
+    "p50": 0.6141415200000004,
+    "p95": 0.9423085548000001
+  }
+}

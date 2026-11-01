@@ -1,0 +1,80 @@
+{
+ "source": "DLR-UT v1.3.1, CC BY-NC-SA 4.0",
+ "day": "2023-09-24 Sunday",
+ "files": 68,
+ "signals_parsed": 26,
+ "cars_in_queues": 643,
+ "cycles": 273,
+ "through_positions": {
+  "1": {
+   "n": 273,
+   "median": 1.981,
+   "mean": 2.215,
+   "p10": 1.176,
+   "p90": 3.261,
+   "crossing_speed": 2.06
+  },
+  "2": {
+   "n": 271,
+   "median": 3.085,
+   "mean": 3.284,
+   "p10": 2.423,
+   "p90": 4.545,
+   "crossing_speed": 5.06
+  },
+  "3": {
+   "n": 71,
+   "median": 2.344,
+   "mean": 2.516,
+   "p10": 1.851,
+   "p90": 3.339,
+   "crossing_speed": 6.34
+  },
+  "4": {
+   "n": 22,
+   "median": 2.364,
+   "mean": 2.446,
+   "p10": 1.67,
+   "p90": 3.35,
+   "crossing_speed": 6.96
+  },
+  "5": {
+   "n": 4,
+   "median": 2.183,
+   "mean": 2.119,
+   "p10": 1.63,
+   "p90": 2.557,
+   "crossing_speed": 6.53
+  }
+ },
+ "late_positions_ge5": {
+  "n": 4,
+  "cycles": 4,
+  "median": 2.182685701778972,
+  "mean": 2.11881869342157,
+  "p10": 1.6296896384025559,
+  "p90": 2.5568541417546626,
+  "sat_flow_from_median": 1649,
+  "sat_flow_from_mean": 1699
+ },
+ "by_signal": {
+  "4": {
+   "n": 4,
+   "median": 2.183
+  }
+ },
+ "start_wave": {
+  "n": 22,
+  "median_ms": 6.200335584016211,
+  "median_kmh": 22.32120810245836,
+  "p10_kmh": 16.069901899768006,
+  "p90_kmh": 28.149341640960767,
+  "median_spacing_m": 6.960212057247892,
+  "median_reaction_s": 1.1469820000000084
+ },
+ "startup_lost_s": {
+  "n": 22,
+  "median": 0.87,
+  "mean": 1.12
+ }
+}

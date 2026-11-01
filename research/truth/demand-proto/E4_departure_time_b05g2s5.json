@@ -1,0 +1,416 @@
+{
+ "alpha": 1.0,
+ "beta": 0.5,
+ "gamma": 2.0,
+ "shift_s": 300.0,
+ "rows": [
+  {
+   "scale": 2.0,
+   "trips": 48000,
+   "before": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 267.4744922775689,
+    "p95_tt_s": 667.490338810319,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 10240.0,
+    "fail": null,
+    "max_insert_wait_s": 112.74205283191623
+   },
+   "route_only": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 222.19084644423558,
+    "p95_tt_s": 461.7694002775979,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 10240.0,
+    "fail": null,
+    "max_insert_wait_s": 16.15243811381879
+   },
+   "after": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 237.3214787614089,
+    "p95_tt_s": 529.7962015687806,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 10840.0,
+    "fail": null,
+    "max_insert_wait_s": 63.85440987765469
+   },
+   "sched_route_only": 415.149479211358,
+   "dep_hist_before": [
+    1066,
+    2750,
+    6354,
+    9928,
+    11334,
+    8942,
+    4988,
+    1986,
+    532,
+    107,
+    12,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dep_hist_after": [
+    694,
+    1988,
+    5211,
+    9252,
+    11356,
+    9670,
+    6014,
+    2757,
+    846,
+    181,
+    28,
+    3,
+    0,
+    0,
+    0,
+    0
+   ],
+   "share_moved": 0.7962291666666667,
+   "mean_abs_shift_min": 5.3979695962741046,
+   "share_within_15min": 1.0,
+   "share_at_window_edge": 0.0,
+   "peak_dep_before": 11334,
+   "peak_dep_after": 11356,
+   "sched_before": 468.833342530132,
+   "sched_after": 344.953818650867,
+   "trace": [
+    {
+     "iter": 0,
+     "gap": 0.23920628040645153,
+     "shifted": 6176,
+     "mean_tt": 266.4488555027927,
+     "unfinished": 0,
+     "sched_cost": 468.2417991717932
+    },
+    {
+     "iter": 1,
+     "gap": 0.2519656608789053,
+     "shifted": 5551,
+     "mean_tt": 268.6874331695415,
+     "unfinished": 0,
+     "sched_cost": 476.1350858902334
+    },
+    {
+     "iter": 2,
+     "gap": 0.2024685426199275,
+     "shifted": 4839,
+     "mean_tt": 252.45332300953993,
+     "unfinished": 0,
+     "sched_cost": 428.8620762294069
+    },
+    {
+     "iter": 3,
+     "gap": 0.19169506830213726,
+     "shifted": 4127,
+     "mean_tt": 246.77316387981077,
+     "unfinished": 0,
+     "sched_cost": 410.86891319560004
+    },
+    {
+     "iter": 4,
+     "gap": 0.18362410397856926,
+     "shifted": 3477,
+     "mean_tt": 247.38329115214458,
+     "unfinished": 0,
+     "sched_cost": 405.07361595453244
+    },
+    {
+     "iter": 5,
+     "gap": 0.14664534076450755,
+     "shifted": 3136,
+     "mean_tt": 237.03911503166935,
+     "unfinished": 0,
+     "sched_cost": 375.26528206889674
+    },
+    {
+     "iter": 6,
+     "gap": 0.18013381869686299,
+     "shifted": 2714,
+     "mean_tt": 243.77801827671178,
+     "unfinished": 0,
+     "sched_cost": 390.2465555883923
+    },
+    {
+     "iter": 7,
+     "gap": 0.1527685699606762,
+     "shifted": 2414,
+     "mean_tt": 241.0997756694118,
+     "unfinished": 0,
+     "sched_cost": 373.10295413094684
+    },
+    {
+     "iter": 8,
+     "gap": 0.1886887943897827,
+     "shifted": 2152,
+     "mean_tt": 245.47942930371306,
+     "unfinished": 0,
+     "sched_cost": 384.18755188893607
+    },
+    {
+     "iter": 9,
+     "gap": 0.15956500238552423,
+     "shifted": 1805,
+     "mean_tt": 243.2682718931853,
+     "unfinished": 0,
+     "sched_cost": 370.53907900780473
+    },
+    {
+     "iter": 10,
+     "gap": 0.16275450647511633,
+     "shifted": 1681,
+     "mean_tt": 242.9755116027447,
+     "unfinished": 0,
+     "sched_cost": 367.7648543670302
+    },
+    {
+     "iter": 11,
+     "gap": 0.13987264532081636,
+     "shifted": 1448,
+     "mean_tt": 235.5986247228255,
+     "unfinished": 0,
+     "sched_cost": 348.5898857747628
+    },
+    {
+     "iter": 12,
+     "gap": 0.14270108816920538,
+     "shifted": 1240,
+     "mean_tt": 237.01792178428195,
+     "unfinished": 0,
+     "sched_cost": 350.87773580963847
+    },
+    {
+     "iter": 13,
+     "gap": 0.1411537677702419,
+     "shifted": 1068,
+     "mean_tt": 237.05912742173626,
+     "unfinished": 0,
+     "sched_cost": 345.6085934292167
+    },
+    {
+     "iter": 14,
+     "gap": 0.130806211316314,
+     "shifted": 991,
+     "mean_tt": 233.5987507723722,
+     "unfinished": 0,
+     "sched_cost": 336.68884839725837
+    }
+   ]
+  },
+  {
+   "scale": 2.25,
+   "trips": 54000,
+   "before": {
+    "unfinished": 10901,
+    "unfinished_share": 0.20187037037037037,
+    "mean_tt_s": 1500.5758850670416,
+    "p95_tt_s": 6857.622181764664,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 12025.0,
+    "fail": "gridlock_stall",
+    "max_insert_wait_s": 1024.2633437288969
+   },
+   "route_only": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 274.8759776596341,
+    "p95_tt_s": 651.9368803643354,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 10275.0,
+    "fail": null,
+    "max_insert_wait_s": 99.45239397671048
+   },
+   "after": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 654.9633971625333,
+    "p95_tt_s": 2490.262969805674,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 10385.0,
+    "fail": null,
+    "max_insert_wait_s": 1820.5666914302037
+   },
+   "sched_route_only": 472.91035154599416,
+   "dep_hist_before": [
+    1198,
+    3116,
+    7166,
+    11196,
+    12576,
+    10147,
+    5582,
+    2266,
+    611,
+    130,
+    11,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dep_hist_after": [
+    773,
+    2265,
+    5854,
+    10991,
+    13117,
+    11427,
+    6050,
+    2582,
+    770,
+    152,
+    17,
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   "share_moved": 0.6500925925925926,
+   "mean_abs_shift_min": 5.356929212362911,
+   "share_within_15min": 1.0,
+   "share_at_window_edge": 0.0,
+   "peak_dep_before": 12576,
+   "peak_dep_after": 13117,
+   "sched_before": 3963.637471079784,
+   "sched_after": 1388.606027362645,
+   "trace": [
+    {
+     "iter": 0,
+     "gap": 0.611744242018166,
+     "shifted": 5980,
+     "mean_tt": 1425.2042851978824,
+     "unfinished": 10333,
+     "sched_cost": 3739.6421184054284
+    },
+    {
+     "iter": 1,
+     "gap": 0.6112463007044071,
+     "shifted": 5263,
+     "mean_tt": 926.8981748839296,
+     "unfinished": 0,
+     "sched_cost": 2213.4878527021006
+    },
+    {
+     "iter": 2,
+     "gap": 0.5991578728940536,
+     "shifted": 4673,
+     "mean_tt": 863.3205446851333,
+     "unfinished": 0,
+     "sched_cost": 2016.956167915352
+    },
+    {
+     "iter": 3,
+     "gap": 0.6112723281698226,
+     "shifted": 4226,
+     "mean_tt": 761.4359722060428,
+     "unfinished": 0,
+     "sched_cost": 1708.797483733664
+    },
+    {
+     "iter": 4,
+     "gap": 0.6748349893346383,
+     "shifted": 3893,
+     "mean_tt": 1542.3320435988435,
+     "unfinished": 9737,
+     "sched_cost": 4041.65122964962
+    },
+    {
+     "iter": 5,
+     "gap": 0.7022697429058812,
+     "shifted": 3667,
+     "mean_tt": 1642.3024656793698,
+     "unfinished": 11343,
+     "sched_cost": 4350.633011029333
+    },
+    {
+     "iter": 6,
+     "gap": 0.5496053200733966,
+     "shifted": 3356,
+     "mean_tt": 665.1984428524952,
+     "unfinished": 0,
+     "sched_cost": 1423.8994339059354
+    },
+    {
+     "iter": 7,
+     "gap": 0.5262478577932241,
+     "shifted": 3078,
+     "mean_tt": 641.0220055088475,
+     "unfinished": 0,
+     "sched_cost": 1348.1455812925888
+    },
+    {
+     "iter": 8,
+     "gap": 0.6816639517884379,
+     "shifted": 2864,
+     "mean_tt": 1639.286110525878,
+     "unfinished": 11004,
+     "sched_cost": 4328.518763578337
+    },
+    {
+     "iter": 9,
+     "gap": 0.5572093278005562,
+     "shifted": 2771,
+     "mean_tt": 810.6857060042577,
+     "unfinished": 2428,
+     "sched_cost": 1855.7872426042195
+    },
+    {
+     "iter": 10,
+     "gap": 0.6958853535007125,
+     "shifted": 2668,
+     "mean_tt": 1738.5993403252753,
+     "unfinished": 12609,
+     "sched_cost": 4636.484250425341
+    },
+    {
+     "iter": 11,
+     "gap": 0.5902611208204527,
+     "shifted": 2367,
+     "mean_tt": 1057.0550818947743,
+     "unfinished": 5930,
+     "sched_cost": 2602.021497135875
+    },
+    {
+     "iter": 12,
+     "gap": 0.6615012653504435,
+     "shifted": 2503,
+     "mean_tt": 1668.4833054793148,
+     "unfinished": 11605,
+     "sched_cost": 4417.044144904694
+    },
+    {
+     "iter": 13,
+     "gap": 0.5190961509573734,
+     "shifted": 2093,
+     "mean_tt": 572.6479184255018,
+     "unfinished": 0,
+     "sched_cost": 1149.4214072443049
+    },
+    {
+     "iter": 14,
+     "gap": 0.6644872075593791,
+     "shifted": 2073,
+     "mean_tt": 1249.7873569057156,
+     "unfinished": 7867,
+     "sched_cost": 3167.2863215268653
+    }
+   ]
+  }
+ ]
+}

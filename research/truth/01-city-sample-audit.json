@@ -1,0 +1,79 @@
+{
+  "berlin": {
+    "rows": 369013,
+    "detector_ids": 502,
+    "first": {
+      "detid_15": "100101010000167",
+      "tag": "01.01.2015",
+      "stunde": "0",
+      "qualitaet": "1.0",
+      "q_kfz_det_hr": "116",
+      "v_kfz_det_hr": "98.2",
+      "q_pkw_det_hr": "115",
+      "v_pkw_det_hr": "99.0",
+      "q_lkw_det_hr": "1",
+      "v_lkw_det_hr": "0.0"
+    }
+  },
+  "madrid_zip": [
+    {
+      "name": "12-2022.csv",
+      "bytes": 745284107
+    }
+  ],
+  "madrid": {
+    "rows": 12512133,
+    "point_ids": 4487,
+    "dates": 31,
+    "errors": {
+      "N": 12491063,
+      "": 21070
+    },
+    "first": {
+      "id": "1001",
+      "fecha": "2022-12-01 00:00:00",
+      "tipo_elem": "M30",
+      "intensidad": "3240",
+      "ocupacion": "9",
+      "carga": "0",
+      "vmed": "59",
+      "error": "N",
+      "periodo_integracion": "5"
+    }
+  },
+  "ndw-config": {
+    "sites_national": 67674,
+    "a10_name_matches": 614,
+    "amsterdam_bbox_point_records": 0,
+    "bbox_lat_lon": [
+      52.3,
+      52.45,
+      4.7,
+      5.0
+    ],
+    "a10_example": "<ns0:measurementSite xmlns:ns0=\"http://datex2.eu/schema/3/roadTrafficData\" xmlns:ns1=\"http://datex2.eu/schema/3/common\" xmlns:ns3=\"http://datex2.eu/schema/3/locationReferencing\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" id=\"ABM01_A10_HRL_CP_S102\" version=\"50\"><ns0:measurementSiteRecordVersionTime>2026-10-19T14:44:17Z</ns0:measurementSiteRecordVersionTime><ns0:measurementEquipmentTypeUsed><ns1:values><ns1:value lang=\"nl\">fcd</ns1:value></ns1:values></ns0:measurementEquipmentTypeUsed><ns0:measurementSiteName><ns1:values><ns1:value lang=\"nl\">A10 Noord HRL tussen Coenplein en afrit S102</ns1:value></ns1:values></ns0:measurementSiteName><ns0:measurementSiteNumberOfLanes>1</ns0:measurementSiteNumberOfLanes><ns0:measurementSpecificCharacteristics index=\"1\"><ns0:measurementSpecificCharacteristics><ns0:computationMethod>arithmeticAverageOfSamplesInATimePeriod</ns0:computationMethod><ns0:period>60.0</ns0:period><ns0:specificMeasurementValueType>travelTimeInformation</ns0:specificMeasurementValueType><ns0:specificVehicleCharacteristics><ns1:vehicleType>anyVehicle</ns1:vehicleType></ns0:specificVehicleCharacteristics></ns0:measurementSpecificCharacteristics></ns0:measurementSpecificCharacteristics><ns0:measurementSiteLocation xsi:type=\"loc:ItineraryByIndexedLocations\"><ns3:locationContainedInItinerary index=\"0\"><ns3:location xsi:type=\"loc:LinearLocation\"><ns3:supplementaryPositionalDescription><ns3:carriageway><ns3:carriageway>mainCarriageway</ns3:carriageway></ns3:carriageway><ns3:carriageway><ns3:carriageway>mainCarriageway</ns3:carriageway></ns3:carriageway></ns3:supplementaryPositionalDescription><ns3:gmlLineString><ns3:posList>52.424908 4.894054 52.395519 4.844007</ns3:posList></ns3:gmlLineString></ns3:location></ns3:locationContainedInItinerary></ns0:measurementSiteLocation></ns0:measurementSite>"
+  },
+  "ndw-speed-config": {
+    "sites_national": 20598,
+    "a10_name_matches": 24,
+    "amsterdam_bbox_point_records": 1559,
+    "bbox_lat_lon": [
+      52.3,
+      52.45,
+      4.7,
+      5.0
+    ],
+    "a10_example": "<ns0:measurementSite xmlns:ns0=\"http://datex2.eu/schema/3/roadTrafficData\" xmlns:ns1=\"http://datex2.eu/schema/3/common\" xmlns:ns3=\"http://datex2.eu/schema/3/locationReferencing\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" id=\"PNH02_TI881L\" version=\"44\"><ns0:measurementSiteRecordVersionTime>2026-08-19T04:01:56Z</ns0:measurementSiteRecordVersionTime><ns0:measurementEquipmentReference>PNH_TI881-A</ns0:measurementEquipmentReference><ns0:measurementEquipmentTypeUsed><ns1:values><ns1:value lang=\"nl\">lus</ns1:value></ns1:values></ns0:measurementEquipmentTypeUsed><ns0:measurementSiteName><ns1:values><ns1:value lang=\"nl\">Slochterweg van Slochterweg - op/afrit A10</ns1:value></ns1:values></ns0:measurementSiteName><ns0:measurementSiteNumberOfLanes>2</ns0:measurementSiteNumberOfLanes><ns0:measurementSpecificCharacteristics index=\"1\"><ns0:measurementSpecificCharacteristics><ns0:computationMethod>harmonicAverageOfSamplesInATimePeriod</ns0:computationMethod><ns0:period>60.0</ns0:period><ns0:specificMeasurementValueType>trafficFlow</ns0:specificMeasurementValueType><ns0:specificVehicleCharacteristics><ns1:lengthCharacteristic><ns1:comparisonOperator>greaterThanOrEqualTo</ns1:comparisonOperator><ns1:vehicleLength>1.85</ns1:vehicleLength></ns1:lengthCharacteristic><ns1:lengthCharacteristic><ns1:comparisonOperator>lessThanOrEqualTo</ns1:comparisonOperator><ns1:vehicleLength>2.4</ns1:vehicleLength></ns1:lengthCharacteristic></ns0:specificVehicleCharacteristics></ns0:measurementSpecificCharacteristics></ns0:measurementSpecificCharacteristics><ns0:measurementSpecificCharacteristics index=\"2\"><ns0:measurementSpecificCharacteristics><ns0:computationMethod>harmonicAverageOfSamplesInATimePeriod</ns0:computationMethod><ns0:period>60.0</ns0:period><ns0:specificMeasurementValueType>trafficFlow</ns0:specificMeasurementValueType><ns0:specificVehicleCharacteristics><ns1:lengthCharacteristic><ns1:comparisonOperator>greaterThan</ns1:comparisonOperator><ns1:vehicleLength>2.4</ns1:vehicleLength></ns1:lengthCharacteristic><ns1:lengthCharacteristic><ns1:comparisonOperator>lessThanOrEqualTo</ns1:comparisonOperator><ns1:vehicleLength>5.6</ns1:vehicleLength></ns1:lengthCharacteristic></ns0:specificVehicleCharacteristics></ns0:measurementSpecificCharacteristics></ns0:measurementSpecificCharacteristics><ns0:measurementSpecificCharacteristics index=\"3\"><ns0:measurementSpecificCharacteristics><ns0:computationMethod>harmonicAverageOfSamplesInATimePeriod</ns0:computationMethod><ns0:period>60.0</ns0:period><ns0:specificMeasurementValueType>trafficFlow</ns0:specificMeasurementValueType><ns0:specificVehicleCharacteristics><ns1:lengthCharacteristic><ns1:comparisonOperator>greaterThan</ns1:comparisonOperator><ns1:vehicleLength>5.6</ns1:vehicleLength></ns1:lengthCharacteristic><ns1:lengthCharacteristic><ns1:comparisonOperator>lessThanOrEqualTo</ns1:comparisonOperator><ns1:vehicleLength>11.5</ns1:vehicleLength></ns1:lengthCharacteristic></ns0:specificVehicleCharacteristics></ns0:measurementSpecificCharacteristics></ns0:measurementSpecificCharacteristics><ns0:measurementSpecificCharacteristics index=\"4\"><ns0:measurementSpecificCharacteristics><ns0:computationMethod>harmonicAverageOfSamplesInATimePeriod</ns0:computationMethod><ns0:period>60.0</ns0:period><ns0:specificMeasurementValueType>trafficFlow</ns0:specificMeasurementValueType><ns0:specificVehicleCharacteristics><ns1:lengthCharacteristic><ns1:comparisonOperator>greaterThan</ns1:comparisonOperator><ns1:vehicleLength>11.5</ns1:vehicleLength></ns1:lengthCharacteristic><ns1:lengthCharacteristic><ns1:comparisonOperator>lessThanOrEqualTo</ns1:comparisonOperator><ns1:vehicleLength>12.2</ns1:vehicleLength></ns1:lengthCharacteristic></ns0:specificVehicleCharacteristics></ns0:measurementSpecificCharacteristics></ns0:measurementSpecificCharacteristics><ns0:measurementSpecificCharacteristics index=\"5\"><ns0:measurementSpecificCharacteristics><ns0:computationMethod>harmonicAverageOfSamplesInATimePeriod</ns0:computationMethod><ns0"
+  },
+  "finland_raw": {
+    "first_lines": [
+      "101;24;1;0;0;6;360;16.200;2;1;4;71;0;636;1704067205539;0",
+      "101;24;1;0;0;19;980;3.600;5;2;1;79;0;1998;1704067219816;0",
+      "101;24;1;0;0;21;170;3.800;5;2;1;68;0;2117;989;0"
+    ]
+  },
+  "madrid_live": {
+    "points": 4904
+  },
+  "bytes_stored": 230706403
+}
