@@ -18,6 +18,7 @@ pub enum CfModel {
     Acc,
     Cacc,
     Eidm,
+    Human,
 }
 #[derive(Clone, Debug)]
 pub struct VType {
@@ -97,6 +98,7 @@ impl VType {
             "ACC" => CfModel::Acc,
             "CACC" => CfModel::Cacc,
             "EIDM" => CfModel::Eidm,
+            "Human" => CfModel::Human,
             _ => CfModel::Krauss,
         };
         let decel = num(a, "decel", decel);
@@ -797,4 +799,10 @@ fn procedures(a: &Attrs) -> Result<Trip, String> {
         depart_speed: speed,
         arrival_pos: arrival,
     })
+}
+
+impl Default for VType {
+    fn default() -> Self {
+        Self::parse(&Attrs::default())
+    }
 }

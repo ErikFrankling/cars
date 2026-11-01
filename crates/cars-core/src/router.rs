@@ -46,14 +46,26 @@ impl Graph {
     }
 
     fn path(&self, from: u32, to: u32) -> Option<Vec<u32>> {
-        if !self.cost.get(from as usize)?.is_finite() || !self.cost.get(to as usize)?.is_finite() {
+        if !self.cost.get(from as usize)?.is_finite() {
+            return None;
+        }
+        self.path_any(&[from], to)
+    }
+
+    /// The cheapest way to `to` from whichever of `starts` is best.
+    fn path_any(&self, starts: &[u32], to: u32) -> Option<Vec<u32>> {
+        if !self.cost.get(to as usize)?.is_finite() {
             return None;
         }
         let mut dist = vec![u64::MAX; self.next.len()];
         let mut prev = vec![u32::MAX; self.next.len()];
         let mut queue = BinaryHeap::new();
-        dist[from as usize] = 0;
-        queue.push(Reverse((0u64, from)));
+        for &s in starts {
+            if self.cost.get(s as usize).is_some_and(|c| c.is_finite()) {
+                dist[s as usize] = 0;
+                queue.push(Reverse((0u64, s)));
+            }
+        }
         while let Some(Reverse((d, e))) = queue.pop() {
             if d != dist[e as usize] {
                 continue;
@@ -74,11 +86,31 @@ impl Graph {
             return None;
         }
         let mut result = vec![to];
-        while *result.last()? != from {
+        while prev[*result.last()? as usize] != u32::MAX {
             result.push(prev[*result.last()? as usize]);
         }
         result.reverse();
         Some(result)
+    }
+}
+
+/// The graphs of a run, one per vehicle class mask, kept for routes asked for while it runs.
+pub struct Router {
+    graphs: FxHashMap<u32, Graph>,
+}
+
+impl Router {
+    pub fn new(net: &Net, masks: impl IntoIterator<Item = u32>) -> Self {
+        let mut graphs = FxHashMap::default();
+        for m in masks {
+            graphs.entry(m).or_insert_with(|| Graph::new(net, m));
+        }
+        Self { graphs }
+    }
+
+    /// A way to `to` that begins on one of `starts`.
+    pub fn from_any(&self, mask: u32, starts: &[u32], to: u32) -> Option<Vec<u32>> {
+        self.graphs.get(&mask)?.path_any(starts, to)
     }
 }
 

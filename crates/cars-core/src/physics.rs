@@ -226,8 +226,11 @@ pub fn lateral_offset(phys: u32, lane_width: f32, v_lat: f32) -> f32 {
         return 0.0;
     }
     let u = ((phys >> 16) & 0x3fff) as f32 / 16383.0;
-    let t = u * (lane_width / v_lat + 1.0);
-    let remain = lane_width - lateral_done(t, lane_width, v_lat);
+    let remain = if v_lat <= 0.0 {
+        lane_width * (1.0 - u * u * u * (10.0 + u * (6.0 * u - 15.0)))
+    } else {
+        lane_width - lateral_done(u * (lane_width / v_lat + 1.0), lane_width, v_lat)
+    };
     if dir == 1 { -remain } else { remain }
 }
 

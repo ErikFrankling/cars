@@ -21,6 +21,11 @@ fn main_kernels() {
 }
 
 #[test]
+fn human_replay() {
+    validate("human_replay", &format!("{COMMON}\n{}", include_str!("../src/shaders/human_replay.wgsl")));
+}
+
+#[test]
 fn control_and_sort() {
     validate("control", &format!("{COMMON}\n{CONTROL}"));
     validate("sort", &format!("{COMMON}\n{SORT}"));

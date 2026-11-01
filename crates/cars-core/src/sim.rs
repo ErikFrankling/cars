@@ -8,7 +8,7 @@ use wgpu::util::DeviceExt;
 use crate::gpu::Gpu;
 use crate::world::*;
 
-const COMMON: &str = include_str!("shaders/common.wgsl");
+pub const COMMON: &str = include_str!("shaders/common.wgsl");
 const STEP: &str = include_str!("shaders/step.wgsl");
 const LC: &str = include_str!("shaders/lc.wgsl");
 const CONTROL: &str = include_str!("shaders/control.wgsl");
@@ -28,7 +28,7 @@ const MAIN_BINDINGS: &[bool] = &[
     /*36 mirror*/ false, /*37 energy*/ false, /*38 junction_bid*/ false, /*39 inbound*/ false,
     /*40 hard_limit*/ false, /*41 zones*/ true, /*42 speed_trace*/ true, /*43 entrant_front*/ false,
     /*44 poses*/ false, /*45 grid_head*/ false, /*46 grid_next*/ false, /*47 shape_points*/ true,
-    /*48 contacts*/ false,
+    /*48 contacts*/ false, /*49 reroute_req*/ false, /*50 route_patch*/ false,
 ];
 
 pub struct Sim {
@@ -52,6 +52,11 @@ pub struct Sim {
 }
 
 pub struct Buffers {
+    pub routes: wgpu::Buffer,
+    pub reroute_req: wgpu::Buffer,
+    pub route_patch: wgpu::Buffer,
+    /// Where routes handed out during the run begin in `routes`.
+    pub route_arena_at: u64,
     pub params: wgpu::Buffer,
     pub globals: wgpu::Buffer,
     pub counters: wgpu::Buffer,
@@ -164,7 +169,11 @@ impl Sim {
         let foes = init("foes", bytemuck::cast_slice(&world.foes), storage);
         let conflicts = init("conflicts", bytemuck::cast_slice(&world.conflicts), storage);
         let types = init("types", bytemuck::cast_slice(&world.vtypes), storage);
-        let routes = init("routes", bytemuck::cast_slice(&world.routes), storage);
+        // Routes handed out during the run go after the ones loaded, up to the arena's size.
+        let route_arena_at = world.routes.len() as u64;
+        let routes_bytes: Vec<u8> = bytemuck::cast_slice(&world.routes).iter().copied().chain(std::iter::repeat_n(0u8, world.route_arena as usize * 4)).collect();
+        let routes = init("routes", &routes_bytes, storage | wgpu::BufferUsages::COPY_DST);
+        drop(routes_bytes);
         let trips = init("trips", bytemuck::cast_slice(&world.trips), storage);
         let queues = init("queues", bytemuck::cast_slice(&world.queues), storage);
         let tls = init("tls", bytemuck::cast_slice(&world.tls), storage);
@@ -224,6 +233,8 @@ impl Sim {
         let lane_free = empty("lane_free", p.n_lanes as u64 * 16);
         let physical = p.mu > 0.0;
         let when = |on: bool, bytes: u64| if on { bytes } else { 16 };
+        let reroute_req = empty("reroute_req", when(physical, REROUTE_LOG * 16));
+        let route_patch = init("route_patch", &vec![0u8; when(physical, p.n_trips as u64 * 8) as usize], storage | wgpu::BufferUsages::COPY_DST);
         let mirror = empty("mirror", when(physical, p.n_trips as u64 * MIRROR_BYTES));
         let energy = empty("energy", when(physical, p.n_trips as u64 * std::mem::size_of::<GpuTripEnergy>() as u64));
         let junction_bid = empty("junction_bid", when(physical, p.n_lanes as u64 * 4));
@@ -312,7 +323,7 @@ impl Sim {
                 &items, &slots, &link_count, &partial, &tail, &entrant, &trip_out, &series, &edge_acc,
                 &unused, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
                 &mirror, &energy, &junction_bid, &inbound, &hard_limit, &zones, &speed_trace, &entrant_front,
-                &poses, &grid_head, &grid_next, &shape_points, &contacts,
+                &poses, &grid_head, &grid_next, &shape_points, &contacts, &reroute_req, &route_patch,
             ];
             let entries: Vec<_> = list
                 .iter()
@@ -468,6 +479,10 @@ impl Sim {
             items,
             energy,
             contacts,
+            routes,
+            reroute_req,
+            route_patch,
+            route_arena_at,
             total_bytes: total_bytes.get(),
         };
         Ok(Self {

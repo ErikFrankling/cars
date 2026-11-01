@@ -36,6 +36,10 @@ pub struct GpuParams {
     pub detect_every: u32,
     pub grid_mask: u32,
     pub trace_len: u32,
+    pub hu_k: f32,
+    pub hu_rho: f32,
+    pub hu_nscale: f32,
+    pub hu_flags: u32,
 }
 
 #[repr(C)]
@@ -93,6 +97,10 @@ pub struct GpuVeh {
     pub occ_best: f32,
     /// Bits 0-7 load, 8-15 power, 16-29 lateral phase, 30-31 lateral direction. See `phys_bits`.
     pub phys: u32,
+    pub hu_acc: f32,
+    pub hu_noise: f32,
+    pub lc_wait: f32,
+    pub hu_state: u32,
 }
 
 #[repr(C)]
@@ -249,6 +257,8 @@ pub struct GpuTrip {
     pub rng: u32,
     pub replica: u32,
     pub pad: [u32; 3],
+    pub persona: u32,
+    pub persona2: u32,
 }
 
 #[repr(C)]
@@ -331,7 +341,7 @@ pub struct GpuTlsPhase {
 pub const ITEM_BYTES: u64 = 40;
 pub const APPROACH_BYTES: u64 = 48;
 pub const SEG_BYTES: u64 = 16;
-pub const LCPLAN_BYTES: u64 = 16;
+pub const LCPLAN_BYTES: u64 = 20;
 pub const MAX_ITEMS: u64 = 8;
 pub const SLOTS: u64 = 8;
 pub const CONTACT_LOG: u64 = 4096;
@@ -349,6 +359,28 @@ pub const C_LC_REFUSED_ROOM: usize = 22;
 pub const C_DENIED: usize = 23;
 pub const C_CONTACT: usize = 24;
 pub const C_CONTACT_KINDS: usize = 25;
+/// Human lane change rules, counted after the contact kinds.
+pub const C_HU_YIELD: usize = 32;
+pub const C_HU_FORCED: usize = 33;
+pub const C_HU_SWAP: usize = 34;
+pub const C_HU_REROUTE: usize = 35;
+pub const C_HU_LC_URGENT: usize = 36;
+pub const C_HU_GUARD: usize = 37;
+pub const C_HU_SWAP_FAILED: usize = 38;
+pub const C_HU_STEPS: usize = 39;
+pub const REROUTE_LOG: u64 = 65536;
+/// Everything on except the rules named.
+pub fn human_flags(off: &[String]) -> u32 {
+    let mut flags = HUMAN_RULES.iter().fold(0, |a, r| a | r.1);
+    for name in off {
+        let rule = HUMAN_RULES.iter().find(|r| r.0 == name).unwrap_or_else(|| panic!("no human rule {name}"));
+        flags &= !rule.1;
+    }
+    flags
+}
+
+/// Rules of `research/truth/14-human-courtesy.md`, as bits of `GpuParams::hu_flags`.
+pub const HUMAN_RULES: [(&str, u32); 7] = [("courtesy", 1), ("shrink", 2), ("swap", 4), ("force", 8), ("miss", 16), ("gate", 32), ("yellow", 64)];
 /// Contact kinds, as counted from `C_CONTACT_KINDS`.
 pub const CONTACT_NAMES: [&str; 7] = ["same lane", "neighbour lane", "junction crossing", "junction merge", "junction diverge", "lane start", "other"];
 /// Sort key resolution: two vehicles on a lane are always further apart than this.
@@ -380,6 +412,12 @@ pub struct SimConfig {
     pub detect_every: u32,
     /// Desired speed per step for scripted vehicles, for driving-cycle checks.
     pub speed_trace: Vec<f32>,
+    /// Every vehicle type drives as `MODEL_HUMAN`, in physical mode.
+    pub humans: bool,
+    /// Which rules of `HUMAN_RULES` are on.
+    pub human_flags: u32,
+    /// Room in the routes buffer for routes handed out during the run, in edges.
+    pub route_arena: u32,
 }
 
 impl Default for SimConfig {
@@ -401,6 +439,9 @@ impl Default for SimConfig {
             mu: 0.0,
             detect_every: 0,
             speed_trace: Vec::new(),
+            humans: false,
+            human_flags: 127,
+            route_arena: 0,
         }
     }
 }
@@ -424,6 +465,8 @@ pub struct World {
     pub conflicts: Vec<GpuConflict>,
     pub vtypes: Vec<GpuVType>,
     pub routes: Vec<u32>,
+    /// Room reserved after `routes` on the GPU, in edges.
+    pub route_arena: u32,
     pub trips: Vec<GpuTrip>,
     /// Which demand trip each GPU trip came from.
     pub trip_source: Vec<u32>,
@@ -547,6 +590,23 @@ fn physical_type(g: &mut GpuVType, t: &VType) {
     g.apparent = g.b_hi;
 }
 
+fn lognormal(median: f32, sd: f32, lo: f32, hi: f32, state: &mut u64) -> f32 {
+    (median * (normal(state) as f32 * sd).exp()).clamp(lo, hi)
+}
+
+/// One driver, as `research/truth/05-real-human-driving.md` section 8 draws them, packed for `GpuTrip`.
+fn draw_persona(state: &mut u64) -> (u32, u32) {
+    let q = |x: f32, lo: f32, hi: f32| (((x - lo) / (hi - lo)).clamp(0.0, 1.0) * 255.0).round() as u32;
+    let t = lognormal(1.30, 0.25, 0.6, 3.0, state);
+    let s0 = lognormal(2.8, 0.40, 0.5, 6.0, state);
+    let amax = lognormal(1.80, 0.19, 1.0, 3.0, state);
+    let d = lognormal(10.3, 0.33, 4.0, 22.0, state);
+    let critical = lognormal(1.0, 0.26, 0.4, 2.5, state);
+    let u = (uniform(state) as f32).clamp(1e-4, 1.0 - 1e-4);
+    let yellow = 5.1 + 0.54 * (u / (1.0 - u)).ln();
+    (q(t, 0.6, 3.0) | (q(s0, 0.5, 6.0) << 8) | (q(amax, 1.0, 3.0) << 16) | (q(d, 4.0, 22.0) << 24), q(critical, 0.4, 2.5) | (q(yellow, 2.0, 9.0) << 8))
+}
+
 /// Load and power of one vehicle, packed for `GpuVeh::phys`.
 fn draw_phys(vclass: u32, state: &mut u64) -> u32 {
     let r = phys_row(vclass);
@@ -566,6 +626,7 @@ fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
         CfModel::Idm => 1,
         CfModel::Acc => 2,
         CfModel::Cacc => 3,
+        CfModel::Human => 4,
     };
     let delta = t.params.get("delta").and_then(|v| v.parse().ok()).unwrap_or(4.0);
     let stepping: f32 = t.params.get("stepping").and_then(|v| v.parse().ok()).unwrap_or(0.25);
@@ -598,9 +659,19 @@ fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
         collision_factor: t.params.get("collisionMinGapFactor").and_then(|v| v.parse().ok()).unwrap_or(match t.model {
             CfModel::Krauss | CfModel::Eidm => 1.0,
             CfModel::Idm | CfModel::Acc | CfModel::Cacc => 0.1,
+            CfModel::Human => 0.0,
         }),
         ..Default::default()
     }
+}
+
+/// A nominal car, as the replay kernel needs it.
+pub fn human_replay_type(t: &VType) -> GpuVType {
+    let mut g = gpu_vtype(t, 0.1);
+    physical_type(&mut g, t);
+    g.model = 4;
+    g.v_lat = -1.0;
+    g
 }
 
 impl World {
@@ -609,6 +680,7 @@ impl World {
         let mut w = World {
             bounds: net.bounds,
             speed_trace: cfg.speed_trace.clone(),
+            route_arena: cfg.route_arena,
             ..Default::default()
         };
         let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net), crate::physics::zones(net, &topo)));
@@ -616,6 +688,12 @@ impl World {
         if cfg.mu > 0.0 {
             for (g, t) in w.vtypes.iter_mut().zip(&demand.vtypes) {
                 physical_type(g, t);
+                if cfg.humans || matches!(t.model, CfModel::Human) {
+                    g.model = 4;
+                    // Below zero: lateral motion is a human's quintic, not a fixed speed.
+                    g.v_lat = -1.0;
+                    g.collision_factor = 0.0;
+                }
             }
         }
         w.n_edges_per_replica = net.edges.len() as u32;
@@ -677,6 +755,10 @@ impl World {
             detect_every: if cfg.mu > 0.0 { cfg.detect_every } else { 0 },
             grid_mask: (capacity.max(16) as u64 * 2).next_power_of_two() as u32 - 1,
             trace_len: cfg.speed_trace.len() as u32,
+            hu_k: 1.0 - (-cfg.dt / 1.0).exp(),
+            hu_rho: (-cfg.dt / 3.0).exp(),
+            hu_nscale: 0.20 * (1.0 - (-2.0 * cfg.dt / 3.0).exp()).sqrt(),
+            hu_flags: cfg.human_flags,
         };
         w
     }
@@ -1051,6 +1133,7 @@ impl World {
                 }
             };
             let sf = speed_factor(vt, &mut rng_state);
+            let (persona, persona2) = if cfg.mu > 0.0 && (cfg.humans || matches!(vt.model, CfModel::Human)) { draw_persona(&mut rng_state) } else { (0, 0) };
             let mask = match t.depart_lane {
                 DepartLane::Best | DepartLane::BestProb => {
                     *masks.entry((t.route, vtype_id)).or_insert_with(|| crate::bestlanes::depart_mask(net, topo, route, vt))
@@ -1077,6 +1160,8 @@ impl World {
                 pad: [0, mask, if cfg.mu > 0.0 {
                     if vt.params.contains_key("phys.nominal") { PHYS_NOMINAL } else { draw_phys(vt.vclass, &mut rng_state) }
                 } else { 0 }],
+                persona,
+                persona2,
             });
             by_edge[route[0] as usize].push(id);
         }

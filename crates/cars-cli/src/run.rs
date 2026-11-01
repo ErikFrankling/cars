@@ -52,6 +52,12 @@ pub struct Args {
     /// One desired speed per step in m/s, one per line, for every vehicle: drive a cycle.
     #[arg(long)]
     speed_trace: Option<PathBuf>,
+    /// Every vehicle type drives as a human: the model of research/truth/05, the rules of research/truth/14.
+    #[arg(long)]
+    humans: bool,
+    /// Human rules to switch off, for measuring each one: courtesy, shrink, swap, force, miss, gate, yellow.
+    #[arg(long, value_delimiter = ',')]
+    human_off: Vec<String>,
     /// Seconds before a stuck lane head teleports. 0 turns it off. Default 300 under --sumo-compat, else off.
     #[arg(long)]
     time_to_teleport: Option<f32>,
@@ -156,6 +162,9 @@ pub fn run(args: Args) {
         ignore_blocker: args.ignore_junction_blocker,
         capacity: args.capacity,
         use_actuation: !args.static_tls,
+        humans: args.humans && !args.sumo_compat,
+        human_flags: cars_core::world::human_flags(&args.human_off),
+        route_arena: if args.humans && !args.sumo_compat { 4_000_000 } else { 0 },
         ..Default::default()
     };
     let t = Instant::now();
@@ -196,6 +205,7 @@ pub fn run(args: Args) {
         report::write_phys_json(p, &net, &world, &demand).expect("phys json");
     }
     let heavy: Vec<bool> = demand.vtypes.iter().map(|t| matches!(cars_core::net::VCLASSES.get(t.vclass.trailing_zeros() as usize).copied(), Some("bus" | "coach" | "truck" | "trailer"))).collect();
+    let mut rerouter = cfg.humans.then(|| cars_core::reroute::Rerouter::new(&net, demand.vtypes.iter().map(|t| t.vclass), &sim));
     // The GPU has its copies now. A day of Berlin would otherwise keep gigabytes in RAM.
     demand.routes = Vec::new();
     world.routes = Vec::new();
@@ -363,7 +373,8 @@ pub fn run(args: Args) {
             } else {
                 u64::MAX
             };
-            let mut chunk = (next - done).min(steps - done).min((60.0 / args.dt).ceil() as u64).min(until_debug);
+            let longest = if rerouter.is_some() { 5.0 } else { 60.0 };
+            let mut chunk = (next - done).min(steps - done).min((longest / args.dt).ceil() as u64).min(until_debug);
             let t_next = args.begin + (done + chunk) as f32 * args.dt;
             if let Some(&at) = args.diagnose_at.iter().find(|&&at| at > args.begin + done as f32 * args.dt && at <= t_next) {
                 chunk = ((at - args.begin) / args.dt) as u64 - done;
@@ -418,6 +429,9 @@ pub fn run(args: Args) {
         if mu > 0.0 {
             physics.collect(&sim, &gpu, &net, &world, done);
         }
+        if let Some(r) = rerouter.as_mut() {
+            r.service(&gpu, &sim, &world);
+        }
         if done % interval == 0 || done >= steps {
             let begin = args.begin + ((done - 1) / interval * interval) as f32 * args.dt;
             if let Some(f) = edges_out.as_mut() {
@@ -463,8 +477,18 @@ pub fn run(args: Args) {
     }
     eprintln!("time: encode {:.2}s, gpu submit+wait {:.2}s, total {wall:.2}s", sim.encode_ms / 1000.0, sim.gpu_ms / 1000.0);
     if mu > 0.0 {
-        let finished = physics.finish(&sim, &gpu, &net, &world, &heavy, &c, done, vehicle_updates as f64 / wall / 1e6, wall);
+        let mut finished = physics.finish(&sim, &gpu, &net, &world, &heavy, &c, done, vehicle_updates as f64 / wall / 1e6, wall);
         eprintln!("{}", finished.text);
+        finished.json["stuck_like_teleports"] = serde_json::json!({"jam": c[13], "yield": c[14], "waiting_for_a_gap": c[15]});
+        if let Some(r) = &rerouter {
+            let h = serde_json::json!({
+                "yield_steps": c[cars_core::world::C_HU_YIELD], "forced_steps": c[cars_core::world::C_HU_FORCED], "swaps": c[cars_core::world::C_HU_SWAP], "swaps_failed": c[cars_core::world::C_HU_SWAP_FAILED],
+                "reroute_requests": c[cars_core::world::C_HU_REROUTE], "rerouted": r.patched, "reroute_failed": r.failed, "arena_edges": r.arena_used(),
+                "guard_steps": c[cars_core::world::C_HU_GUARD], "human_steps": c[cars_core::world::C_HU_STEPS], "rules_off": args.human_off,
+            });
+            eprintln!("humans: {h}");
+            finished.json["humans"] = h;
+        }
         if let Some(p) = &args.report_json {
             std::fs::write(p, serde_json::to_string_pretty(&finished.json).unwrap()).expect("report json");
         }
