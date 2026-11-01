@@ -513,7 +513,8 @@ impl Writer {
         if v.route_i + 1 >= v.route_end {
             return NO_LINK;
         }
-        let want = self.routes[v.route_i as usize + 1];
+        // A route handed out during the run is not here. Only the drawing of the next link is lost.
+        let Some(&want) = self.routes.get(v.route_i as usize + 1) else { return NO_LINK };
         let (start, count) = self.lane_links[v.lane as usize];
         (0..count.min(NO_LINK)).find(|&k| self.to_edge[(start + k) as usize] == want).unwrap_or(NO_LINK)
     }
