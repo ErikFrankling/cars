@@ -1346,7 +1346,7 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
     mu = P.mu;
     cert_on = (P.safety & 1u) != 0u;
     if ((P.safety & 2u) == 0u) { return; }
-    let claim = (v * dt + v * v / (2.0 * ty.decel) + v * ty.ph_tau + 2.0) * P.claim_scale;
+    let claim = (v * dt * 0.5 + v * v / (2.0 * ty.decel) + v * ty.ph_tau + 2.0) * P.claim_scale;
     if (items[base].dist > claim) { return; }
     ego_acc = e.acc;
     ph_setup(e);
@@ -1398,8 +1398,10 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
                     }
                     // Vissim wants room for the length plus 0.5 m, from the share of drivers who bother.
                     let wanted = in_front + ty.length + 0.5 + f32(atomicLoad(&inbound[to])) / 8.0;
-                    // Nobody fills a roundabout: its ring would lock whole.
-                    let keeps_clear = (P.safety & 4u) != 0u && (f32(pcg(e.trip ^ 0x51ed270bu) >> 8u) / 16777216.0 < ty.exit_comply || (lanes[to].flags & LANE_ROUNDABOUT) != 0u);
+                    // Nobody enters a full roundabout, or its ring locks whole. Whoever is on the ring keeps going, or the
+                    // ring waits for itself.
+                    let on_ring = (lanes[e.lane].flags & LANE_ROUNDABOUT) != 0u;
+                    let keeps_clear = (P.safety & 4u) != 0u && !on_ring && (f32(pcg(e.trip ^ 0x51ed270bu) >> 8u) / 16777216.0 < ty.exit_comply || (lanes[to].flags & LANE_ROUNDABOUT) != 0u);
                     if (keeps_clear && wanted > ph_exit_room(to, next_link)) { ok = false; }
                 }
             }
@@ -1410,8 +1412,8 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
             break;
         }
         // Whoever started goes on: without this a car that won a gap loses it again before it reaches the line.
-        var rank = 2u;
-        if (committed || ((e.flags & F_GRANTED) != 0u && v > HALT_SPEED)) { rank = 0u; } else if (have_priority(link_state(it.link))) { rank = 1u; }
+        var rank = 3u;
+        if (committed) { rank = 0u; } else if ((e.flags & F_GRANTED) != 0u && v > HALT_SPEED) { rank = 1u; } else if (have_priority(link_state(it.link))) { rank = 2u; }
         let hash = (pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u;
         let bid = (rank << 30u) | (min(u32(max(it.arrival, 0.0) * 8.0), 16383u) << 16u) | hash;
         items[base + j].grant = bid;

@@ -714,7 +714,7 @@ impl World {
             safety: (cfg.tune("certificate", 1.0) as u32) | ((cfg.tune("arbiter", 1.0) as u32) << 1) | ((cfg.tune("exit_clear", 1.0) as u32) << 2) | ((cfg.tune("lc_path", 1.0) as u32) << 3),
             width_margin: cfg.tune("width_margin", 0.1),
             claim_scale: cfg.tune("claim_scale", 1.0),
-            queue_speed: cfg.tune("queue_speed", 5.0),
+            queue_speed: cfg.tune("queue_speed", 2.0),
             lost_after: cfg.tune("lost_after", 0.0),
             pad: [0.0; 3],
         };

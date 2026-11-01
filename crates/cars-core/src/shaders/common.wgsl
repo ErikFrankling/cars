@@ -502,11 +502,13 @@ fn ph_limit(driver: f32, cert: f32) -> f32 {
 // MSCFModel::maximumSafeStopSpeedBallistic.
 fn ph_stop_driver(gap_total: f32, v: f32, b: f32, tau: f32) -> f32 {
     if (gap_total <= 0.0) { return 0.0; }
-    if (gap_total <= v * tau * 0.5) { return max(0.0, v - v * v / (2.0 * gap_total) * dt); }
+    // At dt above the reaction time the law alone runs past the gap in a step and stops short of nothing.
+    // What is driven this step, and what stopping takes in the next, have to fit in the gap.
+    let fits = max(gap_total - v * dt * 0.5, 0.0) / dt;
+    if (gap_total <= v * tau * 0.5) { return min(fits, max(0.0, v - v * v / (2.0 * gap_total) * dt)); }
     let bt = b * tau * 0.5;
     let v1 = -bt + sqrt(bt * bt + b * (2.0 * gap_total - tau * v));
-    // Never more than the whole way in one step, which a reaction time under dt would ask for.
-    return max(0.0, v + (v1 - v) * min(dt / tau, 1.0));
+    return min(fits, max(0.0, v + (v1 - v) * min(dt / tau, 1.0)));
 }
 
 // The hardest the brakes allow by the end of this step. Below zero, the stop is inside the step.

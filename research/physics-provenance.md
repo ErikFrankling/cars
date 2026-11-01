@@ -24,6 +24,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Lateral limit 0.5 μ g, combined limit | ADAPTED | 11 I9, I10 | |
 | Driver curve speed, Xu fit, capped at 4 m/s² | ADAPTED | Xu et al.; cap from Bosetti's measured upper limit at low speed, in place of 11's 3 m/s², which cost turning capacity | `curve_cap` |
 | Tightest stretch 1.2 × lowest limit | INVENTED | How far around the tightest point the limit holds | sensitivity |
+| Never drive further this step than stopping next step leaves room for | INVENTED | Without it, a reaction time under dt overruns the gap. Binds only at low speed at dt 1 | |
 | Dawdling held for a whole second, per trip | INVENTED | Keeps σ's effect independent of dt, where SUMO's scales with dt (11 §6) | vType `sigma` |
 
 ## Junctions
@@ -42,7 +43,9 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Occupied until the rear has passed the zone | ADAPTED | Vissim conflict area rear gap [vca], with gap 0 | |
 | Held vehicles release their right of way | INVENTED | Otherwise a car waits for one that waits for it | |
 | Exit-clear rule | ESTABLISHED | Vissim avoid blocking [vca], Aimsun yellow box [an], SUMO [si] | `exit_clear` |
-| Blocker under 5 m/s and under 75% of desired speed | ESTABLISHED | Vissim [vca] | `queue_speed` |
+| Blocker under 75% of desired speed | ESTABLISHED | Vissim [vca] | |
+| Blocker under 2 m/s | ADAPTED | Vissim says 5 m/s [vca]. Cars leave a tight turn under 5 m/s, and the rule then cost 20% of right-turn flow at dt 1 and locked a roundabout | `queue_speed` |
+| Vehicles on a roundabout ring exempt from exit-clear | ADAPTED | SUMO's rewind check skips roundabouts; otherwise the ring waits for itself | |
 | Room needed: length + 0.5 m | ESTABLISHED | Vissim [vca] | |
 | Adding those ahead and those committed to the exit | ADAPTED | 15 row 8 | |
 | Compliance share per vehicle | ESTABLISHED form | Vissim's percentage [vca]. TfL lists real blocking as behaviour to observe [tfl] | |
