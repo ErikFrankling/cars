@@ -12,6 +12,15 @@ From Erik, binding on whoever builds it.
 - From first principles, using braking capability. Spec in `08-v2x-and-safety-first-principles.md`.
 - Zero collisions and zero teleports are hard pass or fail tests, checked in 2D including junctions. Gridlock is reported as a failure with its location.
 
+## Plan ahead, no unnecessary braking
+Erik: "They should perfectly plan, not suddenly brake in front of the intersection. If you know far ahead of time everyone else's intentions, because they all broadcast when they expect to reach intersections, down to the millisecond, then you can keep the perfect average speed to arrive at the perfect time, with no unnecessary braking."
+
+- Every communicating tier broadcasts its expected arrival time at the junctions ahead, as far out as the radio reaches, in 1 ms resolution. Real accuracy is modelled and reported: 0.3 m of position error at 50 km/h is already 21 ms.
+- Cars turn that knowledge into a smooth speed plan from far upstream, using a published energy-optimal formulation. A slot moves only for a reason. Followers plan from their leader's broadcast plan, not only from the gap.
+- Braking is a measured failure. Report for each tier: speed thrown away per approach against the gentlest profile that reaches the line at the same time, kinetic energy braked away, peak deceleration, jerk, share of cars over 1, 2 and 3 m/s², where the braking happens, and plan changes per car.
+- Comfort braking is the plan limit. Hard braking is only for safety events, and each one is counted and explained.
+- The safety rule stays: without a firm grant a car can still stop, and it never relies on a message arriving. Planning far ahead makes that fallback rare, it does not remove it.
+
 ## Visualise
 - Show the communication in clips: who is broadcasting, range, links, lost messages, roadside units, planned trajectories, granted crossing slots.
 - Rendered from recorded data with `cars replay`, never at a cost to simulation speed.
@@ -72,3 +81,8 @@ Machine learning, real trained networks:
 - Each with and without the safety rule on top (raw), and variants trained for a selfish reward and a fleet reward.
 
 Every tier runs at every share of automated cars, including mixed tiers and no humans. Tier numbering may change with evidence, but each capability stays separately switchable.
+
+## Scope, from Erik
+"Stop focusing on old stuff like my thesis and SUMO, I don't care about those any more. We are exploring much deeper and wider and better."
+
+No more work comparing against SUMO or auditing the thesis. Reality is the reference: real measurements, physics and established science. A SUMO compatibility flag may remain so old tests keep running, but no effort goes into it.
