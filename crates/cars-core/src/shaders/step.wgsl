@@ -116,6 +116,7 @@ fn hu_setup(e: Veh) {
     if (ty.model != MODEL_HUMAN || mu <= 0.0) { return; }
     hu_load(trips[e.trip].persona, e.hu_acc, e.hu_noise, P.hu_k, P.hu_d.z, P.hu_d.w);
     hu_v0 = lane_vmax(e.lane, e.sf);
+    if (is_internal(e.lane)) { hu_v0 = max(hu_v0, min(P.hu_e.w, lanes[e.lane].speed * 2.0)); }
 }
 
 // A driver's critical gap at this link. Roundabouts from the Swiss measurement in report 05, the rest from
@@ -795,6 +796,8 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
         if (pl_n >= MAX_ITEMS) { break; }
         lane = next_lane;
         lane_max = lane_vmax(lane, ego.sf);
+        // The same on netconvert's speed for the corner as on its shape.
+        if (hu_on && is_internal(lane)) { lane_max = max(lane_max, min(P.hu_e.w, lanes[lane].speed * 2.0)); }
         let va = max(free_speed(speed, seen, lane_max, pl_lane_vmax), v_min_comfort - EPS);
         pl_v = min(va, pl_v);
         let len = lanes[lane].length;
