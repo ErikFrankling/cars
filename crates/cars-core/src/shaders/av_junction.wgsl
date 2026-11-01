@@ -896,13 +896,15 @@ fn plan_cand(mi: u32, d: f32, v: f32, min_t: f32, kmin: u32, scratch: bool) -> b
         if (line_ref != NONE) { t = max(t, line_t + headway(mi, k, line_ref, 0u)); }
         if (exit_ref != NONE) { t = max(t, exit_t + headway(mi, k, exit_ref, 1u)); }
         // The table covers a tail that follows its plan. One that has stopped following it is a real obstacle.
-        if (plan_route()) {
+        // A lane that cannot hold a car is no store to count: the older exit check deals with it.
+        if (plan_route() && cj_exits[m.to_lane].length >= 2.0 * cfg.unit) {
             let added = select(0u, cj_exits[m.to_lane].s_added, scratch);
             var need = cfg.unit + cfg.t_r * mk.vout + mk.vout * mk.vout / (2.0 * cfg.plan_bc);
             // From outside the coordinated area into it: keep room inside, so the area stays below the
             // density where it stops flowing. Cars then wait outside, not in the way.
             if (m.pad_l > 0.5 && cj_exits[m.to_lane].next_app != NONE) { need = max(need, GATE_FILL * cj_exits[m.to_lane].length); }
-            let room = plan_room_time(m.to_lane, added, min(need, cj_exits[m.to_lane].length), !scratch);
+            // A short lane cannot give a fast car its whole stopping room; it takes a slower one or a part of it.
+            let room = plan_room_time(m.to_lane, added, min(need, max(cfg.unit, 0.6 * cj_exits[m.to_lane].length)), !scratch);
             // Through the box and clear of it by then. If no time can be named yet, the slot is far out.
             if (room >= INF * 0.5) { t = max(t, ROOM_UNKNOWN); }
             else if (room > 0.0) { t = max(t, room - mk.t_clear); }

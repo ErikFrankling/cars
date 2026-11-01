@@ -112,7 +112,7 @@ def run(scales, seeds, policies, places):
                     if json.dumps(c, sort_keys=True) in done:
                         continue
                     rou, n = routes_file(place, scale, seed, 'av' if typ == 'av' else 'human')
-                    p = subprocess.run([str(CARS), 'av', '--net', str(net), '--routes', str(rou), '--end', str(SPAN + 300), '--cj-warm', '300', '--seed', str(seed)] + args, capture_output=True, text=True)
+                    p = subprocess.run([str(CARS), 'av', '--net', str(net), '--routes', str(rou), '--end', str(SPAN + 300), '--cj-warm', '300', '--seed', str(seed), '--time-to-teleport', '120', '--ignore-junction-blocker', '20'] + args, capture_output=True, text=True)
                     r = json.loads(p.stdout.strip().splitlines()[-1]) if p.returncode == 0 else dict(error=p.stderr[-500:])
                     r.pop('profile', None)
                     r.pop('ids', None)

@@ -248,6 +248,12 @@ pub struct Args {
     /// Print vehicles that overlap on a lane, at every chunk.
     #[arg(long)]
     debug_lanes: bool,
+    /// Remove a car stuck this long, s, as the city runs do; 0 never.
+    #[arg(long, default_value_t = 0.0)]
+    time_to_teleport: f32,
+    /// Ignore a junction blocker after this long, s, as the city runs do; 0 never.
+    #[arg(long, default_value_t = 0.0)]
+    ignore_junction_blocker: f32,
     /// Print these trips every step between two times: t0,t1,trip,trip... With only t0,t1, every car.
     #[arg(long, value_delimiter = ',')]
     trace: Vec<f32>,
@@ -269,7 +275,8 @@ pub fn run(a: Args) -> Result<(), Box<dyn std::error::Error>> {
         end_seconds: a.end,
         seed: a.seed,
         capacity: a.capacity,
-        time_to_teleport: 0.0,
+        time_to_teleport: a.time_to_teleport,
+        ignore_blocker: a.ignore_junction_blocker,
         per_lane_queues: true,
         meter_n: a.coord.cj_meter,
         coord: cfg_coord,

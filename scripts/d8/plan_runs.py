@@ -161,6 +161,24 @@ def route_faults():
     return out
 
 
+def gate_route():
+    # The margin on the final design: every cell, 8 seeds, with and without position error, and loads where a rare contact shows.
+    out = []
+    for s in range(8):
+        for n, m in CELLS:
+            for mg in (0.3, 0.2):
+                for pos in (0.0, 0.3):
+                    out.append(case(n, m, SAT[n], s, 'route', trace=False, margin=mg, pos_err=pos, fault=f'm{mg}p{pos}'))
+        for d in (3000, 5200):
+            for mg in (0.3, 0.2):
+                for pos in (0.0, 0.3, 1.0):
+                    out.append(case('j2', 'M', d, s, 'route', end=600.0, warm=150.0, trace=False, margin=mg, pos_err=pos, fault=f'm{mg}p{pos}'))
+        for net, d in (('grid2', 24000), ('grid2', 16000), ('grid1', 14000)):
+            for mg in (0.3, 0.2):
+                out.append(case(net, 'M', d, s, 'route', end=600.0, warm=150.0, trace=False, junctions=GRID_JS, margin=mg, fault=f'm{mg}'))
+    return out
+
+
 def capacity_chan():
     return [case(n, m, SAT[n], s, p, trace=False, chan=1, fault='channel08') for n, m in (('j2', 'M'), ('j2', 'H'), ('j2', 'T'), ('j1', 'M'), ('j3', 'M')) for s in (0, 1) for p in MODES]
 
@@ -207,7 +225,7 @@ def smoke():
     return [case('j2', 'M', 3000, 0, 'full', end=200.0, warm=60.0)]
 
 
-PARTS = dict(route_cap=route_cap, route_grid=route_grid, route_faults=route_faults, gate=gate, lateral=lateral, capacity_factors=capacity_factors, capacity_chan=capacity_chan, smoke=smoke, grid=grid, grid_meter=grid_meter, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
+PARTS = dict(gate_route=gate_route, route_cap=route_cap, route_grid=route_grid, route_faults=route_faults, gate=gate, lateral=lateral, capacity_factors=capacity_factors, capacity_chan=capacity_chan, smoke=smoke, grid=grid, grid_meter=grid_meter, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
 
 
 def key(c):
