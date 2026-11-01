@@ -94,138 +94,154 @@ fn turn_bits(dir: u8) -> u32 {
         _ => 0,
     }
 }
+/// What drawing needs to know about the net, as the GPU and a replay on the CPU both see it.
+pub struct Tables {
+    /// xy, distance along the lane, 0.
+    pub points: Vec<[f32; 4]>,
+    /// First point, count, length as bits, turn bits for a lane inside a junction.
+    pub ranges: Vec<[u32; 4]>,
+    roads: Vec<[f32; 6]>,
+    /// x, y, dx, dy as bits, signal, link index, slot width as bits, turn bits.
+    pub signals: Vec<[u32; 8]>,
+    /// To edge and turn bits of each link.
+    pub links: Vec<[u32; 4]>,
+}
+pub fn tables(w: &World, net: &Net, far_roads: bool) -> Tables {
+    let mut points = Vec::<[f32; 4]>::new();
+    let mut ranges = Vec::<[u32; 4]>::new();
+    let mut roads = Vec::<[f32; 6]>::new();
+    let turns: std::collections::HashMap<(u32, u32), u32> = net
+        .conns
+        .iter()
+        .filter_map(|c| Some(((net.lane_of(c.from_edge, c.from_lane)?, c.to_edge), turn_bits(c.dir))))
+        .collect();
+    for (i, &(start, count)) in w.shape_range.iter().enumerate() {
+        let shape = &w.shapes[start as usize..(start + count) as usize];
+        let base = points.len() as u32;
+        let mut distance = 0.0;
+        for (j, p) in shape.iter().enumerate() {
+            if j > 0 {
+                distance += ((p[0] - shape[j - 1][0]).powi(2)
+                    + (p[1] - shape[j - 1][1]).powi(2))
+                .sqrt();
+            }
+            points.push([p[0], p[1], distance, 0.0]);
+        }
+        ranges.push([base, count, distance.to_bits(), 0]);
+        if !far_roads {
+            continue;
+        }
+        let lane = &w.lanes[i];
+        let tint = if lane.flags & 1 != 0 {
+            0.35
+        } else if lane.speed > 25.0 {
+            1.5
+        } else {
+            1.0
+        };
+        for pair in shape.windows(2) {
+            let a = pair[0];
+            let b = pair[1];
+            let d = ((b[0] - a[0]).powi(2) + (b[1] - a[1]).powi(2)).sqrt();
+            if d < 0.001 {
+                continue;
+            }
+            let n = [-(b[1] - a[1]) / d, (b[0] - a[0]) / d];
+            for (p, sign) in [
+                (a, -1.0),
+                (b, -1.0),
+                (a, 1.0),
+                (a, 1.0),
+                (b, -1.0),
+                (b, 1.0),
+            ] {
+                roads.push([
+                    p[0],
+                    p[1],
+                    n[0] * sign,
+                    n[1] * sign,
+                    net.lanes[i].width,
+                    tint,
+                ]);
+            }
+        }
+    }
+    // A driver inside a junction keeps indicating the turn it is making.
+    for c in &net.conns {
+        let bits = turn_bits(c.dir);
+        if let Some(via) = c.via
+            && let Some(r) = ranges.get_mut(via as usize)
+        {
+            r[3] = bits;
+        }
+        if let Some(from) = net.lane_of(c.from_edge, c.from_lane)
+            && net.is_internal_lane(from)
+            && let Some(r) = ranges.get_mut(from as usize)
+        {
+            r[3] = bits;
+        }
+    }
+    let mut by_lane = std::collections::BTreeMap::<u32, Vec<(u32, u32, u32)>>::new();
+    for l in &w.links {
+        let Some(lane) = w.lanes.get(l.from_lane as usize) else {
+            continue;
+        };
+        if l.tl == u32::MAX || lane.flags & 1 != 0 {
+            continue;
+        }
+        let bits = *turns.get(&(l.from_lane, l.to_edge)).unwrap_or(&0);
+        // Right turns sit on the right of the lane, so sort right, straight, left.
+        let order = match bits {
+            4 => 0,
+            0 => 1,
+            _ => 2,
+        };
+        let heads = by_lane.entry(l.from_lane).or_default();
+        if !heads.iter().any(|h| h.0 == order && h.2 == l.tl_index) {
+            heads.push((order, l.tl, l.tl_index));
+        }
+    }
+    let mut signal_data = Vec::<[u32; 8]>::new();
+    for (lane, mut heads) in by_lane {
+        heads.sort();
+        let (start, count) = w.shape_range[lane as usize];
+        if count < 2 {
+            continue;
+        }
+        let b = w.shapes[(start + count - 1) as usize];
+        let a = w.shapes[(start + count - 2) as usize];
+        let d = ((b[0] - a[0]).powi(2) + (b[1] - a[1]).powi(2)).sqrt().max(0.001);
+        let t = [(b[0] - a[0]) / d, (b[1] - a[1]) / d];
+        let lane_width = net.lanes[lane as usize].width;
+        let slot = lane_width / heads.len() as f32;
+        for (k, &(order, tl, index)) in heads.iter().enumerate() {
+            let across = (k as f32 + 0.5) * slot - lane_width * 0.5;
+            let bits = [4u32, 0, 2][order as usize];
+            signal_data.push([
+                (b[0] + t[0] * 0.85 - t[1] * across).to_bits(),
+                (b[1] + t[1] * 0.85 + t[0] * across).to_bits(),
+                t[0].to_bits(),
+                t[1].to_bits(),
+                tl,
+                index,
+                slot.to_bits(),
+                bits,
+            ]);
+        }
+    }
+    let link_data: Vec<[u32; 4]> = w
+        .links
+        .iter()
+        .map(|l| [l.to_edge, *turns.get(&(l.from_lane, l.to_edge)).unwrap_or(&0), 0, 0])
+        .collect();
+    Tables { points, ranges, roads, signals: signal_data, links: link_data }
+}
 impl Renderer {
     /// `widths` is the body width of each vehicle type. `far_roads` builds the far-away road
     /// mesh; a job that only ever looks close can leave it out.
     pub fn new(g: &Gpu, w: &World, net: &Net, widths: &[f32], width: u32, height: u32, far_roads: bool) -> Self {
         let storage = wgpu::BufferUsages::STORAGE;
-        let mut points = Vec::<[f32; 4]>::new();
-        let mut ranges = Vec::<[u32; 4]>::new();
-        let mut roads = Vec::<[f32; 6]>::new();
-        let turns: std::collections::HashMap<(u32, u32), u32> = net
-            .conns
-            .iter()
-            .filter_map(|c| Some(((net.lane_of(c.from_edge, c.from_lane)?, c.to_edge), turn_bits(c.dir))))
-            .collect();
-        for (i, &(start, count)) in w.shape_range.iter().enumerate() {
-            let shape = &w.shapes[start as usize..(start + count) as usize];
-            let base = points.len() as u32;
-            let mut distance = 0.0;
-            for (j, p) in shape.iter().enumerate() {
-                if j > 0 {
-                    distance += ((p[0] - shape[j - 1][0]).powi(2)
-                        + (p[1] - shape[j - 1][1]).powi(2))
-                    .sqrt();
-                }
-                points.push([p[0], p[1], distance, 0.0]);
-            }
-            ranges.push([base, count, distance.to_bits(), 0]);
-            if !far_roads {
-                continue;
-            }
-            let lane = &w.lanes[i];
-            let tint = if lane.flags & 1 != 0 {
-                0.35
-            } else if lane.speed > 25.0 {
-                1.5
-            } else {
-                1.0
-            };
-            for pair in shape.windows(2) {
-                let a = pair[0];
-                let b = pair[1];
-                let d = ((b[0] - a[0]).powi(2) + (b[1] - a[1]).powi(2)).sqrt();
-                if d < 0.001 {
-                    continue;
-                }
-                let n = [-(b[1] - a[1]) / d, (b[0] - a[0]) / d];
-                for (p, sign) in [
-                    (a, -1.0),
-                    (b, -1.0),
-                    (a, 1.0),
-                    (a, 1.0),
-                    (b, -1.0),
-                    (b, 1.0),
-                ] {
-                    roads.push([
-                        p[0],
-                        p[1],
-                        n[0] * sign,
-                        n[1] * sign,
-                        net.lanes[i].width,
-                        tint,
-                    ]);
-                }
-            }
-        }
-        // A driver inside a junction keeps indicating the turn it is making.
-        for c in &net.conns {
-            let bits = turn_bits(c.dir);
-            if let Some(via) = c.via
-                && let Some(r) = ranges.get_mut(via as usize)
-            {
-                r[3] = bits;
-            }
-            if let Some(from) = net.lane_of(c.from_edge, c.from_lane)
-                && net.is_internal_lane(from)
-                && let Some(r) = ranges.get_mut(from as usize)
-            {
-                r[3] = bits;
-            }
-        }
-        let mut by_lane = std::collections::BTreeMap::<u32, Vec<(u32, u32, u32)>>::new();
-        for l in &w.links {
-            let Some(lane) = w.lanes.get(l.from_lane as usize) else {
-                continue;
-            };
-            if l.tl == u32::MAX || lane.flags & 1 != 0 {
-                continue;
-            }
-            let bits = *turns.get(&(l.from_lane, l.to_edge)).unwrap_or(&0);
-            // Right turns sit on the right of the lane, so sort right, straight, left.
-            let order = match bits {
-                4 => 0,
-                0 => 1,
-                _ => 2,
-            };
-            let heads = by_lane.entry(l.from_lane).or_default();
-            if !heads.iter().any(|h| h.0 == order && h.2 == l.tl_index) {
-                heads.push((order, l.tl, l.tl_index));
-            }
-        }
-        let mut signal_data = Vec::<[u32; 8]>::new();
-        for (lane, mut heads) in by_lane {
-            heads.sort();
-            let (start, count) = w.shape_range[lane as usize];
-            if count < 2 {
-                continue;
-            }
-            let b = w.shapes[(start + count - 1) as usize];
-            let a = w.shapes[(start + count - 2) as usize];
-            let d = ((b[0] - a[0]).powi(2) + (b[1] - a[1]).powi(2)).sqrt().max(0.001);
-            let t = [(b[0] - a[0]) / d, (b[1] - a[1]) / d];
-            let lane_width = net.lanes[lane as usize].width;
-            let slot = lane_width / heads.len() as f32;
-            for (k, &(order, tl, index)) in heads.iter().enumerate() {
-                let across = (k as f32 + 0.5) * slot - lane_width * 0.5;
-                let bits = [4u32, 0, 2][order as usize];
-                signal_data.push([
-                    (b[0] + t[0] * 0.85 - t[1] * across).to_bits(),
-                    (b[1] + t[1] * 0.85 + t[0] * across).to_bits(),
-                    t[0].to_bits(),
-                    t[1].to_bits(),
-                    tl,
-                    index,
-                    slot.to_bits(),
-                    bits,
-                ]);
-            }
-        }
-        let link_data: Vec<[u32; 4]> = w
-            .links
-            .iter()
-            .map(|l| [l.to_edge, *turns.get(&(l.from_lane, l.to_edge)).unwrap_or(&0), 0, 0])
-            .collect();
+        let Tables { points, ranges, roads, signals: signal_data, links: link_data } = tables(w, net, far_roads);
         let render_links = buffer(g, "render link turns", bytemuck::cast_slice(&link_data), storage);
         let render_routes = buffer(g, "render routes", bytemuck::cast_slice(&w.routes), storage);
         let history = g.device.create_buffer(&wgpu::BufferDescriptor {
@@ -262,7 +278,7 @@ impl Renderer {
         let instances = g.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("instances"),
             size: total.max(1) as u64 * 48,
-            usage: storage | wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_SRC,
+            usage: storage | wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
         let stats = buffer(
@@ -557,6 +573,22 @@ impl Renderer {
             stats[0],
             stats[1] as f32 / 100.0 / stats[0].max(1) as f32,
         )
+    }
+    /// Poses worked out elsewhere, for a replay with no simulation behind it. `vehicles` must fit
+    /// the capacity the renderer was built with.
+    pub fn upload(&mut self, g: &Gpu, vehicles: &[Instance], signals: &[Instance], time: f32, mode: u32) {
+        self.uniform[2] = (self.width as f32).to_bits();
+        self.uniform[3] = (self.height as f32).to_bits();
+        self.uniform[4] = 1f32.to_bits();
+        self.uniform[5] = mode;
+        self.uniform[6] = self.capacity;
+        self.uniform[7] = time.to_bits();
+        g.queue.write_buffer(&self.camera, 0, bytemuck::cast_slice(&self.uniform));
+        let mut all = vec![<Instance as bytemuck::Zeroable>::zeroed(); self.total.max(1) as usize];
+        all[..vehicles.len()].copy_from_slice(vehicles);
+        let first = self.capacity as usize;
+        all[first..first + signals.len()].copy_from_slice(signals);
+        g.queue.write_buffer(&self.instances, 0, bytemuck::cast_slice(&all));
     }
     /// Poses of the first `n` vehicles, as drawn.
     pub fn instances(&self, g: &Gpu, sim: &Sim, n: u32) -> Vec<Instance> {

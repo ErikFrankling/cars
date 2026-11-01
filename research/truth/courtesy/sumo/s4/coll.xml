@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-11-01T03:03:08.880119+01:00 by Eclipse SUMO sumo 1.28.0
+<sumoConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+
+    <input>
+        <net-file value="research/truth/courtesy/sumo/s4/n.net.xml"/>
+        <route-files value="research/truth/courtesy/sumo/s4/r.rou.xml"/>
+    </input>
+
+    <output>
+        <fcd-output value="research/truth/courtesy/sumo/s4/fcd.xml"/>
+        <collision-output value="research/truth/courtesy/sumo/s4/coll.xml"/>
+        <statistic-output value="research/truth/courtesy/sumo/s4/stat.xml"/>
+    </output>
+
+    <time>
+        <end value="3300"/>
+        <step-length value="1"/>
+    </time>
+
+    <processing>
+        <time-to-teleport value="120"/>
+    </processing>
+
+    <report>
+        <no-step-log value="true"/>
+    </report>
+
+    <random_number>
+        <seed value="7"/>
+    </random_number>
+
+</sumoConfiguration>
+-->
+
+<collisions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/collision_file.xsd">
+</collisions>

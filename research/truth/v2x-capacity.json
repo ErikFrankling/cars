@@ -1,0 +1,1817 @@
+{
+ "air_bytes": {
+  "CAM status only": {
+   "digest": 192,
+   "with_cert": 331,
+   "payload": 41
+  },
+  "CAM + 5 s intent, 10 pts": {
+   "digest": 264,
+   "with_cert": 403,
+   "payload": 113
+  },
+  "CAM + 8 s intent, 16 pts": {
+   "digest": 303,
+   "with_cert": 442,
+   "payload": 152
+  },
+  "CAM + 16 pts with position confidence": {
+   "digest": 376,
+   "with_cert": 515,
+   "payload": 225
+  },
+  "CAM + 40 pts": {
+   "digest": 461,
+   "with_cert": 600,
+   "payload": 310
+  },
+  "TS 22.186 cooperative collision avoidance, 2000 B": {
+   "digest": 2151,
+   "with_cert": 2290,
+   "payload": 2000
+  }
+ },
+ "table": {
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM status only": {
+   "msgs_per_s_digest": 500.0,
+   "mbit_s_air": 0.768,
+   "hz_100": 4.0,
+   "hz_200": 1.5,
+   "hz_500": 0.5,
+   "hz_1000": 0.25,
+   "hz_2000": 0.125,
+   "hz_3000": 0.08333333333333333
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 250.0,
+   "mbit_s_air": 0.528,
+   "hz_100": 2.0000000000000004,
+   "hz_200": 0.8333333333333334,
+   "hz_500": 0.33333333333333337,
+   "hz_1000": 0.16666666666666669,
+   "hz_2000": 0.08333333333333334,
+   "hz_3000": 0.055555555555555566
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 250.0,
+   "mbit_s_air": 0.606,
+   "hz_100": 2.0000000000000004,
+   "hz_200": 0.8333333333333334,
+   "hz_500": 0.33333333333333337,
+   "hz_1000": 0.16666666666666669,
+   "hz_2000": 0.08333333333333334,
+   "hz_3000": 0.055555555555555566
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 250.0,
+   "mbit_s_air": 0.752,
+   "hz_100": 2.0000000000000004,
+   "hz_200": 0.8333333333333334,
+   "hz_500": 0.33333333333333337,
+   "hz_1000": 0.16666666666666669,
+   "hz_2000": 0.08333333333333334,
+   "hz_3000": 0.055555555555555566
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 40 pts": {
+   "msgs_per_s_digest": 166.66666666666669,
+   "mbit_s_air": 0.6146666666666667,
+   "hz_100": 1.3333333333333333,
+   "hz_200": 0.625,
+   "hz_500": 0.25,
+   "hz_1000": 0.125,
+   "hz_2000": 0.0625,
+   "hz_3000": 0.041666666666666664
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM status only": {
+   "msgs_per_s_digest": 600.0,
+   "mbit_s_air": 0.9216,
+   "hz_100": 4.999999999999999,
+   "hz_200": 1.9999999999999998,
+   "hz_500": 0.5999999999999999,
+   "hz_1000": 0.29999999999999993,
+   "hz_2000": 0.14999999999999997,
+   "hz_3000": 0.09999999999999999
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 300.0,
+   "mbit_s_air": 0.6336,
+   "hz_100": 2.5,
+   "hz_200": 1.0,
+   "hz_500": 0.4,
+   "hz_1000": 0.2,
+   "hz_2000": 0.1,
+   "hz_3000": 0.06666666666666667
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 300.0,
+   "mbit_s_air": 0.7272,
+   "hz_100": 2.5,
+   "hz_200": 1.0,
+   "hz_500": 0.4,
+   "hz_1000": 0.2,
+   "hz_2000": 0.1,
+   "hz_3000": 0.06666666666666667
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 300.0,
+   "mbit_s_air": 0.9024,
+   "hz_100": 2.5,
+   "hz_200": 1.0,
+   "hz_500": 0.4,
+   "hz_1000": 0.2,
+   "hz_2000": 0.1,
+   "hz_3000": 0.06666666666666667
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 40 pts": {
+   "msgs_per_s_digest": 200.0,
+   "mbit_s_air": 0.7376,
+   "hz_100": 1.6666666666666665,
+   "hz_200": 0.7499999999999999,
+   "hz_500": 0.29999999999999993,
+   "hz_1000": 0.14999999999999997,
+   "hz_2000": 0.07499999999999998,
+   "hz_3000": 0.049999999999999996
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM status only": {
+   "msgs_per_s_digest": 1300.0,
+   "mbit_s_air": 1.9968,
+   "hz_100": 11.999999999999998,
+   "hz_200": 5.499999999999999,
+   "hz_500": 1.6000000000000003,
+   "hz_1000": 0.65,
+   "hz_2000": 0.325,
+   "hz_3000": 0.21666666666666665
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 650.0,
+   "mbit_s_air": 1.3728,
+   "hz_100": 5.999999999999999,
+   "hz_200": 2.75,
+   "hz_500": 0.8666666666666668,
+   "hz_1000": 0.4333333333333334,
+   "hz_2000": 0.2166666666666667,
+   "hz_3000": 0.14444444444444446
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 650.0,
+   "mbit_s_air": 1.5756,
+   "hz_100": 5.999999999999999,
+   "hz_200": 2.75,
+   "hz_500": 0.8666666666666668,
+   "hz_1000": 0.4333333333333334,
+   "hz_2000": 0.2166666666666667,
+   "hz_3000": 0.14444444444444446
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 650.0,
+   "mbit_s_air": 1.9552,
+   "hz_100": 5.999999999999999,
+   "hz_200": 2.75,
+   "hz_500": 0.8666666666666668,
+   "hz_1000": 0.4333333333333334,
+   "hz_2000": 0.2166666666666667,
+   "hz_3000": 0.14444444444444446
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 40 pts": {
+   "msgs_per_s_digest": 433.33333333333337,
+   "mbit_s_air": 1.5981333333333334,
+   "hz_100": 4.0,
+   "hz_200": 1.8333333333333333,
+   "hz_500": 0.65,
+   "hz_1000": 0.325,
+   "hz_2000": 0.1625,
+   "hz_3000": 0.10833333333333332
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM status only": {
+   "msgs_per_s_digest": 1000.0,
+   "mbit_s_air": 1.536,
+   "hz_100": 9.0,
+   "hz_200": 4.0,
+   "hz_500": 1.0,
+   "hz_1000": 0.5,
+   "hz_2000": 0.25,
+   "hz_3000": 0.16666666666666666
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 500.0,
+   "mbit_s_air": 1.056,
+   "hz_100": 4.5,
+   "hz_200": 2.0000000000000004,
+   "hz_500": 0.6666666666666667,
+   "hz_1000": 0.33333333333333337,
+   "hz_2000": 0.16666666666666669,
+   "hz_3000": 0.11111111111111113
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 500.0,
+   "mbit_s_air": 1.212,
+   "hz_100": 4.5,
+   "hz_200": 2.0000000000000004,
+   "hz_500": 0.6666666666666667,
+   "hz_1000": 0.33333333333333337,
+   "hz_2000": 0.16666666666666669,
+   "hz_3000": 0.11111111111111113
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 500.0,
+   "mbit_s_air": 1.504,
+   "hz_100": 4.5,
+   "hz_200": 2.0000000000000004,
+   "hz_500": 0.6666666666666667,
+   "hz_1000": 0.33333333333333337,
+   "hz_2000": 0.16666666666666669,
+   "hz_3000": 0.11111111111111113
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 40 pts": {
+   "msgs_per_s_digest": 333.33333333333337,
+   "mbit_s_air": 1.2293333333333334,
+   "hz_100": 3.0,
+   "hz_200": 1.3333333333333333,
+   "hz_500": 0.5,
+   "hz_1000": 0.25,
+   "hz_2000": 0.125,
+   "hz_3000": 0.08333333333333333
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM status only": {
+   "msgs_per_s_digest": 1200.0,
+   "mbit_s_air": 1.8432,
+   "hz_100": 10.999999999999998,
+   "hz_200": 4.999999999999999,
+   "hz_500": 1.4,
+   "hz_1000": 0.5999999999999999,
+   "hz_2000": 0.29999999999999993,
+   "hz_3000": 0.19999999999999998
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 600.0,
+   "mbit_s_air": 1.2672,
+   "hz_100": 5.499999999999999,
+   "hz_200": 2.5,
+   "hz_500": 0.8,
+   "hz_1000": 0.4,
+   "hz_2000": 0.2,
+   "hz_3000": 0.13333333333333333
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 600.0,
+   "mbit_s_air": 1.4544,
+   "hz_100": 5.499999999999999,
+   "hz_200": 2.5,
+   "hz_500": 0.8,
+   "hz_1000": 0.4,
+   "hz_2000": 0.2,
+   "hz_3000": 0.13333333333333333
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 600.0,
+   "mbit_s_air": 1.8048,
+   "hz_100": 5.499999999999999,
+   "hz_200": 2.5,
+   "hz_500": 0.8,
+   "hz_1000": 0.4,
+   "hz_2000": 0.2,
+   "hz_3000": 0.13333333333333333
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 40 pts": {
+   "msgs_per_s_digest": 400.0,
+   "mbit_s_air": 1.4752,
+   "hz_100": 3.6666666666666665,
+   "hz_200": 1.6666666666666665,
+   "hz_500": 0.5999999999999999,
+   "hz_1000": 0.29999999999999993,
+   "hz_2000": 0.14999999999999997,
+   "hz_3000": 0.09999999999999999
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM status only": {
+   "msgs_per_s_digest": 2600.0,
+   "mbit_s_air": 3.9936,
+   "hz_100": 25.0,
+   "hz_200": 11.999999999999998,
+   "hz_500": 4.2,
+   "hz_1000": 1.6000000000000003,
+   "hz_2000": 0.65,
+   "hz_3000": 0.4333333333333333
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 1300.0,
+   "mbit_s_air": 2.7456,
+   "hz_100": 12.5,
+   "hz_200": 5.999999999999999,
+   "hz_500": 2.1000000000000005,
+   "hz_1000": 0.8666666666666668,
+   "hz_2000": 0.4333333333333334,
+   "hz_3000": 0.2888888888888889
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 1300.0,
+   "mbit_s_air": 3.1512,
+   "hz_100": 12.5,
+   "hz_200": 5.999999999999999,
+   "hz_500": 2.1000000000000005,
+   "hz_1000": 0.8666666666666668,
+   "hz_2000": 0.4333333333333334,
+   "hz_3000": 0.2888888888888889
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 1300.0,
+   "mbit_s_air": 3.9104,
+   "hz_100": 12.5,
+   "hz_200": 5.999999999999999,
+   "hz_500": 2.1000000000000005,
+   "hz_1000": 0.8666666666666668,
+   "hz_2000": 0.4333333333333334,
+   "hz_3000": 0.2888888888888889
+  },
+  "LTE-V2X, MCS 11, 1 retx (fielded) | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 40 pts": {
+   "msgs_per_s_digest": 866.6666666666667,
+   "mbit_s_air": 3.196266666666667,
+   "hz_100": 8.333333333333332,
+   "hz_200": 4.0,
+   "hz_500": 1.4000000000000001,
+   "hz_1000": 0.65,
+   "hz_2000": 0.325,
+   "hz_3000": 0.21666666666666665
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM status only": {
+   "msgs_per_s_digest": 200.0,
+   "mbit_s_air": 0.3072,
+   "hz_100": 2.0,
+   "hz_200": 1.0,
+   "hz_500": 0.4,
+   "hz_1000": 0.2,
+   "hz_2000": 0.1,
+   "hz_3000": 0.06666666666666667
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM status only": {
+   "msgs_per_s_digest": 240.0,
+   "mbit_s_air": 0.36864,
+   "hz_100": 2.4,
+   "hz_200": 1.2,
+   "hz_500": 0.4799999999999999,
+   "hz_1000": 0.23999999999999996,
+   "hz_2000": 0.11999999999999998,
+   "hz_3000": 0.07999999999999999
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM status only": {
+   "msgs_per_s_digest": 520.0,
+   "mbit_s_air": 0.79872,
+   "hz_100": 5.199999999999999,
+   "hz_200": 2.5999999999999996,
+   "hz_500": 1.04,
+   "hz_1000": 0.52,
+   "hz_2000": 0.26,
+   "hz_3000": 0.17333333333333334
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM status only": {
+   "msgs_per_s_digest": 500.0,
+   "mbit_s_air": 0.768,
+   "hz_100": 5.0,
+   "hz_200": 2.5,
+   "hz_500": 1.0,
+   "hz_1000": 0.5,
+   "hz_2000": 0.25,
+   "hz_3000": 0.16666666666666666
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 500.0,
+   "mbit_s_air": 1.056,
+   "hz_100": 4.5,
+   "hz_200": 2.0000000000000004,
+   "hz_500": 0.6666666666666667,
+   "hz_1000": 0.33333333333333337,
+   "hz_2000": 0.16666666666666669,
+   "hz_3000": 0.11111111111111113
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 500.0,
+   "mbit_s_air": 1.212,
+   "hz_100": 4.5,
+   "hz_200": 2.0000000000000004,
+   "hz_500": 0.6666666666666667,
+   "hz_1000": 0.33333333333333337,
+   "hz_2000": 0.16666666666666669,
+   "hz_3000": 0.11111111111111113
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 500.0,
+   "mbit_s_air": 1.504,
+   "hz_100": 4.5,
+   "hz_200": 2.0000000000000004,
+   "hz_500": 0.6666666666666667,
+   "hz_1000": 0.33333333333333337,
+   "hz_2000": 0.16666666666666669,
+   "hz_3000": 0.11111111111111113
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 40 pts": {
+   "msgs_per_s_digest": 333.33333333333337,
+   "mbit_s_air": 1.2293333333333334,
+   "hz_100": 3.3333333333333335,
+   "hz_200": 1.6666666666666667,
+   "hz_500": 0.6666666666666667,
+   "hz_1000": 0.33333333333333337,
+   "hz_2000": 0.16666666666666669,
+   "hz_3000": 0.11111111111111113
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM status only": {
+   "msgs_per_s_digest": 600.0,
+   "mbit_s_air": 0.9216,
+   "hz_100": 5.999999999999999,
+   "hz_200": 2.9999999999999996,
+   "hz_500": 1.1999999999999997,
+   "hz_1000": 0.5999999999999999,
+   "hz_2000": 0.29999999999999993,
+   "hz_3000": 0.19999999999999998
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 600.0,
+   "mbit_s_air": 1.2672,
+   "hz_100": 5.499999999999999,
+   "hz_200": 2.5,
+   "hz_500": 0.8,
+   "hz_1000": 0.4,
+   "hz_2000": 0.2,
+   "hz_3000": 0.13333333333333333
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 600.0,
+   "mbit_s_air": 1.4544,
+   "hz_100": 5.499999999999999,
+   "hz_200": 2.5,
+   "hz_500": 0.8,
+   "hz_1000": 0.4,
+   "hz_2000": 0.2,
+   "hz_3000": 0.13333333333333333
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 600.0,
+   "mbit_s_air": 1.8048,
+   "hz_100": 5.499999999999999,
+   "hz_200": 2.5,
+   "hz_500": 0.8,
+   "hz_1000": 0.4,
+   "hz_2000": 0.2,
+   "hz_3000": 0.13333333333333333
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 40 pts": {
+   "msgs_per_s_digest": 400.0,
+   "mbit_s_air": 1.4752,
+   "hz_100": 4.0,
+   "hz_200": 2.0,
+   "hz_500": 0.8,
+   "hz_1000": 0.4,
+   "hz_2000": 0.2,
+   "hz_3000": 0.13333333333333333
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM status only": {
+   "msgs_per_s_digest": 1300.0,
+   "mbit_s_air": 1.9968,
+   "hz_100": 12.999999999999998,
+   "hz_200": 6.499999999999999,
+   "hz_500": 2.6,
+   "hz_1000": 1.3,
+   "hz_2000": 0.65,
+   "hz_3000": 0.4333333333333333
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 1300.0,
+   "mbit_s_air": 2.7456,
+   "hz_100": 12.5,
+   "hz_200": 5.999999999999999,
+   "hz_500": 2.1000000000000005,
+   "hz_1000": 0.8666666666666668,
+   "hz_2000": 0.4333333333333334,
+   "hz_3000": 0.2888888888888889
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 1300.0,
+   "mbit_s_air": 3.1512,
+   "hz_100": 12.5,
+   "hz_200": 5.999999999999999,
+   "hz_500": 2.1000000000000005,
+   "hz_1000": 0.8666666666666668,
+   "hz_2000": 0.4333333333333334,
+   "hz_3000": 0.2888888888888889
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 1300.0,
+   "mbit_s_air": 3.9104,
+   "hz_100": 12.5,
+   "hz_200": 5.999999999999999,
+   "hz_500": 2.1000000000000005,
+   "hz_1000": 0.8666666666666668,
+   "hz_2000": 0.4333333333333334,
+   "hz_3000": 0.2888888888888889
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 40 pts": {
+   "msgs_per_s_digest": 866.6666666666667,
+   "mbit_s_air": 3.196266666666667,
+   "hz_100": 8.666666666666668,
+   "hz_200": 4.333333333333334,
+   "hz_500": 1.7333333333333336,
+   "hz_1000": 0.8666666666666668,
+   "hz_2000": 0.4333333333333334,
+   "hz_3000": 0.2888888888888889
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM status only": {
+   "msgs_per_s_digest": 1000.0,
+   "mbit_s_air": 1.536,
+   "hz_100": 10.0,
+   "hz_200": 5.0,
+   "hz_500": 2.0,
+   "hz_1000": 1.0,
+   "hz_2000": 0.5,
+   "hz_3000": 0.3333333333333333
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 1000.0,
+   "mbit_s_air": 2.112,
+   "hz_100": 9.5,
+   "hz_200": 4.5,
+   "hz_500": 1.5,
+   "hz_1000": 0.6666666666666667,
+   "hz_2000": 0.33333333333333337,
+   "hz_3000": 0.22222222222222227
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 1000.0,
+   "mbit_s_air": 2.424,
+   "hz_100": 9.5,
+   "hz_200": 4.5,
+   "hz_500": 1.5,
+   "hz_1000": 0.6666666666666667,
+   "hz_2000": 0.33333333333333337,
+   "hz_3000": 0.22222222222222227
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 1000.0,
+   "mbit_s_air": 3.008,
+   "hz_100": 9.5,
+   "hz_200": 4.5,
+   "hz_500": 1.5,
+   "hz_1000": 0.6666666666666667,
+   "hz_2000": 0.33333333333333337,
+   "hz_3000": 0.22222222222222227
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 40 pts": {
+   "msgs_per_s_digest": 666.6666666666667,
+   "mbit_s_air": 2.458666666666667,
+   "hz_100": 6.666666666666667,
+   "hz_200": 3.3333333333333335,
+   "hz_500": 1.3333333333333335,
+   "hz_1000": 0.6666666666666667,
+   "hz_2000": 0.33333333333333337,
+   "hz_3000": 0.22222222222222227
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM status only": {
+   "msgs_per_s_digest": 1200.0,
+   "mbit_s_air": 1.8432,
+   "hz_100": 11.999999999999998,
+   "hz_200": 5.999999999999999,
+   "hz_500": 2.3999999999999995,
+   "hz_1000": 1.1999999999999997,
+   "hz_2000": 0.5999999999999999,
+   "hz_3000": 0.39999999999999997
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 1200.0,
+   "mbit_s_air": 2.5344,
+   "hz_100": 11.5,
+   "hz_200": 5.499999999999999,
+   "hz_500": 1.9,
+   "hz_1000": 0.8,
+   "hz_2000": 0.4,
+   "hz_3000": 0.26666666666666666
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 1200.0,
+   "mbit_s_air": 2.9088,
+   "hz_100": 11.5,
+   "hz_200": 5.499999999999999,
+   "hz_500": 1.9,
+   "hz_1000": 0.8,
+   "hz_2000": 0.4,
+   "hz_3000": 0.26666666666666666
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 1200.0,
+   "mbit_s_air": 3.6096,
+   "hz_100": 11.5,
+   "hz_200": 5.499999999999999,
+   "hz_500": 1.9,
+   "hz_1000": 0.8,
+   "hz_2000": 0.4,
+   "hz_3000": 0.26666666666666666
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 40 pts": {
+   "msgs_per_s_digest": 800.0,
+   "mbit_s_air": 2.9504,
+   "hz_100": 8.0,
+   "hz_200": 4.0,
+   "hz_500": 1.6,
+   "hz_1000": 0.8,
+   "hz_2000": 0.4,
+   "hz_3000": 0.26666666666666666
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM status only": {
+   "msgs_per_s_digest": 2600.0,
+   "mbit_s_air": 3.9936,
+   "hz_100": 25.999999999999996,
+   "hz_200": 12.999999999999998,
+   "hz_500": 5.2,
+   "hz_1000": 2.6,
+   "hz_2000": 1.3,
+   "hz_3000": 0.8666666666666666
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 2600.0,
+   "mbit_s_air": 5.4912,
+   "hz_100": 25.499999999999996,
+   "hz_200": 12.5,
+   "hz_500": 4.700000000000001,
+   "hz_1000": 2.1000000000000005,
+   "hz_2000": 0.8666666666666668,
+   "hz_3000": 0.5777777777777778
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 2600.0,
+   "mbit_s_air": 6.3024,
+   "hz_100": 25.499999999999996,
+   "hz_200": 12.5,
+   "hz_500": 4.700000000000001,
+   "hz_1000": 2.1000000000000005,
+   "hz_2000": 0.8666666666666668,
+   "hz_3000": 0.5777777777777778
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 2600.0,
+   "mbit_s_air": 7.8208,
+   "hz_100": 25.499999999999996,
+   "hz_200": 12.5,
+   "hz_500": 4.700000000000001,
+   "hz_1000": 2.1000000000000005,
+   "hz_2000": 0.8666666666666668,
+   "hz_3000": 0.5777777777777778
+  },
+  "NR mode 2, 16QAM R.37 (MCS 11), 1 retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 40 pts": {
+   "msgs_per_s_digest": 1733.3333333333335,
+   "mbit_s_air": 6.392533333333334,
+   "hz_100": 17.333333333333336,
+   "hz_200": 8.666666666666668,
+   "hz_500": 3.4666666666666672,
+   "hz_1000": 1.7333333333333336,
+   "hz_2000": 0.8666666666666668,
+   "hz_3000": 0.5777777777777778
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM status only": {
+   "msgs_per_s_digest": 400.0,
+   "mbit_s_air": 0.6144,
+   "hz_100": 3.0,
+   "hz_200": 1.0,
+   "hz_500": 0.4,
+   "hz_1000": 0.2,
+   "hz_2000": 0.1,
+   "hz_3000": 0.06666666666666667
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 400.0,
+   "mbit_s_air": 0.8448,
+   "hz_100": 3.0,
+   "hz_200": 1.0,
+   "hz_500": 0.4,
+   "hz_1000": 0.2,
+   "hz_2000": 0.1,
+   "hz_3000": 0.06666666666666667
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 200.0,
+   "mbit_s_air": 0.4848,
+   "hz_100": 2.0,
+   "hz_200": 1.0,
+   "hz_500": 0.4,
+   "hz_1000": 0.2,
+   "hz_2000": 0.1,
+   "hz_3000": 0.06666666666666667
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 200.0,
+   "mbit_s_air": 0.6016,
+   "hz_100": 2.0,
+   "hz_200": 1.0,
+   "hz_500": 0.4,
+   "hz_1000": 0.2,
+   "hz_2000": 0.1,
+   "hz_3000": 0.06666666666666667
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 40 pts": {
+   "msgs_per_s_digest": 200.0,
+   "mbit_s_air": 0.7376,
+   "hz_100": 2.0,
+   "hz_200": 1.0,
+   "hz_500": 0.4,
+   "hz_1000": 0.2,
+   "hz_2000": 0.1,
+   "hz_3000": 0.06666666666666667
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM status only": {
+   "msgs_per_s_digest": 480.0,
+   "mbit_s_air": 0.73728,
+   "hz_100": 3.7999999999999994,
+   "hz_200": 1.3999999999999997,
+   "hz_500": 0.4799999999999999,
+   "hz_1000": 0.23999999999999996,
+   "hz_2000": 0.11999999999999998,
+   "hz_3000": 0.07999999999999999
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 480.0,
+   "mbit_s_air": 1.01376,
+   "hz_100": 3.7999999999999994,
+   "hz_200": 1.3999999999999997,
+   "hz_500": 0.4799999999999999,
+   "hz_1000": 0.23999999999999996,
+   "hz_2000": 0.11999999999999998,
+   "hz_3000": 0.07999999999999999
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 240.0,
+   "mbit_s_air": 0.58176,
+   "hz_100": 2.4,
+   "hz_200": 1.2,
+   "hz_500": 0.4799999999999999,
+   "hz_1000": 0.23999999999999996,
+   "hz_2000": 0.11999999999999998,
+   "hz_3000": 0.07999999999999999
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 240.0,
+   "mbit_s_air": 0.72192,
+   "hz_100": 2.4,
+   "hz_200": 1.2,
+   "hz_500": 0.4799999999999999,
+   "hz_1000": 0.23999999999999996,
+   "hz_2000": 0.11999999999999998,
+   "hz_3000": 0.07999999999999999
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 40 pts": {
+   "msgs_per_s_digest": 240.0,
+   "mbit_s_air": 0.88512,
+   "hz_100": 2.4,
+   "hz_200": 1.2,
+   "hz_500": 0.4799999999999999,
+   "hz_1000": 0.23999999999999996,
+   "hz_2000": 0.11999999999999998,
+   "hz_3000": 0.07999999999999999
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM status only": {
+   "msgs_per_s_digest": 1040.0,
+   "mbit_s_air": 1.59744,
+   "hz_100": 9.399999999999999,
+   "hz_200": 4.199999999999999,
+   "hz_500": 1.0800000000000003,
+   "hz_1000": 0.52,
+   "hz_2000": 0.26,
+   "hz_3000": 0.17333333333333334
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 1040.0,
+   "mbit_s_air": 2.19648,
+   "hz_100": 9.399999999999999,
+   "hz_200": 4.199999999999999,
+   "hz_500": 1.0800000000000003,
+   "hz_1000": 0.52,
+   "hz_2000": 0.26,
+   "hz_3000": 0.17333333333333334
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 520.0,
+   "mbit_s_air": 1.26048,
+   "hz_100": 5.199999999999999,
+   "hz_200": 2.5999999999999996,
+   "hz_500": 1.04,
+   "hz_1000": 0.52,
+   "hz_2000": 0.26,
+   "hz_3000": 0.17333333333333334
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 520.0,
+   "mbit_s_air": 1.56416,
+   "hz_100": 5.199999999999999,
+   "hz_200": 2.5999999999999996,
+   "hz_500": 1.04,
+   "hz_1000": 0.52,
+   "hz_2000": 0.26,
+   "hz_3000": 0.17333333333333334
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 40 pts": {
+   "msgs_per_s_digest": 520.0,
+   "mbit_s_air": 1.91776,
+   "hz_100": 5.199999999999999,
+   "hz_200": 2.5999999999999996,
+   "hz_500": 1.04,
+   "hz_1000": 0.52,
+   "hz_2000": 0.26,
+   "hz_3000": 0.17333333333333334
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM status only": {
+   "msgs_per_s_digest": 1000.0,
+   "mbit_s_air": 1.536,
+   "hz_100": 9.0,
+   "hz_200": 4.0,
+   "hz_500": 1.0,
+   "hz_1000": 0.5,
+   "hz_2000": 0.25,
+   "hz_3000": 0.16666666666666666
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 1000.0,
+   "mbit_s_air": 2.112,
+   "hz_100": 9.0,
+   "hz_200": 4.0,
+   "hz_500": 1.0,
+   "hz_1000": 0.5,
+   "hz_2000": 0.25,
+   "hz_3000": 0.16666666666666666
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 500.0,
+   "mbit_s_air": 1.212,
+   "hz_100": 5.0,
+   "hz_200": 2.5,
+   "hz_500": 1.0,
+   "hz_1000": 0.5,
+   "hz_2000": 0.25,
+   "hz_3000": 0.16666666666666666
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 500.0,
+   "mbit_s_air": 1.504,
+   "hz_100": 5.0,
+   "hz_200": 2.5,
+   "hz_500": 1.0,
+   "hz_1000": 0.5,
+   "hz_2000": 0.25,
+   "hz_3000": 0.16666666666666666
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 40 pts": {
+   "msgs_per_s_digest": 500.0,
+   "mbit_s_air": 1.844,
+   "hz_100": 5.0,
+   "hz_200": 2.5,
+   "hz_500": 1.0,
+   "hz_1000": 0.5,
+   "hz_2000": 0.25,
+   "hz_3000": 0.16666666666666666
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM status only": {
+   "msgs_per_s_digest": 1200.0,
+   "mbit_s_air": 1.8432,
+   "hz_100": 10.999999999999998,
+   "hz_200": 4.999999999999999,
+   "hz_500": 1.4,
+   "hz_1000": 0.5999999999999999,
+   "hz_2000": 0.29999999999999993,
+   "hz_3000": 0.19999999999999998
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 1200.0,
+   "mbit_s_air": 2.5344,
+   "hz_100": 10.999999999999998,
+   "hz_200": 4.999999999999999,
+   "hz_500": 1.4,
+   "hz_1000": 0.5999999999999999,
+   "hz_2000": 0.29999999999999993,
+   "hz_3000": 0.19999999999999998
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 600.0,
+   "mbit_s_air": 1.4544,
+   "hz_100": 5.999999999999999,
+   "hz_200": 2.9999999999999996,
+   "hz_500": 1.1999999999999997,
+   "hz_1000": 0.5999999999999999,
+   "hz_2000": 0.29999999999999993,
+   "hz_3000": 0.19999999999999998
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 600.0,
+   "mbit_s_air": 1.8048,
+   "hz_100": 5.999999999999999,
+   "hz_200": 2.9999999999999996,
+   "hz_500": 1.1999999999999997,
+   "hz_1000": 0.5999999999999999,
+   "hz_2000": 0.29999999999999993,
+   "hz_3000": 0.19999999999999998
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 40 pts": {
+   "msgs_per_s_digest": 600.0,
+   "mbit_s_air": 2.2128,
+   "hz_100": 5.999999999999999,
+   "hz_200": 2.9999999999999996,
+   "hz_500": 1.1999999999999997,
+   "hz_1000": 0.5999999999999999,
+   "hz_2000": 0.29999999999999993,
+   "hz_3000": 0.19999999999999998
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM status only": {
+   "msgs_per_s_digest": 2600.0,
+   "mbit_s_air": 3.9936,
+   "hz_100": 25.0,
+   "hz_200": 11.999999999999998,
+   "hz_500": 4.2,
+   "hz_1000": 1.6000000000000003,
+   "hz_2000": 0.65,
+   "hz_3000": 0.4333333333333333
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 2600.0,
+   "mbit_s_air": 5.4912,
+   "hz_100": 25.0,
+   "hz_200": 11.999999999999998,
+   "hz_500": 4.2,
+   "hz_1000": 1.6000000000000003,
+   "hz_2000": 0.65,
+   "hz_3000": 0.4333333333333333
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 1300.0,
+   "mbit_s_air": 3.1512,
+   "hz_100": 12.999999999999998,
+   "hz_200": 6.499999999999999,
+   "hz_500": 2.6,
+   "hz_1000": 1.3,
+   "hz_2000": 0.65,
+   "hz_3000": 0.4333333333333333
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 1300.0,
+   "mbit_s_air": 3.9104,
+   "hz_100": 12.999999999999998,
+   "hz_200": 6.499999999999999,
+   "hz_500": 2.6,
+   "hz_1000": 1.3,
+   "hz_2000": 0.65,
+   "hz_3000": 0.4333333333333333
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 40 pts": {
+   "msgs_per_s_digest": 1300.0,
+   "mbit_s_air": 4.7944,
+   "hz_100": 12.999999999999998,
+   "hz_200": 6.499999999999999,
+   "hz_500": 2.6,
+   "hz_1000": 1.3,
+   "hz_2000": 0.65,
+   "hz_3000": 0.4333333333333333
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM status only": {
+   "msgs_per_s_digest": 2000.0,
+   "mbit_s_air": 3.072,
+   "hz_100": 19.0,
+   "hz_200": 9.0,
+   "hz_500": 3.0,
+   "hz_1000": 1.0,
+   "hz_2000": 0.5,
+   "hz_3000": 0.3333333333333333
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 2000.0,
+   "mbit_s_air": 4.224,
+   "hz_100": 19.0,
+   "hz_200": 9.0,
+   "hz_500": 3.0,
+   "hz_1000": 1.0,
+   "hz_2000": 0.5,
+   "hz_3000": 0.3333333333333333
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 1000.0,
+   "mbit_s_air": 2.424,
+   "hz_100": 10.0,
+   "hz_200": 5.0,
+   "hz_500": 2.0,
+   "hz_1000": 1.0,
+   "hz_2000": 0.5,
+   "hz_3000": 0.3333333333333333
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 1000.0,
+   "mbit_s_air": 3.008,
+   "hz_100": 10.0,
+   "hz_200": 5.0,
+   "hz_500": 2.0,
+   "hz_1000": 1.0,
+   "hz_2000": 0.5,
+   "hz_3000": 0.3333333333333333
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 40 pts": {
+   "msgs_per_s_digest": 1000.0,
+   "mbit_s_air": 3.688,
+   "hz_100": 10.0,
+   "hz_200": 5.0,
+   "hz_500": 2.0,
+   "hz_1000": 1.0,
+   "hz_2000": 0.5,
+   "hz_3000": 0.3333333333333333
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | TS 22.186 cooperative collision avoidance, 2000 B": {
+   "msgs_per_s_digest": 333.33333333333337,
+   "mbit_s_air": 5.736000000000001,
+   "hz_100": 3.166666666666667,
+   "hz_200": 1.5,
+   "hz_500": 0.5714285714285715,
+   "hz_1000": 0.28571428571428575,
+   "hz_2000": 0.14285714285714288,
+   "hz_3000": 0.09523809523809525
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM status only": {
+   "msgs_per_s_digest": 2400.0,
+   "mbit_s_air": 3.6864,
+   "hz_100": 23.0,
+   "hz_200": 10.999999999999998,
+   "hz_500": 3.7999999999999994,
+   "hz_1000": 1.4,
+   "hz_2000": 0.5999999999999999,
+   "hz_3000": 0.39999999999999997
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 2400.0,
+   "mbit_s_air": 5.0688,
+   "hz_100": 23.0,
+   "hz_200": 10.999999999999998,
+   "hz_500": 3.7999999999999994,
+   "hz_1000": 1.4,
+   "hz_2000": 0.5999999999999999,
+   "hz_3000": 0.39999999999999997
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 1200.0,
+   "mbit_s_air": 2.9088,
+   "hz_100": 11.999999999999998,
+   "hz_200": 5.999999999999999,
+   "hz_500": 2.3999999999999995,
+   "hz_1000": 1.1999999999999997,
+   "hz_2000": 0.5999999999999999,
+   "hz_3000": 0.39999999999999997
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 1200.0,
+   "mbit_s_air": 3.6096,
+   "hz_100": 11.999999999999998,
+   "hz_200": 5.999999999999999,
+   "hz_500": 2.3999999999999995,
+   "hz_1000": 1.1999999999999997,
+   "hz_2000": 0.5999999999999999,
+   "hz_3000": 0.39999999999999997
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 40 pts": {
+   "msgs_per_s_digest": 1200.0,
+   "mbit_s_air": 4.4256,
+   "hz_100": 11.999999999999998,
+   "hz_200": 5.999999999999999,
+   "hz_500": 2.3999999999999995,
+   "hz_1000": 1.1999999999999997,
+   "hz_2000": 0.5999999999999999,
+   "hz_3000": 0.39999999999999997
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | TS 22.186 cooperative collision avoidance, 2000 B": {
+   "msgs_per_s_digest": 400.0,
+   "mbit_s_air": 6.8832,
+   "hz_100": 3.8333333333333335,
+   "hz_200": 1.8333333333333333,
+   "hz_500": 0.6857142857142856,
+   "hz_1000": 0.3428571428571428,
+   "hz_2000": 0.1714285714285714,
+   "hz_3000": 0.11428571428571428
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM status only": {
+   "msgs_per_s_digest": 5200.0,
+   "mbit_s_air": 7.9872,
+   "hz_100": 50.99999999999999,
+   "hz_200": 25.0,
+   "hz_500": 9.4,
+   "hz_1000": 4.2,
+   "hz_2000": 1.6000000000000003,
+   "hz_3000": 0.8666666666666666
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 5200.0,
+   "mbit_s_air": 10.9824,
+   "hz_100": 50.99999999999999,
+   "hz_200": 25.0,
+   "hz_500": 9.4,
+   "hz_1000": 4.2,
+   "hz_2000": 1.6000000000000003,
+   "hz_3000": 0.8666666666666666
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 2600.0,
+   "mbit_s_air": 6.3024,
+   "hz_100": 25.999999999999996,
+   "hz_200": 12.999999999999998,
+   "hz_500": 5.2,
+   "hz_1000": 2.6,
+   "hz_2000": 1.3,
+   "hz_3000": 0.8666666666666666
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 2600.0,
+   "mbit_s_air": 7.8208,
+   "hz_100": 25.999999999999996,
+   "hz_200": 12.999999999999998,
+   "hz_500": 5.2,
+   "hz_1000": 2.6,
+   "hz_2000": 1.3,
+   "hz_3000": 0.8666666666666666
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 40 pts": {
+   "msgs_per_s_digest": 2600.0,
+   "mbit_s_air": 9.5888,
+   "hz_100": 25.999999999999996,
+   "hz_200": 12.999999999999998,
+   "hz_500": 5.2,
+   "hz_1000": 2.6,
+   "hz_2000": 1.3,
+   "hz_3000": 0.8666666666666666
+  },
+  "NR mode 2, 16QAM R.64 (MCS 16), 1 retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | TS 22.186 cooperative collision avoidance, 2000 B": {
+   "msgs_per_s_digest": 866.6666666666667,
+   "mbit_s_air": 14.913600000000002,
+   "hz_100": 8.5,
+   "hz_200": 4.166666666666666,
+   "hz_500": 1.5666666666666669,
+   "hz_1000": 0.742857142857143,
+   "hz_2000": 0.3714285714285715,
+   "hz_3000": 0.24761904761904763
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM status only": {
+   "msgs_per_s_digest": 800.0,
+   "mbit_s_air": 1.2288,
+   "hz_100": 8.0,
+   "hz_200": 4.0,
+   "hz_500": 1.6,
+   "hz_1000": 0.8,
+   "hz_2000": 0.4,
+   "hz_3000": 0.26666666666666666
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 800.0,
+   "mbit_s_air": 1.6896,
+   "hz_100": 7.0,
+   "hz_200": 3.0,
+   "hz_500": 0.8,
+   "hz_1000": 0.4,
+   "hz_2000": 0.2,
+   "hz_3000": 0.13333333333333333
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 800.0,
+   "mbit_s_air": 1.9392,
+   "hz_100": 7.0,
+   "hz_200": 3.0,
+   "hz_500": 0.8,
+   "hz_1000": 0.4,
+   "hz_2000": 0.2,
+   "hz_3000": 0.13333333333333333
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 800.0,
+   "mbit_s_air": 2.4064,
+   "hz_100": 7.0,
+   "hz_200": 3.0,
+   "hz_500": 0.8,
+   "hz_1000": 0.4,
+   "hz_2000": 0.2,
+   "hz_3000": 0.13333333333333333
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 40 pts": {
+   "msgs_per_s_digest": 400.0,
+   "mbit_s_air": 1.4752,
+   "hz_100": 4.0,
+   "hz_200": 2.0,
+   "hz_500": 0.8,
+   "hz_1000": 0.4,
+   "hz_2000": 0.2,
+   "hz_3000": 0.13333333333333333
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM status only": {
+   "msgs_per_s_digest": 960.0,
+   "mbit_s_air": 1.47456,
+   "hz_100": 9.6,
+   "hz_200": 4.8,
+   "hz_500": 1.9199999999999997,
+   "hz_1000": 0.9599999999999999,
+   "hz_2000": 0.4799999999999999,
+   "hz_3000": 0.31999999999999995
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 960.0,
+   "mbit_s_air": 2.02752,
+   "hz_100": 8.6,
+   "hz_200": 3.7999999999999994,
+   "hz_500": 0.9599999999999999,
+   "hz_1000": 0.4799999999999999,
+   "hz_2000": 0.23999999999999996,
+   "hz_3000": 0.15999999999999998
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 960.0,
+   "mbit_s_air": 2.32704,
+   "hz_100": 8.6,
+   "hz_200": 3.7999999999999994,
+   "hz_500": 0.9599999999999999,
+   "hz_1000": 0.4799999999999999,
+   "hz_2000": 0.23999999999999996,
+   "hz_3000": 0.15999999999999998
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 960.0,
+   "mbit_s_air": 2.88768,
+   "hz_100": 8.6,
+   "hz_200": 3.7999999999999994,
+   "hz_500": 0.9599999999999999,
+   "hz_1000": 0.4799999999999999,
+   "hz_2000": 0.23999999999999996,
+   "hz_3000": 0.15999999999999998
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 40 pts": {
+   "msgs_per_s_digest": 480.0,
+   "mbit_s_air": 1.77024,
+   "hz_100": 4.8,
+   "hz_200": 2.4,
+   "hz_500": 0.9599999999999999,
+   "hz_1000": 0.4799999999999999,
+   "hz_2000": 0.23999999999999996,
+   "hz_3000": 0.15999999999999998
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM status only": {
+   "msgs_per_s_digest": 2080.0,
+   "mbit_s_air": 3.19488,
+   "hz_100": 20.799999999999997,
+   "hz_200": 10.399999999999999,
+   "hz_500": 4.16,
+   "hz_1000": 2.08,
+   "hz_2000": 1.04,
+   "hz_3000": 0.6933333333333334
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 2080.0,
+   "mbit_s_air": 4.39296,
+   "hz_100": 19.799999999999997,
+   "hz_200": 9.399999999999999,
+   "hz_500": 3.1600000000000006,
+   "hz_1000": 1.0800000000000003,
+   "hz_2000": 0.52,
+   "hz_3000": 0.3466666666666667
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 2080.0,
+   "mbit_s_air": 5.04192,
+   "hz_100": 19.799999999999997,
+   "hz_200": 9.399999999999999,
+   "hz_500": 3.1600000000000006,
+   "hz_1000": 1.0800000000000003,
+   "hz_2000": 0.52,
+   "hz_3000": 0.3466666666666667
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 2080.0,
+   "mbit_s_air": 6.25664,
+   "hz_100": 19.799999999999997,
+   "hz_200": 9.399999999999999,
+   "hz_500": 3.1600000000000006,
+   "hz_1000": 1.0800000000000003,
+   "hz_2000": 0.52,
+   "hz_3000": 0.3466666666666667
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 10 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 40 pts": {
+   "msgs_per_s_digest": 1040.0,
+   "mbit_s_air": 3.83552,
+   "hz_100": 10.399999999999999,
+   "hz_200": 5.199999999999999,
+   "hz_500": 2.08,
+   "hz_1000": 1.04,
+   "hz_2000": 0.52,
+   "hz_3000": 0.3466666666666667
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM status only": {
+   "msgs_per_s_digest": 2000.0,
+   "mbit_s_air": 3.072,
+   "hz_100": 20.0,
+   "hz_200": 10.0,
+   "hz_500": 4.0,
+   "hz_1000": 2.0,
+   "hz_2000": 1.0,
+   "hz_3000": 0.6666666666666666
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 2000.0,
+   "mbit_s_air": 4.224,
+   "hz_100": 19.0,
+   "hz_200": 9.0,
+   "hz_500": 3.0,
+   "hz_1000": 1.0,
+   "hz_2000": 0.5,
+   "hz_3000": 0.3333333333333333
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 2000.0,
+   "mbit_s_air": 4.848,
+   "hz_100": 19.0,
+   "hz_200": 9.0,
+   "hz_500": 3.0,
+   "hz_1000": 1.0,
+   "hz_2000": 0.5,
+   "hz_3000": 0.3333333333333333
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 2000.0,
+   "mbit_s_air": 6.016,
+   "hz_100": 19.0,
+   "hz_200": 9.0,
+   "hz_500": 3.0,
+   "hz_1000": 1.0,
+   "hz_2000": 0.5,
+   "hz_3000": 0.3333333333333333
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 40 pts": {
+   "msgs_per_s_digest": 1000.0,
+   "mbit_s_air": 3.688,
+   "hz_100": 10.0,
+   "hz_200": 5.0,
+   "hz_500": 2.0,
+   "hz_1000": 1.0,
+   "hz_2000": 0.5,
+   "hz_3000": 0.3333333333333333
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .25 (SAE-style CC, as fielded) | TS 22.186 cooperative collision avoidance, 2000 B": {
+   "msgs_per_s_digest": 400.0,
+   "mbit_s_air": 6.8832,
+   "hz_100": 4.0,
+   "hz_200": 2.0,
+   "hz_500": 0.8,
+   "hz_1000": 0.4,
+   "hz_2000": 0.2,
+   "hz_3000": 0.13333333333333333
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM status only": {
+   "msgs_per_s_digest": 2400.0,
+   "mbit_s_air": 3.6864,
+   "hz_100": 23.999999999999996,
+   "hz_200": 11.999999999999998,
+   "hz_500": 4.799999999999999,
+   "hz_1000": 2.3999999999999995,
+   "hz_2000": 1.1999999999999997,
+   "hz_3000": 0.7999999999999999
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 2400.0,
+   "mbit_s_air": 5.0688,
+   "hz_100": 23.0,
+   "hz_200": 10.999999999999998,
+   "hz_500": 3.7999999999999994,
+   "hz_1000": 1.4,
+   "hz_2000": 0.5999999999999999,
+   "hz_3000": 0.39999999999999997
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 2400.0,
+   "mbit_s_air": 5.8176,
+   "hz_100": 23.0,
+   "hz_200": 10.999999999999998,
+   "hz_500": 3.7999999999999994,
+   "hz_1000": 1.4,
+   "hz_2000": 0.5999999999999999,
+   "hz_3000": 0.39999999999999997
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 2400.0,
+   "mbit_s_air": 7.2192,
+   "hz_100": 23.0,
+   "hz_200": 10.999999999999998,
+   "hz_500": 3.7999999999999994,
+   "hz_1000": 1.4,
+   "hz_2000": 0.5999999999999999,
+   "hz_3000": 0.39999999999999997
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 40 pts": {
+   "msgs_per_s_digest": 1200.0,
+   "mbit_s_air": 4.4256,
+   "hz_100": 11.999999999999998,
+   "hz_200": 5.999999999999999,
+   "hz_500": 2.3999999999999995,
+   "hz_1000": 1.1999999999999997,
+   "hz_2000": 0.5999999999999999,
+   "hz_3000": 0.39999999999999997
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .30 (TS 103 574, no CR limit) | TS 22.186 cooperative collision avoidance, 2000 B": {
+   "msgs_per_s_digest": 480.0,
+   "mbit_s_air": 8.25984,
+   "hz_100": 4.8,
+   "hz_200": 2.4,
+   "hz_500": 0.9599999999999999,
+   "hz_1000": 0.4799999999999999,
+   "hz_2000": 0.23999999999999996,
+   "hz_3000": 0.15999999999999998
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM status only": {
+   "msgs_per_s_digest": 5200.0,
+   "mbit_s_air": 7.9872,
+   "hz_100": 51.99999999999999,
+   "hz_200": 25.999999999999996,
+   "hz_500": 10.4,
+   "hz_1000": 5.2,
+   "hz_2000": 2.6,
+   "hz_3000": 1.7333333333333332
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 5200.0,
+   "mbit_s_air": 10.9824,
+   "hz_100": 50.99999999999999,
+   "hz_200": 25.0,
+   "hz_500": 9.4,
+   "hz_1000": 4.2,
+   "hz_2000": 1.6000000000000003,
+   "hz_3000": 0.8666666666666666
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 5200.0,
+   "mbit_s_air": 12.6048,
+   "hz_100": 50.99999999999999,
+   "hz_200": 25.0,
+   "hz_500": 9.4,
+   "hz_1000": 4.2,
+   "hz_2000": 1.6000000000000003,
+   "hz_3000": 0.8666666666666666
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 5200.0,
+   "mbit_s_air": 15.6416,
+   "hz_100": 50.99999999999999,
+   "hz_200": 25.0,
+   "hz_500": 9.4,
+   "hz_1000": 4.2,
+   "hz_2000": 1.6000000000000003,
+   "hz_3000": 0.8666666666666666
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 40 pts": {
+   "msgs_per_s_digest": 2600.0,
+   "mbit_s_air": 9.5888,
+   "hz_100": 25.999999999999996,
+   "hz_200": 12.999999999999998,
+   "hz_500": 5.2,
+   "hz_1000": 2.6,
+   "hz_2000": 1.3,
+   "hz_3000": 0.8666666666666666
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 20 MHz | CBR .65 (TS 103 574, CR .03 to .02) | TS 22.186 cooperative collision avoidance, 2000 B": {
+   "msgs_per_s_digest": 1040.0,
+   "mbit_s_air": 17.89632,
+   "hz_100": 10.399999999999999,
+   "hz_200": 5.199999999999999,
+   "hz_500": 2.08,
+   "hz_1000": 1.04,
+   "hz_2000": 0.52,
+   "hz_3000": 0.3466666666666667
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM status only": {
+   "msgs_per_s_digest": 4000.0,
+   "mbit_s_air": 6.144,
+   "hz_100": 40.0,
+   "hz_200": 20.0,
+   "hz_500": 8.0,
+   "hz_1000": 4.0,
+   "hz_2000": 2.0,
+   "hz_3000": 1.3333333333333333
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 4000.0,
+   "mbit_s_air": 8.448,
+   "hz_100": 39.0,
+   "hz_200": 19.0,
+   "hz_500": 7.0,
+   "hz_1000": 3.0,
+   "hz_2000": 1.0,
+   "hz_3000": 0.6666666666666666
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 4000.0,
+   "mbit_s_air": 9.696,
+   "hz_100": 39.0,
+   "hz_200": 19.0,
+   "hz_500": 7.0,
+   "hz_1000": 3.0,
+   "hz_2000": 1.0,
+   "hz_3000": 0.6666666666666666
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 4000.0,
+   "mbit_s_air": 12.032,
+   "hz_100": 39.0,
+   "hz_200": 19.0,
+   "hz_500": 7.0,
+   "hz_1000": 3.0,
+   "hz_2000": 1.0,
+   "hz_3000": 0.6666666666666666
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | CAM + 40 pts": {
+   "msgs_per_s_digest": 2000.0,
+   "mbit_s_air": 7.376,
+   "hz_100": 20.0,
+   "hz_200": 10.0,
+   "hz_500": 4.0,
+   "hz_1000": 2.0,
+   "hz_2000": 1.0,
+   "hz_3000": 0.6666666666666666
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .25 (SAE-style CC, as fielded) | TS 22.186 cooperative collision avoidance, 2000 B": {
+   "msgs_per_s_digest": 800.0,
+   "mbit_s_air": 13.7664,
+   "hz_100": 8.0,
+   "hz_200": 4.0,
+   "hz_500": 1.6,
+   "hz_1000": 0.8,
+   "hz_2000": 0.4,
+   "hz_3000": 0.26666666666666666
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM status only": {
+   "msgs_per_s_digest": 4800.0,
+   "mbit_s_air": 7.3728,
+   "hz_100": 47.99999999999999,
+   "hz_200": 23.999999999999996,
+   "hz_500": 9.599999999999998,
+   "hz_1000": 4.799999999999999,
+   "hz_2000": 2.3999999999999995,
+   "hz_3000": 1.5999999999999999
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 4800.0,
+   "mbit_s_air": 10.1376,
+   "hz_100": 46.99999999999999,
+   "hz_200": 23.0,
+   "hz_500": 8.599999999999998,
+   "hz_1000": 3.7999999999999994,
+   "hz_2000": 1.4,
+   "hz_3000": 0.7999999999999999
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 4800.0,
+   "mbit_s_air": 11.6352,
+   "hz_100": 46.99999999999999,
+   "hz_200": 23.0,
+   "hz_500": 8.599999999999998,
+   "hz_1000": 3.7999999999999994,
+   "hz_2000": 1.4,
+   "hz_3000": 0.7999999999999999
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 4800.0,
+   "mbit_s_air": 14.4384,
+   "hz_100": 46.99999999999999,
+   "hz_200": 23.0,
+   "hz_500": 8.599999999999998,
+   "hz_1000": 3.7999999999999994,
+   "hz_2000": 1.4,
+   "hz_3000": 0.7999999999999999
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | CAM + 40 pts": {
+   "msgs_per_s_digest": 2400.0,
+   "mbit_s_air": 8.8512,
+   "hz_100": 23.999999999999996,
+   "hz_200": 11.999999999999998,
+   "hz_500": 4.799999999999999,
+   "hz_1000": 2.3999999999999995,
+   "hz_2000": 1.1999999999999997,
+   "hz_3000": 0.7999999999999999
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .30 (TS 103 574, no CR limit) | TS 22.186 cooperative collision avoidance, 2000 B": {
+   "msgs_per_s_digest": 960.0,
+   "mbit_s_air": 16.51968,
+   "hz_100": 9.6,
+   "hz_200": 4.8,
+   "hz_500": 1.9199999999999997,
+   "hz_1000": 0.9599999999999999,
+   "hz_2000": 0.4799999999999999,
+   "hz_3000": 0.31999999999999995
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM status only": {
+   "msgs_per_s_digest": 10400.0,
+   "mbit_s_air": 15.9744,
+   "hz_100": 103.99999999999999,
+   "hz_200": 51.99999999999999,
+   "hz_500": 20.8,
+   "hz_1000": 10.4,
+   "hz_2000": 5.2,
+   "hz_3000": 3.4666666666666663
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 5 s intent, 10 pts": {
+   "msgs_per_s_digest": 10400.0,
+   "mbit_s_air": 21.9648,
+   "hz_100": 103.0,
+   "hz_200": 50.99999999999999,
+   "hz_500": 19.800000000000004,
+   "hz_1000": 9.4,
+   "hz_2000": 4.2,
+   "hz_3000": 2.466666666666667
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 8 s intent, 16 pts": {
+   "msgs_per_s_digest": 10400.0,
+   "mbit_s_air": 25.2096,
+   "hz_100": 103.0,
+   "hz_200": 50.99999999999999,
+   "hz_500": 19.800000000000004,
+   "hz_1000": 9.4,
+   "hz_2000": 4.2,
+   "hz_3000": 2.466666666666667
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 16 pts with position confidence": {
+   "msgs_per_s_digest": 10400.0,
+   "mbit_s_air": 31.2832,
+   "hz_100": 103.0,
+   "hz_200": 50.99999999999999,
+   "hz_500": 19.800000000000004,
+   "hz_1000": 9.4,
+   "hz_2000": 4.2,
+   "hz_3000": 2.466666666666667
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | CAM + 40 pts": {
+   "msgs_per_s_digest": 5200.0,
+   "mbit_s_air": 19.1776,
+   "hz_100": 51.99999999999999,
+   "hz_200": 25.999999999999996,
+   "hz_500": 10.4,
+   "hz_1000": 5.2,
+   "hz_2000": 2.6,
+   "hz_3000": 1.7333333333333332
+  },
+  "NR mode 2, 64QAM R.55 (MCS 20), no retx | 40 MHz | CBR .65 (TS 103 574, CR .03 to .02) | TS 22.186 cooperative collision avoidance, 2000 B": {
+   "msgs_per_s_digest": 2080.0,
+   "mbit_s_air": 35.79264,
+   "hz_100": 20.799999999999997,
+   "hz_200": 10.399999999999999,
+   "hz_500": 4.16,
+   "hz_1000": 2.08,
+   "hz_2000": 1.04,
+   "hz_3000": 0.6933333333333334
+  }
+ },
+ "calibration": {
+  "offered": [
+   0.192,
+   0.384,
+   0.96
+  ],
+  "cbr_measured": [
+   0.25,
+   0.48,
+   0.87
+  ],
+  "model": [
+   0.24,
+   0.48,
+   1
+  ]
+ },
+ "qualcomm_net_mbit": {
+  "50": 1.532,
+  "100": 3.064,
+  "250": 7.66
+ },
+ "cars_in_disc": {
+  "stockholm r=300 20/lane-km": {
+   "p50_lane_km": 104,
+   "p95_lane_km": 188,
+   "p99_lane_km": 233,
+   "max_lane_km": 333
+  },
+  "stockholm r=300 50/lane-km": {
+   "p50_lane_km": 260,
+   "p95_lane_km": 470,
+   "p99_lane_km": 582,
+   "max_lane_km": 833
+  },
+  "stockholm r=300 133/lane-km jam": {
+   "p50_lane_km": 692,
+   "p95_lane_km": 1251,
+   "p99_lane_km": 1547,
+   "max_lane_km": 2217
+  },
+  "stockholm r=500 20/lane-km": {
+   "p50_lane_km": 262,
+   "p95_lane_km": 451,
+   "p99_lane_km": 532,
+   "max_lane_km": 654
+  },
+  "stockholm r=500 50/lane-km": {
+   "p50_lane_km": 655,
+   "p95_lane_km": 1128,
+   "p99_lane_km": 1330,
+   "max_lane_km": 1634
+  },
+  "stockholm r=500 133/lane-km jam": {
+   "p50_lane_km": 1741,
+   "p95_lane_km": 3000,
+   "p99_lane_km": 3538,
+   "max_lane_km": 4348
+  },
+  "stockholm r=800 20/lane-km": {
+   "p50_lane_km": 709,
+   "p95_lane_km": 1189,
+   "p99_lane_km": 1341,
+   "max_lane_km": 1575
+  },
+  "stockholm r=800 50/lane-km": {
+   "p50_lane_km": 1774,
+   "p95_lane_km": 2972,
+   "p99_lane_km": 3354,
+   "max_lane_km": 3938
+  },
+  "stockholm r=800 133/lane-km jam": {
+   "p50_lane_km": 4718,
+   "p95_lane_km": 7904,
+   "p99_lane_km": 8921,
+   "max_lane_km": 10474
+  },
+  "berlin r=300 20/lane-km": {
+   "p50_lane_km": 98,
+   "p95_lane_km": 168,
+   "p99_lane_km": 213,
+   "max_lane_km": 340
+  },
+  "berlin r=300 50/lane-km": {
+   "p50_lane_km": 244,
+   "p95_lane_km": 420,
+   "p99_lane_km": 533,
+   "max_lane_km": 850
+  },
+  "berlin r=300 133/lane-km jam": {
+   "p50_lane_km": 649,
+   "p95_lane_km": 1118,
+   "p99_lane_km": 1419,
+   "max_lane_km": 2262
+  },
+  "berlin r=500 20/lane-km": {
+   "p50_lane_km": 247,
+   "p95_lane_km": 403,
+   "p99_lane_km": 504,
+   "max_lane_km": 662
+  },
+  "berlin r=500 50/lane-km": {
+   "p50_lane_km": 617,
+   "p95_lane_km": 1007,
+   "p99_lane_km": 1260,
+   "max_lane_km": 1655
+  },
+  "berlin r=500 133/lane-km jam": {
+   "p50_lane_km": 1640,
+   "p95_lane_km": 2677,
+   "p99_lane_km": 3352,
+   "max_lane_km": 4403
+  },
+  "berlin r=800 20/lane-km": {
+   "p50_lane_km": 677,
+   "p95_lane_km": 1069,
+   "p99_lane_km": 1330,
+   "max_lane_km": 1681
+  },
+  "berlin r=800 50/lane-km": {
+   "p50_lane_km": 1692,
+   "p95_lane_km": 2671,
+   "p99_lane_km": 3326,
+   "max_lane_km": 4202
+  },
+  "berlin r=800 133/lane-km jam": {
+   "p50_lane_km": 4501,
+   "p95_lane_km": 7106,
+   "p99_lane_km": 8846,
+   "max_lane_km": 11178
+  }
+ },
+ "lane_km_per_km2_stockholm": {
+  "p50": 16.852735613684366,
+  "p95": 36.478410917430224,
+  "p99": 50.25744334080406,
+  "max": 101.1147181475047
+ },
+ "lane_km_per_km2_berlin": {
+  "p50": 16.214360102433552,
+  "p95": 32.659618953625696,
+  "p99": 46.06627196742772,
+  "max": 100.84803640653743
+ },
+ "cam_rate_from_fcd": {
+  "stockholm-window": {
+   "vehicles": 19797,
+   "mean_hz_per_vehicle": 1.0098973182333495,
+   "dt_s": 1.0
+  },
+  "berlin-window": {
+   "vehicles": 1235,
+   "mean_hz_per_vehicle": 1.0095381571663233,
+   "dt_s": 1.0
+  },
+  "signal": {
+   "vehicles": 249,
+   "mean_hz_per_vehicle": 2.1912681912681937,
+   "dt_s": 0.0999999999999659
+  }
+ }
+}

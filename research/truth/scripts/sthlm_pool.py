@@ -90,7 +90,8 @@ def fit(idx,matches,features,dua,out,rep,scale):
             n=int(x)+(rng.random()<x%1)
             for _ in range(n):
                 t=rng.random()
-                for i,s in enumerate(band[2]):
+                sh=band[2] if not os.environ.get('FLAT') else [1/len(band[2])]*len(band[2])
+                for i,s in enumerate(sh):
                     t-=s
                     if t<=0: break
                 veh.append((((band[0]+i+rng.random())%24)*3600,j))

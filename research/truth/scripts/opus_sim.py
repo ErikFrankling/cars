@@ -57,7 +57,15 @@ class Driver:
             vn = np.maximum(np.minimum(np.minimum(vf, vs), v + a * dt), np.maximum(v - 9 * dt, 0))
             return vn
         if self.kind == 'helly':
-            at = helly_accel(v, s, vl, p)
+            if 'T_sd' in p:
+                # slow drift of the wanted time gap within one driver
+                if not hasattr(self, 'z'): self.z = self.rng.normal(0, p['T_sd'], self.N)
+                r_ = np.exp(-dt / p['T_tc'])
+                self.z = r_ * self.z + p['T_sd'] * np.sqrt(1 - r_ * r_) * self.rng.standard_normal(self.N)
+                pu = dict(p); pu['T'] = p['T'] * np.exp(self.z)
+            else:
+                pu = p
+            at = helly_accel(v, s, vl, pu)
             if 'tau_a' in p:
                 self.ac = self.ac + (1 - np.exp(-dt / p['tau_a'])) * (at - self.ac)
             else:
@@ -116,7 +124,7 @@ def advance(x, v, vn, dt, lead_x=None, min_spacing=None):
     return x + adv, vn
 
 
-def ring(kind, p, N=22, L=230.0, T=600.0, dt=0.1, seed=1, v_init=8.0, spatial_jitter=0.3):
+def ring(kind, p, N=22, L=230.0, T=600.0, dt=0.1, seed=1, v_init=8.0, spatial_jitter=0.3, min_sp=2.0):
     """Sugiyama geometry: returns dict of steady statistics from the last half."""
     r = np.random.default_rng(seed)
     d = Driver(kind, p, N, dt, seed)

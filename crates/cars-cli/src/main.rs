@@ -2,8 +2,10 @@ use clap::{Parser, Subcommand};
 mod junctions;
 mod overlay;
 mod record;
+mod replay;
 mod report;
 mod run;
+mod trace;
 #[derive(Parser)]
 struct Args {
     #[command(subcommand)]
@@ -15,6 +17,8 @@ enum Command {
     Record(record::Args),
     /// Save PNGs at given simulation times and cameras, without making a video.
     Shot(record::Args),
+    /// Draw a trace written by `cars run --trace`, with no simulation at all.
+    Replay(replay::Args),
     /// List the busiest junctions of each kind.
     Junctions(junctions::Args),
 }
@@ -33,6 +37,11 @@ fn main() {
         Command::Shot(a) => {
             if let Err(e) = record::run(a, true) {
                 fail("shot", e);
+            }
+        }
+        Command::Replay(a) => {
+            if let Err(e) = replay::run(a) {
+                fail("replay", e);
             }
         }
         Command::Junctions(a) => {
