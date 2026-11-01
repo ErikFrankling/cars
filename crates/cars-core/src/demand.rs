@@ -17,6 +17,8 @@ pub enum CfModel {
     Idm,
     Acc,
     Cacc,
+    /// The automated car of research/truth/09, for coordinated junctions.
+    Av,
     Eidm,
 }
 #[derive(Clone, Debug)]
@@ -97,6 +99,7 @@ impl VType {
             "ACC" => CfModel::Acc,
             "CACC" => CfModel::Cacc,
             "EIDM" => CfModel::Eidm,
+            "CarsAV" => CfModel::Av,
             _ => CfModel::Krauss,
         };
         let decel = num(a, "decel", decel);

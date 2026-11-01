@@ -14,6 +14,7 @@ const MODEL_KRAUSS: u32 = 0u;
 const MODEL_IDM: u32 = 1u;
 const MODEL_ACC: u32 = 2u;
 const MODEL_CACC: u32 = 3u;
+const MODEL_AV: u32 = 4u;
 
 // Vehicle flags.
 const F_REMOVED: u32 = 1u;        // arrived or teleported away, gone at the next sort
@@ -39,6 +40,7 @@ const L_FROM_INTERNAL: u32 = 16u;
 const L_EXIT_AFTER_IJ: u32 = 32u;
 const L_INTERNAL_JUNCTION: u32 = 64u;
 const L_WATCHED: u32 = 1u << 16u;  // some other link yields to this one
+const L_COORD: u32 = 1u << 17u;    // at a coordinated junction
 
 // Conflict flags.
 const C_SAME_TARGET: u32 = 1u;
@@ -51,6 +53,8 @@ const C_NO_CROSSING: u32 = 16u;
 const LANE_INTERNAL: u32 = 1u;
 const LANE_ROUNDABOUT: u32 = 2u;
 const LANE_TO_BIG_JUNCTION: u32 = 4u;
+const LANE_CJ: u32 = 8u;           // approach to, or inside, a coordinated junction
+const LANE_CJ_EXIT: u32 = 16u;     // leaves one, and does not lead to another
 const EDGE_ROUNDABOUT: u32 = 2u;
 
 struct Params {
@@ -74,6 +78,10 @@ struct Params {
     script_t0: f32,
     dummy_lane: u32,
     pad1: f32,
+    meter_n: u32,
+    pad2: u32,
+    pad3: u32,
+    pad4: u32,
 }
 
 struct Globals {
@@ -128,6 +136,16 @@ struct Veh {
     occ_right: f32,
     occ_best: f32,
     pad: u32,
+    cj_t_line: f32,    // scheduled time at the stop line
+    cj_v_line: f32,    // scheduled speed at the stop line
+    cj_v_cruise: f32,
+    cj_link: u32,      // movement it is scheduled on
+    cj_state: u32,     // CJ_* in the low bits, then flags and the speed class
+    cj_zone_t: f32,    // when it entered the control zone
+    cj_seq: u32,       // commit order of its grant
+    cj_hold: f32,      // path position to stop at during a fault
+    cj_v_cmd: f32,     // this step's speed from cj_apply
+    cj_yield: f32,     // path position to stop at for a sensed foe
 }
 
 struct Lane {
@@ -213,7 +231,7 @@ struct VType {
     lc_look_left: f32,
     lc_speed_gain_right: f32,
     collision_factor: f32,
-    pad1: f32,
+    reaction: f32,
     pad2: f32,
 }
 
@@ -307,6 +325,232 @@ struct TlsPhase {
     state_start: u32,
     loops_start: u32,
     loops_count: u32,
+}
+
+const CJ_NONE: u32 = 0u;
+const CJ_ADVISED: u32 = 1u;
+const CJ_FIRM: u32 = 2u;
+const CJ_BOX: u32 = 3u;
+const CJ_PENDING: u32 = 4u;       // the grant is written but has not reached the car
+const CJ_STATE_MASK: u32 = 15u;
+const CJ_ARMED: u32 = 16u;        // past its point of no return with the exit checked
+const CJ_LATE: u32 = 32u;
+const CJ_STALLED: u32 = 64u;      // injected failure
+const CJ_WAS_MOVING: u32 = 128u;
+const CJ_K_SHIFT: u32 = 8u;       // speed class of the grant
+const CJ_KEEP: u32 = CJ_STALLED | CJ_WAS_MOVING;
+
+const MODE_SUMO: u32 = 0u;
+const MODE_FREE: u32 = 1u;
+const MODE_SIGNAL: u32 = 2u;
+const MODE_MIXED: u32 = 3u;
+
+struct CjCfg {
+    length: f32,
+    width: f32,
+    s0: f32,
+    tau: f32,
+    accel: f32,
+    b_plan: f32,
+    b_s: f32,
+    b_e: f32,
+    t_r: f32,
+    m_t: f32,
+    level_b: u32,
+    tick_steps: u32,
+    t_firm: f32,
+    a_max: f32,
+    unit: f32,
+    exit_check: u32,
+    ponr: u32,
+    perception: u32,
+    audit: u32,
+    p_loss: f32,
+    blackout_t0: f32,
+    blackout_t1: f32,
+    crash_t0: f32,
+    crash_t1: f32,
+    fallback: u32,
+    stall_rate: f32,
+    stall_t: f32,
+    warm: f32,
+    chan: u32,
+    r50: f32,
+    p_floor: f32,
+    burst_len: f32,
+    burst_every: f32,
+    sig_min: f32,
+    sig_max: f32,
+    sig_gap: f32,
+    sig_lost: f32,
+    sig_start: f32,
+    n_junctions: u32,
+    n_apps: u32,
+    n_exits: u32,
+    pad: u32,
+}
+
+struct CjJunction {
+    app_start: u32,
+    app_count: u32,
+    exit_start: u32,
+    exit_count: u32,
+    mov_start: u32,
+    mov_count: u32,
+    rel_start: u32,
+    rel_count: u32,
+    plan_start: u32,
+    plan_n: u32,
+    aud_start: u32,
+    aud_n: u32,
+    tick_phase: u32,
+    mode: u32,
+    replica: u32,
+    seq: u32,
+    cx: f32,
+    cy: f32,
+    awsc_free: f32,
+    frozen: u32,
+    group_mask: u32,
+    phase: u32,
+    phase_t: f32,
+    switch_t: f32,
+    stall_active: u32,
+    stall_trip: u32,
+    stall_mov: u32,
+    stall_seq: u32,
+    stall_detect: f32,
+    stall_until: f32,
+    p_load: f32,
+    pad: u32,
+}
+
+struct CjLink {
+    junction: u32,
+    from_lane: u32,
+    to_lane: u32,
+    conf_start: u32,
+    conf_count: u32,
+    pair_start: u32,
+    pair_count: u32,
+    path_len: f32,
+    v_turn: f32,
+    v_lane: f32,
+    v_after: f32,
+    group: u32,
+    conf_lanes: u32,
+    path_start: u32,
+    path_n: u32,
+    sim_link: u32,
+    dir_in: vec2f,
+    dir_out: vec2f,
+}
+
+struct CjConflict {
+    rel_index: u32,
+    rev_index: u32,
+    foe: u32,
+    s_in: f32,
+    s_out: f32,
+    foe_s_in: f32,
+}
+
+struct CjPair {
+    other: u32,
+    is_exit: u32,
+    table: u32,
+    s_end: f32,
+}
+
+struct CjMovK {
+    vk: f32,
+    vout: f32,
+    t_clear: f32,
+    pad: f32,
+}
+
+struct CjApp {
+    sim_lane: u32,
+    junction: u32,
+    ord: u32,
+    req_start: u32,
+    n_req: u32,
+    mov_start: u32,
+    mov_count: u32,
+    speed: f32,
+    length: f32,
+    line_ref: u32,
+    line_t: f32,
+    s_line_ref: u32,
+    s_line_t: f32,
+    s_ptr: u32,
+    s_cand_state: u32,
+    s_cand_k: u32,
+    s_cand_t: f32,
+    s_cand_score: f32,
+    box_tail: atomic<u32>,
+    pad: u32,
+}
+
+struct CjExit {
+    sim_lane: u32,
+    junction: u32,
+    length: f32,
+    exit_ref: u32,
+    exit_t: f32,
+    s_exit_ref: u32,
+    s_exit_t: f32,
+    n_on_lane: u32,
+    has_tail: u32,
+    tail_x: f32,
+    tail_v: f32,
+    n_committed: atomic<u32>,
+    n_armed: atomic<u32>,
+    n_box: atomic<u32>,
+    block_t0: f32,
+    block_t1: f32,
+    cap_interval: f32,
+    sink_ready: f32,
+    pad0: u32,
+    pad1: u32,
+}
+
+struct CjReq {
+    veh: u32,
+    link: u32,
+    d: f32,
+    v: f32,
+    age_t: f32,
+    trip: u32,
+    t_plan: f32,
+    k_plan: u32,
+}
+
+struct CjBox {
+    veh: u32,
+    seq: u32,
+    stamp: u32,
+    mov: u32,
+    s: f32,
+    v: f32,
+    trip: u32,
+    pad: u32,
+}
+
+struct CjAud {
+    f: vec2f,
+    r: vec2f,
+    trip: u32,
+    mov: u32,
+    s: f32,
+    v: f32,
+}
+
+struct CjLaneInfo {
+    app: u32,
+    exit: u32,
+    box_mov: u32,
+    s_offset: f32,
 }
 
 // Per-vehicle context, set up at the top of a kernel.
@@ -480,9 +724,25 @@ fn cacc_v(gap: f32, v: f32, vp: f32, des: f32, leader_cacc: bool, has_leader: bo
     return max(0.0, nv);
 }
 
+// The automated car's safety filter: can stop behind a leader braking as hard as itself, after
+// reaction time. Every AV kernel goes through these two, so the physics layer swaps them here.
+fn av_safe_speed(gap: f32, vl: f32, b: f32, tr: f32, s0: f32) -> f32 {
+    return -b * tr + sqrt(b * tr * b * tr + vl * vl + 2.0 * b * max(gap - 0.5 * s0, 0.0));
+}
+
+// The fastest a car may go and still stop before a line d ahead.
+fn av_stop_curve(d: f32, b: f32, tr: f32) -> f32 {
+    return b * (sqrt(tr * tr + 2.0 * max(d - 0.5, 0.0) / b) - tr);
+}
+
 // CF::followSpeed. `lane_vmax` is the lane's limit for this vehicle, `lane_limit` the posted limit.
 fn follow_speed(v: f32, gap: f32, vp: f32, bp: f32, leader_cacc: bool, lane_vmax: f32, lane_limit: f32) -> f32 {
     switch ty.model {
+        case MODEL_AV: {
+            let g = gap + ty.min_gap;
+            let a = 0.3 * (gap - v * ty.tau) + 0.8 * (vp - v);
+            return max(0.0, min(v + min(a, ty.accel) * dt, av_safe_speed(g, vp, ty.apparent, ty.reaction, ty.min_gap)));
+        }
         case MODEL_IDM: {
             return idm_v(gap, v, vp, lane_vmax, true);
         }
@@ -554,6 +814,7 @@ fn insertion_follow(speed: f32, gap: f32, vp: f32, bp: f32, vmax: f32, leader_ca
             }
             return res;
         }
+        case MODEL_AV: { return speed; }
         default: { return safe_follow(gap, speed, vp, bp, true); }
     }
 }

@@ -39,7 +39,7 @@ pub struct Args {
     /// Simulation times of stills. With `cars shot` these are the point of the run.
     #[arg(long, value_delimiter = ',')]
     at: Vec<f32>,
-    #[arg(long,value_delimiter=',',value_parser=["all","leader","braking","speed","state","foes","events"])]
+    #[arg(long,value_delimiter=',',value_parser=["all","leader","braking","speed","state","foes","events","grants","paths","channel"])]
     overlay: Vec<String>,
     /// JSON with many cameras over one simulation run, see RECORDING.md. Replaces --out.
     #[arg(long)]
@@ -90,6 +90,8 @@ pub struct Args {
     /// Where the simulation starts; the part before --begin runs without rendering.
     #[arg(long, default_value_t = 0.0)]
     sim_begin: f32,
+    #[command(flatten)]
+    coord: crate::av::CoordArgs,
 }
 #[derive(Deserialize, Default)]
 struct Script {
@@ -369,6 +371,9 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
             capacity: a.capacity,
             time_to_teleport: a.time_to_teleport,
             ignore_blocker: a.ignore_junction_blocker,
+            per_lane_queues: a.coord.cj.is_some(),
+            meter_n: a.coord.cj_meter,
+            coord: a.coord.config()?,
             ..Default::default()
         },
         &[],
@@ -414,7 +419,7 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
     let widths: Vec<f32> = demand.vtypes.iter().map(|t| t.width).collect();
     demand.routes = Vec::new();
     let gpu = pollster::block_on(Gpu::headless(GpuOptions {
-        adapter_name: Some("7900".into()),
+        adapter_name: Some(std::env::var("CARS_ADAPTER").unwrap_or("7900".into())),
         ..Default::default()
     }))?;
     let mut sim = Sim::new(&gpu, &world)?;

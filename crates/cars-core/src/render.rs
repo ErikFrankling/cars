@@ -178,7 +178,7 @@ impl Renderer {
             let Some(lane) = w.lanes.get(l.from_lane as usize) else {
                 continue;
             };
-            if l.tl == u32::MAX || lane.flags & 1 != 0 {
+            if l.tl == u32::MAX || lane.flags & 1 != 0 || l.flags & crate::coord::L_COORD != 0 {
                 continue;
             }
             let bits = *turns.get(&(l.from_lane, l.to_edge)).unwrap_or(&0);

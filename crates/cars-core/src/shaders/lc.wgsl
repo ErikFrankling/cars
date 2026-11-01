@@ -1088,6 +1088,8 @@ fn lc_evaluate(i: u32) {
     if (ed.lane_count <= 1u) { return; }
     ty = types[e.vtype];
     dt = P.dt;
+    // A firm slot is for one movement from one lane; the fixed-lane models never change at all.
+    if (ty.model == MODEL_AV && (ty.lc_strategic < 0.0 || (e.cj_state & CJ_STATE_MASK) == CJ_FIRM || (e.cj_state & CJ_STATE_MASK) == CJ_PENDING)) { return; }
     ego_flags = e.flags;
     ego_acc = e.acc;
     mode_done = true;
