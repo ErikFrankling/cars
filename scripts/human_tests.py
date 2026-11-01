@@ -689,6 +689,64 @@ def hysteresis():
     record('hysteresis', results)
 
 
+def event_study():
+    """Report 14 test B, a simplified form of courtesy_events.py: the target-lane follower 4 s before a car crosses
+    into its lane, against pairs in the same cell of speed and gap with no one cutting in. Band: excess opening at
+    2-15 m/s of 3-10 points, hold-back 0.8-1.6 m, follower peak braking median -1 to -1.6 m/s2, none above 25 m/s."""
+    out = {}
+    for name, sub in (('congested', 'lc_congested'), ('free', 'lc_free')):
+        rows, ctrl = [], []
+        for fc in sorted(workdir(sub).glob('s*.fcd.csv')):
+            f = pd.read_csv(fc, usecols=['time', 'trip', 'lane', 'pos', 'speed', 'acc', 'length', 'offset'], dtype={'trip': str, 'lane': str})
+            f = f.sort_values(['lane', 'time', 'pos'])
+            f['lead'] = f.groupby(['lane', 'time']).trip.shift(-1)
+            f['lead_pos'] = f.groupby(['lane', 'time']).pos.shift(-1)
+            f['lead_v'] = f.groupby(['lane', 'time']).speed.shift(-1)
+            f['gap'] = f.lead_pos - f.pos - f.length
+            times = np.sort(f.time.unique())
+            step = times[1] - times[0]
+            idx = f.set_index(['trip', 'time'])
+            k = int(round(4.0 / step))
+            mover = f[f.offset.abs() > 1e-3].groupby('trip').time.min()
+            for trip, t in mover.items():
+                # The car's lane id flips at the start of the change; half way is about 0.5 D later.
+                try:
+                    r = idx.loc[(trip, t)]
+                except KeyError:
+                    continue
+                now = f[(f.time == t) & (f.lane == r.lane) & (f.pos < r.pos)]
+                if now.empty:
+                    continue
+                fol = now.iloc[-1]
+                try:
+                    a = idx.loc[(fol.trip, t - k * step)]
+                    b = idx.loc[(fol.trip, t)]
+                except KeyError:
+                    continue
+                track = f[(f.trip == fol.trip) & f.time.between(t - k * step, t + 2)]
+                rows.append((a.speed, a.gap, (a.speed - b.speed) * 4 / 2, b.pos - a.pos, track.acc.min(), a.lead_v - a.speed))
+            ok = f[f.gap.notna()]
+            sample = ok.iloc[::37]
+            for rr in sample.itertuples():
+                try:
+                    b = idx.loc[(rr.trip, rr.time + k * step)]
+                except KeyError:
+                    continue
+                if b.lead != rr.lead or rr.trip in mover.index:
+                    continue
+                ctrl.append((rr.speed, rr.gap, 0.0, b.pos - rr.pos, 0.0, rr.lead_v - rr.speed))
+        e = pd.DataFrame(rows, columns=['v', 'gap', 'x', 'moved', 'peak', 'dv'])
+        c = pd.DataFrame(ctrl, columns=['v', 'gap', 'x', 'moved', 'peak', 'dv'])
+        for d_ in (e, c):
+            d_['cell'] = (d_.v // 2.5).astype(int).astype(str) + '_' + (d_.gap.clip(0, 60) // 5).astype(int).astype(str)
+        base = c.groupby('cell').moved.median()
+        e['hold'] = e.cell.map(base) - e.moved
+        band = e[e.v.between(2, 15)]
+        fast = e[e.v > 25]
+        out[name] = dict(events=len(e), controls=len(c), hold_back_2_15=float(band.hold.median()) if len(band) else None, opens_gap_2_15=float((band.hold > 2).mean()) if len(band) else None, peak_median=float(band.peak.median()) if len(band) else None, hold_back_over_25=float(fast.hold.median()) if len(fast) else None)
+    record('event_study', out)
+
+
 def main():
     global A
     p = argparse.ArgumentParser()
