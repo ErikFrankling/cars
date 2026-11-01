@@ -28,6 +28,7 @@ def panel(ax, title, curves, ylabel=None, ref=None, log=False):
         ax.annotate(ref[1], (1, ref[0]), xycoords=("axes fraction", "data"), ha="right", va="bottom", fontsize=8, color=MUTED)
     if log:
         ax.set_yscale("symlog", linthresh=0.01)
+        ax.set_ylim(bottom=0)
     ax.set_xlabel("iteration")
     if ylabel:
         ax.set_ylabel(ylabel)
@@ -51,8 +52,12 @@ def main(out, args):
     name = lambda label, what: f"{label}: {what}" if many else what
     panel(ax[0][0], "Relative gap", sum(([(name(l, "unseen seed"), r["iter"], [x * 100 for x in r["gap_unseen"]], color[i], "-"), (name(l, "on smoothed costs"), r["iter"], [x * 100 for x in r["gap_memory"]], color[i], "--")] for i, (l, r) in enumerate(runs)), []), "% of trip cost", (2.0, "target 2%"))
     panel(ax[0][1], "Mean trip time, insertion wait and unfinished trips charged", [(l, r["iter"], r["mean_travel_s"], color[i], "-") for i, (l, r) in enumerate(runs)], "s")
-    panel(ax[1][0], "Unfinished trips at the horizon, teleports off", [(l, r["iter"], [x * 100 for x in r["unfinished_share"]], color[i], "-") for i, (l, r) in enumerate(runs)], "% of requested", (0.1, "limit 0.1%"), log=True)
-    panel(ax[1][1], "Peak vehicles on the network", [(l, r["iter"], r["peak_active"], color[i], "-") for i, (l, r) in enumerate(runs)], "vehicles")
+    valve = any(max(r["teleports"]) > 0 for _, r in runs)
+    panel(ax[1][0], "Unfinished trips at the horizon, " + ("teleports on: a labelled workaround" if valve else "teleports off"), [(l, r["iter"], [x * 100 for x in r["unfinished_share"]], color[i], "-") for i, (l, r) in enumerate(runs)], "% of requested", (0.1, "limit 0.1%"), log=True)
+    if valve:
+        panel(ax[1][1], "Teleports per day", [(l, r["iter"], r["teleports"], color[i], "-") for i, (l, r) in enumerate(runs)], "teleports")
+    else:
+        panel(ax[1][1], "Peak vehicles on the network", [(l, r["iter"], r["peak_active"], color[i], "-") for i, (l, r) in enumerate(runs)], "vehicles")
     if has_counts:
         curves = []
         for i, (l, r) in enumerate(runs):
