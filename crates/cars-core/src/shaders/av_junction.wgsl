@@ -1100,7 +1100,7 @@ fn cj_apply(@builtin(global_invocation_id) id: vec3u) {
                 let ve = e.cj_v_line;
                 var te = earliest(max(d, 0.0), v, ve, lanes[e.lane].speed, a_max, bp);
                 if (te < 0.0) { te = select(0.0, d / max(v, 0.5), d > 1.0); }
-                if (te > tg + 0.15) {
+                if (te > tg + dt + 0.15) {
                     if (d >= stop_d + 0.5) {
                         cur[i].cj_state = e.cj_state;
                         abort_grant(i, mi, replica);
