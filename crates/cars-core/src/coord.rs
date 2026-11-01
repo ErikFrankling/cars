@@ -201,6 +201,8 @@ pub struct GpuCjLink {
     pub pair_count: u32,
     pub path_len: f32,
     pub v_turn: f32,
+    pub s_free: f32,
+    pub pad_l: f32,
     pub v_lane: f32,
     pub v_after: f32,
     pub group: u32,
@@ -430,6 +432,8 @@ pub struct CoordConfig {
     pub plan_freeze: f64,
     pub plan_slack: f64,
     pub plan_ponr_table: bool,
+    /// Peak lateral acceleration a planned car may reach in a turn; 0 keeps the corner speed through the box.
+    pub plan_peak: f64,
     pub pos_err: f32,
     pub clock_err: f32,
 }
@@ -485,6 +489,7 @@ impl Default for CoordConfig {
             plan_freeze: 5.0,
             plan_slack: 8.0,
             plan_ponr_table: true,
+            plan_peak: 4.0,
             pos_err: 0.0,
             clock_err: 0.0,
         }
@@ -512,6 +517,10 @@ struct Mov {
     s: Vec<f64>,
     xy: Vec<[f64; 2]>,
     p: f64,
+    /// From here on the car may speed up: past the tightest point, and only as the curve allows.
+    p_cap: f64,
+    /// Where the car itself is told to start; the table above allows for its jerk limit.
+    p_free: f64,
     vm: f64,
     v_lane: f64,
     v_after: f64,
@@ -526,7 +535,7 @@ impl Mov {
             return 0.0;
         }
         let (mut t, mut v) = (0.0, v0);
-        for (cap, mut seg) in [(self.vm, s.min(self.p)), (self.v_after, (s - self.p).max(0.0))] {
+        for (cap, mut seg) in [(self.vm, s.min(self.p_cap)), (self.v_after, (s - self.p_cap).max(0.0))] {
             if seg <= 0.0 {
                 continue;
             }
@@ -547,11 +556,11 @@ impl Mov {
         t
     }
     fn speed_along(&self, v0: f64, s: f64, a: f64) -> f64 {
-        if s <= self.p {
+        if s <= self.p_cap {
             return self.vm.min((v0 * v0 + 2.0 * a * s).sqrt());
         }
-        let vp = self.vm.min((v0 * v0 + 2.0 * a * self.p).sqrt());
-        self.v_after.min((vp * vp + 2.0 * a * (s - self.p)).sqrt())
+        let vp = self.vm.min((v0 * v0 + 2.0 * a * self.p_cap).sqrt());
+        self.v_after.min((vp * vp + 2.0 * a * (s - self.p_cap)).sqrt())
     }
 }
 
@@ -578,6 +587,41 @@ fn pair_headway(p: &Mov, kp: usize, m: &Mov, k: usize, x0: f64, end: f64, is_exi
 
 /// A slot that the point of no return will refuse is a plan to brake: m stays behind p far enough that
 /// p's rear has room for m, with p braking at b_plan, by the moment m has to decide.
+/// Curvature along a path over a 10 m chord, as report 11 measures it.
+fn path_kappa(s: &[f64], xy: &[[f64; 2]]) -> Vec<f64> {
+    let at = |q: f64| -> [f64; 2] {
+        let i = s.partition_point(|&x| x < q).clamp(1, s.len() - 1);
+        let u = ((q - s[i - 1]) / (s[i] - s[i - 1]).max(1e-9)).clamp(0.0, 1.0);
+        [xy[i - 1][0] + u * (xy[i][0] - xy[i - 1][0]), xy[i - 1][1] + u * (xy[i][1] - xy[i - 1][1])]
+    };
+    let end = *s.last().unwrap();
+    let half = (end / 2.0).min(5.0);
+    s.iter()
+        .map(|&q| {
+            let (a, b, c) = (at((q - half).max(0.0)), at(q), at((q + half).min(end)));
+            let (ux, uy, vx, vy) = (b[0] - a[0], b[1] - a[1], c[0] - b[0], c[1] - b[1]);
+            let cross = (ux * vy - uy * vx).abs();
+            let d = ux.hypot(uy) * vx.hypot(vy) * (c[0] - a[0]).hypot(c[1] - a[1]);
+            if d > 1e-9 { 2.0 * cross / d } else { 0.0 }
+        })
+        .collect()
+}
+
+/// Where a car at vm can start speeding up at `a` and never exceed a_y on what is left of the curve.
+fn apex_free(s: &[f64], kappa: &[f64], vm: f64, a_y: f64, a: f64) -> f64 {
+    let apex = (0..s.len()).max_by(|&i, &j| kappa[i].total_cmp(&kappa[j])).unwrap_or(0);
+    'next: for i in apex..s.len() {
+        for j in i..s.len() {
+            let v2 = vm * vm + 2.0 * a * (s[j] - s[i]);
+            if kappa[j] > 1e-6 && v2 > a_y / kappa[j] {
+                continue 'next;
+            }
+        }
+        return s[i];
+    }
+    *s.last().unwrap()
+}
+
 fn ponr_headway(p: &Mov, kp: usize, m: &Mov, k: usize, c: &CoordConfig) -> f64 {
     let clear = |x: f64| {
         let v = p.speed_along(p.vk[kp], p.p + x, c.accel);
@@ -904,8 +948,23 @@ pub fn build(net: &Net, topo: &Topology, c: &CoordConfig, dt: f32, seed: u64) ->
                 if junction_of_lane_end(link.to_lane).is_some_and(|x| chosen_set.contains(&x)) {
                     vm = vm.min(stop_curve(net.lanes[link.to_lane as usize].length as f64, c.b_plan, c.t_r));
                 }
-                let vm = vm.max(1.0);
+                let mut vm = vm.max(1.0);
+                let mut p_cap = base;
+                if c.plan != 0 && c.plan_peak > 0.0 && speed < v_lane - 1e-3 {
+                    let kappa = path_kappa(&s, &xy);
+                    let peak = kappa.iter().cloned().fold(0.0, f64::max);
+                    if peak > 1e-6 {
+                        vm = vm.min((c.plan_peak / peak).sqrt()).max(1.0);
+                    }
+                    p_cap = apex_free(&s, &kappa, vm, c.plan_peak, c.accel);
+                }
+                let p_free = p_cap;
+                if p_cap < base {
+                    p_cap = (p_cap + 0.5 * c.accel / (2.5 * c.plan_j) * vm).min(base);
+                }
                 movs.push(Mov {
+                    p_cap,
+                    p_free,
                     from: lane,
                     to: link.to_lane,
                     sim_link: k,
@@ -1086,7 +1145,7 @@ pub fn build(net: &Net, topo: &Topology, c: &CoordConfig, dt: f32, seed: u64) ->
                 let v0 = m.vk[kk];
                 w.mov_k.push(GpuCjMovK {
                     vk: v0 as f32,
-                    vout: m.vm.min((v0 * v0 + 2.0 * c.accel * m.p).sqrt()) as f32,
+                    vout: m.speed_along(v0, m.p, c.accel) as f32,
                     t_clear: m.time(v0, m.p + c.length, c.accel) as f32,
                     pad: 0.0,
                 });
@@ -1114,6 +1173,8 @@ pub fn build(net: &Net, topo: &Topology, c: &CoordConfig, dt: f32, seed: u64) ->
                 pair_count: w.pairs.len() as u32 - pair_start,
                 path_len: m.p as f32,
                 v_turn: m.vm as f32,
+                s_free: m.p_free as f32,
+                pad_l: 0.0,
                 v_lane: m.v_lane as f32,
                 v_after: m.v_after as f32,
                 group: m.group,
@@ -1259,6 +1320,8 @@ mod tests {
             s: Vec::new(),
             xy: Vec::new(),
             p: f("p"),
+            p_cap: f("p"),
+            p_free: f("p"),
             vm: f("vm"),
             v_lane: f("v_after"),
             v_after: f("v_after"),

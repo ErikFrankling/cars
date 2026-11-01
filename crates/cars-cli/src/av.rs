@@ -94,6 +94,12 @@ pub struct CoordArgs {
     /// Leave the point of no return out of the headway table (for comparison).
     #[arg(long)]
     pub cj_no_ponr_table: bool,
+    /// Peak lateral acceleration in a turn, m/s2: caps the corner speed and lets the car speed up after the apex.
+    #[arg(long)]
+    pub cj_plan_peak: Option<f64>,
+    /// Average lateral acceleration behind the corner speed, m/s2; SUMO's own limit is 5.5.
+    #[arg(long)]
+    pub cj_a_lat: Option<f64>,
     /// Measurements start here.
     #[arg(long, default_value_t = 0.0)]
     pub cj_warm: f32,
@@ -202,6 +208,12 @@ impl CoordArgs {
             c.plan_up = t;
         }
         c.plan_ponr_table = !self.cj_no_ponr_table;
+        if let Some(a) = self.cj_plan_peak {
+            c.plan_peak = a;
+        }
+        if let Some(a) = self.cj_a_lat {
+            c.a_lat = a;
+        }
         c.pos_err = self.cj_pos_err;
         c.clock_err = self.cj_clock_err;
         Ok(Some(c))

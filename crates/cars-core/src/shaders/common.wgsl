@@ -454,6 +454,8 @@ struct CjLink {
     pair_count: u32,
     path_len: f32,
     v_turn: f32,
+    s_free: f32,
+    pad_l: f32,
     v_lane: f32,
     v_after: f32,
     group: u32,

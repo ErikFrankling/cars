@@ -1765,6 +1765,7 @@ fn cj_apply(@builtin(global_invocation_id) id: vec3u) {
         mi = info.box_mov;
         vcap = cj_links[mi].v_turn;
         s = info.s_offset + e.pos;
+        if (planned && s >= cj_links[mi].s_free) { vcap = max(vcap, cj_links[mi].v_after); }
     } else if (info.app != NONE) {
         if (state == CJ_FIRM || state == CJ_PENDING) {
             mi = e.cj_link;
