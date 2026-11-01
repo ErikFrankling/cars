@@ -38,10 +38,10 @@ const FONT: [[u8; 5]; 95] = [
     [0x3f,0x40,0x38,0x40,0x3f],[0x63,0x14,8,0x14,0x63],[7,8,0x70,8,7],[0x61,0x51,0x49,0x45,0x43],[0,0x7f,0x41,0x41,0],
     [2,4,8,0x10,0x20],[0,0x41,0x41,0x7f,0],[4,2,1,2,4],[0x40,0x40,0x40,0x40,0x40],[0,1,2,4,0],
     [0x20,0x54,0x54,0x54,0x78],[0x7f,0x48,0x44,0x44,0x38],[0x38,0x44,0x44,0x44,0x20],[0x38,0x44,0x44,0x48,0x7f],[0x38,0x54,0x54,0x54,0x18],
-    [8,0x7e,9,1,2],[0xc,0x52,0x52,0x52,0x3e],[0x7f,8,4,4,0x78],[0,0x44,0x7d,0x40,0],[0x20,0x40,0x44,0x3d,0],
+    [8,0x7e,9,1,2],[0x18,0xa4,0xa4,0xa4,0x7c],[0x7f,8,4,4,0x78],[0,0x44,0x7d,0x40,0],[0x40,0x80,0x88,0x7d,0],
     [0x7f,0x10,0x28,0x44,0],[0,0x41,0x7f,0x40,0],[0x7c,4,0x18,4,0x78],[0x7c,8,4,4,0x78],[0x38,0x44,0x44,0x44,0x38],
-    [0x7c,0x14,0x14,0x14,8],[8,0x14,0x14,0x18,0x7c],[0x7c,8,4,4,8],[0x48,0x54,0x54,0x54,0x20],[4,0x3f,0x44,0x40,0x20],
-    [0x3c,0x40,0x40,0x20,0x7c],[0x1c,0x20,0x40,0x20,0x1c],[0x3c,0x40,0x30,0x40,0x3c],[0x44,0x28,0x10,0x28,0x44],[0xc,0x50,0x50,0x50,0x3c],
+    [0xfc,0x24,0x24,0x24,0x18],[0x18,0x24,0x24,0x18,0xfc],[0x7c,8,4,4,8],[0x48,0x54,0x54,0x54,0x20],[4,0x3f,0x44,0x40,0x20],
+    [0x3c,0x40,0x40,0x20,0x7c],[0x1c,0x20,0x40,0x20,0x1c],[0x3c,0x40,0x30,0x40,0x3c],[0x44,0x28,0x10,0x28,0x44],[0x1c,0xa0,0xa0,0xa0,0x7c],
     [0x44,0x64,0x54,0x4c,0x44],[0,8,0x36,0x41,0],[0,0,0x7f,0,0],[0,0x41,0x36,8,0],[0x10,8,8,0x10,8],
 ];
 
@@ -328,7 +328,7 @@ impl Overlay {
                 let v = &snap.vs[i];
                 let on_junction = v.flags & F_ON_JUNCTION != 0 || world.lanes[v.lane as usize].flags & 1 != 0;
                 let item = &snap.items[i * 8];
-                let near = v.n_items > 0 && item[0] != NONE && f32::from_bits(item[7]) < 40.0;
+                let near = v.flags & F_WILL_PASS != 0 && v.n_items > 0 && item[0] != NONE && f32::from_bits(item[7]) < 40.0;
                 if !on_junction && !near {
                     continue;
                 }
@@ -367,10 +367,13 @@ impl Overlay {
                         continue;
                     };
                     let o = &snap.vs[k];
-                    if k >= snap.poses.len() || net.lanes[f.from_lane as usize].length - o.pos > 40.0 {
+                    if k >= snap.poses.len() || o.flags & F_WILL_PASS == 0 || net.lanes[f.from_lane as usize].length - o.pos > 40.0 {
                         continue;
                     }
                     let (a, b) = (front(i), front(k));
+                    if (a[0] - b[0]).hypot(a[1] - b[1]) > 60.0 {
+                        continue;
+                    }
                     let mid = [(a[0] + b[0]) * 0.5 - (b[1] - a[1]) * 0.15, (a[1] + b[1]) * 0.5 + (b[0] - a[0]) * 0.15];
                     c.line(at(a), at(mid), 1.5, MAGENTA, 0.45);
                     c.line(at(mid), at(b), 1.5, MAGENTA, 0.45);
@@ -380,8 +383,8 @@ impl Overlay {
         for &i in &shown {
             let v = &snap.vs[i];
             let t = &world.vtypes[v.vtype as usize];
-            let leader = (on("leader") || on("braking") || on("events")).then(|| leader_of(net, world, snap, i, 200.0)).flatten();
-            if on("braking") {
+            let leader = (on("leader") || on("braking") || on("events")).then(|| leader_of(net, world, snap, i, 60.0)).flatten();
+            if on("braking") && v.speed > 0.5 {
                 let stop = v.speed * v.speed / (2.0 * t.decel.max(0.1));
                 let panic = v.speed * v.speed / (2.0 * t.emergency.max(0.1));
                 let envelope = stop + t.min_gap;
@@ -408,7 +411,7 @@ impl Overlay {
                 let (a, b) = (at(front(i)), at(rear(k)));
                 c.line(a, b, 2.0, if gap < 0.0 { RED } else { CYAN }, 0.9);
                 c.ring(b, 3.0, 1.5, CYAN, 0.9);
-                if on("speed") && gap < 40.0 {
+                if on("speed") && gap < 40.0 && v.speed > 0.5 {
                     let mid = [(a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5];
                     c.label(mid[0] as i32 + 5, mid[1] as i32 - 5, &format!("{gap:.1}m"), 1, CYAN);
                 }
@@ -439,12 +442,14 @@ impl Overlay {
         }
         for &i in &shown {
             let v = &snap.vs[i];
-            let p = at(snap.poses[i].xy);
-            let mut y = p[1] as i32 - 16 * scale;
-            let x = p[0] as i32 + 5 * scale;
-            if on("speed") {
+            let pose_now = &snap.poses[i];
+            let p = at(pose_now.xy);
+            let upright = pose_now.dir[1].abs() > pose_now.dir[0].abs();
+            let x = if upright { p[0] + pose_now.width * 0.5 / mpp + 4.0 } else { p[0] - 14.0 } as i32;
+            let mut y = if upright { p[1] - 8.0 } else { p[1] - pose_now.width * 0.5 / mpp - 12.0 } as i32;
+            if on("speed") && v.speed > 0.1 {
                 c.label(x, y, &format!("{:.0}", v.speed * 3.6), scale, WHITE);
-                y -= 10 * scale;
+                y -= 10;
             }
             if on("state") {
                 let on_junction = v.flags & F_ON_JUNCTION != 0 || world.lanes[v.lane as usize].flags & 1 != 0;
@@ -458,23 +463,23 @@ impl Overlay {
                 } else if v.n_items == 0 || item[0] == NONE || dist > 100.0 {
                     (String::new(), SLATE)
                 } else if v.flags & F_HAVE_TO_WAIT != 0 {
-                    (format!("WAIT {} {:.0}m", state(item[0]), dist), ORANGE)
+                    (format!("WAIT {} {:.0}", state(item[0]), dist), ORANGE)
                 } else if v.flags & F_WILL_PASS != 0 {
-                    (format!("GO {} {:.0}m", state(item[0]), dist), GREEN)
+                    (format!("GO {} {:.0}", state(item[0]), dist), GREEN)
                 } else {
-                    (format!("APPR {} {:.0}m", state(item[0]), dist), SLATE)
+                    (format!("APPR {} {:.0}", state(item[0]), dist), SLATE)
                 };
                 if !text.is_empty() {
-                    c.label(x, y, &text, scale, color);
+                    c.label(x, y, &text, 1, color);
                 }
                 if v.acc < -4.6 {
-                    y -= 10 * scale;
-                    c.label(x, y, &format!("{:.1} m/s2", v.acc), scale, RED);
+                    y -= 10;
+                    c.label(x, y, &format!("{:.1} m/s2", v.acc), 1, RED);
                 }
                 if v.lc_own & 3 != 0 {
-                    y -= 10 * scale;
-                    let side = if v.lc_own & 1 != 0 { "LC <" } else { "LC >" };
-                    c.label(x, y, side, scale, AMBER);
+                    y -= 10;
+                    let side = if v.lc_own & 1 != 0 { "wants L" } else { "wants R" };
+                    c.label(x, y, side, 1, AMBER);
                 }
             }
         }

@@ -8,6 +8,7 @@ import argparse
 import json
 import math
 import subprocess
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +38,13 @@ def write_net(d, nodes, edges, extra=''):
     (d / 'n.edg.xml').write_text('<edges>' + body + extra + '</edges>')
     run(['netconvert', '-n', d / 'n.nod.xml', '-e', d / 'n.edg.xml', '-o', d / 'net.xml', '--no-turnarounds',
          '--junctions.corner-detail', '8', '--no-internal-links', 'false'], capture_output=True)
+
+
+def net_offset(net):
+    for _, e in ET.iterparse(net, events=('start',)):
+        if e.tag == 'location':
+            return [float(v) for v in e.get('netOffset').split(',')]
+    return [0.0, 0.0]
 
 
 def write_routes(d, flows):
@@ -107,6 +115,7 @@ def lane_drop(d):
     return dict(junction='k', metres_per_pixel=0.12)
 
 
+FOLLOW = {'signal': 'f4.6', 'priority': 'f6.5', 'roundabout': 'f0.20'}
 FIXTURES = {
     'signal': lambda d: cross(d, 'traffic_light'),
     'priority': lambda d: cross(d, 'priority'),
@@ -123,11 +132,17 @@ def small_job(name, a):
     d.mkdir(parents=True, exist_ok=True)
     meta = d / 'camera.json'
     if not meta.exists() or not (d / 'net.xml').exists():
-        meta.write_text(json.dumps(FIXTURES[name](d)))
+        camera = FIXTURES[name](d)
+        if 'center' in camera:
+            camera['center'] = [c + o for c, o in zip(camera['center'], net_offset(d / 'net.xml'))]
+        meta.write_text(json.dumps(camera))
     camera = json.loads(meta.read_text())
     base = a.out / name
     begin, end = 150.0, 150.0 + a.seconds
     views = make_views(base, name, camera, begin, end, 'Generated test junction, dt 0.1, sigma 0.5')
+    follow = base / 'follow.mp4'
+    if name in FOLLOW and not follow.exists():
+        views.append(dict(follow=FOLLOW[name], metres_per_pixel=0.09, title=f'{name}: following {FOLLOW[name]}', overlay=['speed', 'state', 'leader', 'braking'], out=str(follow)))
     if not views:
         print(name, 'done')
         return

@@ -121,7 +121,7 @@ fn palette(t:f32)->vec3f {
  o.uv=vec2f(0.0); o.color=vec3f(0.025,0.042,0.065)*tint; o.alpha=clamp(width/w,0.22,1.0); o.halfsize=vec2f(1.0); return o;
 }
 @fragment fn road_frag(o:Out)->@location(0) vec4f { return vec4f(o.color*o.alpha,1.0); }
-@vertex fn car(@builtin(vertex_index) vid:u32,@location(0) xy:vec2f,@location(1) dir:vec2f,@location(2) body:f32,@location(3) ratio:f32,@location(4) alive:f32)->Out {
+@vertex fn car(@builtin(vertex_index) vid:u32,@location(0) xy:vec2f,@location(1) dir:vec2f,@location(2) body:f32,@location(4) ratio:f32,@location(5) alive:f32)->Out {
  let q=vec2f(f32((vid<<1u)&2u),f32(vid&2u))*2.0-1.0;
  let signal=alive>1.5;
  let h=max(select(vec2f(body,1.8),vec2f(0.8),signal)*0.5,vec2f(cam.mpp*2.5));
@@ -167,7 +167,7 @@ fn paint(seed:f32)->vec3f {
  }
 }
 struct CloseCar { @builtin(position) pos: vec4f, @location(0) p:vec2f, @location(1) half_body:vec2f, @location(2) color:vec3f, @location(3) @interpolate(flat) detail:u32, @location(4) shadow:vec2f, @location(5) scale:f32 }
-@vertex fn close_car(@builtin(vertex_index) vid:u32,@location(0) xy:vec2f,@location(1) dir:vec2f,@location(2) body:f32,@location(3) ratio:f32,@location(4) alive:f32,@location(5) detail:f32,@location(6) seed:f32,@location(7) width:f32)->CloseCar {
+@vertex fn close_car(@builtin(vertex_index) vid:u32,@location(0) xy:vec2f,@location(1) dir:vec2f,@location(2) body:f32,@location(3) width:f32,@location(4) ratio:f32,@location(5) alive:f32,@location(6) detail:f32,@location(7) seed:f32)->CloseCar {
  var o:CloseCar;
  if(alive<0.5 || alive>1.5){o.pos=vec4f(4.0,4.0,0.0,1.0);return o;}
  let q=vec2f(f32((vid<<1u)&2u),f32(vid&2u))*2.0-1.0;
@@ -217,14 +217,14 @@ fn round_box(p:vec2f,h:vec2f,r:f32)->f32 {
  var glow=0.0;
  if(braking){
   let e=vec2f(p.x+h.x,y-h.y*0.65);
-  glow=exp(-dot(e,e)*2.6)*0.8;
+  glow=exp(-dot(e,e)*5.0)*0.3;
  }
  let lit=select(lin(c),lamp,lamp.x>0.0);
  let a=body+(1.0-body)*shade;
  return vec4f((lit*body+vec3f(1.4,0.02,0.02)*glow*(1.0-body))*cam.close,a*cam.close);
 }
 struct CloseSignal { @builtin(position) pos: vec4f, @location(0) p:vec2f, @location(1) half_body:vec2f, @location(2) @interpolate(flat) code:u32, @location(3) @interpolate(flat) turn:u32 }
-@vertex fn close_signal(@builtin(vertex_index) vid:u32,@location(0) xy:vec2f,@location(1) dir:vec2f,@location(2) body:f32,@location(3) ratio:f32,@location(4) alive:f32,@location(5) detail:f32,@location(6) seed:f32,@location(7) width:f32)->CloseSignal {
+@vertex fn close_signal(@builtin(vertex_index) vid:u32,@location(0) xy:vec2f,@location(1) dir:vec2f,@location(2) body:f32,@location(3) width:f32,@location(4) ratio:f32,@location(5) alive:f32,@location(6) detail:f32)->CloseSignal {
  var o:CloseSignal;
  if(alive<1.5){o.pos=vec4f(4.0,4.0,0.0,1.0);return o;}
  let q=vec2f(f32((vid<<1u)&2u),f32(vid&2u))*2.0-1.0;

@@ -303,6 +303,9 @@ pub fn run(mut a: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
     a.end = a.end.max(last_shot + 2.0 * a.dt);
     let spf = a.steps_per_frame.unwrap_or(1);
     let close = a.views.is_some() || a.junction.is_some() || a.follow.is_some() || !videos;
+    if !close && a.title.is_empty() {
+        a.title = "Traffic in motion".into();
+    }
     // Close cameras watch in real time unless told how many steps to take per frame.
     let realtime = a.realtime || (close && a.steps_per_frame.is_none());
     let interpolate = realtime && !a.raw_steps;
