@@ -187,6 +187,32 @@ The default stays, because waits are the measured quantity most tied to Erik's q
 
 Largest effects: `turn_min` and `gap_junction` on the minor road, `b_approach`, `tau_approach` and `standing` on lost time and spacing. `see` moves the minor road by about 10%, both ways down, so 30 m is not obviously right. `t_miss`, `gap_roundabout` and `stub` do not move these scenes at all, so their sensitivity is only known from cities, the roundabout scene and `stub_lane`.
 
+## Cities
+
+**Stockholm on report 02's recipe: not run yet.** Net `truth/stockholm/factorial/n7_ramps.net.xml`, routes `v2_c4.rou.gz`, 60% demand, morning 06:00-10:00 and then the full day, in `truth/humans/city5/table.jsonl`. This is the run that tests the driver and not the demand. Everything below used demand since shown to be the top cause of lockup, so it says little about the driver.
+
+**Dropped at the orchestrator's request, because full-demand gridlock swamps a one-rule difference:** Berlin morning `humans`, `no-courtesy`, `no-offset`, `no-miss`, `no-anticipate`, `no-gate`, `no-yellow`, `no-shrink`, `tmiss30`, `tmiss240`, `coop0`, `coop1.0`, `comply1.0`; `berlin-day`; Stockholm's second sweep on the fixed driver; the two U-turn demand variants; the trace runs on the fixed driver. Requeue only on demand that does not lock.
+
+So **how many of the 9,930 "waiting for a gap" cases vanish in the Berlin day is not answered.**
+
+Earlier driver, before the stub fix, dt 1, teleports off:
+
+| | Inserted | Arrived | Stuck: jam, yield, gap | Stuck at end | Contacts | Mu/s |
+|---|---:|---:|---|---:|---:|---:|
+| Berlin morning, Krauss physical | 286,323 | 49,367 | 10,935, 7,252, 720 | 222,559 | 3,837 | 3.2 |
+| Berlin morning, humans | 277,844 | 65,124 | 13,401, 9,336, 251 | 198,201 | 2,097 | 2.4-3.3 |
+| Stockholm old demand, Krauss physical | 183,829 | 100,834 | 5,258, 2,625, 283 | 77,641 | 7,731 | 5.9 |
+| Stockholm old demand, humans | 177,763 | 96,780 | 6,046, 3,024, 106 | 75,906 | 5,709 | 4.9 |
+| Stockholm old demand, humans, stub fix and physics merge | 187,560 | 110,912 | 5,966, 2,974, 98 | 70,520 | 7,293 | 2.7 |
+
+The "gap" class falls 65%, while the jam and yield classes, which dominate, grow. All are gridlocked. On that Stockholm demand no rule moved the stuck count by much: without courtesy 72,006, `t_miss` 30 and 240 gave 73,635 and 74,737, cooperation 0 and 1 gave 72,040 and 71,338, stuck at the end. Speed cost is noisy under shared use and is not a clean measure: the 2.7 Mu/s run shared the machine.
+
+A demand finding on the way: 127,029 of 275,935 repaired Stockholm routes contain a U-turn on the same road, 27,250 of them at the first step. Cycles there are mostly a lane and its reverse. Report 02 now covers this ground.
+
+**Physics QA**, on traces of the earlier driver. No backward steps and no teleports in either. Stockholm, 55,455 vehicles: 59 samples brake harder than −4.5, none past the dry limit; 3,864 lateral samples over 8 m/s² on 2,372 lanes, kinked net geometry. Berlin box: braking at most −4.11; 19 samples over 8 m/s² on 15 lanes, peak 16.1 with 21.6 km/h corners on radii of 2-3 m, which is the corner floor. Raising that floor to 8 m/s will worsen this; not remeasured. The courtesy scene has two hard failures: forward acceleration over capability, 4 of 61,450 samples by 0.067 m/s², from noise, where a clamp stopped cars starting and was removed; and lateral speed, 16 of 2,048 samples up to 2.5 m/s where the lane is running out.
+
+Clips, from the earlier driver and old demand, in `cars-data/videos/gallery/humans/`: `gridlock_stockholm_verkstadsgatan.mp4`, `gridlock_berlin_cycle.mp4`, `courtesy_i80_0.mp4`, `courtesy_i80_1.mp4`. The gridlock frames show ordinary long queues at give-way junctions, at 1-2 km/h city mean.
+
 ## Replay against Wiedemann and Gipps
 
 Spacing / speed RMSE over 30 s on the same frozen windows ([replay_w99.json](human-build/replay_w99.json)). Lower is better:
