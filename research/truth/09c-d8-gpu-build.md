@@ -33,7 +33,63 @@ Capacity, demand and faults ran on the RX 7900 XT. The GPU lock had about ten jo
 
 ## Results against the CPU model
 
-See [fig/d8/tables.md](fig/d8/tables.md). RESULTS_PLACEHOLDER
+Every table is in [fig/d8/tables.md](fig/d8/tables.md). The short version:
+
+| Spec test | Pass condition | Result |
+|---:|---|---|
+| 1 Kinematics | Within 1e-3 s of Python | **Pass.** 378 cases of `earliest` and `latest` as WGSL within 3e-6 s; `T` within 1e-3 s (`cargo test -p cars-core coord::`) |
+| 2 Single car | Crossing within 0.15 s of grant, delay under 0.2 s | **Pass.** Delay 0.067 s (reference 0.08), mean error 0.053 s, none over 0.15 s |
+| 3 Headway | 1.304 s | **Pass for the table:** 1.304 s. A run measures 1.40 s on both this build and the CPU model (5136 veh/h on both, seed 0), because the insertion boundary limits both |
+| 4 K crossover | | **Not run.** No polling policy here |
+| 5 Capacity | Within 5% | **Pass, 28 of 28 cells**, largest difference 3.6% |
+| 6 Demand | Delay within 25% or 1 s | **48 of 54 cells.** The misses are saturated or noisy cases, in the tables |
+| 7 Exit block | On: 0 overlaps, under 5 veh s in the box. Off must fail | **Pass.** On: 0, 2.9. Off: 17 overlaps, 572 veh s |
+| 8 Loss, blackout, crash | 0 overlaps, tolerances above | **Pass on overlaps,** all 0. Delay misses listed below |
+| 9 Stalls | Report per stall | A 0.10 and 0.30, B 0.00. See below |
+| 10 Grid | Report | See below. Not zero past critical load |
+| 11 Compute | Measure | See below |
+
+**Hard requirements in every signal-free single-junction run** (capacity, demand, faults with checks on, faults2, T): zero overlaps, zero ungranted crossings, zero negative credits, zero teleports, vehicle conservation. The stricter auditor saw nothing. Injected stalls and the deliberately unprotected exit are the only single-junction cases with contacts.
+
+**One overlap in the human signal baseline** (j2, 4200 veh/h, 80:20 split, a permissive left), and a few in the AV signal baseline on one Stockholm junction with a stop line close to a foe's path. Neither is the signal-free system, and the signal baseline is not built for real geometry. They are left in the tables.
+
+**Three bugs the stricter audit found that the CPU model also has or could not see:**
+
+1. Bodies with the front past the box and the tail still in it were not audited, and the sensing brake did not see them. This was the main source of grid contacts. Fixed in the brake; 09's numbers undercount these.
+2. A firm car held up behind a slow leader misses its slot past its stopping point and enters later than reserved. The spec counts this as `late_committed` and does nothing. Foes that can still stop now treat its predicted occupancy as a body in the road. On the 2-lane grid at 16 000 veh/h, seed 0, this took 4 events to 0.
+3. Mine, not the model's: grants numbered per junction let two cars in one box share a table slot, hiding one from its follower and the auditor. Numbered per exit lane now, and the auditor counts any car the table loses: none in any run. All tables here were rerun after this fix, because the earlier zeros could not be trusted.
+
+**Delay cells outside the tolerance** are saturated or noisy cases, listed in the tables. Exit block also misses: 42.8 s and 3000 veh/h against the model's 71.3 s and 2658. I did not find out why. The likely cause is this build's fixed lane assignment against the model's shortest-queue choice. With coordinator down and no fallback at 5000 veh/h the delay is 21 s against 36 s, also unexplained.
+
+**Loss at 90%:** this build carries more than the model (about 1500 against 1200 veh/h), because of the sensing fallback. Set `--cj-no-fallback` to compare directly.
+
+**Stalls:** about half the model's stall count, since one junction takes one at a time. Level B saw none in 63 stalls against the model's 0.06 to 0.07 per stall. With so few events this is not evidence that it is zero. Five ungranted crossings appear in stall runs: a car ordered to give up its grant that then could not stop.
+
+**The T junction,** with signals tuned as in the report: delay 1.4 s against 2.5 s at 1500 veh/h, flow about 3600 against 3490 at 6000 veh/h offered, so close to a fair signal at saturation. Zero contacts.
+
+**The grid, past critical load, is not fixed.** Signal-free stays ahead of the AV signal on flow in every case here, but overlap events remain: 57 over 3 seeds at 24 000 veh/h on 2 lanes, against 0 for the signal. So Level A does not meet the zero-collision test on a saturated grid.
+
+**Metering helps and is a trade.** Mean of up to 4 seeds:
+
+| Net, offered | Held at | Flow | Delay incl. waiting outside | Overlap events, all seeds |
+|---|---:|---:|---:|---:|
+| 2 lanes, 24 000 | none, signal-free | 15 803 | 112 | 57 (3 seeds) |
+| 2 lanes, 24 000 | AV signal | 15 291 | 136 | 0 (3 seeds) |
+| 2 lanes, 24 000 | 280 | 17 372 | 103 | 10 (4 seeds) |
+| 2 lanes, 24 000 | 240 | 16 508 | 115 | 5 (4 seeds) |
+| 2 lanes, 24 000 | 200 | 14 872 | 139 | 0 (4 seeds) |
+| 1 lane, 14 000 | none, signal-free | 9 539 | 121 | 18 (3 seeds) |
+| 1 lane, 14 000 | AV signal | 8 413 | 154 | 0 (3 seeds) |
+| 1 lane, 14 000 | 140 | 8 798 | 137 | 0 (4 seeds) |
+
+Metering at a level with no contacts on 1 lane beats the signal by 5% with less delay. On 2 lanes the level with no contacts in these seeds carries 3% less than the signal, and the level that beats it still has contacts. Four seeds of 450 s cannot show that any level is safe, and the threshold here is a fixed number picked by sweep, not a controller. No gridlock appeared.
+
+**Stockholm.** Through traffic picked to load the net, no count data. The net has no crossing edges, so it has no pedestrians whatever the street has.
+
+- **A real junction** (Sveavägen at Apelbergsgatan, `cluster_1363066780_...`, 6 approach lanes), its own signal removed, neighbours on their signals. Against AV cars on the real signal: time lost per trip 17.5 s against 24.7 s at 800 veh/h, flow 3088 against 2613 veh/h at 4000 offered. **But the coordinator's signal baseline does about the same as signal-free here** (3078, and 17.6 s), so most of that gain comes from the cars and the conflict table, not from removing the signal.
+- **A 1 km district:** 44 of 108 junctions coordinated. 64 refused for a lane under 25 m, the rest on their own control. Zero contacts and zero teleports. At low load time lost falls from 47.7 s to 40.6 s. **Under overload it does worse than the real signals:** at 8000 offered, 1846 veh/h against 2659, with cars stuck over 120 s all over the district. At 5000, 2289 against 2484. Metering at 150 cars clears the stuck cars (14 against 958) but carries 2325. So this build is not ready for a real district at peak. The likely reason is the mix of refused and coordinated junctions, and merging OSM clusters into one coordinator is the next thing to try.
+
+**The channel of report 08** (`--cj-chan 1`, LTE-PC5 statistics: range cliff, shadowing, bursts, load) changes little at one junction: 16 to 20 lost messages in a run, delay as without. It has no burst structure from a fit, no latency beyond one step, and no position or clock error, which matter more and are not modelled.
 
 ![Capacity](fig/d8/capacity.png)
 ![Delay](fig/d8/demand.png)

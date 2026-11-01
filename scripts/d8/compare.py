@@ -195,6 +195,37 @@ def generic(part, title):
         print(f"| {c['net']} {c['mix']} | {c['demand']:.0f} | {pol(c)} {c['level']}{' nocheck' if c.get('no_exit_check') else ''} | {c.get('meter', 0)} | {g.get('flow', -1):.0f} | {g.get('delay', -1):.1f} | {g.get('overlap')} | {g.get('invariant')} | {g.get('pending')} | {g.get('ms_per_step', 0):.2f} | {g.get('mean_active', 0):.0f} |")
 
 
+def gpu_cells():
+    rs = rows('gpu_cells')
+    if not rs:
+        return
+    agg = defaultdict(list)
+    for r in rs:
+        c = r['case']
+        agg[(c['net'], c['mix'], c['demand'], pol(c))].append(r['result'])
+    print('\n## The numbers the build spec names, on the RX 7900 XT')
+    print('| Case | veh/h | Policy | Flow | Delay | Stops per car | Overlaps | Invariant | ms per step |')
+    print('|---|---:|---|---:|---:|---:|---:|---:|---:|')
+    for k in sorted(agg):
+        g = agg[k]
+        print(f"| {k[0]} {k[1]} | {k[2]:.0f} | {k[3]} | {mean([x['flow'] for x in g]):.0f} | {mean([x['delay'] for x in g]):.1f} | {mean([x['stops'] for x in g]):.2f} | {sum(x['overlap'] for x in g)} | {sum(x['invariant'] for x in g)} | {mean([x['ms_per_step'] for x in g]):.2f} |")
+
+
+def verify():
+    p = D8 / 'verify.jsonl'
+    if not p.exists():
+        return
+    print('\n## CPU Vulkan against the RX 7900 XT, same binary, same cases')
+    print('| Part | Case | Flow, CPU | Flow, GPU | Diff | Overlaps, CPU | Overlaps, GPU |')
+    print('|---|---|---:|---:|---:|---:|---:|')
+    for l in p.read_text().splitlines():
+        r = json.loads(l)
+        c, a, b = r['case'], r['cpu'], r['gpu']
+        if 'flow' not in b:
+            continue
+        print(f"| {r['part']} | {c['net']} {c['demand']:.0f} {pol(c)} {c.get('fault', '')} {c.get('meter', '')} | {a['flow']:.0f} | {b['flow']:.0f} | {(b['flow'] / max(a['flow'], 1) - 1) * 100:+.1f}% | {a['overlap']} | {b['overlap']} |")
+
+
 def headway():
     rs = rows('headway')
     if rs:
@@ -289,6 +320,8 @@ def scale():
 
 
 if __name__ == '__main__':
+    gpu_cells()
+    verify()
     headway()
     capacity()
     demand()

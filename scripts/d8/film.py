@@ -102,6 +102,12 @@ def main():
         begin, end = max(t - 10, 100), t + 15
         record(c, 'stall_level_a', net, rou, begin, end, 800, 'A car stalls in the box, Level A', 'an injected failure at 5000 veh/h. The specified rule does not cover it', extra=stall, overlay='grants,paths,events', mpp=0.07, preview=pv)
         record(c, 'stall_level_b', net, rou, begin, end, 800, 'The same arrivals, Level B', 'the stall-tolerant margin: fewer contacts, less capacity. Not zero', extra=stall + ['--cj-level-b'], overlay='grants,paths,events', mpp=0.07, preview=pv)
+    if want('stockholm'):
+        net = Path('/home/erikf/projects/personal/cars-data/truth/d8/junction.net.xml')
+        rou = WORK / 'sth.rou.xml'
+        subprocess.run([sys.executable, str(ROOT / 'scripts/d8/demand_net.py'), '--net', str(net), '--out', str(rou), '--demand', '2500', '--end', '400'], check=True, capture_output=True)
+        j = next(line.split('"')[1] for line in open(net) if '<junction id="cluster_1363066780_1363066782' in line)
+        record(c, 'stockholm_junction', net, rou, 280, 320, 400, 'A real junction in Stockholm, signal removed', '2500 veh/h of through traffic, no count data, no pedestrians in this net. Others keep their signals', cj=j, junction=j, overlay='grants,paths,events', mpp=0.12, preview=pv)
     if want('grid'):
         js = ','.join(f'{x}{y}' for x in 'BCD' for y in '123')
         net, rou = demand('grid2', 20000, 'M', 300)

@@ -157,11 +157,25 @@ def headway():
     return [case('j1', 'T', 7000, seed, ew=1.0) for seed in (0, 1)]
 
 
+def gpu_cells():
+    # The numbers build spec test 5 names, kept apart so they always come from the GPU itself.
+    out = []
+    for net, mix in (('j1', 'T'), ('j2', 'T'), ('j2', 'M'), ('j3', 'M')):
+        for seed in (0, 1):
+            out.append(case(net, mix, SAT[net], seed))
+            out.append(case(net, mix, SAT[net], seed, mode='signal'))
+    for seed in (0, 1):
+        for d in (3000, 5200):
+            out.append(case('j2', 'M', d, seed))
+            out.append(case('j2', 'M', d, seed, mode='signal', sig=tuned('j2', 'M', 0.5, d, 'sig_av')))
+    return out
+
+
 def smoke():
     return [case('j1', 'T', 150.0, end=300.0, warm=50.0), case('j2', 'M', 3000.0)]
 
 
-PARTS = dict(smoke=smoke, capacity=capacity, demand=demand, faults=faults, stalls=stalls, t=t_junction, grid=grid, meter=meter, meter_seeds=meter_seeds, headway=headway, faults2=faults2, t_tune=t_tune)
+PARTS = dict(smoke=smoke, capacity=capacity, demand=demand, faults=faults, stalls=stalls, t=t_junction, grid=grid, meter=meter, meter_seeds=meter_seeds, headway=headway, faults2=faults2, t_tune=t_tune, gpu_cells=gpu_cells)
 
 
 def key(c):
