@@ -1113,14 +1113,13 @@ fn lc_decide_helpers(@builtin(global_invocation_id) id: vec3u) {
 }
 
 // A change takes forward travel: at 12 degrees, some 12 m to get a car's body off the old lane. The
-// leaders on both lanes have to leave that much, or the change would stop halfway across both.
+// leader on the old lane has to leave that much, as the body stays tied to it until then.
 fn ph_lc_path(e: Veh, own: LcNeighbors, n: LcNeighbors, dest: u32) -> bool {
     if ((P.safety & 8u) == 0u) { return true; }
     let half = 0.5 * (lanes[dest].width + ty.width);
     let travel = half / 0.21256;
     let t = half / ty.v_lat;
-    if (own.gap < 1e8 && own.gap + ty.min_gap + own.speed * t < travel) { return false; }
-    return n.gap >= 1e8 || n.gap + ty.min_gap + n.speed * t >= travel;
+    return own.gap >= 1e8 || own.gap + ty.min_gap + own.speed * t >= travel;
 }
 
 // Can this body start a lane change here, at this speed, with the time a change takes?

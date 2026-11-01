@@ -28,7 +28,7 @@ const MAIN_BINDINGS: &[bool] = &[
     /*36 mirror*/ false, /*37 energy*/ false, /*38 junction_bid*/ false, /*39 inbound*/ false,
     /*40 hard_limit*/ false, /*41 zones*/ true, /*42 speed_trace*/ true, /*43 entrant_front*/ false,
     /*44 poses*/ false, /*45 grid_head*/ false, /*46 grid_next*/ false, /*47 shape_points*/ true,
-    /*48 contacts*/ false, /*49 occ_width*/ false,
+    /*48 contacts*/ false, /*49 occ_width*/ false, /*50 occ_reach*/ false,
 ];
 
 pub struct Sim {
@@ -229,6 +229,7 @@ impl Sim {
         let junction_bid = empty("junction_bid", when(physical, p.n_lanes as u64 * 4));
         let inbound = empty("inbound", when(physical, p.n_lanes as u64 * 4));
         let occ_width = empty("occ_width", when(physical, p.n_lanes as u64 * 4));
+        let occ_reach = empty("occ_reach", when(physical, p.n_lanes as u64 * 4));
         let hard_limit_init = vec![0xffu8; when(physical, p.n_trips as u64 * 4) as usize];
         let hard_limit = init("hard_limit", &hard_limit_init, storage);
         let zones = init("zones", bytemuck::cast_slice(&world.zones), storage);
@@ -313,7 +314,7 @@ impl Sim {
                 &items, &slots, &link_count, &partial, &tail, &entrant, &trip_out, &series, &edge_acc,
                 &unused, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
                 &mirror, &energy, &junction_bid, &inbound, &hard_limit, &zones, &speed_trace, &entrant_front,
-                &poses, &grid_head, &grid_next, &shape_points, &contacts, &occ_width,
+                &poses, &grid_head, &grid_next, &shape_points, &contacts, &occ_width, &occ_reach,
             ];
             let entries: Vec<_> = list
                 .iter()
