@@ -28,6 +28,11 @@ Built from the "Reviewed by Opus" section of [09](09-coordinated-intersections.m
 - **Stricter auditor than the CPU model:** it also tests cars with their front past the box and tail in it, and heads within 3 m of the line.
 - **Batch polling and FCFS were not built.** They were comparison policies in the report and were not asked for here, so spec test 4 (K crossover) is not run.
 
+## Corrections after a fact check
+
+- **Device labels.** The columns headed "GPU" in [tables.md](fig/d8/tables.md) and the legends of `capacity.png` and `demand.png` were mostly CPU Vulkan (llvmpipe), as the section below says but the labels did not. They now read "this build" against "Python model". Only `gpu_cells.jsonl` ran on the RX 7900 XT: the 26 cases in the table "CPU Vulkan against the RX 7900 XT" and the table of numbers the spec names.
+- **"Network held at 0".** Those rows in the metering table of tables.md averaged signal-free and AV-signal runs, because `compare.py` did not separate policy, and `metering.png` plotted them as if metered. Removed. The unmetered baselines are the separate "none, signal-free" and "AV signal" rows, which were right, and so are the numbers quoted in this report.
+
 ## Which device ran what
 
 The GPU lock had about ten jobs waiting for most of this work, and each sweep had to be rerun twice after bugs below. So the final sweeps ran the same kernels on CPU Vulkan (llvmpipe), and on the RX 7900 XT ran the cells the spec names, compute cost and the clips, plus a 26-case sample of the rest ([fig/d8/verify.jsonl](fig/d8/verify.jsonl), table in the tables file). In that sample 14 cases match to the digit on flow, and the rest differ by up to 1.3% on single junctions and 4.3% on one grid case. Overlap counts differ too when they are not zero: 3 and 5, 3 and 8, 0 and 1. So the two are statistically comparable, not identical, and an overlap count of 0 from CPU Vulkan is evidence for that seed on that device only. At 3000 veh/h a run repeats exactly on one device, including with message loss.

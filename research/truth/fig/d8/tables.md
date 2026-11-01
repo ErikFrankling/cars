@@ -16,7 +16,7 @@
 | j3 M | 15000 | sig_av | 7269 | 255.0 | 6.80 | 0 | 0 | 0.72 |
 
 ## CPU Vulkan against the RX 7900 XT, same binary, same cases
-| Part | Case | Flow, CPU | Flow, GPU | Diff | Overlaps, CPU | Overlaps, GPU |
+| Part | Case | Flow, CPU Vulkan | Flow, GPU | Diff | Overlaps, CPU Vulkan | Overlaps, GPU |
 |---|---|---:|---:|---:|---:|---:|
 | demand | j2 5200 sig_h   | 3666 | 3666 | +0.0% | 0 | 0 |
 | demand | j2 3000 sig_h   | 2802 | 2802 | +0.0% | 0 | 0 |
@@ -47,8 +47,8 @@
 
 ## Saturation headway, one through stream each way: 5139 veh/h over 2 streams, 1.401 s per car; reference 1.304 s
 
-## Capacity, veh/h: GPU against the CPU model
-| Case | Policy | GPU | CPU | Diff | Overlaps | Invariant | Teleports |
+## Capacity, veh/h: this build (CPU Vulkan) against the Python model
+| Case | Policy | This build | Python model | Diff | Overlaps | Invariant | Teleports |
 |---|---|---:|---:|---:|---:|---:|---:|
 | j1 H | Earliest start | 2966 | 3021 | -1.8% | 0 | 0 | 0 |
 | j1 H | Earliest start B | 2324 | 2316 | +0.3% | 0 | 0 | 0 |
@@ -80,7 +80,7 @@
 | j3 M | Human signal | 5265 | 5208 | +1.1% | 0 | 0 | 0 |
 
 ## Delay, s per offered vehicle, and stops per car
-| Case | veh/h | Policy | GPU delay | CPU delay | GPU stops | CPU stops | Overlaps |
+| Case | veh/h | Policy | Delay, this build | Delay, Python model | Stops, this build | Stops, Python model | Overlaps |
 |---|---:|---|---:|---:|---:|---:|---:|
 | j1 T ew0.5 | 1000 | ges | 0.3 | 0.1 | 0.00 | 0.00 | 0 |
 | j1 T ew0.5 | 1000 | sig_av | 0.9 | 0.7 | 0.01 | 0.00 | 0 |
@@ -138,7 +138,7 @@
 | j2 M ew0.8 | 5200 | sig_h | 208.4 | 204.7 | 2.54 | 2.56 | 0 |
 
 ## Faults, 2 lanes, 20% turns
-| Fault | veh/h | GPU flow | CPU flow | GPU delay | CPU delay | Overlaps | Ungranted crossings | Stopped in box, veh·s |
+| Fault | veh/h | Flow, this build | Flow, Python model | Delay, this build | Delay, Python model | Overlaps | Ungranted crossings | Stopped in box, veh·s |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | loss0.0 | 3000 | 3042 | 3054 | 1.7 | 1.7 | 0 | 0 | 0.0 |
 | loss0.1 | 3000 | 3054 | 3066 | 1.7 | 2.1 | 0 | 0 | 0.0 |
@@ -170,7 +170,7 @@
 | exit_cap_chkFalse | 3000 | 2736 | 2784 | 36.1 | 35.8 | 0 | 0 | 0.0 |
 
 ## Injected stalls in the box (reported separately)
-| Case | veh/h | Stalls | Collision events | Per stall | CPU per stall |
+| Case | veh/h | Stalls | Collision events | Per stall | Python model per stall |
 |---|---:|---:|---:|---:|---:|
 | stallA | 3000 | 30 | 3 | 0.10 | 0.24 |
 | stallA | 5000 | 33 | 10 | 0.30 | 0.23 |
@@ -246,7 +246,7 @@
 | grid2 M | 24000 | ges B | 0 | 6960 | 228.4 | 3 | 0 | 2810 | 1.05 | 619 |
 | grid2 M | 24000 | ges A nocheck | 0 | 12808 | 116.5 | 505 | 0 | 1881 | 1.03 | 548 |
 
-## Links gone for good (not in the CPU model)
+## Links gone for good (not in the Python model)
 | Case | veh/h | Flow | Delay | Overlaps | Ungranted crossings | Stuck cars at the end |
 |---|---:|---:|---:|---:|---:|---:|
 | blackout30_fallback | 3000 | 3042 | 2.7 | 0 | 0 | 0 |
@@ -265,7 +265,6 @@
 ## Grid overload: metering at the edge, mean of seeds
 | Net | Offered | Network held at | Seeds | Flow | Delay incl. waiting outside | Overlap events, total | Stuck |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| grid1 | 14000 | 0 | 4 | 8862 | 143 | 11 | 0 |
 | grid1 | 14000 | 60 | 1 | 4552 | 244 | 0 | 0 |
 | grid1 | 14000 | 80 | 1 | 6064 | 208 | 0 | 0 |
 | grid1 | 14000 | 100 | 1 | 7128 | 176 | 0 | 0 |
@@ -273,10 +272,8 @@
 | grid1 | 14000 | 140 | 4 | 8798 | 137 | 0 | 0 |
 | grid1 | 14000 | 170 | 4 | 9382 | 125 | 2 | 0 |
 | grid1 | 14000 | 200 | 4 | 9706 | 117 | 11 | 0 |
-| grid2 | 20000 | 0 | 4 | 16348 | 70 | 30 | 0 |
 | grid2 | 20000 | 240 | 3 | 16635 | 63 | 4 | 0 |
 | grid2 | 20000 | 280 | 3 | 17739 | 47 | 14 | 0 |
-| grid2 | 24000 | 0 | 4 | 15862 | 122 | 41 | 0 |
 | grid2 | 24000 | 120 | 1 | 9768 | 213 | 0 | 0 |
 | grid2 | 24000 | 160 | 1 | 12528 | 171 | 0 | 0 |
 | grid2 | 24000 | 200 | 4 | 14872 | 139 | 0 | 0 |
@@ -308,52 +305,68 @@
 | district | 1500 | av_free | 44 | 64 | 1437 | 40.6 | 0 | 0 | 0 | 0 | 3 |
 | district | 1500 | av_free_b | 44 | 64 | 1437 | 41.2 | 0 | 0 | 0 | 0 | 2 |
 | district | 1500 | av_free_meter | 44 | 64 | 1437 | 40.6 | 0 | 0 | 0 | 0 | 3 |
+| district | 1500 | av_plan | 44 | 64 | 1432 | 41.8 | 0 | 0 | 0 | 0 | 4 |
 | district | 1500 | av_signal_baseline | 44 | 64 | 1427 | 39.9 | 0 | 0 | 0 | 0 | 5 |
 | district | 1500 | av_signals | 0 | 0 | 1419 | 47.7 | 0 | 0 | 0 | 0 | 4 |
 | district | 1500 | krauss_signals | 0 | 0 | 1404 | 50.1 | 0 | 0 | 0 | 0 | 6 |
 | district | 3000 | av_free | 44 | 64 | 2517 | 50.6 | 0 | 0 | 0 | 0 | 126 |
 | district | 3000 | av_free_b | 44 | 64 | 2384 | 50.9 | 0 | 0 | 0 | 0 | 199 |
 | district | 3000 | av_free_meter | 44 | 64 | 2019 | 55.0 | 0 | 0 | 0 | 0 | 134 |
+| district | 3000 | av_plan | 44 | 64 | 2330 | 52.5 | 2 | 1 | 0 | 0 | 157 |
 | district | 3000 | av_signal_baseline | 44 | 64 | 2445 | 51.8 | 2 | 0 | 0 | 0 | 130 |
 | district | 3000 | av_signals | 0 | 0 | 2456 | 59.0 | 0 | 0 | 0 | 0 | 156 |
 | district | 3000 | krauss_signals | 0 | 0 | 2515 | 55.0 | 0 | 0 | 0 | 0 | 78 |
 | district | 5000 | av_free | 44 | 64 | 2289 | 64.1 | 0 | 0 | 0 | 0 | 958 |
 | district | 5000 | av_free_b | 44 | 64 | 2643 | 75.3 | 0 | 0 | 0 | 0 | 701 |
 | district | 5000 | av_free_meter | 44 | 64 | 2325 | 58.8 | 0 | 0 | 0 | 0 | 14 |
+| district | 5000 | av_plan | 44 | 64 | 2577 | 70.4 | 0 | 0 | 0 | 0 | 573 |
 | district | 5000 | av_signal_baseline | 44 | 64 | 2021 | 52.6 | 2 | 0 | 0 | 0 | 1049 |
 | district | 5000 | av_signals | 0 | 0 | 2484 | 65.2 | 0 | 0 | 0 | 0 | 911 |
 | district | 5000 | krauss_signals | 0 | 0 | 2263 | 68.5 | 0 | 0 | 0 | 0 | 844 |
 | district | 8000 | av_free | 44 | 64 | 1846 | 39.9 | 0 | 0 | 0 | 0 | 1894 |
 | district | 8000 | av_free_b | 44 | 64 | 2209 | 58.4 | 0 | 0 | 0 | 0 | 1836 |
 | district | 8000 | av_free_meter | 44 | 64 | 1368 | 78.1 | 0 | 0 | 0 | 0 | 184 |
+| district | 8000 | av_plan | 44 | 64 | 2263 | 57.7 | 0 | 0 | 0 | 0 | 1766 |
 | district | 8000 | av_signal_baseline | 44 | 64 | 2260 | 53.8 | 1 | 0 | 0 | 0 | 1867 |
 | district | 8000 | av_signals | 0 | 0 | 2659 | 71.0 | 0 | 0 | 0 | 0 | 1769 |
 | district | 8000 | krauss_signals | 0 | 0 | 2672 | 86.0 | 0 | 0 | 0 | 0 | 1550 |
+| district_joined | 1500 | av_free | 54 | 37 | 1473 | 32.8 | 0 | 0 | 0 | 0 | 0 |
+| district_joined | 1500 | av_plan | 54 | 37 | 1455 | 35.0 | 0 | 0 | 0 | 0 | 0 |
+| district_joined | 1500 | krauss_signals | 0 | 0 | 1450 | 51.0 | 0 | 0 | 0 | 0 | 0 |
+| district_joined | 3000 | av_free | 54 | 37 | 2710 | 41.0 | 1 | 0 | 0 | 0 | 9 |
+| district_joined | 3000 | av_plan | 54 | 37 | 2461 | 47.1 | 1 | 0 | 0 | 0 | 40 |
+| district_joined | 3000 | krauss_signals | 0 | 0 | 2559 | 66.6 | 0 | 0 | 0 | 0 | 6 |
+| district_joined | 5000 | av_free | 54 | 37 | 3217 | 62.2 | 1 | 0 | 0 | 0 | 381 |
+| district_joined | 5000 | av_plan | 54 | 37 | 2093 | 54.7 | 1 | 0 | 0 | 0 | 706 |
+| district_joined | 5000 | krauss_signals | 0 | 0 | 3266 | 86.2 | 0 | 0 | 0 | 0 | 404 |
+| district_joined | 8000 | av_free | 54 | 37 | 2492 | 73.0 | 1 | 0 | 0 | 0 | 1221 |
+| district_joined | 8000 | av_plan | 54 | 37 | 2142 | 58.9 | 1 | 0 | 0 | 0 | 1424 |
+| district_joined | 8000 | krauss_signals | 0 | 0 | 2888 | 99.9 | 0 | 0 | 0 | 0 | 1444 |
 | junction | 800 | av_free | 1 | 0 | 810 | 17.5 | 0 | 0 | 0 | 0 | 0 |
 | junction | 800 | av_free_b | 1 | 0 | 807 | 17.8 | 0 | 0 | 0 | 0 | 0 |
 | junction | 800 | av_free_meter | 1 | 0 | 810 | 17.5 | 0 | 0 | 0 | 0 | 0 |
+| junction | 800 | av_plan | 1 | 0 | 807 | 17.5 | 0 | 0 | 0 | 0 | 0 |
 | junction | 800 | av_signal_baseline | 1 | 0 | 810 | 17.6 | 0 | 0 | 0 | 0 | 0 |
 | junction | 800 | av_signals | 0 | 0 | 807 | 24.7 | 0 | 0 | 0 | 0 | 0 |
 | junction | 800 | krauss_signals | 0 | 0 | 807 | 26.0 | 0 | 0 | 0 | 0 | 0 |
 | junction | 1500 | av_free | 1 | 0 | 1491 | 26.3 | 0 | 0 | 0 | 0 | 0 |
 | junction | 1500 | av_free_b | 1 | 0 | 1491 | 26.6 | 0 | 0 | 0 | 0 | 0 |
 | junction | 1500 | av_free_meter | 1 | 0 | 1491 | 26.3 | 0 | 0 | 0 | 0 | 0 |
+| junction | 1500 | av_plan | 1 | 0 | 1497 | 25.7 | 0 | 0 | 0 | 0 | 0 |
 | junction | 1500 | av_signal_baseline | 1 | 0 | 1489 | 27.4 | 0 | 0 | 0 | 0 | 0 |
 | junction | 1500 | av_signals | 0 | 0 | 1473 | 36.5 | 0 | 0 | 0 | 0 | 0 |
 | junction | 1500 | krauss_signals | 0 | 0 | 1471 | 39.3 | 0 | 0 | 0 | 0 | 3 |
 | junction | 2500 | av_free | 1 | 0 | 2348 | 41.1 | 0 | 0 | 0 | 0 | 0 |
 | junction | 2500 | av_free_b | 1 | 0 | 2075 | 39.2 | 0 | 0 | 0 | 0 | 44 |
 | junction | 2500 | av_free_meter | 1 | 0 | 2325 | 41.2 | 0 | 0 | 0 | 0 | 4 |
+| junction | 2500 | av_plan | 1 | 0 | 2358 | 39.4 | 0 | 0 | 0 | 0 | 15 |
 | junction | 2500 | av_signal_baseline | 1 | 0 | 2394 | 42.6 | 0 | 0 | 0 | 0 | 3 |
 | junction | 2500 | av_signals | 0 | 0 | 2294 | 57.0 | 0 | 0 | 0 | 0 | 13 |
 | junction | 2500 | krauss_signals | 0 | 0 | 2242 | 62.7 | 0 | 0 | 0 | 0 | 41 |
 | junction | 4000 | av_free | 1 | 0 | 3088 | 69.2 | 0 | 0 | 0 | 0 | 117 |
 | junction | 4000 | av_free_b | 1 | 0 | 2739 | 84.0 | 0 | 0 | 0 | 0 | 242 |
 | junction | 4000 | av_free_meter | 1 | 0 | 2430 | 69.0 | 0 | 0 | 0 | 0 | 0 |
+| junction | 4000 | av_plan | 1 | 0 | 2307 | 112.8 | 0 | 0 | 0 | 0 | 285 |
 | junction | 4000 | av_signal_baseline | 1 | 0 | 3078 | 69.4 | 0 | 0 | 0 | 0 | 141 |
 | junction | 4000 | av_signals | 0 | 0 | 2613 | 106.8 | 0 | 0 | 0 | 0 | 221 |
 | junction | 4000 | krauss_signals | 0 | 0 | 2196 | 113.0 | 0 | 0 | 0 | 0 | 357 |
-
-## Compute on the RX 7900 XT, bounds checks on
-| Net | Junctions | Mean vehicles | ms per step | Without coordinator | Coordinator kernels at t=200, ms | Coordinator memory, MB |
-|---|---:|---:|---:|---:|---:|---:|
