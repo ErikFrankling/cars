@@ -94,8 +94,13 @@ pub struct Args {
     seed: u64,
     #[arg(long, default_value_t = 0)]
     capacity: u32,
-    #[arg(long, default_value_t = 300.0)]
-    time_to_teleport: f32,
+    /// See `cars run --sumo-compat`.
+    #[arg(long)]
+    sumo_compat: bool,
+    #[arg(long, default_value = "dry")]
+    surface: String,
+    #[arg(long)]
+    time_to_teleport: Option<f32>,
     #[arg(long, default_value_t = 1e9)]
     ignore_junction_blocker: f32,
     /// Where the simulation starts; the part before --begin runs without rendering.
@@ -491,7 +496,8 @@ pub fn run(mut r: Args, shot_only: bool) -> Result<(), Box<dyn std::error::Error
             end_seconds: job.demand_end,
             seed: r.seed,
             capacity: r.capacity,
-            time_to_teleport: r.time_to_teleport,
+            mu: if r.sumo_compat { 0.0 } else { cars_core::physics::surface_mu(&r.surface).or_else(|| r.surface.parse().ok()).ok_or("surface")? },
+            time_to_teleport: r.time_to_teleport.unwrap_or(if r.sumo_compat { 300.0 } else { 0.0 }),
             ignore_blocker: r.ignore_junction_blocker,
             ..Default::default()
         },

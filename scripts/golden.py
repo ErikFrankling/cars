@@ -329,7 +329,7 @@ def compare_i80(root):
     import statistics
     d = Path(tempfile.mkdtemp(prefix="golden-i80-"))
     config = root / "config"
-    result = run([CARS, "run", "--net", config / "networks/i80_vsl.net.xml", "--routes", config / "demand/i80_vsl.rou.xml",
+    result = run([CARS, "run", "--sumo-compat", "--net", config / "networks/i80_vsl.net.xml", "--routes", config / "demand/i80_vsl.rou.xml",
                   "--additional", config / "vtypes.xml", "--dt", "1", "--end", "18000", "--trip-csv", d / "trips.csv"])
     print(result.stdout, result.stderr)
     with open(root / "results/processed/metrics.csv") as f:
@@ -366,7 +366,7 @@ def main():
              "--fcd-output", fcd, "--no-step-log", "true", "--no-warnings", "true", "--seed", "1",
              "--tripinfo-output", d / "trip.xml"])
         cars_csv = d / "cars.csv"
-        result = run([CARS, "run", "--net", d / "net.xml", "--routes", d / "r.rou.xml", "--dt", str(dt), "--end", str(end), "--fcd", cars_csv, "--trip-csv", d / "trips.csv", "--check-overlaps", "--seed", "1"])
+        result = run([CARS, "run", "--sumo-compat", "--net", d / "net.xml", "--routes", d / "r.rou.xml", "--dt", str(dt), "--end", str(end), "--fcd", cars_csv, "--trip-csv", d / "trips.csv", "--check-overlaps", "--seed", "1"])
         print(result.stdout.strip(), result.stderr.strip().splitlines()[-1])
         ok = macro_compare(name, read_fcd(fcd), read_cars(cars_csv), d, dt, end) if name in MACRO else compare(name, read_fcd(fcd), read_cars(cars_csv), dt)
         if "teleports 0" not in result.stderr:

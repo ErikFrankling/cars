@@ -39,6 +39,19 @@
 @group(0) @binding(34) var<storage, read_write> last_detect: array<u32>;
 @group(0) @binding(19) var<storage, read_write> lane_free: array<LaneFree>;
 @group(0) @binding(35) var<storage, read_write> lc_plan: array<LcPlan>;
+@group(0) @binding(36) var<storage, read_write> mirror: array<Mirror>;
+@group(0) @binding(37) var<storage, read_write> energy: array<TripEnergy>;
+@group(0) @binding(38) var<storage, read_write> junction_bid: array<atomic<u32>>;
+@group(0) @binding(39) var<storage, read_write> inbound: array<atomic<u32>>;
+@group(0) @binding(40) var<storage, read_write> hard_limit: array<atomic<u32>>;
+@group(0) @binding(41) var<storage, read> zones: array<Zone>;
+@group(0) @binding(42) var<storage, read> speed_trace: array<f32>;
+@group(0) @binding(43) var<storage, read_write> entrant_front: array<atomic<u32>>;
+@group(0) @binding(44) var<storage, read_write> poses: array<Pose>;
+@group(0) @binding(45) var<storage, read_write> grid_head: array<atomic<u32>>;
+@group(0) @binding(46) var<storage, read_write> grid_next: array<u32>;
+@group(0) @binding(47) var<storage, read> shape_points: array<vec4f>;
+@group(0) @binding(48) var<storage, read_write> contacts: array<Contact>;
 
 const C_NEW: u32 = 0u;
 const C_REMOVED: u32 = 1u;
@@ -49,6 +62,16 @@ const C_OVERFLOW: u32 = 5u;
 const C_LANE_CHANGES: u32 = 6u;
 const C_COLLISIONS: u32 = 7u;
 const C_ITEMS_FULL: u32 = 8u;
+const C_CERT_FLOOR: u32 = 16u;
+const C_NO_BRAKE: u32 = 17u;
+const C_DEAD_END: u32 = 18u;
+const C_SHADOWS: u32 = 19u;
+const C_SHADOW_REFUSED: u32 = 20u;
+const C_UNGRANTED: u32 = 21u;
+const C_LC_REFUSED_ROOM: u32 = 22u;
+const C_DENIED: u32 = 23u;
+const C_CONTACT: u32 = 24u;
+const C_CONTACT_KINDS: u32 = 25u;
 
 struct Queue {
     edge: u32,
@@ -67,6 +90,21 @@ struct LcPlan {
 fn is_internal(l: u32) -> bool { return (lanes[l].flags & LANE_INTERNAL) != 0u; }
 
 fn lane_vmax(l: u32, sf: f32) -> f32 { return min(lanes[l].speed * sf, ty.max_speed); }
+
+fn ph_setup(e: Veh) {
+    if (mu <= 0.0) { return; }
+    ph_load = 0.25 + f32(e.phys & 255u) / 146.0;
+    ph_power = 0.5 + f32((e.phys >> 8u) & 255u) / 127.5;
+    let l = lanes[e.lane];
+    ph_gz = l.gz;
+    ph_gz_lead = l.gz;
+    ph_curved = select(1.0, 0.866, l.curve_v > 0.0);
+}
+
+fn ph_curve_limit(l: Lane) -> f32 {
+    if (l.curve_v <= 0.0) { return 1e9; }
+    return min(l.curve_v, l.sqrt_r * sqrt(0.5 * mu * G_ACC));
+}
 
 fn link_state(l: u32) -> u32 {
     let k = links[l].tl;
@@ -185,6 +223,11 @@ fn clear_lanes(@builtin(global_invocation_id) id: vec3u) {
     atomicStore(&partial_occ[id.x], NONE);
     atomicStore(&tail[id.x], NONE);
     atomicStore(&entrant[id.x], NONE);
+    if (P.mu > 0.0) {
+        atomicStore(&entrant_front[id.x], 0u);
+        atomicStore(&junction_bid[id.x], NONE);
+        atomicStore(&inbound[id.x], 0u);
+    }
 }
 
 // Back position in 1/8 m, then a CACC bit and the speed in 1/256 m/s.
@@ -243,6 +286,7 @@ fn adapt_to_leader(gap: f32, seen: f32, cur_len: f32, ls: f32, lb: f32, lcacc: b
 // tail is still hanging onto this lane from the next one.
 fn adapt_to_lane(lane: u32, seen: f32, first: bool, leader_index: u32, ego_pos: f32) {
     let l_len = lanes[lane].length;
+    if (mu > 0.0) { ph_gz_lead = max(ph_gz, lanes[lane].gz); }
     var extra = 0.0;
     if (pl_n > 0u) {
         let lk = items[pl_base + pl_n - 1u].link;
@@ -262,7 +306,7 @@ fn adapt_to_lane(lane: u32, seen: f32, first: bool, leader_index: u32, ego_pos: 
         if (!first || back > ego_pos) {
             var gap: f32;
             if (first) { gap = back - ego_pos - ty.min_gap; } else { gap = back + seen - l_len - ty.min_gap; }
-            adapt_to_leader(gap, seen, l_len, unpack_speed(p), ty.apparent, unpack_cacc(p), true, extra);
+            adapt_to_leader(gap, seen, l_len, unpack_speed(p), tail_b(), unpack_cacc(p), true, extra);
         }
     }
 }
@@ -431,7 +475,7 @@ fn check_link_leader(link_i: u32, lane: u32, seen: f32, ego_lane: u32, ego_entry
                 let gap = dist_cross - ty.min_gap - back_dist - cf.foe_width;
                 if (in_way) {
                     let crossing = select(dist_cross, -1.0, same_target || same_source);
-                    adapt_to_junction_leader(gap, false, seen, l_len, crossing, unpack_speed(p), ty.apparent, unpack_cacc(p));
+                    adapt_to_junction_leader(gap, false, seen, l_len, crossing, unpack_speed(p), tail_b(), unpack_cacc(p));
                 }
             }
         }
@@ -530,9 +574,16 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     }
     ty = types[ego.vtype];
     dt = P.dt;
+    mu = P.mu;
     ego_flags = ego.flags;
     ego_acc = ego.acc;
     mode_done = false;
+    ph_setup(ego);
+    if ((ego.flags & F_SHADOW) != 0u) {
+        shadow_plan(i, ego);
+        return;
+    }
+    if (P.trace_len > 0u && (ego.flags & F_SCRIPTED) != 0u) { ty.max_speed = speed_trace[min(G.step + 1u, P.trace_len - 1u)]; }
     if ((ego.flags & F_SCRIPTED) != 0u && P.script_t0 > 0.0 && f32(G.step) * dt >= P.script_t0 && ego.v_next == 0.0) {
         cur[i].v_next = min(ty.max_speed, max(5.0, ego.speed - 5.0));
     }
@@ -568,6 +619,18 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     var first_lane = true;
 
     loop {
+        if (mu > 0.0 && lanes[lane].curve_v > 0.0) {
+            let la = lanes[lane];
+            let vc = ph_curve_limit(la);
+            let start = seen - la.length + la.s_curve;
+            if (seen - la.length + la.s_curve_end >= 0.0) {
+                var va = vc;
+                if (start > 0.0) { va = free_speed(speed, start, vc, pl_lane_vmax); }
+                va = max(va, v_min_comfort - EPS);
+                pl_v = min(pl_v, va);
+                pl_pass = min(pl_pass, va);
+            }
+        }
         adapt_to_lane(lane, seen, first_lane, leader_index, ego.pos);
         if (pl_n > 0u) {
             let last = pl_base + pl_n - 1u;
@@ -701,6 +764,32 @@ fn lane_free_scan(@builtin(global_invocation_id) id: vec3u) {
     var lengths = 0.0;
     var stopped = false;
     var speed_sum = 0.0;
+    if (P.mu > 0.0) {
+        // Physical mode: what a vehicle entering the junction before this lane can count on.
+        // Moving traffic keeps moving; a crawl or a head that must stop is a queue.
+        f.space = 1e9;
+        for (var k = i; k < end; k++) {
+            let vt = types[cur[k].vtype];
+            speed_sum += cur[k].speed;
+            if (!stopped && cur[k].speed < 1.0 && !roundabout) {
+                stopped = true;
+                f.flags |= FREE_STOPPED;
+                f.space = cur[k].pos - vt.length - lengths;
+            }
+            lengths += vt.length + vt.min_gap;
+        }
+        if (!stopped && (cur[end - 1u].flags & F_HAVE_TO_WAIT) != 0u) {
+            f.flags |= FREE_LAST_WAITS;
+            f.space = lanes[lane].length - lengths;
+        }
+        f.brutto = lengths;
+        f.mean_speed = speed_sum / f32(max(end - i, 1u));
+        lane_free[lane] = f;
+        if ((lanes[lane].flags & LANE_INTERNAL) != 0u && lanes[lane].links_count != 0u) {
+            atomicAdd(&inbound[links[lanes[lane].links_start].to_lane], u32(lengths * 8.0));
+        }
+        return;
+    }
     if ((cur[i].flags & F_HAVE_TO_WAIT) != 0u) { f.flags = FREE_LAST_WAITS; }
     for (var k = i; k < end; k++) {
         let vt = types[cur[k].vtype];
@@ -853,6 +942,7 @@ fn approach(@builtin(global_invocation_id) id: vec3u) {
     let ego = cur[i];
     ty = types[ego.vtype];
     dt = P.dt;
+    mu = P.mu;
     let base = i * MAX_ITEMS;
     let n = ego.n_items;
     let s = seg[ego.lane];
@@ -862,7 +952,8 @@ fn approach(@builtin(global_invocation_id) id: vec3u) {
         let it = items[base + j];
         if (it.link == NONE) { continue; }
         let k = links[it.link];
-        let request = it.request != 0u;
+        // Held back by a body in the way, a driver is not a reason for that body to keep waiting.
+        let request = it.request != 0u && (ego.flags & F_DENIED) == 0u;
         if (j == 0u && request) { wants = true; }
         if (it.arrival > CUTOFF) { continue; }
         if ((k.flags & L_WATCHED) == 0u) { continue; }
@@ -1074,6 +1165,8 @@ fn zipper_speed(link: u32, dist: f32, v_in: f32, a: f32, speed: f32, vl: f32, va
     return v_safe;
 }
 
+var<private> ex_trip: u32;
+
 fn finalize_speed(v_pos: f32, old_v: f32, lane_vmax_: f32, rng: ptr<private, u32>) -> f32 {
     let v_e = min_next_speed_emergency(old_v);
     let v_min = min(min_next_speed(old_v), max(v_pos, v_e));
@@ -1081,6 +1174,10 @@ fn finalize_speed(v_pos: f32, old_v: f32, lane_vmax_: f32, rng: ptr<private, u32
     let v_max = max(v_min, min(min(old_v + a_max * dt, max_next_speed(old_v)), v_pos));
     fin_min = v_min;
     fin_max = v_max;
+    if (mu > 0.0) {
+        if (ty.model == MODEL_KRAUSS) { return max(v_min, ph_dawdle(v_max, ph_a_drv(old_v), ex_trip)); }
+        return v_max;
+    }
     if (ty.model == MODEL_KRAUSS) {
         let r = rand01(rng);
         var s = v_max;
@@ -1096,59 +1193,65 @@ fn finalize_speed(v_pos: f32, old_v: f32, lane_vmax_: f32, rng: ptr<private, u32
 
 var<private> ex_rng: u32;
 
-@compute @workgroup_size(64)
-fn exec(@builtin(global_invocation_id) id: vec3u) {
-    let i = id.x;
-    if (i >= G.n_active) { return; }
-    var e = cur[i];
-    e.flags &= ~(4096u | F_HAVE_TO_WAIT);
-    if ((e.flags & F_LANE_CHANGED) != 0u) { e.flags |= 4096u; }
-    e.flags &= ~F_LANE_CHANGED;
-    ty = types[e.vtype];
-    dt = P.dt;
-    if (e.lane == P.dummy_lane) {
-        teleporting_step(&e, i);
-        cur[i] = e;
-        return;
-    }
-    apply_script(e.flags, e.v_next);
-    let base = i * MAX_ITEMS;
-    let n = e.n_items;
-    let speed = e.speed;
+// Physical dawdling: a loss of acceleration held for a whole second, so its size is the same at any
+// dt, and drawn from the trip and the second so a replay gives the same draw.
+fn ph_dawdle(v_max: f32, a: f32, trip: u32) -> f32 {
+    if (ty.sigma <= 0.0) { return v_max; }
+    let second = u32(f32(G.step) * dt);
+    let r = f32(pcg(trip * 2654435761u ^ second) >> 8u) * (1.0 / 16777216.0);
+    return max(0.0, v_max - dt * ty.sigma * min(max(a, 0.0), v_max) * r);
+}
+
+var<private> wk_safe: f32;
+var<private> wk_min: f32;
+var<private> wk_zipper: f32;
+var<private> wk_wait: bool;
+var<private> wk_stop_at: u32;
+
+// Walks the planned links as far as they are open, as MSVehicle::executeMove does.
+fn walk_links(e: ptr<function, Veh>, base: u32, n: u32, speed: f32, vmax_lane: f32) {
     var v_safe = speed;
     var v_safe_min = 0.0;
     var v_safe_min_dist = 0.0;
     var can_brake_min = false;
-
-    let impat = clamp(ty.impatience + e.wait / P.time_to_impatience, 0.0, 1.0);
+    let impat = clamp(ty.impatience + (*e).wait / P.time_to_impatience, 0.0, 1.0);
     var v_zipper = 1e9;
-    let vmax_lane = lane_vmax(e.lane, e.sf);
     var have_to_wait = false;
+    wk_stop_at = n;
     for (var j = 0u; j < n; j++) {
         let it = items[base + j];
         if (it.link != NONE && it.request != 0u) {
+            if (it.grant == 1u) {
+                v_safe = it.v_wait;
+                have_to_wait = true;
+                wk_stop_at = j;
+                (*e).flags |= F_DENIED;
+                break;
+            }
             let state = link_state(it.link);
             let yellow = have_yellow(state);
             let can_brake = it.dist > brake_gap(speed, ty.decel, 0.0) || speed < ty.decel * dt;
             if (yellow && can_brake) {
                 v_safe = it.v_wait;
                 have_to_wait = true;
+                wk_stop_at = j;
                 break;
             }
             var leave = it.leave;
             if (leave < 0.0) { leave = it.v_pass; }
             var imp = 1.0;
             if (can_brake) { imp = impat; }
-            var my_wait = e.wait;
-            if ((e.flags & F_HAVE_STOPPED) != 0u) { my_wait = 1e9; }
-            let opened = yellow || link_opened(it.link, it.arrival, it.arr_speed, leave, ty.length, imp, ty.decel, my_wait, e.trip);
+            var my_wait = (*e).wait;
+            if (((*e).flags & F_HAVE_STOPPED) != 0u) { my_wait = 1e9; }
+            let opened = yellow || link_opened(it.link, it.arrival, it.arr_speed, leave, ty.length, imp, ty.decel, my_wait, (*e).trip);
             let k = links[it.link];
             let determined = it.dist <= k.visibility;
-            if (opened && (state == CH_s || state == CH_w) && determined) { e.flags |= F_HAVE_STOPPED; }
+            if (opened && (state == CH_s || state == CH_w) && determined) { (*e).flags |= F_HAVE_STOPPED; }
             if (opened && !have_priority(state) && !last_was_cont_major(it.link) && (k.flags & L_CONT) == 0u) {
                 if (!determined && (can_brake || !yellow)) {
                     v_safe = it.v_wait;
                     have_to_wait = true;
+                    wk_stop_at = j;
                     break;
                 } else {
                     v_safe_min_dist = it.dist;
@@ -1161,33 +1264,239 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
                 if (v_safe < ty.decel && v_safe <= it.v_wait && v_safe < max_next_speed(speed)) { have_to_wait = true; }
             } else if (state == CH_Z) {
                 v_safe = it.v_pass;
-                v_zipper = min(v_zipper, zipper_speed(it.link, it.dist, it.v_pass, it.arrival, speed, leave, it.arr_speed, e.trip, e.lane, imp, my_wait, vmax_lane));
+                v_zipper = min(v_zipper, zipper_speed(it.link, it.dist, it.v_pass, it.arrival, speed, leave, it.arr_speed, (*e).trip, (*e).lane, imp, my_wait, vmax_lane));
             } else if (!can_brake && k.tl == NONE && it.dist < brake_gap(speed, ty.emergency, 0.0)) {
                 v_safe = it.v_pass;
             } else {
                 v_safe = it.v_wait;
                 have_to_wait = true;
+                wk_stop_at = j;
                 break;
             }
         } else {
             v_safe = it.v_wait;
             if (it.link != NONE && (v_safe < speed || v_safe < HALT_SPEED)) { have_to_wait = true; }
+            wk_stop_at = j;
             break;
         }
     }
     if (v_safe + EPS < v_safe_min) {
         if (can_brake_min && v_safe < speed) {
-            v_safe = min(v_safe, max(min_next_speed(speed), stop_speed(speed, v_safe_min_dist, ty.decel, true, lane_vmax(e.lane, e.sf))));
+            v_safe = min(v_safe, max(min_next_speed(speed), stop_speed(speed, v_safe_min_dist, ty.decel, true, lane_vmax((*e).lane, (*e).sf))));
             v_safe_min = 0.0;
             have_to_wait = true;
         } else {
             v_safe_min = v_safe;
         }
     }
+    wk_safe = v_safe;
+    wk_min = v_safe_min;
+    wk_zipper = v_zipper;
+    wk_wait = have_to_wait;
+}
 
+// ---------------------------------------------------------------- junction arbitration, physical mode
+
+// Room on the lane behind a junction, for those already heading there and us.
+fn ph_exit_room(to: u32, next_item_link: u32) -> f32 {
+    var room = 1e9;
+    let la = lanes[to];
+    if (lane_occupied(to)) {
+        room = lane_free[to].space;
+    }
+    // A stop ahead at the far end of the exit lane means whoever enters will queue there.
+    if (next_item_link != NONE && room > 1e8) {
+        let st = link_state(next_item_link);
+        if (have_red(st) || have_yellow(st)) {
+            room = la.length;
+            if (lane_occupied(to)) { room -= lane_free[to].brutto; }
+        }
+    }
+    return room;
+}
+
+// Every vehicle that would otherwise have to slow for a contested junction lane asks for it. A
+// vehicle past the point where it can stop asks ahead of all others. What is occupied cannot be asked for.
+@compute @workgroup_size(64)
+fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
+    let i = id.x;
+    if (i >= G.n_active) { return; }
+    var e = cur[i];
+    let n = e.n_items;
+    if (n == 0u || (e.flags & (F_SHADOW | F_REMOVED)) != 0u || e.lane == P.dummy_lane) { return; }
+    let base = i * MAX_ITEMS;
+    ty = types[e.vtype];
+    let v = e.speed;
+    dt = P.dt;
+    mu = P.mu;
+    let claim = v * dt * 2.0 + v * v / (2.0 * ty.decel) + v * ty.ph_tau + 2.0;
+    if (items[base].dist > claim) { return; }
+    ego_acc = e.acc;
+    ph_setup(e);
+    var walker = e;
+    walk_links(&walker, base, n, v, lane_vmax(e.lane, e.sf));
+    let stop = min(wk_stop_at, n);
+    let s = seg[e.lane];
+    let need_own = ty.length + ty.min_gap;
+    let in_front = f32(s.end - i - 1u) * need_own;
+    let floor_v = ph_floor(v, e.acc);
+    var chained = false;
+    for (var j = 0u; j < stop; j++) {
+        let it = items[base + j];
+        if (it.link == NONE) { break; }
+        let k = links[it.link];
+        let next = k.next_lane;
+        if (!is_internal(next) || lanes[next].zone_count == 0u) {
+            chained = false;
+            continue;
+        }
+        if (!chained && it.dist > claim) { break; }
+        let la = lanes[next];
+        let committed = ph_v_cert(it.dist, v, 0.0, 0.0, e.acc) < floor_v;
+        var ok = true;
+        if (!committed) {
+            for (var z = 0u; z < la.zone_count; z++) {
+                let zn = zones[la.zone_start + z];
+                let p = atomicLoad(&tail[zn.foe_lane]);
+                if (p != NONE && unpack_back(p) < zn.foe_out) {
+                    ok = false;
+                    break;
+                }
+            }
+            let last_block = la.links_count == 0u || !is_internal(links[la.links_start].next_lane);
+            if (ok && last_block) {
+                let to = k.to_lane;
+                if (lanes[to].length < need_own) {
+                    chained = true;
+                } else {
+                    chained = false;
+                    var next_link = NONE;
+                    for (var q = j + 1u; q < n; q++) {
+                        let lq = items[base + q].link;
+                        if (lq != NONE && links[lq].from_lane == to) {
+                            next_link = lq;
+                            break;
+                        }
+                    }
+                    let wanted = in_front + need_own + f32(atomicLoad(&inbound[to])) / 8.0;
+                    if (wanted > ph_exit_room(to, next_link)) { ok = false; }
+                }
+            }
+        }
+        if (!ok) {
+            items[base + j].grant = 1u;
+            atomicAdd(&C[C_DENIED], 1u);
+            break;
+        }
+        var rank = 2u;
+        if (committed) { rank = 0u; } else if (have_priority(link_state(it.link))) { rank = 1u; }
+        let hash = (pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u;
+        let bid = (rank << 30u) | (min(u32(max(it.arrival, 0.0) * 8.0), 16383u) << 16u) | hash;
+        items[base + j].grant = bid;
+        atomicMin(&junction_bid[next], bid);
+    }
+}
+
+@compute @workgroup_size(64)
+fn ph_grant(@builtin(global_invocation_id) id: vec3u) {
+    let i = id.x;
+    if (i >= G.n_active) { return; }
+    let n = cur[i].n_items;
+    let base = i * MAX_ITEMS;
+    for (var j = 0u; j < n; j++) {
+        let bid = items[base + j].grant;
+        if (bid == 1u) { return; }
+        if (bid == 0u) { continue; }
+        let la = lanes[links[items[base + j].link].next_lane];
+        for (var z = 0u; z < la.zone_count; z++) {
+            if (atomicLoad(&junction_bid[zones[la.zone_start + z].foe_lane]) < bid) {
+                items[base + j].grant = 1u;
+                atomicAdd(&C[C_DENIED], 1u);
+                return;
+            }
+        }
+    }
+}
+
+// Where the old-lane image of a changing vehicle would have to slow. The owner reads it in exec, in
+// this same step, so its body keeps its gap on both lanes.
+fn shadow_plan(i: u32, s: Veh) {
+    cur[i].n_items = 0u;
+    var limit = 1e9;
+    let la = lanes[s.lane];
+    let vmax = lane_vmax(s.lane, s.sf);
+    if (i + 1u < G.n_active && cur[i + 1u].lane == s.lane) {
+        let lead = cur[i + 1u];
+        let lt = types[lead.vtype];
+        limit = follow_speed(s.speed, lead.pos - lt.length - s.pos - ty.min_gap, lead.speed, lt.apparent, false, vmax, la.speed);
+    }
+    let p = atomicLoad(&partial_occ[s.lane]);
+    if (p != NONE) {
+        limit = min(limit, follow_speed(s.speed, unpack_back(p) - s.pos - ty.min_gap, unpack_speed(p), tail_b(), false, vmax, la.speed));
+    }
+    if (limit < 1e8) { atomicMin(&hard_limit[s.trip], u32(max(limit + 0.002, 0.0) * 1024.0)); }
+}
+
+// A shadow follows its owner, and ends when the body has left its lane or the owner has left the edge.
+@compute @workgroup_size(64)
+fn shadow_sync(@builtin(global_invocation_id) id: vec3u) {
+    let i = id.x;
+    if (i >= G.n_active) { return; }
+    let s = cur[i];
+    if ((s.flags & F_SHADOW) == 0u) { return; }
+    let m = mirror[s.trip];
+    let la = lanes[s.lane];
+    if ((m.state >> 31u) != 0u || (m.state & 0x7fffffffu) != la.edge || m.pos > la.length) {
+        cur[i].flags |= F_REMOVED;
+        return;
+    }
+    cur[i].pos = m.pos;
+    cur[i].speed = m.speed;
+    cur[i].acc = m.acc;
+    let vt = types[s.vtype];
+    let back = m.pos - vt.length;
+    atomicMin(&tail[s.lane], pack_back(back, m.speed, 0u));
+    if (back < 0.0 && s.prev_lane != NONE) {
+        let b2 = lanes[s.prev_lane].length + back;
+        atomicMin(&partial_occ[s.prev_lane], pack_back(b2, m.speed, 0u));
+        atomicMin(&tail[s.prev_lane], pack_back(b2, m.speed, 0u));
+    }
+}
+
+@compute @workgroup_size(64)
+fn exec(@builtin(global_invocation_id) id: vec3u) {
+    let i = id.x;
+    if (i >= G.n_active) { return; }
+    var e = cur[i];
+    if ((e.flags & F_SHADOW) != 0u) { return; }
+    e.flags &= ~(4096u | F_HAVE_TO_WAIT | F_DENIED);
+    if ((e.flags & F_LANE_CHANGED) != 0u) { e.flags |= 4096u; }
+    e.flags &= ~F_LANE_CHANGED;
+    ty = types[e.vtype];
+    dt = P.dt;
+    mu = P.mu;
+    if (e.lane == P.dummy_lane) {
+        teleporting_step(&e, i);
+        cur[i] = e;
+        return;
+    }
+    apply_script(e.flags, e.v_next);
+    ph_setup(e);
+    if (mu > 0.0) { ego_acc = e.acc; }
+    if (P.trace_len > 0u && (e.flags & F_SCRIPTED) != 0u) { ty.max_speed = speed_trace[min(G.step + 1u, P.trace_len - 1u)]; }
+    let base = i * MAX_ITEMS;
+    let n = e.n_items;
+    let speed = e.speed;
+    let vmax_lane = lane_vmax(e.lane, e.sf);
+    walk_links(&e, base, n, speed, vmax_lane);
+    var v_safe = wk_safe;
+    var v_safe_min = wk_min;
+    let v_zipper = wk_zipper;
+    let have_to_wait = wk_wait;
     if (have_to_wait && (lanes[e.lane].flags & LANE_ROUNDABOUT) == 0u) { e.flags |= F_HAVE_TO_WAIT; }
     v_safe = min(v_safe, v_zipper);
     ex_rng = e.rng;
+    ex_trip = e.trip;
     let vmax_here = lane_vmax(e.lane, e.sf);
     var v_next = finalize_speed(v_safe, speed, vmax_here, &ex_rng);
     e.rng = ex_rng;
@@ -1195,11 +1504,50 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     v_next = max(v_next, v_safe_min);
     if (v_next < 0.1 * EPS * dt) { v_next = 0.0; }
 
-    let acc = (v_next - speed) / dt;
+    var acc = (v_next - speed) / dt;
     let old_pos = e.pos;
-    e.pos += v_next * dt;
-    e.speed = v_next;
-    e.acc = acc;
+    if (mu > 0.0) {
+        let bound = atomicExchange(&hard_limit[e.trip], NONE);
+        if (bound != NONE) {
+            v_safe = min(v_safe, f32(bound) / 1024.0 - 0.002);
+            // Held back by a leader on the old lane: no claim on the link ahead until that clears.
+            if (v_safe < HALT_SPEED) { e.flags |= F_DENIED; }
+        }
+        if (bound == 0u) { v_safe = STOP_NOW; }
+        let floor_v = ph_floor(speed, e.acc);
+        let chosen = min(min(v_next, max(v_safe, 0.0)), ph_release(speed, e.acc));
+        var nv = max(chosen, floor_v);
+        if (v_safe < 0.0) {
+            nv = floor_v;
+        } else if (max(v_safe, 0.0) < floor_v) {
+            atomicAdd(&C[C_CERT_FLOOR], 1u);
+        }
+        if (ph_b_follower() <= 0.05) { atomicAdd(&C[C_NO_BRAKE], 1u); }
+        acc = (nv - speed) / dt;
+        var ds: f32;
+        if (nv > 0.0) {
+            ds = speed * dt + 0.5 * acc * dt * dt;
+            v_next = nv;
+            e.acc = acc;
+        } else if (acc < 0.0) {
+            ds = speed * speed / (2.0 * -acc);
+            v_next = 0.0;
+            acc = -speed / dt;
+            e.acc = 0.0;
+        } else {
+            ds = 0.0;
+            v_next = 0.0;
+            e.acc = 0.0;
+        }
+        e.pos += ds;
+        e.speed = v_next;
+        ph_account(&e, speed, v_next, ds);
+        ph_lateral(&e, speed, v_next);
+    } else {
+        e.pos += v_next * dt;
+        e.speed = v_next;
+        e.acc = acc;
+    }
 
     // Waiting and time loss.
     if (v_next <= HALT_SPEED && acc <= 0.5 * ty.accel) {
@@ -1228,9 +1576,14 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
             // Nowhere to go: this only happens on a dead end.
             e.pos = len;
             e.speed = 0.0;
+            if (mu > 0.0) {
+                e.acc = 0.0;
+                atomicAdd(&C[C_DEAD_END], 1u);
+            }
             break;
         }
         let k = links[link];
+        if (mu > 0.0 && items[base + j].grant == 1u) { atomicAdd(&C[C_UNGRANTED], 1u); }
         // A loop on a lane left in this step was crossed, however short the lane.
         let crossed = lanes[e.lane].det_pos;
         if (crossed >= 0.0 && (j > 0u || old_pos < crossed)) { last_detect[e.lane] = G.step; }
@@ -1277,6 +1630,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         ap = min(ap, llen);
         if (e.pos > ap - POS_EPS) {
             finish_trip(&e, ap);
+            ph_mirror(&e, true);
             cur[i] = e;
             return;
         }
@@ -1288,6 +1642,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         if (first_lane == e.lane && i + 1u == s0.end) {
             atomicAdd(&edge_acc[lanes[e.lane].edge * 4u + 3u], 1u);
             teleport(&e);
+            ph_mirror(&e, true);
             atomicAdd(&C[C_TELEPORTS], 1u);
             var tele_kind = 13u;
             if (n == 0u || items[base].link == NONE) {
@@ -1316,13 +1671,76 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         }
     }
     let s = seg[first_lane];
-    if (e.lane != first_lane || i == s.first) {
+    if (mu > 0.0 || e.lane != first_lane || i == s.first) {
         atomicMin(&tail[e.lane], pack_back(back, e.speed, is_cacc(ty)));
     }
     if (e.lane != first_lane) {
         atomicMin(&entrant[e.lane], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
+        if (mu > 0.0) {
+            atomicMax(&entrant_front[e.lane], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
+        }
     }
+    ph_mirror(&e, false);
     cur[i] = e;
+}
+
+// Work done this step. Wheel work is whatever force the motion took, so the books balance exactly
+// unless floats get in the way; physics_qa.py rebuilds the same sums from positions on its own.
+fn ph_account(e: ptr<function, Veh>, v0: f32, v1: f32, ds: f32) {
+    let m = ty.m_ref * ph_load;
+    let meff = m / ty.i_inv;
+    let vm = 0.5 * (v0 + v1);
+    var road = 0.0;
+    if (vm > 0.0) { road = (m * ty.road_a + ty.m_ref * ty.road_c * vm * vm) * ds; }
+    let ke = 0.5 * meff * (v1 * v1 - v0 * v0);
+    let pe = m * ph_gz * ds;
+    let need = ke + pe + road;
+    let t = (*e).trip;
+    energy[t].wheel += max(need, 0.0);
+    energy[t].brake += max(-need, 0.0);
+    energy[t].road += road;
+    energy[t].pe += pe;
+    energy[t].ke += ke;
+    energy[t].dist += ds;
+    if (v1 <= HALT_SPEED) { energy[t].idle_s += dt; } else { energy[t].moving_s += dt; }
+}
+
+fn ph_lateral_done(t: f32, w: f32, v_lat: f32) -> f32 {
+    let total = w / v_lat + 1.0;
+    if (t < 1.0) { return v_lat * (t * 0.5 - sin(3.14159265 * t) / 6.2831853); }
+    if (t <= total - 1.0) { return v_lat * (t - 0.5); }
+    let r = max(total - t, 0.0);
+    return w - v_lat * (r * 0.5 - sin(3.14159265 * r) / 6.2831853);
+}
+
+// Sideways progress of a lane change. It takes forward motion: at a stand the phase does not move.
+fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32) {
+    let p = (*e).phys;
+    if ((p >> 30u) == 0u) { return; }
+    var v_lat = ty.v_lat;
+    if (((*e).flags & F_LAT_FAST) != 0u) { v_lat = 1.1; }
+    let w = lanes[(*e).lane].width;
+    let total = w / v_lat + 1.0;
+    let rate = min(1.0, 0.5 * (v0 + v1) * 0.21256 / v_lat);
+    var u = f32((p >> 16u) & 0x3fffu) / 16383.0;
+    u = min(1.0, u + rate * dt / total);
+    if (u >= 1.0) {
+        (*e).phys = p & 0xffffu;
+        (*e).flags &= ~F_LAT_FAST;
+    } else {
+        (*e).phys = (p & 0xc000ffffu) | (u32(u * 16383.0) << 16u);
+    }
+    if (((*e).flags & F_HAS_SHADOW) != 0u && ph_lateral_done(u * total, w, v_lat) >= 0.5 * (w + ty.width)) {
+        ph_mirror(e, true);
+        (*e).flags &= ~F_HAS_SHADOW;
+    }
+}
+
+fn ph_mirror(e: ptr<function, Veh>, done: bool) {
+    if (mu <= 0.0 || ((*e).flags & F_HAS_SHADOW) == 0u) { return; }
+    var state = lanes[(*e).lane].edge;
+    if (done) { state |= 0x80000000u; }
+    mirror[(*e).trip] = Mirror((*e).pos, (*e).speed, (*e).acc, state);
 }
 
 // MSVehicleTransfer: lift the vehicle off the road. It waits on the dummy lane, and moves along
@@ -1386,7 +1804,7 @@ fn teleporting_step(e: ptr<function, Veh>, index: u32) {
         let la = lanes[best];
         var back = 1e9;
         var lv = 0.0;
-        var lb = ty.apparent;
+        var lb = tail_b();
         if (lane_occupied(best)) {
             let t = cur[seg[best].first];
             if (t.lane == best) {
@@ -1442,6 +1860,7 @@ fn collide(@builtin(global_invocation_id) id: vec3u) {
     if (sg.stamp != G.step || i < sg.first || i + 1u >= sg.end) { return; }
     ty = types[a.vtype];
     dt = P.dt;
+    mu = P.mu;
     let gap = b.pos - types[b.vtype].length - a.pos - ty.collision_factor * ty.min_gap;
     if (gap < -EPS) {
         var e = a;
@@ -1478,11 +1897,12 @@ fn glosa(@builtin(global_invocation_id) id: vec3u) {
     let i = id.x;
     if (i >= G.n_active) { return; }
     let vt = cur[i].vtype;
-    if (types[vt].glosa_range <= 0.0) { return; }
+    if (types[vt].glosa_range <= 0.0 || (cur[i].flags & F_SHADOW) != 0u) { return; }
     var e = cur[i];
     if ((e.flags & F_REMOVED) != 0u) { return; }
     ty = types[vt];
     dt = P.dt;
+    mu = P.mu;
     let orig = trips[e.trip].sf;
     var lane = e.lane;
     var r = e.route_i;
@@ -1728,12 +2148,21 @@ var<private> ins_rng: u32;
 fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     ty = types[t.vtype];
     dt = P.dt;
+    mu = P.mu;
     mode_done = true;
     ins_rng = t.rng;
     let ed = edges[queues[q].edge];
     let lane = choose_lane(ed, t, &ins_rng);
     if (lane == NONE) { return false; }
     let la = lanes[lane];
+    if (mu > 0.0) {
+        ph_load = 0.25 + f32(t.phys & 255u) / 146.0;
+        ph_power = 0.5 + f32((t.phys >> 8u) & 255u) / 127.5;
+        ph_gz = la.gz;
+        ph_gz_lead = la.gz;
+        ph_curved = select(1.0, 0.866, la.curve_v > 0.0);
+        ego_acc = 0.0;
+    }
 
     var pos: f32;
     switch t.depart_pos_mode {
@@ -1767,7 +2196,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     // Leader and follower on the lane, from this step's positions.
     var lead_back = 1e9;
     var lead_v = 0.0;
-    var lead_b = ty.apparent;
+    var lead_b = tail_b();
     var lead_cacc = ty.model == MODEL_CACC;
     let p = atomicLoad(&tail[lane]);
     if (lane_occupied(lane) || p != NONE) {
@@ -1828,7 +2257,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
             break;
         }
         let st = link_state(k);
-        if (have_red(st) || have_yellow(st) || !have_priority(st) || st == CH_Z) {
+        if (have_red(st) || have_yellow(st) || !have_priority(st) || st == CH_Z || (mu > 0.0 && lanes[links[k].next_lane].zone_count != 0u)) {
             let vs = insertion_stop(speed, seen, vmax);
             if (vs < speed) {
                 if (patch_speed) { speed = vs; } else { return false; }
@@ -1840,7 +2269,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
         if (packed != NONE) {
             let g = seen + unpack_back(packed) - ty.min_gap;
             if (g < 0.0) { return false; }
-            let vs = insertion_follow(speed, g, unpack_speed(packed), ty.apparent, vmax, ty.model == MODEL_CACC);
+            let vs = insertion_follow(speed, g, unpack_speed(packed), tail_b(), vmax, ty.model == MODEL_CACC);
             if (vs < speed) {
                 if (patch_speed) { speed = vs; } else { return false; }
             }
@@ -1856,11 +2285,12 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     }
 
     let idx = G.n_active + atomicAdd(&C[C_NEW], 1u);
-    if (idx >= P.capacity) {
+    if (idx + P.shadow_reserve >= P.capacity) {
         atomicSub(&C[C_NEW], 1u);
         return false;
     }
     var e: Veh;
+    e.phys = t.phys;
     e.pos = pos;
     e.speed = speed;
     e.lane = lane;
@@ -1917,7 +2347,7 @@ fn sample_stats(@builtin(global_invocation_id) id: vec3u) {
     let i = id.x;
     if (i >= G.n_active) { return; }
     let e = cur[i];
-    if ((e.flags & F_REMOVED) != 0u) { return; }
+    if ((e.flags & (F_REMOVED | F_SHADOW)) != 0u) { return; }
     // series: running, halting, speed sum in mm/s, relative speed sum in 1/1000
     let at = (G.sample * P.n_replicas + e.replica) * 4u;
     atomicAdd(&series[at], 1u);

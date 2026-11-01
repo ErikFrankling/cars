@@ -3,6 +3,7 @@ mod junctions;
 mod overlay;
 mod record;
 mod replay;
+mod report;
 mod run;
 mod trace;
 #[derive(Parser)]
