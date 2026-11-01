@@ -13,16 +13,16 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Load and power drawn per vehicle | INVENTED ranges | Per-vehicle draws are universal in tools [vwm] [am]; the ranges are design values | table in `world.rs` |
 | Driver acceleration a = 2.02 − 0.125 v, floor 0.7 | ADAPTED | Long 2000 measured at signals; floor is ours | `phys.a0`, `a1`, `a_floor` |
 | Truck and bus a_des | ADAPTED | Yang 2016 measured for trucks; bus under Krašna's limit, design value | `phys.a0` |
-| Driver gap law | ESTABLISHED | MSCFModel::maximumSafeStopSpeedBallistic, Krauss family | model per vType |
-| Driver τ 1.35 s | ADAPTED | Calibrated to the through saturation flow. See capacity below | `tau` |
+| Driver gap law, own braking b and assumed leader braking b̂ | ESTABLISHED | Gipps 1981, the core of Aimsun's model [am]; the ballistic form from SUMO's MSCFModel | model per vType |
+| τ 0.65 s, b 3.0, b̂ 4.5 m/s² | ADAPTED | Fitted to TRVMB's 1,900 and 1,700 together. τ 1.35 of report 11 reached 1,900 and lost half the turning flow. Gipps' own τ is 0.67 s. b is near Bosetti's measured braking | `tau`, `driver_b`, `leader_b` |
 | Certificate: closed-form safe speed, brake ramp, min(b_F, b_L) | ADAPTED | Gipps core [am], RSS [rs]; ours adds the ramp and response inside the tick. 11 §5 | `certificate` |
 | Stop inside a step, release limit | ADAPTED | Consequence of ballistic plus ramp, 11 §5 | |
 | Margin 0.5 m in the certificate | ESTABLISHED | Vissim MinClear 0.5 m [vlc] | |
-| Brake limits b_lo, b_hi | ADAPTED | ADAC, NHTSA, Altoona as graded in 11; car b_lo see capacity below | `car_b_lo`, `phys.b_lo` |
+| Brake limits b_lo, b_hi | ADAPTED | ADAC, NHTSA, Altoona as graded in 11. Car b_lo 8.3 is ADAC's worst tyre on dry, in place of 11's design value 7.0, which took capacity at dt 1 with no measurement behind it | `car_b_lo`, `phys.b_lo` |
 | t_r 0.30 / 0.45 / 0.47 s | ADAPTED | 0.45 regulatory, 0.47 one measured vehicle, 0.30 design | `phys.t_r` |
 | Surface friction table | ADAPTED | ADAC measured low bound; high bound design value. Global, not per lane | `--surface` |
 | Lateral limit 0.5 μ g, combined limit | ADAPTED | 11 I9, I10 | |
-| Driver curve speed, Xu fit, capped | ADAPTED | Xu et al.; cap from Bosetti. See capacity below | `curve_cap` |
+| Driver curve speed, Xu fit, capped at 4 m/s² | ADAPTED | Xu et al.; cap from Bosetti's measured upper limit at low speed, in place of 11's 3 m/s², which cost turning capacity | `curve_cap` |
 | Tightest stretch 1.2 × lowest limit | INVENTED | How far around the tightest point the limit holds | sensitivity |
 | Dawdling held for a whole second, per trip | INVENTED | Keeps σ's effect independent of dt, where SUMO's scales with dt (11 §6) | vType `sigma` |
 
@@ -36,7 +36,9 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Real widths at run time, margin 0.1 m | INVENTED | | `width_margin` |
 | Bid by class, then arrival, then hash; lowest wins | ADAPTED | Priority claims, as in the lane-change kernel and LPSim's atomic writes, order-independent | `arbiter` |
 | Committed vehicles always win | INVENTED | Point of no return; 15 row 9 | |
-| Claim distance: 2 v dt + v²/2b + v τ + 2 | INVENTED | Where a driver would start slowing anyway | `claim_scale` |
+| Critical gaps per movement, give way and stop, +0.9 s at 70 km/h | ESTABLISHED | TRVMB Kapacitet [trv]. Used from the moment the first vehicle has cleared | `tc_scale` |
+| 1.2 s for the first vehicle to clear the conflict point | INVENTED | A body length and zone at 50 km/h, from the gap test | `tc_clear` |
+| Claim distance: v dt + v²/2b + v τ + 2 | INVENTED | Where a driver would start slowing anyway | `claim_scale` |
 | Occupied until the rear has passed the zone | ADAPTED | Vissim conflict area rear gap [vca], with gap 0 | |
 | Held vehicles release their right of way | INVENTED | Otherwise a car waits for one that waits for it | |
 | Exit-clear rule | ESTABLISHED | Vissim avoid blocking [vca], Aimsun yellow box [an], SUMO [si] | `exit_clear` |
@@ -70,6 +72,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Depth threshold 0.02 m | INVENTED | Float noise | |
 | Lanes count as related only if they share an edge or node | INVENTED | Keeps bridges out; can hide geometry faults | |
 | Grid cell 20 m | INVENTED | Longest vehicle | |
+| Removal after waiting on a wrong lane, counted, off by default | ESTABLISHED | Vissim at the emergency stop [vlc]. Aimsun's missed turn is the better form and needs rerouting | `lost_after` |
 | Low-demand check, very low then 50%, teleports off | ESTABLISHED | Trafikverket [tvh], TRB primer [ec] | `physics_gate.py` |
 | Stuck over 180 s counts | INVENTED | Above the cycles in these nets; no guideline gives a number | `--gridlock-after` |
 | Waiting-cycle report by lane | ADAPTED | FHWA and TfL ask for no unrealistic gridlock; ours names where | |

@@ -34,12 +34,36 @@ Throughput levels off around 58 million vehicle updates per second with 830,000 
 - Real detector comparison: at 103 Berlin sites both simulators sit around 16% GEH<5, with volumes near half of measured. This says more about the BeST demand and the site matching than about either simulator.
 - Stockholm: a preliminary scenario with demand fitted to the city's counts, not observed journeys. See [research/stockholm.md](research/stockholm.md).
 
+## Physical mode
+
+`cars run` now runs in physical mode unless told `--sumo-compat`, which keeps the SUMO parity kernel as it was and gets no further work. Reality is the reference from here on.
+
+- Motion is ballistic, vehicles have mass, power, drag and brake limits, and a closed-form safe speed bounds whatever the driver model asks. `--surface dry|wet|snow|ice`.
+- Junction lanes are claimed in parallel and arbitrated in the same step, so two bodies are not sent into one conflict area. Exit-clear applies to a share of human drivers, and to all automated ones.
+- Lane changes take time, with an image of the vehicle kept on the old lane until the body has left it.
+- A detector that shares nothing with the planner checks bodies in 2D at each step and only ever counts. Run output has contacts by kind and place, stuck vehicles and waiting cycles by place, and energy per trip.
+
+`research/physics-provenance.md` says for every rule and number whether it is established, adapted or invented, and from where. Invented ones are parameters: `--tune name=value`, swept in `scripts/physics_sensitivity.py`.
+
+Checks, in the order to run them:
+
+```sh
+python3 scripts/physics_golden.py --wltc research/truth/wltc-class3b.txt   # the formulas, no GPU
+python3 scripts/physics_gate.py --out gate/       # very low and 50% demand on the cities: what is stuck there is a fault, listed by place
+python3 scripts/physics_tests.py                  # saturation flows and gaps against Trafikverket, WLTC, grades, stops, junctions
+python3 scripts/physics_city.py stockholm berlin --out city/
+python3 scripts/physics_qa.py --net n.xml --fcd f.csv --phys p.json --report r.json --trips t.csv --out qa/   # invariants I1 to I17
+python3 scripts/physics_conflicts.py --net n.xml --fcd f.csv --out conflicts.csv   # TTC and PET as SSAM does; relative use only
+```
+
+Conflict counts compare designs. They are not crash rates: FHWA found simulated conflicts predict real crashes worse than traffic volume does.
+
 ## Running
 
 ```sh
 nix develop --command cargo build --release
 target/release/cars run --net city.net.xml --routes city.rou.gz --dt 1 --end 86400 \
-  --time-to-teleport 120 --ignore-junction-blocker 20 --capacity 300000 --trusted \
+  --capacity 300000 --trusted \
   --summary-csv summary.csv --edge-csv edges.csv --edge-interval 900 --trip-csv trips.csv
 target/release/cars record --net city.net.xml --routes city.rou.gz --dt 1 --begin 0 --end 86400 \
   --steps-per-frame 48 --fit --out day.mp4 --title 'A day'

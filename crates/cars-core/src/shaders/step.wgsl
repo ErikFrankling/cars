@@ -69,6 +69,7 @@ const C_SHADOW_REFUSED: u32 = 20u;
 const C_UNGRANTED: u32 = 21u;
 const C_LC_REFUSED_ROOM: u32 = 22u;
 const C_DENIED: u32 = 23u;
+const C_LOST: u32 = 34u;
 const C_CONTACT: u32 = 24u;
 const C_CONTACT_KINDS: u32 = 25u;
 const C_HU_YIELD: u32 = 32u;
@@ -119,17 +120,11 @@ fn hu_setup(e: Veh) {
     if (is_internal(e.lane)) { hu_v0 = max(hu_v0, min(P.hu_e.w, lanes[e.lane].speed * 2.0)); }
 }
 
-// A driver's critical gap at this link. Roundabouts from the Swiss measurement in report 05, the rest from
-// TRVMB Kapacitet table 3: by movement and sign at 50 km/h on the major road, with 0.45 s per 10 km/h above.
+// A driver's critical gap at this link: TRVMB's as the physics holds it, and the Swiss measurement at roundabouts.
 fn hu_set_gap(link: u32, trip: u32) {
     let k = links[link];
     var tc = P.hu_d.y;
-    if ((lanes[k.to_lane].flags & LANE_ROUNDABOUT) == 0u) {
-        let dir = (k.flags >> 8u) & 255u;
-        let stop = link_state(link) == CH_s;
-        tc = select(select(5.1, 5.8, stop), select(select(5.3, 6.0, stop), select(5.0, 5.7, stop), dir == 114u), dir == 108u || dir == 114u);
-        tc = P.hu_d.x * (tc + 0.45 * max(lanes[k.to_lane].speed * 3.6 - 50.0, 0.0) / 10.0);
-    }
+    if ((lanes[k.to_lane].flags & LANE_ROUNDABOUT) == 0u && k.tc > 0.0) { tc = P.hu_d.x * k.tc; }
     hu_gap = tc * hu_critical(trips[trip].persona2);
 }
 
@@ -707,8 +702,10 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
         }
         let link = pick_link(lane, route_i, ego.route_end);
         if (link == NONE) {
-            // Handbok för kapacitetsanalys p. 106: neighbours that stop level with each other lock.
-            var stop_at = seen;
+            // Handbok för kapacitetsanalys p. 106: neighbours that stop level with each other lock. Otherwise,
+            // nothing stands at the end of a lane with no way on, so the certificate's margin need not keep a car
+            // off a lane too short to hold it: it has to get there to change lanes.
+            var stop_at = seen + select(0.0, 0.45, mu > 0.0);
             if (hu_on && (P.hu_flags & HS_OFFSET) != 0u) {
                 stop_at = seen - P.hu_a.w - P.hu_b.x * f32(lanes[lane].index & 1u);
             }
@@ -901,7 +898,8 @@ fn keep_clear(k: Link) -> bool {
 fn foe_on_last_approach(link: u32, a: f32, va: f32, vl: f32, ego: Veh) -> bool {
     let k = links[link];
     if (hu_on) { hu_set_gap(link, ego.trip); }
-    let l = a + (k.length + ty.length) / max((va + vl) * 0.5, EPS);
+    var l = a + (k.length + ty.length) / max((va + vl) * 0.5, EPS);
+    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor; }
     let impat = clamp(ty.impatience + ego.wait / P.time_to_impatience, 0.0, 1.0);
     for (var f = 0u; f < k.foe_count; f++) {
         let foe = foes[k.foe_start + f];
@@ -1135,7 +1133,9 @@ fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f3
     let state = link_state(link);
     if (have_red(state)) { return false; }
     if ((k.flags & L_CONT) != 0u) { return true; }
-    let l = a + (k.length + veh_len) / max((va + vl) * 0.5, EPS);
+    var l = a + (k.length + veh_len) / max((va + vl) * 0.5, EPS);
+    // Physical mode: go when the next foe is a critical gap away, Trafikverket's numbers rather than a crossing estimate.
+    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor; }
     let e_is_major_green = (k.flags & (L_EXIT_AFTER_IJ | L_INTERNAL_JUNCTION)) != 0u && link_state(k.entry) == CH_G;
     if ((have_priority(state) || e_is_major_green) && state != CH_Z) { return true; }
     if (state == CH_w && wait < dt) { return false; }
@@ -1418,7 +1418,7 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
     mu = P.mu;
     cert_on = (P.safety & 1u) != 0u;
     if ((P.safety & 2u) == 0u) { return; }
-    let claim = (v * dt * 2.0 + v * v / (2.0 * ty.decel) + v * ty.ph_tau + 2.0) * P.claim_scale;
+    let claim = (v * dt + v * v / (2.0 * ty.decel) + v * ty.ph_tau + 2.0) * P.claim_scale;
     if (items[base].dist > claim) { return; }
     ego_acc = e.acc;
     ph_setup(e);
@@ -1742,6 +1742,18 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         }
     }
 
+    // Physical mode, off by default: as Vissim at an emergency stop, a car that cannot make its lane is removed
+    // and counted. Never silently: this is a network or model fault with a place on the map.
+    if (mu > 0.0 && P.lost_after > 0.0 && e.wait > P.lost_after && first_lane == e.lane && (n == 0u || items[base].link == NONE)) {
+        let at = atomicAdd(&C[C_CONTACT], 1u) % CONTACT_LOG;
+        contacts[at] = Contact(G.step, e.trip, e.trip, e.lane, e.lane, 8u, e.wait, e.pos, e.pos, 0.0, 0.0, 0.0);
+        atomicAdd(&C[C_LOST], 1u);
+        e.flags |= F_REMOVED;
+        ph_mirror(&e, true);
+        cur[i] = e;
+        return;
+    }
+
     // Teleport the head of a lane that has been stuck for too long.
     if (P.teleport_steps != 0u && e.wait > f32(P.teleport_steps) * dt) {
         let s0 = seg[first_lane];
@@ -1846,11 +1858,7 @@ fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32) {
     var u = f32((p >> 16u) & 0x3fffu) / 16383.0;
     if (v_lat <= 0.0) {
         let d = max(f32(((*e).hu_state >> 8u) & 255u) * 0.1, 1.0);
-        var du = min(1.0, 0.5 * (v0 + v1) * HU_LC_SLOPE * d / (1.875 * w)) * dt / d;
-        // Faster than planned if the lane is running out: the body must be across by its end.
-        let left = (lanes[(*e).lane].length - (*e).pos) / max(0.5 * (v0 + v1), 0.1);
-        if (left < (1.0 - u) * d) { du = max(du, (1.0 - u) * dt / max(left, dt)); }
-        u = min(1.0, u + du);
+        u = min(1.0, u + min(1.0, 0.5 * (v0 + v1) * HU_LC_SLOPE * d / (1.875 * w)) * dt / d);
     } else {
         let total = w / v_lat + 1.0;
         u = min(1.0, u + min(1.0, 0.5 * (v0 + v1) * 0.21256 / v_lat) * dt / total);

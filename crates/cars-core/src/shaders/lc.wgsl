@@ -1276,12 +1276,28 @@ fn ph_lc_path(e: Veh, own: LcNeighbors, n: LcNeighbors, dest: u32) -> bool {
 
 // Can this body start a lane change here, at this speed, with the time a change takes?
 fn ph_lc_room(e: Veh, dest: u32) -> bool {
-    if ((e.phys >> 30u) != 0u || (e.flags & F_HAS_SHADOW) != 0u || e.pos < ty.length) { return false; }
-    let remaining = lanes[e.lane].length - e.pos;
-    if (ty.v_lat <= 0.0) { return 4.0 * e.speed <= remaining; }
+    if ((e.phys >> 30u) != 0u || (e.flags & F_HAS_SHADOW) != 0u || e.pos < min(ty.length, lanes[e.lane].length - 1.0)) { return false; }
     let w = lanes[dest].width;
-    if ((w / ty.v_lat + 1.0) * e.speed <= remaining) { return true; }
-    return (w / 1.1 + 1.0) * e.speed <= remaining;
+    let road = ph_lc_road(e, dest);
+    if (ty.v_lat <= 0.0) { return 4.0 * e.speed <= select(road, lanes[e.lane].length - e.pos, road < 0.0); }
+    if (road < 0.0) {
+        let left = lanes[e.lane].length - e.pos;
+        return left >= w / 0.21256 && (w / ty.v_lat + 1.0) * e.speed <= left;
+    }
+    if ((w / ty.v_lat + 1.0) * e.speed <= road) { return true; }
+    return (w / 1.1 + 1.0) * e.speed <= road;
+}
+
+// Road left for a change into `dest`. Sideways motion carries over lane ends as long as the route goes on from
+// `dest`. Negative when it does not, as a change that cannot finish before the lane ends would stop halfway for good.
+fn ph_lc_road(e: Veh, dest: u32) -> f32 {
+    let k = pick_link(dest, e.route_i, e.route_end);
+    let remaining = lanes[e.lane].length - e.pos;
+    if (k == NONE) {
+        if (e.route_i + 1u >= e.route_end) { return remaining; }
+        return -1.0;
+    }
+    return remaining + continuation_length(links[k].to_lane, e.route_i + 1u, e.route_end);
 }
 
 var<private> lc_first_look: bool;
@@ -1419,11 +1435,16 @@ fn lc_commit(@builtin(global_invocation_id) id: vec3u) {
         cur[i].flags |= F_HAS_SHADOW;
         let w = lanes[dest].width;
         if (vt.v_lat <= 0.0) {
-            // Measured duration if the lane is long enough for it, otherwise as fast as drivers go.
-            let room = lanes[cur[i].lane].length - cur[i].pos;
+            // Measured duration if the road is long enough for it, otherwise as fast as drivers go.
+            ty = vt;
+            var room = ph_lc_road(cur[i], dest);
+            if (room < 0.0) { room = lanes[cur[i].lane].length - cur[i].pos; }
             let d = clamp(min(hu_persona_d(trips[cur[i].trip].persona), room / max(cur[i].speed, 0.1)), 4.0, 22.0);
             cur[i].hu_state = (cur[i].hu_state & 0xffff00ffu) | (u32(d * 10.0) << 8u);
-        } else if ((w / vt.v_lat + 1.0) * cur[i].speed > lanes[cur[i].lane].length - cur[i].pos) { cur[i].flags |= F_LAT_FAST; }
+        } else {
+            ty = vt;
+            if ((w / vt.v_lat + 1.0) * cur[i].speed > ph_lc_road(cur[i], dest)) { cur[i].flags |= F_LAT_FAST; }
+        }
     }
     lc_plan[i].first = 0xffffffffu;
     cur[i].lane = dest;
