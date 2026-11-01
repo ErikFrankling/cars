@@ -801,7 +801,9 @@ fn plan_cand(mi: u32, d: f32, v: f32, min_t: f32, kmin: u32, scratch: bool) -> b
         // The engine takes a moment to come in: a car that has to gain speed on its way to the line
         // would miss a slot exactly at the limit.
         if (v < mk.vk - 0.5 && d < 1.3 * (mk.vk * mk.vk - v * v) / (2.0 * a)) { te += 0.5 * a / (2.5 * cfg.plan_j); }
-        let tl = latest(d, v, mk.vk, a, cfg.b_plan);
+        // Waiting for a slot and still reaching its speed takes room. Not at the car's limits: a slot that
+        // needs them gets missed, and a car arriving under its class speed stays in the box too long.
+        let tl = latest(d, v, mk.vk, 0.9 * a, 0.8 * cfg.b_plan);
         if (tl < 0.0) { continue; }
         var t = max(te, min_t);
         if (line_ref != NONE) { t = max(t, line_t + headway(mi, k, line_ref, 0u)); }
@@ -1196,7 +1198,7 @@ fn plan_accel(d: f32, v: f32, t: f32, ve: f32, vcap: f32, bc: f32) -> f32 {
     let u0 = (6.0 * bb - 2.0 * aa * t) / (t * t);
     // Near the line only the exact arc hits both the time and the speed, if it stays inside the car's
     // limits. If it would ask for more than the engine has at the end, gain the speed now instead.
-    if (t <= 3.0 && bc > cfg.plan_bc) {
+    if (bc > cfg.plan_bc && t <= max(abs(aa) / select(cfg.plan_b, 0.8 * a_c, ve > v) * 1.2, 1.0)) {
         let uend = u0 + 2.0 * (aa - u0 * t) / t;
         if (max(u0, uend) <= a_c && min(u0, uend) >= -bc) { return u0; }
         let up = 0.9 * a_c;
@@ -1988,7 +1990,11 @@ fn cj_apply(@builtin(global_invocation_id) id: vec3u) {
     if (planned) {
         // Close to a firm slot, hitting it matters more than the last of the jerk limit.
         let near = !in_box && state == CJ_FIRM && t_left <= 3.0;
-        a_cmd = clamp(a_cmd, e.acc - select(cfg.plan_j, 5.0, near) * dt, e.acc + 2.5 * cfg.plan_j * dt);
+        let jd = select(cfg.plan_j, 5.0, near);
+        // Letting off the brake needs no limit worth the time it costs.
+        a_cmd = clamp(a_cmd, e.acc - jd * dt, e.acc + select(2.5 * cfg.plan_j, 20.0, e.acc < -1.0) * dt);
+        // Ease off in time, so the jerk limit does not carry the car over the speed limit.
+        if (a_cmd > 0.0) { a_cmd = min(a_cmd, sqrt(2.0 * jd * max(vcap - v, 0.0))); }
         if (a_track < -cfg.plan_bc) { a_cmd = min(a_cmd, a_track + 0.5); }
         a_cmd = min(a_cmd, a_hard);
     }

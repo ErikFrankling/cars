@@ -50,7 +50,8 @@ def main():
                 for name, typ, args in (('krauss_signals', 'krauss', []), ('av_signals', 'av', []),
                                         ('av_signal_baseline', 'av', ['--cj', cj, '--cj-mode', 'signal', '--cj-sig-max', '30', '--cj-sig-gap', '2']),
                                         ('av_free', 'av', ['--cj', cj]), ('av_free_b', 'av', ['--cj', cj, '--cj-level-b']),
-                                        ('av_free_meter', 'av', ['--cj', cj, '--cj-meter', str(p['meter'])])):
+                                        ('av_free_meter', 'av', ['--cj', cj, '--cj-meter', str(p['meter'])]),
+                                        ('av_plan', 'av', ['--cj', cj, '--cj-plan', 'full'])):
                     c = dict(place=place, demand=d, seed=seed, policy=name, end=a.end)
                     k = key(c)
                     if k in done:

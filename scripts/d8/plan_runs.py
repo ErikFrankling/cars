@@ -13,7 +13,7 @@ NETS = ROOT / 'research/truth/fig/09-nets'
 D8 = ROOT / 'research/truth/fig/d8'
 OUT = D8 / 'plan'
 CARS = ROOT / 'target/release/cars'
-SAT = {'j1': 7000, 'j2': 11000, 'j3': 15000, 't1': 6000, 'a150': 11000, 'a280': 11000, 'a500': 11000, 'a1000': 11000}
+SAT = {'j1': 7000, 'j2': 11000, 'j3': 15000, 't1': 6000, 'j150': 11000, 'j280': 11000, 'j500': 11000, 'j1000': 11000}
 CELLS = (('j1', 'T'), ('j1', 'M'), ('j1', 'H'), ('j2', 'T'), ('j2', 'M'), ('j2', 'H'), ('j3', 'M'))
 MODES = ('off', 'full')
 
@@ -90,11 +90,11 @@ def loss():
 
 def length():
     out = []
-    for n in ('a150', 'a280', 'a500', 'a1000'):
+    for n in ('j150', 'j280', 'j500', 'j1000'):
         for d in (3000, 5200):
             for s in (0, 1, 2):
                 for p in MODES:
-                    out.append(case(n, 'M', d, s, p, end=600.0 + 80.0 * (n == 'a1000'), warm=150.0 + 80.0 * (n == 'a1000')))
+                    out.append(case(n, 'M', d, s, p, end=600.0 + 80.0 * (n == 'j1000'), warm=150.0 + 80.0 * (n == 'j1000')))
         for s in (0, 1):
             for p in MODES:
                 out.append(case(n, 'M', SAT[n], s, p, end=500.0, warm=150.0, trace=False))
@@ -117,7 +117,24 @@ def timing():
     return out
 
 
-PARTS = dict(capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
+GRID_JS = ','.join(f'{x}{y}' for x in 'BCD' for y in '123')
+
+
+def grid():
+    out = []
+    for net, ds in (('grid1', (4000, 9000, 14000)), ('grid2', (8000, 16000, 20000, 24000))):
+        for d in ds:
+            for s in (0, 1, 2):
+                for p in MODES:
+                    out.append(case(net, 'M', d, s, p, end=600.0, warm=150.0, trace=False, junctions=GRID_JS))
+    return out
+
+
+def smoke():
+    return [case('j2', 'M', 3000, 0, 'full', end=200.0, warm=60.0)]
+
+
+PARTS = dict(smoke=smoke, grid=grid, capacity=capacity, capacity_quick=capacity_quick, capacity_quick_new=capacity_quick_new, demand=demand, ablation=ablation, faults=faults, loss=loss, length=length, timing=timing)
 
 
 def key(c):
@@ -135,7 +152,7 @@ def run_case(c, work):
     routes = Path(work) / f'{k}.rou.xml'
     subprocess.run([sys.executable, str(ROOT / 'scripts/d8/demand.py'), '--net', str(net), '--out', str(routes), '--demand', str(c['demand']), '--mix', c['mix'],
                     '--seed', str(c['seed']), '--end', str(c['end'])], check=True)
-    args = ['--net', str(net), '--routes', str(routes), '--end', str(c['end']), '--cj', 'B1', '--cj-warm', str(c['warm']), '--seed', str(c['seed']), '--cj-plan', c['plan']]
+    args = ['--net', str(net), '--routes', str(routes), '--end', str(c['end']), '--cj', c.get('junctions', 'B1'), '--cj-warm', str(c['warm']), '--seed', str(c['seed']), '--cj-plan', c['plan']]
     for name, flag in (('loss', '--cj-loss'), ('stall', '--cj-stall-rate'), ('chan', '--cj-chan'), ('pos_err', '--cj-pos-err'), ('clock_err', '--cj-clock-err'),
                        ('margin', '--cj-margin'), ('plan_b', '--cj-plan-b'), ('freeze', '--cj-plan-freeze'), ('firm', '--cj-firm'), ('slack', '--cj-plan-slack'), ('up', '--cj-plan-up')):
         if c.get(name) is not None and (name in ('margin',) or c.get(name)):
@@ -177,6 +194,7 @@ def main():
     ap.add_argument('--plan', default='', help='only this plan mode, and off when "+off" follows')
     a = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
+    os.makedirs('/tmp/d8', exist_ok=True)
     work = tempfile.mkdtemp(prefix='plan_', dir='/tmp/d8')
     for part in a.parts:
         path = OUT / f'{part}{a.tag}.jsonl'
@@ -184,7 +202,9 @@ def main():
         if path.exists():
             for line in path.read_text().splitlines():
                 r = json.loads(line)
-                done[r['key']] = r
+                if 'error' not in r['result']:
+                    done[r['key']] = r
+            path.write_text(''.join(json.dumps(r) + '\n' for r in done.values()))
         jobs = [c for c in PARTS[part]() if key(c) not in done]
         print(part, len(jobs), 'to run', flush=True)
         with cf.ThreadPoolExecutor(a.jobs) as ex:

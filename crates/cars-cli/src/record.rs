@@ -43,7 +43,7 @@ pub struct Common {
     /// Simulation times of stills. With `cars shot` these are the point of the run.
     #[arg(long, value_delimiter = ',')]
     pub at: Vec<f32>,
-    #[arg(long,value_delimiter=',',value_parser=["all","leader","braking","speed","state","foes","events","grants","paths","channel"])]
+    #[arg(long,value_delimiter=',',value_parser=["all","leader","braking","speed","state","foes","events","grants","paths","channel","brake","arrivals"])]
     pub overlay: Vec<String>,
     /// JSON with many cameras over one run, see RECORDING.md. Replaces --out.
     #[arg(long)]
