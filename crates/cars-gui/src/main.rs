@@ -59,6 +59,9 @@ struct Args {
     /// Additional files for --net, separated by commas.
     #[arg(long, default_value = "")]
     additional: String,
+    /// What drives the traffic: physical, or sumo for the old driver.
+    #[arg(long)]
+    driver: Option<String>,
     /// Automated model, by its id in registry.toml. Without it the run is human-only.
     #[arg(long)]
     model: Option<String>,
@@ -333,6 +336,14 @@ impl App {
         }
         let mut draft = first.as_ref().map_or_else(|| Settings::for_scenario(&registry::custom("", "", "")), Settings::for_scenario);
         let a = &self.args;
+        if let Some(id) = &a.driver {
+            if registry.driver(id).is_some() {
+                draft.driver = id.clone();
+                draft.teleports = !draft.physical() && first.as_ref().is_some_and(|s| s.time_to_teleport > 0.0);
+            } else {
+                errors.push(ui::Problem { text: format!("There is no driver called {id} in the registry."), retry: None });
+            }
+        }
         draft.model = a.model.clone().filter(|id| match registry.model(id) {
             Some(m) if m.status == registry::Status::Merged => true,
             _ => {

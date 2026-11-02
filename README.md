@@ -4,7 +4,7 @@
 
 A GPU microscopic traffic simulator in Rust and WGSL compute shaders. The goal is to match real measured traffic at network level, not to match another simulator. It began as a reimplementation of SUMO and still reads SUMO networks and demand files.
 
-**Status.** The default driver on main is still the SUMO copy, tagged `sumo-parity`. On the same inputs it gives nearly the same results as SUMO, and that says nothing about reality. No city scenario matches a real day yet: Berlin's demand holds about half the measured traffic, and Stockholm's demand and signal timing are not real. Human-only traffic must pass [the validation gate](research/truth/VALIDATION-GATE.md) before any self-driving result counts. The findings are in [research/truth](research/truth).
+**Status.** The default driver on main is the physical driver: power, brakes, grip, corners and finite lane changes, measured against real cars and drivers. It has not passed the gate yet. The old driver, a copy of SUMO tagged `sumo-parity`, needs `--sumo-compat`; it gives nearly SUMO's results on the same inputs, which says nothing about reality. No city scenario matches a real day yet: Berlin's demand holds about half the measured traffic, and Stockholm's demand and signal timing are not real. Human-only traffic must pass [the validation gate](research/truth/VALIDATION-GATE.md) before any self-driving result counts. The findings are in [research/truth](research/truth).
 
 The summary with charts is [report/index.html](report/index.html). Figures are in [report/figures](report/figures), raw numbers in [results](results).
 

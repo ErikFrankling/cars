@@ -608,6 +608,7 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.v_lat = num("phys.v_lat", cfg.tune("v_lat", 0.6));
     g.width = t.width;
     g.ph_tau = num("phys.tau", cfg.tune("tau", 0.65));
+    g.sigma = cfg.tune("sigma", g.sigma);
     let automated = matches!(t.model, CfModel::Acc | CfModel::Cacc);
     g.exit_comply = num("phys.exit_comply", if automated { 1.0 } else { cfg.tune("exit_comply", 0.9) });
     // Gipps' two decelerations: what the driver plans with, and what it expects of the leader.
