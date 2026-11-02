@@ -22,3 +22,6 @@ round,run,step,change,factor,r0600,r0630,r0700,r0730,r0800,ratio_0730,last_time_
 5a,sw_b0_s1,2,"same, seed 1",5,3454,7135,10190,16848,28281,2.4,8.0,0,235,,,,,,,,,,,,,
 5b,sw_bg_s0,2,"boundary: same demand, cut 3 km wider, 04:00-08:00, seed 0. All-net figures; inner 49 km2 at 07:30 is 11,381 against 8,656 on the small cut and 4,651 healthy. Ratio is not comparable",5,7684,15085,24684,40157,61479,,8.0,0,586,,,,,,,,,,,,,
 5b,sw_bg_s1,2,"same, seed 1, killed by the CPU guard at 07:31. Inner at 07:30 is 13,225 against 10,635 on the small cut",5,7708,15114,25506,42132,,,7.52,0,185,,,,,,,,,,,,,
+5c,sw_m16_s0,2,"step 3 map fix: 141 real crossings with an OSM 2019 signal and none on the map get one (526 to 667 signals, including Alexanderstrasse x Karl-Liebknecht-Strasse, the first blocked place). Seed 0",5,3347,6745,10976,17620,27266,2.51,8.0,0,349,,,,,,,,,,,,,
+5c,sw_m16_s1,2,"same, seed 1",5,3356,7013,10915,17465,27015,2.49,8.0,0,325,,,,,,,,,,,,,
+5d,sw_m17_s0,2,"step 4, partial: stopped by instruction at 07:58, seed 0 only, no seed 1. Turn and bus lanes from OSM 2019 on the signal-fixed map (m17); cars lanes 1.73% of trips impossible at 3 s",5,3290,6436,10342,16522,,2.36,7.97,0,96,,,,,,,,,,,,,

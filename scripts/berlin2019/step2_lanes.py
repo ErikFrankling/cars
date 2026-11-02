@@ -94,16 +94,12 @@ def lanes_for(direction, marks, free):
 
 
 def feed(direction, sources, targets):
-    """Pairs of source lane and target lane. A right turn fills from the right, a left from the left, through lanes line up."""
+    """Pairs of source lane and target lane, never crossing. More targets than sources: a lane fans out, as a road widens past a junction and the driver picks. More sources than targets: they share, right turns on the right."""
     sources, targets = sorted(sources), sorted(targets)
-    if direction in 'lLt':
-        sources, targets = sources[::-1], targets[::-1]
-    if len(sources) <= len(targets):
-        off = 0
-        if direction == 's':
-            off = (len(targets) - len(sources)) // 2
-        return [(s, targets[off + i]) for i, s in enumerate(sources)]
-    return [(s, targets[min(i, len(targets) - 1)]) for i, s in enumerate(sources)]
+    ns, nt = len(sources), len(targets)
+    if ns <= nt:
+        return [(sources[round(i * (ns - 1) / (nt - 1)) if nt > 1 else 0], t) for i, t in enumerate(targets)]
+    return [(s, targets[round(i * (nt - 1) / (ns - 1))]) for i, s in enumerate(sources)]
 
 
 def main():

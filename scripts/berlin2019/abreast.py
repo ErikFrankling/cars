@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Cars stopped side by side, each wanting the other's lane: abreast.py OUT.csv LABEL=TRACE ...
-Pair: adjacent lanes of one edge, the right car wants left, the left car wants right, both under 0.5 m/s, overlapping along the road. A case is a pair that lasts at least 60 s. No lane swap exists, so only a third car, a gap or a teleport ends it.
-Per edge: cases, pair-seconds, longest, and how many cars stood queued behind them on that edge. For the physics agent, which owns lane changing."""
+"""Cars stopped for a lane change: abreast.py OUT.csv NETDIR LABEL=TRACE ...
+Abreast: adjacent lanes of one edge, the right car wants left, the left car wants right, both under 0.5 m/s, overlapping along the road, for at least 60 s. No lane swap exists, so only a third car or a gap ends it.
+One-sided, from the .why beside the trace: a car under 0.5 m/s whose speed lane changing set, in seconds summed per edge. Counted at the trace's stride.
+For the physics agent, which owns lane changing."""
 import argparse
 import sys
 from collections import defaultdict
@@ -10,14 +11,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import numpy as np
 import pandas as pd
 from cars_trace import Trace, WANT_LEFT, WANT_RIGHT
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import B19, read_net
 
 p = argparse.ArgumentParser()
 p.add_argument('out')
+p.add_argument('netdir')
 p.add_argument('runs', nargs='+')
 p.add_argument('--min-time', type=float, default=60)
-p.add_argument('--net-length', help='not used by the count, only labels')
 a = p.parse_args()
 
+net = read_net(B19 / a.netdir / 'net.net.xml', B19 / a.netdir / 'net.pkl')
+LANE_CHANGE, WHY_RECORD = 14, 136
 rows = []
 for spec in a.runs:
     label, _, path = spec.partition('=')
@@ -26,7 +31,10 @@ for spec in a.runs:
     frames = tr.frames
     stride = frames[1]['time'] - frames[0]['time'] if len(frames) > 1 else 1
     live, done = {}, []
-    behind = defaultdict(int)
+    solo = defaultdict(float)
+    why = open(path + '.why', 'rb')
+    why.seek(8)
+    why.seek(int(np.fromfile(why, '<u4', 1)[0]), 1)
     for f in frames:
         r = tr.records(f)
         flags = r['trip_flags'] >> 24
@@ -36,6 +44,12 @@ for spec in a.runs:
         trip = r['trip_flags'] & 0xffffff
         pos = (r['pos_link'] & 0xffffff) / 256.0
         length = lengths[r['lane_type'] >> 24]
+        head = np.fromfile(why, '<u4', 4)
+        rec = np.fromfile(why, 'u1', int(head[2]) * WHY_RECORD).reshape(-1, WHY_RECORD)
+        for i in np.where(stopped & (rec[:, 0] == LANE_CHANGE))[0]:
+            name = tr.lanes.get(int(lane[i]), '')
+            if '_' in name and not name.startswith(':'):
+                solo[name.rpartition('_')[0]] += stride
         by = defaultdict(list)
         keep = np.where(stopped & ((flags & (WANT_LEFT | WANT_RIGHT)) != 0))[0]
         for i in keep:
@@ -63,6 +77,8 @@ for spec in a.runs:
             done.append((key, live.pop(key)))
     done += list(live.items())
     per = defaultdict(lambda: dict(cases=0, pair_s=0.0, longest=0.0, first=1e12, lanes=set(), pos=[]))
+    for edge in solo:
+        per[edge]
     for (edge, k, x, y), (t0, t1, ps) in done:
         d = t1 - t0 + stride
         if d < a.min_time:
@@ -75,9 +91,10 @@ for spec in a.runs:
         q['lanes'].add(k)
         q['pos'].append(ps)
     for edge, q in per.items():
-        rows.append(dict(run=label, edge=edge, cases=q['cases'], pair_seconds=round(q['pair_s']), longest_s=round(q['longest']), first_h=round(q['first'] / 3600, 2), lanes='+'.join(f'{k}/{k + 1}' for k in sorted(q['lanes'])), median_pos_m=round(float(np.median(q['pos'])), 1)))
+        e = net['edges'].get(edge, dict(name='', lanes=[dict(length=0)]))
+        rows.append(dict(run=label, edge=edge, name=e['name'], road_lanes=len(e['lanes']), road_m=round(e['lanes'][0]['length'], 1), abreast_cases=q['cases'], abreast_pair_seconds=round(q['pair_s']), longest_s=round(q['longest']), first_h=round(q['first'] / 3600, 2) if q['cases'] else '', lane_pairs='+'.join(f'{k}/{k + 1}' for k in sorted(q['lanes'])), median_pos_m=round(float(np.median(q['pos'])), 1) if q['pos'] else '', one_sided_seconds=round(solo[edge])))
     tot = [r for r in rows if r['run'] == label]
-    print(label, 'frames', len(frames), 'stride', stride, 'edges', len(tot), 'cases', sum(r['cases'] for r in tot), 'pair-hours', round(sum(r['pair_seconds'] for r in tot) / 3600, 1))
-d = pd.DataFrame(rows).sort_values(['run', 'pair_seconds'], ascending=[True, False])
+    print(label, 'frames', len(frames), 'stride', stride, 'edges', len(tot), 'abreast cases', sum(r['abreast_cases'] for r in tot), 'pair-hours', round(sum(r['abreast_pair_seconds'] for r in tot) / 3600, 1), 'one-sided car-hours', round(sum(r['one_sided_seconds'] for r in tot) / 3600, 1))
+d = pd.DataFrame(rows).sort_values(['run', 'abreast_pair_seconds', 'one_sided_seconds'], ascending=[True, False, False])
 d.to_csv(a.out, index=False)
 print(d.head(15).to_string(index=False))
