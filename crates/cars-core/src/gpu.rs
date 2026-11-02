@@ -32,8 +32,18 @@ impl Gpu {
     /// Headless setup, for benchmarks, recording and tests.
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn headless(opts: GpuOptions) -> Result<Self, String> {
+        // CARS_ADAPTER=llvmpipe runs on the CPU: for a kernel that might hang, which must not reach the GPU.
+        // Its 256-bit code from LLVM 21 miscompiled lc_ahead_load on AVX-512: `mid + 1` came out as `mid - step`,
+        // silently, and spun once in a while. The same shader at 128 bits is right.
+        if std::env::var("CARS_ADAPTER").is_ok_and(|a| a.to_lowercase().contains("llvmpipe"))
+            && std::env::var_os("LP_NATIVE_VECTOR_WIDTH").is_none()
+        {
+            // SAFETY: at start-up, before the driver or any thread that reads the environment.
+            unsafe { std::env::set_var("LP_NATIVE_VECTOR_WIDTH", "128") };
+        }
         let instance = instance();
-        let adapter = match &opts.adapter_name {
+        let named = std::env::var("CARS_ADAPTER").ok().or(opts.adapter_name.clone());
+        let adapter = match &named {
             Some(name) => {
                 let want = name.to_lowercase();
                 instance

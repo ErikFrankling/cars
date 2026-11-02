@@ -30,6 +30,11 @@ const F_WILL_PASS: u32 = 512u;     // requested its next link in the last step
 const F_NEAR_ROUNDABOUT: u32 = 8192u; // a roundabout edge lies within 300 m on the route
 const F_HAVE_TO_WAIT: u32 = 2048u; // must stop at its next link, as of the last step
 const F_SCRIPTED: u32 = 1024u;     // gets the speed cap disturbance from Params.script_t0
+const F_SHADOW: u32 = 16384u;      // the old-lane image of a vehicle in a lane change, not a vehicle
+const F_HAS_SHADOW: u32 = 32768u;
+const F_LAT_FAST: u32 = 65536u;    // this lane change runs at the raised lateral speed
+const F_DENIED: u32 = 131072u;     // held at a junction lane in the last step: not coming for now
+const F_GRANTED: u32 = 262144u;    // won a junction lane in the last step, and goes on holding it
 
 // Link flags.
 const L_CONT: u32 = 1u;
@@ -77,11 +82,23 @@ struct Params {
     ignore_blocker: f32,
     script_t0: f32,
     dummy_lane: u32,
-    pad1: f32,
+    mu: f32,
+    shadow_reserve: u32,
+    detect_every: u32,
+    grid_mask: u32,
+    trace_len: u32,
+    safety: u32,
+    width_margin: f32,
+    claim_scale: f32,
+    queue_speed: f32,
+    lost_after: f32,
+    zones_ahead: u32,
+    lc_gap: f32,
+    zone_time: u32,
+    lc_crawl: f32,
+    lc_carry: u32,
     meter_n: u32,
-    pad2: u32,
-    pad3: u32,
-    pad4: u32,
+    lateral_median: f32,
 }
 
 struct Globals {
@@ -135,7 +152,7 @@ struct Veh {
     occ_left: f32,
     occ_right: f32,
     occ_best: f32,
-    pad: u32,
+    phys: u32,
     cj_t_line: f32,    // scheduled time at the stop line
     cj_v_line: f32,    // scheduled speed at the stop line
     cj_v_cruise: f32,
@@ -171,6 +188,69 @@ struct Lane {
     pad1: u32,
     in_start: u32,
     in_count: u32,
+    gz: f32,
+    curve_v: f32,
+    sqrt_r: f32,
+    s_curve: f32,
+    s_curve_end: f32,
+    width: f32,
+    zone_start: u32,
+    zone_count: u32,
+    shape_count: u32,
+    from_node: u32,
+    to_node: u32,
+    geom_scale: f32,
+}
+
+struct Zone {
+    foe_lane: u32,
+    own_in: f32,
+    own_out: f32,
+    foe_in: f32,
+    foe_out: f32,
+    dist: f32,
+}
+
+struct Mirror {
+    pos: f32,
+    speed: f32,
+    acc: f32,
+    state: u32,
+}
+
+struct TripEnergy {
+    wheel: f32,
+    brake: f32,
+    road: f32,
+    pe: f32,
+    ke: f32,
+    idle_s: f32,
+    moving_s: f32,
+    dist: f32,
+}
+
+struct Contact {
+    step: u32,
+    trip_a: u32,
+    trip_b: u32,
+    lane_a: u32,
+    lane_b: u32,
+    kind: u32,
+    depth: f32,
+    pos_a: f32,
+    pos_b: f32,
+    x: f32,
+    y: f32,
+    pad: f32,
+}
+
+struct Pose {
+    center: vec2f,
+    dir: vec2f,
+    half_len: f32,
+    half_width: f32,
+    cell: u32,
+    pad: u32,
 }
 
 struct Edge {
@@ -197,6 +277,7 @@ struct Link {
     before: u32,
     state: u32,
     from_lane: u32,
+    tc: f32,
 }
 
 struct Conflict {
@@ -235,8 +316,25 @@ struct VType {
     lc_look_left: f32,
     lc_speed_gain_right: f32,
     collision_factor: f32,
+    exit_comply: f32,
+    pw_kg: f32,
+    road_a: f32,
+    road_c: f32,
+    i_inv: f32,
+    trac: f32,
+    v_corner: f32,
+    b_lo: f32,
+    b_hi: f32,
+    t_r: f32,
+    a0: f32,
+    a1: f32,
+    a_floor: f32,
+    v_lat: f32,
+    width: f32,
+    ph_tau: f32,
+    m_ref: f32,
+    b_assume: f32,
     reaction: f32,
-    pad2: f32,
 }
 
 struct Trip {
@@ -255,7 +353,7 @@ struct Trip {
     replica: u32,
     script: u32,
     best_mask: u32,
-    pad2: u32,
+    phys: u32,
 }
 
 struct TripOut {
@@ -286,7 +384,7 @@ struct Item {
     braking: f32,
     dist: f32,
     leave: f32,
-    pad: f32,
+    grant: u32,       // physical mode: 0 no claim needed, 1 denied, else the bid
 }
 
 struct Approach {
@@ -595,6 +693,145 @@ var<private> ego_flags: u32;
 var<private> ego_acc: f32;
 var<private> mode_done: bool;
 
+// Physical mode. mu 0 selects SUMO's formulas everywhere below.
+const G_ACC: f32 = 9.81;
+const STOP_NOW: f32 = -0.001;     // a safe speed of zero or less: brake as hard as possible
+var<private> mu: f32;
+var<private> cert_on: bool;
+var<private> ph_gz: f32;
+var<private> ph_gz_lead: f32;
+var<private> ph_ay: f32;
+var<private> ph_load: f32;
+var<private> ph_power: f32;
+var<private> ph_curved: f32;
+
+fn ph_force(u: f32) -> f32 {
+    return ty.i_inv * (min(ty.pw_kg * ph_power / (ph_load * max(u, ty.v_corner)), mu * ty.trac) - ty.road_a - ty.road_c * u * u / ph_load) - ph_gz;
+}
+
+// What the vehicle can do at speed v over this step: evaluated at the middle, so dt does not matter.
+fn ph_a_cap(v: f32) -> f32 {
+    return ph_force(v + 0.5 * max(ph_force(v), 0.0) * dt);
+}
+
+// What the driver asks for.
+fn ph_a_drv(v: f32) -> f32 {
+    return min(max(ty.a0 - ty.a1 * v, ty.a_floor) - ph_gz, ph_a_cap(v));
+}
+
+fn ph_b_follower() -> f32 {
+    return max((min(ty.b_lo, mu * G_ACC) + ph_gz) * ph_curved, 0.05);
+}
+
+fn ph_b_leader(b_hi: f32) -> f32 {
+    return max(min(b_hi, 1.35 * mu * G_ACC) + max(ph_gz, ph_gz_lead), 0.05);
+}
+
+fn ph_jerk(b: f32) -> f32 {
+    if (dt >= ty.t_r) { return b / ty.t_r; }
+    return b / (ty.t_r + dt);
+}
+
+// The certificate. Whatever the leader does within its limits, a follower that takes this speed now
+// can still stop behind it. bl <= 0 means a fixed stop line.
+fn ph_v_cert(gap_bumper: f32, v: f32, vl: f32, b_hi: f32, a_prev: f32) -> f32 {
+    let bf = ph_b_follower();
+    var bl = bf;
+    var along = 0.0;
+    if (b_hi > 0.0) {
+        bl = ph_b_leader(b_hi);
+        along = vl * vl / (2.0 * bl);
+    }
+    let b = min(bf, bl);
+    let d_lo = max(0.0, -a_prev - ph_jerk(b) * dt);
+    let lam = max(0.0, 1.0 - d_lo / b);
+    let h = (ty.t_r * lam * lam + dt) * 0.5;
+    let q = gap_bumper - 0.5 + along - v * dt * 0.5;
+    return b * (-h + sqrt(h * h + 2.0 * max(q, 0.0) / b));
+}
+
+// Bumper gap the certificate needs for a vehicle to keep speed v behind one at vl.
+fn ph_gap_required(v: f32, vl: f32, b_hi: f32, a_prev: f32) -> f32 {
+    let bl = ph_b_leader(b_hi);
+    let b = min(ph_b_follower(), bl);
+    let d_lo = max(0.0, -a_prev - ph_jerk(b) * dt);
+    let lam = max(0.0, 1.0 - d_lo / b);
+    let h = (ty.t_r * lam * lam + dt) * 0.5;
+    return 0.5 + v * v / (2.0 * b) + h * v + v * dt * 0.5 - vl * vl / (2.0 * bl);
+}
+
+// The highest speed a new vehicle may enter at, which is ph_gap_required solved for v.
+fn ph_v_insert(gap_bumper: f32, vl: f32, b_hi: f32) -> f32 {
+    let bf = ph_b_follower();
+    var bl = bf;
+    var along = 0.0;
+    if (b_hi > 0.0) {
+        bl = ph_b_leader(b_hi);
+        along = vl * vl / (2.0 * bl);
+    }
+    let b = min(bf, bl);
+    let h = (ty.t_r + 2.0 * dt) * 0.5;
+    return b * (-h + sqrt(h * h + 2.0 * max(gap_bumper - 0.5 + along, 0.0) / b));
+}
+
+fn ph_limit(driver: f32, cert: f32) -> f32 {
+    if (!cert_on) { return max(driver, 0.0); }
+    if (cert <= 0.0) { return STOP_NOW; }
+    return min(max(driver, 0.0), cert);
+}
+
+// MSCFModel::maximumSafeStopSpeedBallistic.
+fn ph_stop_driver(gap_total: f32, v: f32, b: f32, tau: f32) -> f32 {
+    if (gap_total <= 0.0) { return 0.0; }
+    // At dt above the reaction time the law alone runs past the gap in a step and stops short of nothing.
+    // What is driven this step, and what stopping takes in the next, have to fit in the gap.
+    let fits = max(gap_total - v * dt * 0.5, 0.0) / dt;
+    if (gap_total <= v * tau * 0.5) { return min(fits, max(0.0, v - v * v / (2.0 * gap_total) * dt)); }
+    let bt = b * tau * 0.5;
+    let v1 = -bt + sqrt(bt * bt + b * (2.0 * gap_total - tau * v));
+    return min(fits, max(0.0, v + (v1 - v) * min(dt / tau, 1.0)));
+}
+
+// How a driver stops for what stands still: report 19 has real stops at a mean 1.3 and a peak of 2.2 m/s2, hardest
+// early and fading out, with speed barely mattering. v = 1.2 d^0.6 gives that from 5 to 20 m/s. Late for it, the
+// driver brakes as hard as the remaining distance asks, and the steps of a coarse dt are spread over the approach.
+fn ph_stop_comfort(gap: f32, v: f32) -> f32 {
+    if (gap <= 0.1) { return 0.0; }
+    let v1 = 1.2 * pow(max(gap - v * dt, 0.0), 0.6);
+    let v2 = 1.2 * pow(max(gap - 0.5 * (v + v1) * dt, 0.0), 0.6);
+    let late = v - dt * max(2.2, 1.1 * v * v / (2.0 * gap));
+    return min(max(v2, late), max(gap - v * dt * 0.5, 0.0) / dt);
+}
+
+// The hardest the brakes allow by the end of this step. Below zero, the stop is inside the step.
+fn ph_floor(v: f32, a_prev: f32) -> f32 {
+    let b = ph_b_follower();
+    let d = max(0.0, -a_prev);
+    if (dt >= ty.t_r) {
+        let t1 = max(b - d, 0.0) * ty.t_r / b;
+        return v - (d * t1 + 0.5 * (b / ty.t_r) * t1 * t1 + b * (dt - t1));
+    }
+    return v - min(b, d + b * dt / (ty.t_r + dt)) * dt;
+}
+
+// How far hard braking from here takes to stop.
+fn ph_stop_distance(v: f32, a_prev: f32) -> f32 {
+    let f = ph_floor(v, a_prev);
+    if (f <= 0.0) { return v * v * dt / (2.0 * max(v - f, 1e-3)); }
+    return 0.5 * (v + f) * dt + f * f / (2.0 * ph_b_follower());
+}
+
+fn ph_release(v: f32, a_prev: f32) -> f32 {
+    if (a_prev >= 0.0) { return 1e9; }
+    return v + (a_prev + ph_jerk(ph_b_follower()) * dt) * dt;
+}
+
+// Whatever brakes hardest among tails we know nothing else about.
+fn tail_b() -> f32 {
+    if (mu > 0.0) { return 1.35 * mu * G_ACC; }
+    return ty.apparent;
+}
+
 fn pcg(state: u32) -> u32 {
     let s = state * 747796405u + 2891336453u;
     let w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u;
@@ -607,6 +844,7 @@ fn rand01(rng: ptr<private, u32>) -> f32 {
 }
 
 fn max_next_speed(v: f32) -> f32 {
+    if (mu > 0.0) { return max(0.0, min(v + ph_a_drv(v) * dt, ty.max_speed)); }
     return min(v + ty.accel * dt, ty.max_speed);
 }
 
@@ -617,10 +855,12 @@ fn min_next_speed(v: f32) -> f32 {
 }
 
 fn min_next_speed_emergency(v: f32) -> f32 {
+    if (mu > 0.0) { return max(ph_floor(v, ego_acc), 0.0); }
     return max(v - ty.emergency * dt, 0.0);
 }
 
 fn brake_gap(v: f32, decel: f32, headway: f32) -> f32 {
+    if (mu > 0.0) { return v * v / (2.0 * decel) + v * headway; }
     let r = decel * dt;
     let steps = floor(v / r);
     return dt * (steps * v - r * steps * (steps + 1.0) * 0.5) + v * headway;
@@ -647,6 +887,7 @@ fn emergency_decel(gap: f32, v: f32, vp: f32, bp: f32) -> f32 {
 }
 
 fn safe_stop(gap: f32, decel: f32, v: f32, headway: f32, relax: bool) -> f32 {
+    if (mu > 0.0) { return ph_stop_driver(gap, v, decel, select(dt, ty.ph_tau, headway > 0.0)); }
     var vsafe = safe_stop_euler(gap, decel, headway);
     if (relax && ty.decel != ty.emergency) {
         let orig = (v - vsafe) / dt;
@@ -660,6 +901,7 @@ fn safe_stop(gap: f32, decel: f32, v: f32, headway: f32, relax: bool) -> f32 {
 }
 
 fn safe_follow(gap: f32, v: f32, vp: f32, bp: f32, on_insertion: bool) -> f32 {
+    if (mu > 0.0) { return ph_stop_driver(max(gap, 0.0) + vp * vp / (2.0 * ty.b_assume), v, ty.decel, ty.ph_tau); }
     var x: f32;
     if (gap >= 0.0) {
         x = safe_stop(gap + brake_gap(vp, max(ty.decel, bp), 0.0), ty.decel, v, ty.tau, false);
@@ -771,7 +1013,19 @@ fn av_stop_curve(d: f32, b: f32, tr: f32) -> f32 {
 }
 
 // CF::followSpeed. `lane_vmax` is the lane's limit for this vehicle, `lane_limit` the posted limit.
+// Physical mode keeps the model as the driver's wish and bounds it by the certificate, so any model
+// can sit here: nothing past this point depends on which one asked.
 fn follow_speed(v: f32, gap: f32, vp: f32, bp: f32, leader_cacc: bool, lane_vmax: f32, lane_limit: f32) -> f32 {
+    if (mu > 0.0) {
+        var d = follow_driver(v, gap, vp, bp, leader_cacc, lane_vmax, lane_limit);
+        // Gipps behind what moves, and where a slowing leader would come to rest is stopped for as drivers stop.
+        if (vp < v && ty.model == MODEL_KRAUSS) { d = min(d, ph_stop_comfort(gap + vp * vp / 2.6, v)); }
+        return ph_limit(d, ph_v_cert(gap + ty.min_gap, v, vp, bp, ego_acc));
+    }
+    return follow_driver(v, gap, vp, bp, leader_cacc, lane_vmax, lane_limit);
+}
+
+fn follow_driver(v: f32, gap: f32, vp: f32, bp: f32, leader_cacc: bool, lane_vmax: f32, lane_limit: f32) -> f32 {
     switch ty.model {
         case MODEL_AV: {
             let g = gap + ty.min_gap;
@@ -803,6 +1057,20 @@ fn follow_speed(v: f32, gap: f32, vp: f32, bp: f32, leader_cacc: bool, lane_vmax
 
 // CF::stopSpeed
 fn stop_speed(v: f32, gap: f32, decel: f32, relax: bool, lane_vmax: f32) -> f32 {
+    if (mu > 0.0) {
+        var d = min(ph_stop_comfort(gap, v), max_next_speed(v));
+        if (ty.model == MODEL_IDM) { d = min(d, stop_driver_idm(v, gap, decel, lane_vmax)); }
+        return ph_limit(d, ph_v_cert(gap, v, 0.0, 0.0, ego_acc));
+    }
+    return stop_driver(v, gap, decel, relax, lane_vmax);
+}
+
+fn stop_driver_idm(v: f32, gap: f32, decel: f32, lane_vmax: f32) -> f32 {
+    if (gap < 0.01) { return 0.0; }
+    return min(idm_v(gap, v, 0.0, lane_vmax, false), gap / dt);
+}
+
+fn stop_driver(v: f32, gap: f32, decel: f32, relax: bool, lane_vmax: f32) -> f32 {
     if (ty.model == MODEL_IDM) {
         if (gap < 0.01) { return 0.0; }
         var r = idm_v(gap, v, 0.0, lane_vmax, false);
@@ -817,6 +1085,15 @@ fn stop_speed(v: f32, gap: f32, decel: f32, relax: bool, lane_vmax: f32) -> f32 
 
 // CF::insertionFollowSpeed
 fn insertion_follow(speed: f32, gap: f32, vp: f32, bp: f32, vmax: f32, leader_cacc: bool) -> f32 {
+    if (mu > 0.0) {
+        var v = min(speed, ph_v_insert(gap + ty.min_gap, vp, bp));
+        if (ty.model != MODEL_KRAUSS) { v = min(v, insertion_driver(speed, gap, vp, bp, vmax, leader_cacc)); }
+        return max(v, 0.0);
+    }
+    return insertion_driver(speed, gap, vp, bp, vmax, leader_cacc);
+}
+
+fn insertion_driver(speed: f32, gap: f32, vp: f32, bp: f32, vmax: f32, leader_cacc: bool) -> f32 {
     switch ty.model {
         case MODEL_IDM: {
             var v = speed;
@@ -856,6 +1133,7 @@ fn insertion_follow(speed: f32, gap: f32, vp: f32, bp: f32, vmax: f32, leader_ca
 
 // CF::insertionStopSpeed
 fn insertion_stop(speed: f32, gap: f32, vmax: f32) -> f32 {
+    if (mu > 0.0) { return min(speed, ph_v_insert(gap, 0.0, 0.0)); }
     var v = speed;
     var r = stop_speed(v, gap, ty.decel, false, vmax);
     if (ty.model == MODEL_IDM) {
@@ -889,6 +1167,10 @@ fn idm_secure_gap(v: f32, vl: f32) -> f32 {
 // CF::freeSpeed
 fn free_speed(v: f32, seen: f32, vt: f32, lane_vmax: f32) -> f32 {
     if (vt < 0.0) { return vt; }
+    if (mu > 0.0) {
+        let bh = ty.decel * dt * 0.5;
+        return max(vt, -bh + sqrt(bh * bh + vt * vt + 2.0 * ty.decel * max(seen - v * dt * 0.5, 0.0)));
+    }
     if (ty.model == MODEL_IDM) {
         let sec = idm_secure_gap(vt, 0.0);
         var vs: f32;
@@ -931,6 +1213,7 @@ fn minimal_arrival_speed_euler(dist: f32, v: f32) -> f32 {
 
 // CF::getSecureGap, used by lane changing and insertion.
 fn secure_gap(v: f32, vl: f32, bl: f32) -> f32 {
+    if (mu > 0.0) { return max(0.0, ph_gap_required(v, vl, bl, 0.0) - ty.min_gap); }
     switch ty.model {
         case MODEL_IDM: { return idm_secure_gap(v, vl); }
         case MODEL_ACC: { return 0.07 * (v - vl) / 0.23 + ty.tau * v; }

@@ -13,6 +13,7 @@ const STEP: &str = include_str!("shaders/step.wgsl");
 const LC: &str = include_str!("shaders/lc.wgsl");
 const CONTROL: &str = include_str!("shaders/control.wgsl");
 const SORT: &str = include_str!("shaders/sort.wgsl");
+const DETECT: &str = include_str!("shaders/detect.wgsl");
 const ROUTE: &str = include_str!("shaders/route.wgsl");
 const AV_JUNCTION: &str = include_str!("shaders/av_junction.wgsl");
 
@@ -24,8 +25,11 @@ const MAIN_BINDINGS: &[bool] = &[
     /*15 prev*/ true, /*16 cur*/ false, /*17 incoming*/ true, /*18 adv_flags*/ false, /*19 lane_free*/ false,
     /*20 seg*/ false, /*21 items*/ false, /*22 slots*/ false, /*23 link_count*/ false,
     /*24 partial*/ false, /*25 tail*/ false, /*26 entrant*/ false, /*27 trip_out*/ false,
-    /*28 series*/ false, /*29 edge_acc*/ false, /*30 unused*/ true, /*31 advice*/ false,
+    /*28 series*/ false, /*29 edge_acc*/ false, /*30 ph_lane*/ false, /*31 advice*/ false,
     /*32 queue_trips*/ true, /*33 claims*/ false, /*34 last_detect*/ false, /*35 lc_plan*/ false,
+    /*36 mirror*/ false, /*37 energy*/ false, /*38 hard_limit*/ false, /*39 zones*/ true,
+    /*40 speed_trace*/ true, /*41 poses*/ false, /*42 grid_head*/ false, /*43 grid_next*/ false,
+    /*44 shape_points*/ true, /*45 contacts*/ false,
 ];
 
 /// The coordinator's buffers and kernels, when any junction is coordinated.
@@ -90,6 +94,8 @@ pub struct Buffers {
     pub tls: wgpu::Buffer,
     pub queues: wgpu::Buffer,
     pub items: wgpu::Buffer,
+    pub energy: wgpu::Buffer,
+    pub contacts: wgpu::Buffer,
     pub total_bytes: u64,
 }
 
@@ -112,6 +118,12 @@ struct Pipelines {
     lc_commit: Option<wgpu::ComputePipeline>,
     lc_release: Option<wgpu::ComputePipeline>,
     glosa: Option<wgpu::ComputePipeline>,
+    ph_bid: wgpu::ComputePipeline,
+    ph_grant: wgpu::ComputePipeline,
+    shadow_sync: wgpu::ComputePipeline,
+    detect_clear: wgpu::ComputePipeline,
+    detect_pose: wgpu::ComputePipeline,
+    detect_pairs: wgpu::ComputePipeline,
     collide: wgpu::ComputePipeline,
     insert: wgpu::ComputePipeline,
     sample_stats: wgpu::ComputePipeline,
@@ -184,7 +196,7 @@ impl Sim {
         // step starts at -1 so that the first begin() makes it 0, SUMO's first time step.
         let globals_init = GpuGlobals { step: u32::MAX, ..Default::default() };
         let globals = init("globals", bytemuck::bytes_of(&globals_init), storage);
-        let counters = init("counters", &[0u8; 64], storage);
+        let counters = init("counters", &[0u8; COUNTERS as usize * 4], storage);
         let lanes = init("lanes", bytemuck::cast_slice(&world.lanes), storage);
         let edges = init("edges", bytemuck::cast_slice(&world.edges), storage);
         let links = init("links", bytemuck::cast_slice(&world.links), storage);
@@ -248,8 +260,22 @@ impl Sim {
         let claims = init("claims", &claims_init, storage);
         let last_detect = empty("last_detect", p.n_lanes as u64 * 4);
         let lc_plan = empty("lc_plan", cap * LCPLAN_BYTES);
-        let unused = empty("unused", 16);
         let lane_free = empty("lane_free", p.n_lanes as u64 * 16);
+        let physical = p.mu > 0.0;
+        let when = |on: bool, bytes: u64| if on { bytes } else { 16 };
+        let mirror = empty("mirror", when(physical, p.n_trips as u64 * MIRROR_BYTES));
+        let energy = empty("energy", when(physical, p.n_trips as u64 * std::mem::size_of::<GpuTripEnergy>() as u64));
+        let ph_lane = empty("ph_lane", when(physical, p.n_lanes as u64 * 20));
+        let hard_limit_init = vec![0xffu8; when(physical, p.n_trips as u64 * 4) as usize];
+        let hard_limit = init("hard_limit", &hard_limit_init, storage);
+        let zones = init("zones", bytemuck::cast_slice(&world.zones), storage);
+        let speed_trace = init("speed_trace", bytemuck::cast_slice(&world.speed_trace), storage);
+        let detecting = p.detect_every > 0;
+        let poses = empty("poses", when(detecting, cap * POSE_BYTES));
+        let grid_head = empty("grid_head", when(detecting, (p.grid_mask as u64 + 1) * 4));
+        let grid_next = empty("grid_next", when(detecting, cap * 4));
+        let shape_points = init("shape_points", bytemuck::cast_slice(&world.shape_points), storage);
+        let contacts = empty("contacts", when(physical, CONTACT_LOG * std::mem::size_of::<GpuContact>() as u64));
 
         // Layouts.
         let main_layout = {
@@ -324,7 +350,9 @@ impl Sim {
                 &params, &globals, &counters, &lanes, &edges, &links, &foes, &conflicts, &types, &routes,
                 &trips, &queues, &tls, &phases, &states, prev, cur, &incoming_links, &adv_flags, &lane_free, &seg,
                 &items, &slots, &link_count, &partial, &tail, &entrant, &trip_out, &series, &edge_acc,
-                &unused, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
+                &ph_lane, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
+                &mirror, &energy, &hard_limit, &zones, &speed_trace,
+                &poses, &grid_head, &grid_next, &shape_points, &contacts,
             ];
             let mut entries: Vec<_> = list
                 .iter()
@@ -440,7 +468,7 @@ impl Sim {
             std::env::var("CARS_SHADER_DIR").ok().and_then(|d| std::fs::read_to_string(format!("{d}/{name}")).ok()).unwrap_or_else(|| builtin.to_string())
         };
         let (common, route, step, lc) = (shader("common.wgsl", COMMON), shader("route.wgsl", ROUTE), shader("step.wgsl", STEP), shader("lc.wgsl", LC));
-        let main_src = format!("{common}\n{route}\n{step}\n{lc}");
+        let main_src = format!("{common}\n{route}\n{step}\n{lc}\n{}", shader("detect.wgsl", DETECT));
         let main_module = gpu.shader("step", &main_src);
         let control_module = gpu.shader("control", &format!("{common}\n{CONTROL}"));
         let sort_module = gpu.shader("sort", &format!("{common}\n{SORT}"));
@@ -507,6 +535,12 @@ impl Sim {
             lc_commit: has("lc_commit").then(|| m("lc_commit")),
             lc_release: has("lc_release").then(|| m("lc_release")),
             glosa: world.vtypes.iter().any(|t| t.glosa_range > 0.0).then(|| m("glosa")),
+            ph_bid: m("ph_bid"),
+            ph_grant: m("ph_grant"),
+            shadow_sync: m("shadow_sync"),
+            detect_clear: m("detect_clear"),
+            detect_pose: m("detect_pose"),
+            detect_pairs: m("detect_pairs"),
             collide: m("collide"),
             insert: m("insert"),
             sample_stats: m("sample_stats"),
@@ -586,6 +620,8 @@ impl Sim {
             tls,
             queues,
             items,
+            energy,
+            contacts,
             total_bytes: total_bytes.get(),
         };
         Ok(Self {
@@ -691,10 +727,20 @@ impl Sim {
         c.dispatch_workgroups_indirect(ind, 24);
         c.set_pipeline(&p.approach);
         c.dispatch_workgroups_indirect(ind, 24);
+        if params.mu > 0.0 {
+            c.set_pipeline(&p.ph_bid);
+            c.dispatch_workgroups_indirect(ind, 24);
+            c.set_pipeline(&p.ph_grant);
+            c.dispatch_workgroups_indirect(ind, 24);
+        }
         c.set_pipeline(&p.clear_lanes);
         c.dispatch_workgroups(params.n_lanes.div_ceil(64), 1, 1);
         c.set_pipeline(&p.exec);
         c.dispatch_workgroups_indirect(ind, 24);
+        if params.mu > 0.0 {
+            c.set_pipeline(&p.shadow_sync);
+            c.dispatch_workgroups_indirect(ind, 24);
+        }
         if let Some(gl) = &p.glosa {
             c.set_pipeline(gl);
             c.dispatch_workgroups_indirect(ind, 24);
@@ -717,8 +763,18 @@ impl Sim {
             c.set_pipeline(release);
             c.dispatch_workgroups_indirect(ind, 24);
         }
-        c.set_pipeline(&p.collide);
-        c.dispatch_workgroups_indirect(ind, 24);
+        if params.mu <= 0.0 {
+            c.set_pipeline(&p.collide);
+            c.dispatch_workgroups_indirect(ind, 24);
+        }
+        if params.detect_every > 0 && self.step.is_multiple_of(params.detect_every as u64) {
+            c.set_pipeline(&p.detect_clear);
+            c.dispatch_workgroups((params.grid_mask + 1).div_ceil(64), 1, 1);
+            c.set_pipeline(&p.detect_pose);
+            c.dispatch_workgroups_indirect(ind, 24);
+            c.set_pipeline(&p.detect_pairs);
+            c.dispatch_workgroups_indirect(ind, 24);
+        }
         if params.n_queues > 0 {
             c.set_pipeline(&p.insert);
             c.dispatch_workgroups(params.n_queues.div_ceil(16), 1, 1);
@@ -801,12 +857,27 @@ impl Sim {
     }
 
     pub fn counters(&self, gpu: &Gpu) -> Vec<u32> {
-        self.read::<u32>(gpu, &self.buffers.counters, 16)
+        self.read::<u32>(gpu, &self.buffers.counters, COUNTERS)
     }
 
     pub fn vehicles(&self, gpu: &Gpu) -> Vec<GpuVeh> {
         let g = self.globals(gpu);
         self.read::<GpuVeh>(gpu, self.current_veh(), g.n_active as u64 + self.counters(gpu)[0] as u64)
+    }
+
+    pub fn trip_energy(&self, gpu: &Gpu) -> Vec<GpuTripEnergy> {
+        if self.world_params.mu <= 0.0 {
+            return Vec::new();
+        }
+        self.read(gpu, &self.buffers.energy, self.world_params.n_trips as u64)
+    }
+
+    /// The contact log, as far as it was written.
+    pub fn contacts(&self, gpu: &Gpu) -> Vec<GpuContact> {
+        if self.world_params.mu <= 0.0 {
+            return Vec::new();
+        }
+        self.read(gpu, &self.buffers.contacts, CONTACT_LOG)
     }
 
     pub fn trip_outputs(&self, gpu: &Gpu) -> Vec<GpuTripOut> {
@@ -996,11 +1067,27 @@ impl Sim {
             c.set_pipeline(&p.clear_lanes);
             c.dispatch_workgroups(params.n_lanes.div_ceil(64), 1, 1);
         });
+        if params.mu > 0.0 {
+            pass("ph_arbiter", &mut |c| {
+                c.set_bind_group(0, group, &[]);
+                c.set_pipeline(&p.ph_bid);
+                c.dispatch_workgroups_indirect(ind, 24);
+                c.set_pipeline(&p.ph_grant);
+                c.dispatch_workgroups_indirect(ind, 24);
+            });
+        }
         pass("exec", &mut |c| {
             c.set_bind_group(0, group, &[]);
             c.set_pipeline(&p.exec);
             c.dispatch_workgroups_indirect(ind, 24);
         });
+        if params.mu > 0.0 {
+            pass("shadow_sync", &mut |c| {
+                c.set_bind_group(0, group, &[]);
+                c.set_pipeline(&p.shadow_sync);
+                c.dispatch_workgroups_indirect(ind, 24);
+            });
+        }
         if let Some(best) = &p.lc_best {
             pass("lc_best", &mut |c| {
                 c.set_bind_group(0, group, &[]);
@@ -1028,11 +1115,24 @@ impl Sim {
                 c.dispatch_workgroups_indirect(ind, 24);
             }
         });
-        pass("collide", &mut |c| {
-            c.set_bind_group(0, group, &[]);
-            c.set_pipeline(&p.collide);
-            c.dispatch_workgroups_indirect(ind, 24);
-        });
+        if params.mu <= 0.0 {
+            pass("collide", &mut |c| {
+                c.set_bind_group(0, group, &[]);
+                c.set_pipeline(&p.collide);
+                c.dispatch_workgroups_indirect(ind, 24);
+            });
+        }
+        if params.detect_every > 0 {
+            pass("detect", &mut |c| {
+                c.set_bind_group(0, group, &[]);
+                c.set_pipeline(&p.detect_clear);
+                c.dispatch_workgroups((params.grid_mask + 1).div_ceil(64), 1, 1);
+                c.set_pipeline(&p.detect_pose);
+                c.dispatch_workgroups_indirect(ind, 24);
+                c.set_pipeline(&p.detect_pairs);
+                c.dispatch_workgroups_indirect(ind, 24);
+            });
+        }
         if params.n_queues > 0 {
             pass("insert", &mut |c| {
                 c.set_bind_group(0, group, &[]);

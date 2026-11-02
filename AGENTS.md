@@ -12,6 +12,8 @@ The GPU also drives Erik's desktop. Scale every experiment from small to big, ke
 - `cars run --trace` writes trajectories and `cars replay` draws them with no simulation, so an incident stays in the run that had it. `cars record`, `cars shot` and `cars junctions` also look at intersections up close. `scripts/intersection_gallery.py`, `scripts/physics_qa.py` and `scripts/cars_trace.py` build on them; see `crates/cars-cli/RECORDING.md`.
 - `crates/cars-gui` is the desktop app (winit, egui, wgpu), started with `scripts/cars-gui.sh`; its README is the tutorial. `crates/cars-gui/registry.toml` lists scenarios, each with a required trust label from research/truth/VALIDATION-GATE.md, and models; adding either needs no rebuild. Overlays live in `cars-core/src/overlay.rs` behind a `Paint` trait, shared with `cars record`.
 
+`CARS_ADAPTER=llvmpipe` runs kernels on the CPU, for what might hang and for small scenes when the GPU queue is long. It forces 128-bit code: LLVM 21's 256-bit code miscompiled `lc_ahead_load` silently. A cut of a real net with `randomTrips.py` runs in seconds this way. Over seeds: lockup is chaotic, one seed says nothing.
+
 No GPU kernel may use function-local arrays outside `lc_best`. Comments stay sparse.
 
 To find out why something happens, see `crates/cars-cli/DEBUGGING.md`: `cars run --trace f --why`, then `cars why`, `cars jam`, `cars tsd`, `cars junction`, `cars compare`, `cars dist`. Reasons are probes in `crates/cars-core/src/why.rs`, patched in only with `--why`; a new limit in a kernel needs one there.

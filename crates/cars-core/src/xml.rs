@@ -40,6 +40,17 @@ pub fn attr_f32(e: &BytesStart, name: &str) -> Option<f32> {
     attr(e, name)?.trim().parse().ok()
 }
 
+/// Height difference between the last and first point of "x,y,z x,y,z ...", or 0 without heights.
+pub fn shape_rise(s: &str) -> f32 {
+    // netconvert leaves out a height of exactly 0.
+    let z = |p: &str| p.split(',').nth(2).and_then(|v| v.parse::<f32>().ok()).unwrap_or(0.0);
+    let mut points = s.split_ascii_whitespace();
+    match (points.next(), points.next_back()) {
+        (Some(a), Some(b)) => z(b) - z(a),
+        _ => 0.0,
+    }
+}
+
 /// Parse "x,y x,y ..." and ignore a z coordinate if present.
 pub fn parse_shape(s: &str) -> Vec<[f32; 2]> {
     s.split_ascii_whitespace()
