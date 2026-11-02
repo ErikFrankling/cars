@@ -231,6 +231,10 @@ impl Physics {
             "kind": world::CONTACT_NAMES[i.kind as usize], "t": self.begin + i.first as f32 * self.dt, "last": self.begin + i.last as f32 * self.dt, "samples": i.samples, "depth": i.worst,
             "lane_a": net.lanes[i.lane_a as usize].id, "lane_b": net.lanes[i.lane_b as usize].id, "x": i.x, "y": i.y,
         });
+        if let Ok(path) = std::env::var("CARS_INCIDENTS") {
+            let rows: String = list.iter().map(|i| format!("{},{},{},{},{},{},{},{},{}\n", world::CONTACT_NAMES[i.kind as usize], self.begin + i.first as f32 * self.dt, self.begin + i.last as f32 * self.dt, i.samples, i.worst, net.lanes[i.lane_a as usize].id, net.lanes[i.lane_b as usize].id, i.x, i.y)).collect();
+            std::fs::write(path, format!("kind,first,last,samples,depth,lane_a,lane_b,x,y\n{rows}")).expect("incidents");
+        }
         let mut stuck: Vec<_> = self.stuck_lanes.iter().collect();
         stuck.sort_by(|a, b| b.1.wait.total_cmp(&a.1.wait));
         let stuck_list: Vec<_> = stuck.iter().take(5000).map(|(l, s)| {

@@ -717,10 +717,11 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
             // off a lane too short to hold it: it has to get there to change lanes.
             var stop_at = seen + select(0.0, 0.45, mu > 0.0);
             if (hu_on && (P.hu_flags & HS_OFFSET) != 0u) {
-                // The point stays on the lane with no way on, else a short lane's cars wait back in the junction.
-                let room = max(lanes[lane].length - ty.length - 0.5, 0.0);
-                stop_at += -min(P.hu_a.w + P.hu_b.x * f32(lanes[lane].index & 1u), room);
-                stop_at += max(2.5 - lanes[lane].length, 0.0);
+                // Short lanes: the car has to come to stand on this lane, where the missed-turn rule sees it, and far
+                // enough along for ph_lc_room to let it change. hu_target stops a car short of its point by this margin.
+                let ll = lanes[lane].length;
+                let want = max(max(ll - P.hu_a.w - P.hu_b.x * f32(lanes[lane].index & 1u), min(ty.length, ll - 1.0) + 0.2), min(ll, 1.0));
+                stop_at = seen - ll + want + hu_stop_s0 + hu_overshoot - 0.5;
             }
             let va = stop_speed(speed, stop_at, ty.decel, true, pl_lane_vmax);
             if (pl_n > 0u) { adapt_leave(pl_base + pl_n - 1u, va); }
@@ -1424,6 +1425,19 @@ fn zone_taken(zn: Zone) -> bool {
     return zn.dist < 0.5 * (ty.width + f32(atomicLoad(&inbound[P.n_lanes + zn.foe_lane])) / 16.0) + P.width_margin;
 }
 
+// A body whose rear still stands on the foe lane must not wait for itself. A route that leaves a junction over a lane
+// shorter than the car and comes back into it does this, and the car then stands for good with nothing around it.
+fn zone_foe_is_self(zn: Zone, e: Veh) -> bool {
+    var back = e.pos - ty.length;
+    if (back >= 0.0 || e.prev_lane == NONE) { return false; }
+    back += lanes[e.prev_lane].length;
+    if (zn.foe_lane != e.prev_lane) {
+        if (back >= 0.0 || e.prev2_lane == NONE || zn.foe_lane != e.prev2_lane) { return false; }
+        back += lanes[e.prev2_lane].length;
+    }
+    return abs(unpack_back(atomicLoad(&tail[zn.foe_lane])) - back) < 0.5 + e.speed * dt;
+}
+
 // A vehicle on a junction lane still has zones ahead of it on that lane, and asks for them as it nears each.
 fn zones_ahead_bid(i: u32, e: Veh, claim: f32) {
     let la = lanes[e.lane];
@@ -1492,7 +1506,7 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
         var ok = true;
         if (!committed) {
             for (var z = 0u; z < la.zone_count; z++) {
-                if (zone_taken(zones[la.zone_start + z])) {
+                if (zone_taken(zones[la.zone_start + z]) && !zone_foe_is_self(zones[la.zone_start + z], e)) {
                     ok = false;
                     break;
                 }
@@ -1977,8 +1991,11 @@ fn hu_reroute(e: ptr<function, Veh>, n: u32, base: u32, i: u32) {
     if (((*e).flags & F_REROUTE) != 0u) {
         let p = route_patch[(*e).trip];
         if (p.x != 0u && p.x != NONE) {
-            (*e).route_i = p.x;
-            (*e).route_end = p.y;
+            // The answer takes seconds. A car that found its way on meanwhile keeps the route it is on.
+            if (routes[p.x] == lanes[(*e).lane].edge) {
+                (*e).route_i = p.x;
+                (*e).route_end = p.y;
+            }
             (*e).flags = ((*e).flags & ~F_REROUTE) | F_BEST_DIRTY;
             route_patch[(*e).trip] = vec2u(0u, 0u);
         }

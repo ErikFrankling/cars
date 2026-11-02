@@ -331,6 +331,9 @@ pub fn run(args: Args) {
                 let items: Vec<[f32; 10]> = sim.read(&gpu, &sim.buffers.items, vs.len() as u64 * 8);
                 if let Some((i, v)) = vs.iter().enumerate().filter(|(_, v)| v.lane == lane).max_by(|a, b| a.1.pos.total_cmp(&b.1.pos)) {
                     println!("t={now:.1} {} pos {:.2} v {:.2} acc {:.2} wait {:.1} flags {:#x} own {:#x} n_items {} best_off {} left_space {:.1} blocker {:.1}", demand.ids[demand.trips[world.trip_source[v.trip as usize] as usize].id as usize], v.pos, v.speed, v.acc, v.wait, v.flags, v.lc_own, v.n_items, v.best_off, v.left_space, v.blocker);
+                    let route: Vec<u32> = sim.read(&gpu, &sim.buffers.routes, v.route_end as u64);
+                    let ahead: Vec<&str> = route[v.route_i as usize..v.route_end as usize].iter().take(5).map(|&e| net.edges[e as usize].id.as_str()).collect();
+                    println!("      route {} of {}: {ahead:?}", v.route_i, v.route_end);
                     let ed = net.lanes[lane as usize].edge as usize;
                     for li in 0..net.edges[ed].lane_count {
                         let l2 = net.edges[ed].first_lane + li;

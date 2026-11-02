@@ -31,6 +31,9 @@ CASES = {
     'base': (),
     'humans': ('--humans',),
     'sumo': ('--sumo-compat',),
+    'sumo-teleport120': ('--sumo-compat', '--time-to-teleport', '120', '--ignore-junction-blocker', '20'),
+    'sumo-noteleport': ('--sumo-compat', '--time-to-teleport', '0'),
+    'sumo-noteleport-ignore20': ('--sumo-compat', '--time-to-teleport', '0', '--ignore-junction-blocker', '20'),
 }
 for r in RULES:
     CASES[f'no-{r}'] = ('--humans', '--human-off', r)
@@ -51,11 +54,14 @@ def one(place, case, a):
     p = PLACES[place]
     out = Path(a.out) / place
     out.mkdir(parents=True, exist_ok=True)
-    extra = list(p['extra']) if case != 'sumo' and case != 'base' else []
+    extra = list(p['extra']) if not case.startswith('sumo') and case != 'base' else []
     cmd = [a.cars, 'run', '--net', p['net'], '--routes', p['routes'], '--dt', a.dt, '--begin', p['begin'], '--end', p['end'], '--capacity', p['capacity'], '--seed', a.seed,
            '--report-json', out / f'{case}.json', '--trip-csv', out / f'{case}.trips.csv', *extra, *CASES[case]]
-    if case != 'sumo':
+    if not case.startswith('sumo'):
         cmd += ['--time-to-teleport', '0']
+    else:
+        # This mode has no gridlock report: a whole-city frame every 15 minutes gives the same count from each car's wait.
+        cmd += ['--summary-csv', out / f'{case}.summary.csv', '--fcd', out / f'{case}.fcd.csv', '--fcd-interval', '900', '--fcd-begin', p['begin']]
     t = time.time()
     # The PC's load guard kills a big job when the desktop stalls. Just try again.
     for _ in range(4):
