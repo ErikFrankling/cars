@@ -366,3 +366,45 @@ The audit's fixes 2 and 3, rebuilding junction geometry and smoothing roads, bel
 **A fault in the software GPU, not in the driver.** llvmpipe's default 256-bit vectors silently mix up vehicles in the plan kernel. A car with another in the same dispatch brakes to a stop at the end of its final road and stands there: `stub_lane` arrived 3 of 103. Debug output showed an item with no link and a request flag, which no code path writes. At 128 bits the same binary arrives 140 of 140. An earlier result in this work, followers driving through leaders with a min gap of -91 m, is very likely the same fault, but that is unproven: the rule that seemed to cause it was moved to the plan kernel first, and its old place was not retested at 128 bits. A follower catching a slow leader now passes at 128 bits and is a regression test. `cars` now sets the width itself for llvmpipe. **All merge measurements made before this was found are discarded.** Earlier software GPU numbers in this report were made on older kernels at 256 bits and were not all rerun; the city runs are on the real GPU.
 
 **How it looks.** By eye, frame by frame: queues stand on brake lights, blinkers flash front and rear on the side the car is merging towards, a head car noses in as room opens, and nobody overlaps. Three things look wrong to a driver. The sim is more crowded than the real panel, 11 km/h against 24, from the throughput miss. Cars mostly wait and then go, rather than rolling in beside someone. And a car starting from a crawl turns about 20° by eye, more than the real tracks show, because the sideways rate is capped but not tied to its speed at the start of a change. The real panel has no blinkers because the data has none. The two panels show different moments on the same road and scale.
+
+## Clips, scene geometry, and a correction
+
+**Correction to the numbers since the first merge of main.** The human model's id moved from 4 to 5 when the AV model took 4, and one line in `world.rs` still wrote 4. So every scene run between that merge and `d95e11f` drove as the AV model. Rounds r0 to r3, including a throughput "pass" of 1,316 and 1,536 veh/h reported in passing, are void. The frozen `86f2256` tables above are from before that merge and are not affected. The clue was guard use of exactly zero and cars at exactly constant speed.
+
+**What Erik saw.** Real cars jumped across the merge section in about a frame. `scripts/real_tracks_trace.py` put real positions on `up_0`, `merge_1` and `down_0`, whose ends are about 10 m apart in the drawn scene because netconvert puts a junction box between them, with nothing mapped to the box. Some cars also turned oddly at the taper, because the sideways scale changed when a car's lane label changed.
+
+**The fix.**
+
+- Scenes have no junction box. `human_merge.py` writes the geometry itself: lanes abut, length equals what is drawn, the ending lane runs out into a taper of max(40 m, 3 s at the limit), and the ramp runs alongside its last 200 m. netconvert had also made the 54 m I-80 zone 66.5 m long, with a `length` that disagreed with the shape. That is gone too.
+- Real tracks are in one road coordinate and one sideways coordinate, so there is no lane to jump between. Position gets a 1 s running mean, as NGSIM positions shake (up to 5.3 m in a frame). An id that returns later in a run is a new car.
+- `cars replay` takes sideways speed from where the car went, low-passed over 0.5 s. It used the lane offset, which jumps by a lane at a lane change with no motion. **So every earlier simulated clip had a one-frame heading flicker of up to 20° at each lane change.**
+- The test found a driver bug: edging kept running after a change started, pulling the edge back to zero, so a car moved away from its target for a moment. Fixed in `hu_edge`.
+
+**The test.** `cars replay --poses` writes what would be drawn, with no GPU, from the renderer's own pose code. `physics_qa.py` compares each car's move between frames with its speed × time and fails on a jump, on any `--trace`. `human_merge_clips.py` refuses to publish a clip that fails.
+
+| Clip | Moves checked | Jumps | Worst excess | Fast rotations | Worst turn |
+|---|---|---|---|---|---|
+| Real I-80, before the fixes | | about 10 m in a frame | | | |
+| Real I-80 | 15,509 | 0 | 0.23 m | 0 | 24°/s |
+| Simulated I-80 and lane-end close-up | 199,494 | 0 | 0.27 m | 0 | 48°/s |
+| Simulated two into one | 97,065 | 0 | 0.22 m | 0 | 41°/s |
+
+**Does the geometry change results? Yes, by a modest amount, as expected.** Same driver, one seed:
+
+| | I-80 box | I-80 road | US-101 box | US-101 road |
+|---|---|---|---|---|
+| Rows in band | 6 of 17 | 8 of 17 | 6 of 17 | 7 of 17 |
+| Flow past the end, veh/h | 1,164 | 1,080 | 1,256 | 1,216 |
+| Stopped first | .68 | .85 | .46 | .48 |
+| Overlap at sideways start | .18 | .18 | .09 | .14 |
+| Overlapped in last 5 s | .36 | .43 | .27 | .29 |
+
+I-80's zone went from 66.5 m to the site's 54 m, which accounts for the lower flow and more stops. Those rows were flattered by the longer lane.
+
+**Report 18's measurements are not affected.** Its real-side pipeline (`mg_cache.py`, `mg_events.py`, `mg_analyse.py`, `mg_follow.py`) reads raw NGSIM and TGSIM positions and never reads a scene net or this mapping, which was written after the report. The simulated side of this report's own table did use the scene: the frozen table above was measured on the 66.5 m I-80 zone with box internal lanes, and its flows were also over-demand. Its tables are valid as run but not for comparing with later rounds.
+
+**The real GPU.** The frozen build gives 364 of 489 arrived on the I-80 scene, against 361 of 484 at 128 bits on the software GPU, no contacts in either, and 140 of 140 on the stub scene. The fault is in llvmpipe's 256-bit code alone. The t≈1,190 s spin no longer appears: the scene runs to 1,800 s with the human driver on main's base.
+
+**I-395 and A39 are used up as held-out sites for this rule set**, having been opened once for the frozen table. A final claim needs fresh sites, from `data-hunt/25-junction-targets.md`.
+
+## Rounds after that
