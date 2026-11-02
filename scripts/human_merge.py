@@ -23,11 +23,12 @@ MG = Path(os.environ.get('MG_SCRIPTS', '/home/erikf/.t3/projects/cars/research/t
 W = 3.2
 # zone m, approach m, main veh/h, ramp veh/h, main limit, ramp limit, neck m/s, speed spread. Total demand is the flow
 # measured past the end of the lane, and ramp the flow of the merging lane. The target lane's own flow inside the zone
-# counts cars that have already merged, so it is not demand. The limit is the speed measured past the end, where the
-# real road runs free: any queue must come from the merge.
+# counts cars that have already merged, so it is not demand. The limit is the p90 of speed measured past the end, where
+# the real road runs free: a limit at the mean makes the slowest driver set a whole lane's speed. Any queue must come from
+# the merge.
 SCENES = {
-    'i80': dict(zone=54, up=800, main=745, ramp=645, v=9, von=9, neck=9, dev=0.1),
-    'us101': dict(zone=216, up=800, main=1080, ramp=457, v=12, von=17, vramp=17, neck=12, dev=0.1),
+    'i80': dict(zone=54, up=800, main=745, ramp=645, v=12, von=12, neck=12, dev=0.1),
+    'us101': dict(zone=216, up=800, main=1080, ramp=457, v=17, von=17, neck=17, dev=0.1),
     'i395': dict(zone=63, up=800, main=1167, ramp=1031, v=9, von=9, neck=9, dev=0.1),
     'a39': dict(zone=400, up=1500, main=337, ramp=144, v=36, von=22, neck=36, dev=0.18),
 }
