@@ -32,6 +32,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('name')
     p.add_argument('--routes')
+    p.add_argument('--scale', type=float, default=1.0, help='multiply flows, for a low-demand run read as uncongested demand')
     a = p.parse_args()
     run = B19 / 'runs' / a.name
     out = {'run': a.name, 'cmd': (run / 'cmd.txt').read_text().strip()}
@@ -88,7 +89,8 @@ def main():
     real = pd.read_csv(B19 / 'step1/real_days.csv.gz')
     classes = dict(zip(*(lambda d: (d.site, d.road_class))(pd.read_csv(B19 / 'step0/sites.csv'))))
     tuning = set(freeze['tuning_sites'])
-    c = site_hour[site_hour.site.isin(tuning) & (site_hour.hour < 24)][['site', 'hour', 'flow', 'speed']]
+    c = site_hour[site_hour.site.isin(tuning) & (site_hour.hour < 24)][['site', 'hour', 'flow', 'speed']].copy()
+    c['flow'] *= a.scale
     scores = {}
     for d in freeze['tuning_days']:
         r = real[(real.date == d) & real.site.isin(tuning)][['site', 'hour', 'flow', 'speed']]

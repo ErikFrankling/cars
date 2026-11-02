@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 ENV = dict(os.environ, CARS_ADAPTER='llvmpipe', LP_NUM_THREADS='2')
-CAR = '<vType id="car" vClass="passenger" length="4.6" width="1.8"/>'
+CAR = '<vType id="car" vClass="passenger" length="4.6" width="1.8"' + os.environ.get('CAR_EXTRA', '') + '/>'
 
 
 def nc(d, nodes, edges, extra=(), conns=None, tll=None):
