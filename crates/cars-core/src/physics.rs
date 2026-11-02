@@ -198,7 +198,9 @@ fn keeps_apart(net: &Net, a: u32, b: u32, dist: f32) -> bool {
         (dx / n, dy / n)
     };
     let (ca, cb) = (chord(&la.shape), chord(&lb.shape));
-    dist > 1.4 && ca.0 * cb.0 + ca.1 * cb.1 < -0.7
+    // Narrow lanes in the map squeeze past at 1.4 m; on real-width lanes two bodies need their own width.
+    let need = if la.width.min(lb.width) < 2.0 { 1.4 } else { 1.9 };
+    dist > need && ca.0 * cb.0 + ca.1 * cb.1 < -0.7
 }
 
 /// Where along `a`, in lane positions, its centre line is within reach of `b`.
