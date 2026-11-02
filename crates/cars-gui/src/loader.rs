@@ -348,7 +348,9 @@ fn run(r: Request, gpu: &Gpu, tx: &Sender<Message>, go: &Receiver<()>, progress:
         seed: s.seed,
         capacity,
         time_to_teleport: if s.teleports { s.teleport_s } else { 0.0 },
-        ignore_blocker: r.scenario.ignore_blocker,
+        ignore_blocker: if s.physical() { 1e9 } else { r.scenario.ignore_blocker },
+        mu: if s.physical() { 0.85 } else { 0.0 },
+        detect_every: if s.physical() { 1 } else { 0 },
         per_lane_queues: r.coordinated,
         coord: coord_config(&r)?,
         ..Default::default()

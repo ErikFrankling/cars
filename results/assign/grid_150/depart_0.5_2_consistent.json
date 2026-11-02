@@ -1,0 +1,174 @@
+{
+  "rows": [
+    {
+      "at_window_edge": 50,
+      "iter": 0,
+      "mean_travel_s": 275.192,
+      "moved": 11,
+      "rejected": false,
+      "schedule_cost_mean": 338.6325115932888,
+      "share": 0.05,
+      "tried": 952,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 50,
+      "iter": 1,
+      "mean_travel_s": 274.0470555555556,
+      "moved": 24,
+      "rejected": false,
+      "schedule_cost_mean": 335.8238982416789,
+      "share": 0.05,
+      "tried": 859,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 0,
+      "iter": 2,
+      "mean_travel_s": 280.1057777777778,
+      "moved": 0,
+      "rejected": true,
+      "schedule_cost_mean": 349.6344933632745,
+      "share": 0.05,
+      "tried": 0,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 50,
+      "iter": 3,
+      "mean_travel_s": 273.87733333333335,
+      "moved": 13,
+      "rejected": false,
+      "schedule_cost_mean": 334.5710926615397,
+      "share": 0.025,
+      "tried": 469,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 50,
+      "iter": 4,
+      "mean_travel_s": 275.0446111111111,
+      "moved": 12,
+      "rejected": false,
+      "schedule_cost_mean": 337.3375608444214,
+      "share": 0.025,
+      "tried": 458,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 50,
+      "iter": 5,
+      "mean_travel_s": 273.5272777777778,
+      "moved": 22,
+      "rejected": false,
+      "schedule_cost_mean": 334.82756002553305,
+      "share": 0.025,
+      "tried": 473,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 50,
+      "iter": 6,
+      "mean_travel_s": 275.94927777777775,
+      "moved": 19,
+      "rejected": false,
+      "schedule_cost_mean": 340.376914926317,
+      "share": 0.025,
+      "tried": 432,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 50,
+      "iter": 7,
+      "mean_travel_s": 274.60644444444443,
+      "moved": 26,
+      "rejected": false,
+      "schedule_cost_mean": 336.8599195904202,
+      "share": 0.025,
+      "tried": 450,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 50,
+      "iter": 8,
+      "mean_travel_s": 276.26877777777776,
+      "moved": 22,
+      "rejected": false,
+      "schedule_cost_mean": 341.7985027109782,
+      "share": 0.025,
+      "tried": 470,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 50,
+      "iter": 9,
+      "mean_travel_s": 271.6642777777778,
+      "moved": 23,
+      "rejected": false,
+      "schedule_cost_mean": 330.820521768358,
+      "share": 0.025,
+      "tried": 469,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 50,
+      "iter": 10,
+      "mean_travel_s": 272.5037222222222,
+      "moved": 25,
+      "rejected": false,
+      "schedule_cost_mean": 332.6615648905436,
+      "share": 0.025,
+      "tried": 431,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 0,
+      "iter": 11,
+      "mean_travel_s": 275.5338888888889,
+      "moved": 0,
+      "rejected": true,
+      "schedule_cost_mean": 340.18050597635903,
+      "share": 0.025,
+      "tried": 0,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 50,
+      "iter": 12,
+      "mean_travel_s": 273.50572222222223,
+      "moved": 8,
+      "rejected": false,
+      "schedule_cost_mean": 334.63683187739053,
+      "share": 0.0125,
+      "tried": 199,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 50,
+      "iter": 13,
+      "mean_travel_s": 273.5204444444444,
+      "moved": 7,
+      "rejected": false,
+      "schedule_cost_mean": 334.5372235014174,
+      "share": 0.0125,
+      "tried": 234,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 0,
+      "iter": 14,
+      "mean_travel_s": 277.11216666666667,
+      "moved": 0,
+      "rejected": true,
+      "schedule_cost_mean": 341.56754120042586,
+      "share": 0.0125,
+      "tried": 0,
+      "unfinished": 0
+    }
+  ],
+  "schedule": {
+    "early": 0.5,
+    "late": 2.0
+  },
+  "status": "completed"
+}

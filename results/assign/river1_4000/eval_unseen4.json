@@ -1,0 +1,135 @@
+{
+  "all_balanced": true,
+  "all_clean": true,
+  "collisions": 0.0,
+  "gap": 0.05376076299908743,
+  "gap_sampled": 1997,
+  "mean_travel_s": 329.9080625,
+  "p95_travel_s": 754.25,
+  "sd_travel_s": 5.3769295123210155,
+  "seeds": [
+    {
+      "balanced": true,
+      "clean": true,
+      "errors": {},
+      "ledger": {
+        "active": 0,
+        "arrived": 4000,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 4000,
+        "teleports": 0,
+        "waiting_to_insert": 0
+      },
+      "peak_active": 1938,
+      "seed": 9001,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 4000,
+        "mean_insertion_wait_s": 0.41575,
+        "mean_travel_s": 323.01925,
+        "p50_travel_s": 263.0,
+        "p95_travel_s": 700.0,
+        "requested": 4000,
+        "route_km": 12391.265160400357,
+        "total_generalised_s": 1292077.0,
+        "unfinished": 0
+      },
+      "wall_s": 6.052458938
+    },
+    {
+      "balanced": true,
+      "clean": true,
+      "errors": {},
+      "ledger": {
+        "active": 0,
+        "arrived": 4000,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 4000,
+        "teleports": 0,
+        "waiting_to_insert": 0
+      },
+      "peak_active": 1938,
+      "seed": 9002,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 4000,
+        "mean_insertion_wait_s": 0.896,
+        "mean_travel_s": 337.93075,
+        "p50_travel_s": 268.0,
+        "p95_travel_s": 792.0,
+        "requested": 4000,
+        "route_km": 12391.265160400357,
+        "total_generalised_s": 1351723.0,
+        "unfinished": 0
+      },
+      "wall_s": 6.052458938
+    },
+    {
+      "balanced": true,
+      "clean": true,
+      "errors": {},
+      "ledger": {
+        "active": 0,
+        "arrived": 4000,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 4000,
+        "teleports": 0,
+        "waiting_to_insert": 0
+      },
+      "peak_active": 1938,
+      "seed": 9003,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 4000,
+        "mean_insertion_wait_s": 0.628,
+        "mean_travel_s": 330.60275,
+        "p50_travel_s": 264.0,
+        "p95_travel_s": 790.0,
+        "requested": 4000,
+        "route_km": 12391.265160400357,
+        "total_generalised_s": 1322411.0,
+        "unfinished": 0
+      },
+      "wall_s": 6.052458938
+    },
+    {
+      "balanced": true,
+      "clean": true,
+      "errors": {},
+      "ledger": {
+        "active": 0,
+        "arrived": 4000,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 4000,
+        "teleports": 0,
+        "waiting_to_insert": 0
+      },
+      "peak_active": 1938,
+      "seed": 9004,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 4000,
+        "mean_insertion_wait_s": 0.45625,
+        "mean_travel_s": 328.0795,
+        "p50_travel_s": 263.0,
+        "p95_travel_s": 735.0,
+        "requested": 4000,
+        "route_km": 12391.265160400357,
+        "total_generalised_s": 1312318.0,
+        "unfinished": 0
+      },
+      "wall_s": 6.052458938
+    }
+  ],
+  "seeds_averaged": 4,
+  "teleports": 0.0,
+  "unfinished_share": 0.0
+}

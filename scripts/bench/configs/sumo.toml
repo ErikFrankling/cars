@@ -1,0 +1,10 @@
+# The old driver on main, --sumo-compat: Krauss, SUMO settings, instant lane changes.
+name = "sumo"
+branch = "main"
+patch = "instrument/sensors-main.patch"
+kind = "sumo"
+dt = 0.1
+dt_network = 1.0
+time_to_teleport = 0
+flags = ["--sumo-compat"]
+vtype = 'carFollowModel="Krauss"'

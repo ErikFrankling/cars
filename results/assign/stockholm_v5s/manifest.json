@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "bytes": 202818164,
+      "path": "/home/erikf/projects/personal/cars-data/truth/maps/builds/v5_inventory/net.xml",
+      "sha256": "565b90af82fea909f4af98acae95c9386b317511d8dd0e94547e84e9853a02d7"
+    },
+    {
+      "bytes": 115,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/stockholm_v5s/vtypes.add.xml",
+      "sha256": "a131f0a0efe25d73d450b5d11d95ddb2d637ddfc74e0a835423259d37bb97dc2"
+    },
+    {
+      "bytes": 30631043,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/stockholm_v5s/travellers.csv.gz",
+      "sha256": "dc7bc5c8620129c6adac4fc6880a3c1df2d53d0b8137681728ef98616286278a"
+    },
+    {
+      "bytes": 3064245,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/stockholm_v5s/counts.csv",
+      "sha256": "66bfd2f79ff1e84b4e40790ee2e24907c7e8f98d8a053ba1178c2fcaeb260670"
+    }
+  ],
+  "scenario": {
+    "additional": [
+      "/home/erikf/projects/personal/cars-data/truth/assign/stockholm_v5s/vtypes.add.xml"
+    ],
+    "begin": 0.0,
+    "blind_test": true,
+    "capacity": 200000,
+    "counts": "/home/erikf/projects/personal/cars-data/truth/assign/stockholm_v5s/counts.csv",
+    "cuts": null,
+    "discharge": null,
+    "dt": 1.0,
+    "end": 86400.0,
+    "fixed_prefixes": [],
+    "fixed_vtypes": [],
+    "horizon": 93600.0,
+    "ignore_blocker": 20.0,
+    "init": "",
+    "landmarks": 16,
+    "memory": 0.30000001192092896,
+    "name": "stockholm_v5_sensitivity",
+    "net": "/home/erikf/projects/personal/cars-data/truth/maps/builds/v5_inventory/net.xml",
+    "noise_floor": 0.12436479076479076,
+    "routes": [],
+    "seed": 0,
+    "share": 0.15,
+    "time_to_teleport": 120.0,
+    "travellers": "/home/erikf/projects/personal/cars-data/truth/assign/stockholm_v5s/travellers.csv.gz",
+    "trusted": true,
+    "turnaround_s": 300.0,
+    "zones": null
+  }
+}

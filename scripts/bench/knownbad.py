@@ -14,16 +14,16 @@ IDM = 'carFollowModel="IDM" accel="3.6" decel="0.34"'
 KRAUSS33 = 'carFollowModel="Krauss" decel="0.33" tau="1.88" sigma="0.5"'
 BASE = 'human'
 BAD = [
-    dict(n=1, name='Krauss SUMO defaults, dt 0.1', driver='main', ov={}, scenes=['signal', 'road'], must=['JS2', 'C3'], need='all'),
-    dict(n=2, name='Krauss defaults, dt 1', driver='main', ov={'dt': 1.0}, scenes=['chain', 'signal'], must=['M6', 'V5'], need='all'),
-    dict(n=3, name='Calibrated IDM', driver='main', ov={'vtype': IDM}, scenes=['signal', 'chain'], must=['JS1', 'M6'], need='all'),
-    dict(n=4, name='Calibrated Krauss, decel 0.33', driver='main', ov={'vtype': KRAUSS33}, scenes=['signal', 'yellow'], must=['JS6', 'M12', 'JS1'], need='any'),
-    dict(n=5, name='Instant lane changes', driver='main', ov={}, scenes=['free3'], must=['M7'], need='all'),
-    dict(n=6, name='SUMO secure gap test', driver='main', ov={}, scenes=['free3', 'road', 'lanedrop'], must=['M9', 'M8'], need='any', note='At free flow its lane-change rate is right, which is why M8 alone would not catch it'),
+    dict(n=1, name='Krauss SUMO defaults, dt 0.1', driver='sumo', ov={}, scenes=['signal', 'road'], must=['JS2', 'C3'], need='all'),
+    dict(n=2, name='Krauss defaults, dt 1', driver='sumo', ov={'dt': 1.0}, scenes=['chain', 'signal'], must=['M6', 'V5'], need='all'),
+    dict(n=3, name='Calibrated IDM', driver='sumo', ov={'vtype': IDM}, scenes=['signal', 'chain'], must=['JS1', 'M6'], need='all'),
+    dict(n=4, name='Calibrated Krauss, decel 0.33', driver='sumo', ov={'vtype': KRAUSS33}, scenes=['signal', 'yellow'], must=['JS6', 'M12', 'JS1'], need='any'),
+    dict(n=5, name='Instant lane changes', driver='sumo', ov={}, scenes=['free3'], must=['M7'], need='all'),
+    dict(n=6, name='SUMO secure gap test', driver='sumo', ov={}, scenes=['free3', 'road', 'lanedrop'], must=['M9', 'M8'], need='any', note='At free flow its lane-change rate is right, which is why M8 alone would not catch it'),
     dict(n=7, name='Lane changing off', driver=BASE, ov={'no_lc': True}, scenes=['free3'], must=['M8'], need='all', note='C6 needs the district'),
     dict(n=8, name='Acceleration noise 0.53 m/s2', driver='human53', ov={}, scenes=['road', 'signal'], must=['V2', 'M3'], need='any'),
-    dict(n=9, name='Car length 3 m, demand raised to match flow', driver='main', base='main', ov={'length': 3.0}, scenes=['signal'], must=['M4', 'JS1'], need='any', mini={'length': 3.0}, note='The point of this case: N1 may pass while levels 1 and 2 fail. On main, because the human driver stands 2 m too far apart and 3 m cars would hide that'),
-    dict(n=10, name='Reaction time cut 30%, demand raised to match flow', driver='main', base='main', ov={'tau': .7}, scenes=['road', 'signal'], must=['M3', 'JS2', 'C3'], need='any', mini={'tau': .7}, note='The point of this case: N1 may pass while levels 1 to 3 fail'),
+    dict(n=9, name='Car length 3 m, demand raised to match flow', driver='sumo', base='sumo', ov={'length': 3.0}, scenes=['signal'], must=['M4', 'JS1'], need='any', mini={'length': 3.0}, note='The point of this case: N1 may pass while levels 1 and 2 fail. On main, because the human driver stands 2 m too far apart and 3 m cars would hide that'),
+    dict(n=10, name='Reaction time cut 30%, demand raised to match flow', driver='sumo', base='sumo', ov={'tau': .7}, scenes=['road', 'signal'], must=['M3', 'JS2', 'C3'], need='any', mini={'tau': .7}, note='The point of this case: N1 may pass while levels 1 to 3 fail'),
     dict(n=11, name='Demand x0.6', driver=None, ov={'demand_scale': .6}, scenes=[], must=['N1', 'N5', 'V8'], need='all', mini={'demand_scale': .6}),
     dict(n=12, name='Demand x1.2', driver=None, ov={'demand_scale': 1.2}, scenes=[], must=['N1', 'N14', 'V6'], need='any', mini={'demand_scale': 1.2}),
     dict(n=13, name='Demand clock +1 h', driver=None, ov={'clock': 1}, scenes=[], must=['N3', 'N4'], need='any', mini={'clock': 1}),
@@ -74,7 +74,7 @@ def baseline(driver='human'):
 def mini_base(store, gpu, log):
     """The engine test uses main's binary: demand-side cases do not depend on the driver, and it is four times cheaper on the CPU."""
     p = store / 'knownbad_mini_base.json'
-    cfg = runner.load_config('main')
+    cfg = runner.load_config('sumo')
     if p.exists():
         b = json.loads(p.read_text())
         if b.get('commit') == cfg['commit']:
@@ -90,7 +90,7 @@ def main(a):
     out_p = store / 'knownbad.json'
     rows = {r['n']: r for r in json.loads(out_p.read_text())['rows']} if out_p.exists() else {}
     log = lambda s: print('   ', s, flush=True)
-    bases = {d: baseline(d) for d in ('human', 'main')}
+    bases = {d: baseline(d) for d in ('human', 'sumo')}
     for it in BAD:
         if only and it['n'] not in only:
             continue
@@ -110,7 +110,7 @@ def main(a):
                 M = suite._clean(M)
             mini = {}
             if it.get('mini'):
-                mini, _ = B.engine_test(runner.load_config('main'), it['mini'], gpu=a.gpu, log=log)
+                mini, _ = B.engine_test(runner.load_config('sumo'), it['mini'], gpu=a.gpu, log=log)
                 mini = suite._clean(mini)
             mbase = mini_base(store, a.gpu, log) if it.get('mini') else {}
             hits = []

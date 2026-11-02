@@ -79,10 +79,11 @@ Change them on the left. A change takes effect when you press **Restart to apply
 - **Step size:** seconds per simulation step.
 - **Seed:** the same seed gives the same choice of trips.
 - **Teleports:** whether a stuck car gets moved on, and after how long. With it off, gridlock stays gridlock.
+- **Driver:** the physical driver by default, with teleports off. The **SUMO copy** is the old driver, `--sumo-compat`, and is named beside the scenario whenever it runs. It fails the physical checks, so it is for comparison and speed only.
 - **Automated cars**, closed by default:
   - **Model:** which automated driver. Models that are not merged yet are listed in grey.
   - **Humans:** the share of cars driven by humans. Only ordinary cars change model; buses and lorries stay as they are.
-  - With **D8 coordinated junctions**, every car is automated, because this build has no mixed mode. You also get **Junctions** (signal-free, or the coordinator's own signals as the baseline), **Planning** (off, full, route), **Message loss** and **Safety level** (A, or the stricter B). Use a step of 0.1 s with it.
+  - With **D8 coordinated junctions**, on the old kernel, every car is automated, because this build has no mixed mode. You also get **Junctions** (signal-free, or the coordinator's own signals as the baseline), **Planning** (off, full, route), **Message loss** and **Safety level** (A, or the stricter B). Use a step of 0.1 s with it.
 
 ## Looking at things
 
