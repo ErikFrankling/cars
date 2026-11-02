@@ -76,7 +76,7 @@ def road_stats(r, interval, tally):
     f = X.track_arrays(f, interval)
     f = X.leaders(f)
     f['T'] = X.time_gap(f)
-    tally.neg.append(int(((f.bumper < -.05) & (f.offset.abs() < .5)).sum()))
+    tally.neg.append(int(((f.bumper < -.05) & (f.offset.abs() < .5) & (f.lead_off.abs() < .5)).sum()))
     a, j, T = {}, {}, {}
     for lo, hi in X.BANDS:
         name = f'{lo}-{hi}'
@@ -115,7 +115,7 @@ def free_stats(r, interval, tally):
     f = r.table()
     tally.add('free3', r, f, interval)
     f = X.leaders(f)
-    tally.neg.append(int(((f.bumper < -.05) & (f.offset.abs() < .5)).sum()))
+    tally.neg.append(int(((f.bumper < -.05) & (f.offset.abs() < .5) & (f.lead_off.abs() < .5)).sum()))
     ev = X.lane_changes(f, interval)
     km = X.veh_km(f, interval)
     half = X.halfway(f)
@@ -210,7 +210,8 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
                 tally.add('signal', r)
                 continue
             t, f, interval = signal_table(r, r.plan, length, tally)
-            tally.neg.append(int(((X.leaders(f).bumper < -.05)).sum()))
+            _l = X.leaders(f)
+            tally.neg.append(int(((_l.bumper < -.05) & (_l.offset.abs() < .5) & (_l.lead_off.abs() < .5)).sum()))
             tabs.append(t)
             spac.append(t.spacing.dropna().to_numpy() if len(t) else np.array([]))
             ins, _, running = r.counts(f)

@@ -36,6 +36,7 @@ def read_sensors(path, sites, scale=1.0):
             continue
         Q[i, r.hour] = np.round(r.n * scale)
         V[i, r.hour] = np.round(r.vs / r.n * 3.6) if r.n else np.nan
+    Q[:, sorted(set(range(24)) - set(g.hour))] = np.nan
     return Q, V
 
 

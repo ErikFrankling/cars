@@ -30,7 +30,8 @@ def sha(path, n=16):
 def load_config(name):
     import tomllib
     cfg = tomllib.loads((HERE / 'configs' / f'{name}.toml').read_text())
-    commit = subprocess.check_output(['git', '-C', str(HERE), 'rev-parse', cfg['branch']], text=True).strip()
+    pin = STORE / 'pins' / name
+    commit = pin.read_text().strip() if pin.exists() else subprocess.check_output(['git', '-C', str(HERE), 'rev-parse', cfg['branch']], text=True).strip()
     patch = HERE / cfg['patch']
     cfg['commit'], cfg['patch_sha'] = commit, sha(patch, 8)
     cfg['binary'] = str(STORE / 'bin' / f"{name}-{commit[:8]}-{cfg['patch_sha']}")

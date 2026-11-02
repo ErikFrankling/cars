@@ -88,7 +88,7 @@ class Berlin:
 
     def nulls(self):
         """Class mean and network mean profiles built from the other days, as report 22 section 5. Where the
-        class mean knows the answer by construction (total, day shape), the null is a flat day, 50% too high."""
+        class mean knows the answer by construction, the null knows less: for total and day shape a flat day 50% too high, for class speeds free flow all day."""
         D, S = self.Q.shape[:2]
         out = {k: [] for k in net.KEYS}
         for r in range(D):
@@ -102,8 +102,10 @@ class Berlin:
             m = net.metrics(nq, nv, self.Q[r], self.V[r], self.panel)
             flat = np.tile(np.nanmean(q, axis=1, keepdims=True) * 1.5, (1, 24))
             fm = net.metrics(flat, nv, self.Q[r], self.V[r], self.panel)
+            free = net.free_speed(v)
+            ff = net.metrics(nq, np.tile(free[:, None], (1, 24)), self.Q[r], self.V[r], self.panel)
             for k in net.KEYS:
-                out[k].append(fm[k] if k in ('N1', 'N3', 'N4.am', 'N4.pm', 'N19.flow', 'N19.peak', 'N19.density') else m[k])
+                out[k].append(fm[k] if k in ('N1', 'N3', 'N4.am', 'N4.pm', 'N19.flow', 'N19.peak') else ff[k] if k[:3] in ('N10', 'N12', 'N19') else m[k])
         return {k: float(np.nanmedian(v)) for k, v in out.items()}
 
 

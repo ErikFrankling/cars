@@ -11,7 +11,7 @@ Run from any directory other than a data folder, in the dev environment:
 ```sh
 source /home/erikf/projects/personal/cars-data/dev-env.sh
 B=scripts/bench/bench.py
-scripts/bench/build_driver.sh human       # once per commit: that commit plus the instrument patch
+scripts/bench/build_driver.sh human       # pins the driver to its branch head, plus the instrument patch
 python3 -I $B selftest                    # no simulator: corruptions of real days, must keep passing
 python3 -I $B run --driver human --mode fast     # one seed, small scenes
 python3 -I $B run --driver human --mode full     # six seeds, longer scenes, drift and capacity drop
@@ -61,7 +61,7 @@ Results live in `/home/erikf/projects/personal/cars-data/bench/`: `results/<run>
 | `INVALID` | The benchmark can't judge it |
 | `FAIL` | Otherwise, and whenever it does no better than the null |
 
-Null models. Level 4: class mean profile as report 22 section 5; for total and day shape, where that knows the answer by construction, a flat day 50% too high. Levels 1 to 3: a driver with nothing in it, such as no acceleration, no lane changes, instant starts, a 1 s headway. Level 0 has none, by nature.
+Null models. Level 4: class mean profile as report 22 section 5; where that knows the answer by construction, something that knows less: a flat day 50% too high for total and day shape, free flow all day for class speeds. Levels 1 to 3: a driver with nothing in it, such as no acceleration, no lane changes, instant starts, a 1 s headway. Level 0 has none, by nature.
 
 A metric given as a real band (M4, JS1 to JS6, JR, C3, C4) is scored as distance from the band's middle, ruled by half its width, so inside the band is `FLOOR`. `z` is `S / F`. Compare: `D` is paired by seed and day, with report 22's margin; `better`, `same`, `worse` per cell, then BETTER, SAME, WORSE or TRADE-OFF overall.
 

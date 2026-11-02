@@ -35,6 +35,7 @@ def leaders(f):
     f['lead_v'] = f.speed.shift(-1).where(same)
     f['bumper'] = f.cc - f.lead_len
     f['lead_trip'] = f.trip.shift(-1).where(same)
+    f['lead_off'] = f.offset.shift(-1).where(same) if 'offset' in f else 0.0
     return f
 
 
@@ -149,7 +150,7 @@ def queue_table(f, lane, length, cycle, green, end):
             continue
         snap = onl[onl.time == nearest]
         snap = snap[snap.speed < 1.0].sort_values('pos', ascending=False)
-        if snap.empty or length - snap.pos.iloc[0] > 15:
+        if snap.empty or length - snap.pos.iloc[0] > 12:
             continue
         prev_pos, prev_cross, prev_still = None, tg, True
         for i, s in enumerate(snap.itertuples(), 1):
@@ -164,7 +165,7 @@ def queue_table(f, lane, length, cycle, green, end):
             cross = float(last.time + (length - last.pos) / max(last.speed, .5))
             if cross > tg + green + 1:
                 break
-            moved = g[g.speed > .5]
+            moved = g[g.speed > 1.5]
             start = float(moved.time.iloc[0] - tg) if len(moved) else np.nan
             to5 = g[g.speed >= 5]
             still = s.speed < .1 and prev_still
@@ -206,20 +207,19 @@ def swing(x, dt):
 
 
 def stops_launches(f):
-    """f has a1 from track_arrays. A stop runs from the last time above 3 m/s to under 0.5 m/s; a launch from under 0.5 m/s until 5 m/s."""
+    """f has a1 from track_arrays. A stop runs from where the speed last rose, at 3 m/s or more, to under 0.5 m/s; a launch from under 0.5 m/s until 5 m/s."""
     stops, launches = [], []
     for _, g in f.groupby('trip', sort=False):
         t, v, a = g.time.to_numpy(), g.speed.to_numpy(), g.a1.to_numpy()
         below = np.flatnonzero((v[:-1] >= .5) & (v[1:] < .5))
         for b in below:
-            high = np.flatnonzero(v[:b + 1] >= 3)
-            if not len(high):
-                continue
-            s = high[-1]
-            win = a[s:b + 1]
+            k = b
+            while k > 0 and v[k - 1] >= v[k] - .05:
+                k -= 1
+            win = a[k:b + 1]
             win = win[np.isfinite(win)]
-            if t[b + 1] > t[s] and len(win):
-                stops.append(((v[s] - v[b + 1]) / (t[b + 1] - t[s]), -win.min()))
+            if v[k] >= 3 and t[b + 1] > t[k] and len(win):
+                stops.append(((v[k] - v[b + 1]) / (t[b + 1] - t[k]), -win.min()))
         above = np.flatnonzero((v[:-1] < .5) & (v[1:] >= .5))
         for b in above:
             fast = np.flatnonzero(v[b:] >= 5)

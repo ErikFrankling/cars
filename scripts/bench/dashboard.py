@@ -39,7 +39,7 @@ const NS='http://www.w3.org/2000/svg';
 const colors={main:'var(--s1)',physics:'var(--s2)',human:'var(--s3)'};
 function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}
 function chart(id,title,field,lower){
-  const box=document.getElementById(id);const W=Math.min(box.clientWidth||900,980),H=220,m={l:44,r:12,t:10,b:26};
+  const box=document.getElementById(id);const W=Math.min(box.clientWidth||900,980),H=220,m={l:44,r:14,t:24,b:26};
   const runs=D.history.filter(r=>r[field]!=null);
   if(!runs.length){box.textContent='No runs yet.';return}
   const svg=el('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':title},box);
@@ -47,6 +47,7 @@ function chart(id,title,field,lower){
   const ys=runs.map(r=>r[field]);let y1=Math.max(...ys,1),y0=0;
   const sx=i=>m.l+(W-m.l-m.r)*i/n,sy=v=>H-m.b-(H-m.t-m.b)*(v-y0)/(y1-y0||1);
   for(let k=0;k<=4;k++){const v=y0+(y1-y0)*k/4;el('line',{x1:m.l,x2:W-m.r,y1:sy(v),y2:sy(v),stroke:'var(--line)','stroke-width':1},svg);const t=el('text',{x:m.l-6,y:sy(v)+4,'text-anchor':'end','font-size':11,fill:'var(--ink3)'},svg);t.textContent=(y1<10?v.toFixed(1):Math.round(v))}
+  for(const i of (runs.length>1?[0,runs.length-1]:[0])){const t=el('text',{x:sx(i),y:H-8,'text-anchor':i?'end':'start','font-size':11,fill:'var(--ink3)'},svg);t.textContent=runs[i].created.slice(0,16).replace('T',' ')}
   const tip=document.createElement('div');tip.className='tip';box.appendChild(tip);
   for(const d of D.drivers){
     const pts=runs.map((r,i)=>[i,r]).filter(([i,r])=>r.driver===d);if(!pts.length)continue;
@@ -55,10 +56,10 @@ function chart(id,title,field,lower){
       const hit=el('circle',{cx:sx(i),cy:sy(r[field]),r:13,fill:'transparent'},svg);
       hit.addEventListener('mouseenter',()=>{tip.style.display='block';tip.style.left=Math.min(sx(i)+8,W-210)+'px';tip.style.top=(sy(r[field])-30)+'px';tip.textContent=`${r.driver} ${r.mode}, ${r.commit}: ${(+r[field]).toFixed(y1<10?2:0)}`});
       hit.addEventListener('mouseleave',()=>{tip.style.display='none'})}
-    const [li,lr]=pts[pts.length-1];const lab=el('text',{x:sx(li)-4,y:sy(lr[field])-9,'text-anchor':'end','font-size':12,fill:'var(--ink2)'},svg);lab.textContent=d;
+    const [li,lr]=pts[pts.length-1];const lab=el('text',{x:li>runs.length/2?sx(li)-4:sx(li)+4,y:sy(lr[field])-9,'text-anchor':li>runs.length/2?'end':'start','font-size':12,fill:'var(--ink2)'},svg);lab.textContent=d;
   }
 }
-chart('c1','Metrics at the real-data noise floor or near it, per run','pass');chart('c2','Metrics failing, per run','fail');
+chart('c1','Metrics at the real-data noise floor or near it, per run','pass');chart('c2','Metrics failing, per run','fail');chart('c3','Worst gap, per run','worst');
 for(const b of document.querySelectorAll('.tabs button')){b.addEventListener('click',()=>{for(const x of document.querySelectorAll('.tabs button'))x.classList.toggle('on',x===b);for(const p of document.querySelectorAll('.pane'))p.style.display=p.dataset.d===b.dataset.d?'':'none'})}
 """
 
@@ -135,7 +136,8 @@ def build(res_dir, hist, serve, knownbad=None):
         for line in Path(hist).read_text().splitlines():
             r = json.loads(line)
             st = list(r['statuses'].values())
-            history.append(dict(driver=r['driver'], mode=r['mode'], commit=r['commit'][:8], run=r['run_id'], created=r['created'], **{'pass': sum(s in score.PASSING for s in st), 'fail': sum(s == 'FAIL' for s in st)}))
+            zs = [v for v in r['zs'].values() if v is not None]
+            history.append(dict(driver=r['driver'], mode=r['mode'], commit=r['commit'][:8], run=r['run_id'], created=r['created'], **{'pass': sum(s in score.PASSING for s in st), 'fail': sum(s == 'FAIL' for s in st), 'worst': min(max(zs), 100.0) if zs else None}))
     drivers = [d for d in ('main', 'physics', 'human') if d in latest]
     tabs = ''.join(f'<button data-d="{d}" class="{"on" if i == 0 else ""}">{d}</button>' for i, d in enumerate(drivers))
     panes = ''.join(f'<div class=pane data-d="{d}" style="{"" if i == 0 else "display:none"}">{scorecard(latest[d])}</div>' for i, d in enumerate(drivers))
@@ -146,7 +148,7 @@ def build(res_dir, hist, serve, knownbad=None):
         summary += f"<div class=card><div class=mut>{d}, {latest[d]['mode']} mode</div><div class=big>{n.get('FLOOR', 0) + n.get('NEAR', 0)} pass, {n.get('FAIL', 0)} fail</div><div class=mut>of {len(latest[d]['metrics'])} metrics; {n.get('NO DATA', 0)} have no data yet and count as no pass</div></div>"
     key = ''.join(f'<tr><td>{status(s)}</td><td>{html.escape(EXPLAIN[s])}</td></tr>' for s in score.ORDER[::-1])
     data = json.dumps(dict(history=history, drivers=drivers))
-    table = ''.join(f"<tr><td>{h['created'][:16]}</td><td>{h['driver']}</td><td>{h['mode']}</td><td><code>{h['commit']}</code></td><td class=n>{h['pass']}</td><td class=n>{h['fail']}</td></tr>" for h in history[::-1][:40])
+    table = ''.join(f"<tr><td>{h['created'][:16]}</td><td>{h['driver']}</td><td>{h['mode']}</td><td><code>{h['commit']}</code></td><td class=n>{h['pass']}</td><td class=n>{h['fail']}</td><td class=n>{num(h['worst'])}</td></tr>" for h in history[::-1][:40])
     page = f"""<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Is the simulation true to life?</title><style>{CSS}</style>
 <div class="viz-root"><div class=wrap>
 <h1>Is the simulation true to life?</h1>
@@ -155,7 +157,8 @@ def build(res_dir, hist, serve, knownbad=None):
 <h2>Progress</h2><div class=legend>{legend}</div>
 <div class=card><b>Metrics passing, per run</b> <span class=mut>higher is better</span><div class=chart id=c1></div></div>
 <div class=card><b>Metrics failing, per run</b> <span class=mut>lower is better</span><div class=chart id=c2></div></div>
-<details class=card><summary>Runs as a table</summary><table><tr><th>When</th><th>Driver</th><th>Mode</th><th>Commit</th><th class=n>Pass</th><th class=n>Fail</th></tr>{table}</table></details>
+<div class=card><b>Worst gap, per run</b> <span class=mut>gap ÷ ruler of the worst metric, capped at 100, lower is better</span><div class=chart id=c3></div></div>
+<details class=card><summary>Runs as a table</summary><table><tr><th>When</th><th>Driver</th><th>Mode</th><th>Commit</th><th class=n>Pass</th><th class=n>Fail</th><th class=n>Worst gap</th></tr>{table}</table></details>
 <h2>What the words mean</h2><div class=card><table>{key}</table></div>
 <h2>Scorecards</h2><div class=tabs>{tabs}</div>{panes}
 <h2>Can the benchmark catch a wrong simulation?</h2>{knownbad_section(knownbad or Path(res_dir).parent / 'knownbad.json')}
