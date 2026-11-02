@@ -76,7 +76,9 @@ The buffer is at binding 63, above anything the main layout will reach. Probes o
 
 ## Reference data for `cars compare`
 
-`--ref` is a long CSV: `sensor,edge,time,flow_vph[,speed_kmh]`, with `time` the seconds from midnight of an hour's start, or `-1` for a whole-day figure. `--ref-format stockholm` reads `truth/stockholm/factorial/count_clean.csv`; `--ref-format reference_day` reads `scripts/reference_day.py`'s hourly output. `--sim` takes `cars run --edge-csv`. `--scale` scales simulated flows when demand was thinned.
+`--ref-format site_hours --ref out/site_hours.csv` reads what `scripts/reference_day.py --out out` wrote: real and simulated per matched site and hour, with the spread of normal days, so no `--sim`. This is the route for the gate's measured days in `cars-data/datasets/reference-days/`.
+
+Otherwise `--ref` is a long CSV: `sensor,edge,time,flow_vph[,speed_kmh]`, with `time` the seconds from midnight of an hour's start, or `-1` for a whole-day figure, and `--sim` is `cars run --edge-csv` output. `--ref-format stockholm` reads `truth/stockholm/factorial/count_clean.csv`, which is annual estimates and not a measured day. `--scale` scales simulated flows when demand was thinned.
 
 ## Real tracks
 

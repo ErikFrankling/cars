@@ -1,6 +1,7 @@
 """`cars compare`: real against simulated at any level. Per-sensor time series, an error map, error by road class, hour and junction type, and the worst sensors with reasons they might be.
 
---ref takes a long CSV: sensor,edge,time,flow_vph[,speed_kmh]. `time` is seconds from midnight of the interval's start, `-1` for a whole-day figure. scripts/reference_day.py's output maps onto it (see --ref-format).
+--ref takes a long CSV: sensor,edge,time,flow_vph[,speed_kmh]. `time` is seconds from midnight of the interval's start, `-1` for a whole-day figure.
+With --ref-format site_hours, --ref is the site_hours.csv that scripts/reference_day.py writes: it already holds real and simulated values per matched site and hour, with the spread of normal days, so --sim is not needed.
 --sim takes `cars run --edge-csv` output, with --edge-interval as its interval."""
 import argparse
 import json
@@ -30,12 +31,8 @@ def read_ref(path, fmt, day_seconds):
         for _, r in d.iterrows():
             rows.append(dict(sensor=str(r['feature'])[-12:], edge=r['edge'], time=-1, flow_vph=float(r['daily']) / (split / 3600.0) / max(float(r.get('directions', 1)), 1.0), method=r.get('method', ''), year=r.get('year', '')))
         return pd.DataFrame(rows)
-    if fmt == 'reference_day':
-        # scripts/reference_day.py: one row per site and hour.
-        out = d.rename(columns={'site': 'sensor', 'count_vph': 'flow_vph', 'flow': 'flow_vph', 'speed': 'speed_kmh'})
-        if 'hour' in out and 'time' not in out:
-            out['time'] = out['hour'] * 3600.0
-        return out
+    if fmt == 'site_hours':
+        return pd.DataFrame(dict(sensor=d['site'].astype(str), edge=d['edge'].astype(str), time=d['hour'] * 3600.0, flow_vph=d['flow'], speed_kmh=d['speed'], sim_flow=d['sim'], sim_speed=d['sim_speed'], sim_teleports=0.0, noise_geh=d.get('geh_noise'), real_p10=d.get('flow_p10'), real_p90=d.get('flow_p90')))
     return d
 
 
@@ -91,6 +88,8 @@ def why_this_bad(row, free_speed):
             out.append('too much flow on a minor road: routes cut through, assignment or a missing major link')
         else:
             out.append('too much flow: sensor may be one direction of two, or demand too high')
+    if 'real_p10' in row and pd.notna(row['real_p10']) and row['real_p10'] <= s <= row['real_p90']:
+        out.append('inside what normal days do here')
     if row['sim_teleports'] > 0:
         out.append(f"{int(row['sim_teleports'])} teleports here")
     if 'speed_kmh' in row and pd.notna(row.get('speed_kmh')) and pd.notna(row['sim_speed']) and row['sim_speed'] < row['speed_kmh'] - 15:
@@ -112,9 +111,9 @@ def group(df, key):
 
 def main(argv):
     a = argparse.ArgumentParser(prog='cars compare', description=__doc__)
-    a.add_argument('--sim', required=True, help='edge CSV from `cars run --edge-csv`')
+    a.add_argument('--sim', help='edge CSV from `cars run --edge-csv`')
     a.add_argument('--ref', required=True, help='reference CSV')
-    a.add_argument('--ref-format', default='long', choices=['long', 'stockholm', 'reference_day'])
+    a.add_argument('--ref-format', default='long', choices=['long', 'stockholm', 'site_hours'])
     a.add_argument('--net', required=True, help='the net, or a `cars netinfo` or `<trace>.net.json` file')
     a.add_argument('--scale', type=float, default=1.0, help='multiply simulated flows, when demand was scaled')
     a.add_argument('--day-seconds', type=float, default=86400.0, help='seconds that a whole-day reference spreads over')
@@ -126,18 +125,27 @@ def main(argv):
     if a.net.endswith('.json'):
         net = Net(a.net)
     else:
-        side = a.net + '.dbg.json' if os.access(os.path.dirname(a.net) or '.', os.W_OK) else os.path.join(os.path.expanduser('~/.cache/cars-dbg'), os.path.basename(a.net) + '.json')
+        stamp = int(os.path.getmtime(a.net))
+        side = os.path.join(os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache')), 'cars-dbg', f'{os.path.basename(a.net)}.{stamp}.json')
         if not os.path.exists(side):
             os.makedirs(os.path.dirname(side) or '.', exist_ok=True)
             import subprocess
             subprocess.run([os.environ.get('CARS_BIN', 'cars'), 'netinfo', '--net', a.net, '--out', side], check=True)
         net = Net(side)
-    sim, interval = read_sim(a.sim, a.scale)
     ref = read_ref(a.ref, a.ref_format, a.day_seconds)
     ref = ref[ref['flow_vph'].notna()].copy()
-    d = join(sim, interval, ref, None)
+    if a.ref_format == 'site_hours':
+        d = ref[ref['sim_flow'].notna()].copy()
+    else:
+        if not a.sim:
+            raise SystemExit('--sim is needed with this --ref-format')
+        sim, interval = read_sim(a.sim, a.scale)
+        d = join(sim, interval, ref, None)
     d['geh'] = geh(d['sim_flow'].to_numpy(), d['flow_vph'].to_numpy())
     d['err'] = d['sim_flow'] - d['flow_vph']
+    if 'noise_geh' in d:
+        # How far outside what one real day does compared with another.
+        d['beyond_noise'] = d['geh'] - d['noise_geh'].fillna(0.0)
     known = [net.edge_index.get(e) for e in d['edge']]
     d['road'] = [net.edge_road[k] if k is not None else 'not in net' for k in known]
     d['junction_type'] = [net.junction_type.get(net.edge_to[k], '') if k is not None else '' for k in known]
@@ -145,7 +153,10 @@ def main(argv):
     free = np.array([float(net.lane_speed[net.edge_first[k]]) * 3.6 if k is not None else 50.0 for k in known])
     d['free_kmh'] = free
     d['why'] = [why_this_bad(r, r['free_kmh']) for _, r in d.iterrows()]
-    sites = d.groupby('sensor').agg(flow_vph=('flow_vph', 'mean'), sim_flow=('sim_flow', 'mean'), geh=('geh', 'mean'), edge=('edge', 'first'), road=('road', 'first'), why=('why', 'first')).reset_index()
+    sites = d.groupby('sensor').agg(flow_vph=('flow_vph', 'mean'), sim_flow=('sim_flow', 'mean'), geh=('geh', 'mean'), edge=('edge', 'first'), road=('road', 'first')).reset_index()
+    # The reason its worst row gives, which for a sensor series is its worst hour.
+    worst_row = d.loc[d.groupby('sensor')['geh'].idxmax(), ['sensor', 'why']]
+    sites = sites.merge(worst_row, on='sensor')
     sites['abs_err'] = (sites['sim_flow'] - sites['flow_vph']).abs()
     worst = sites.sort_values('geh', ascending=False).head(a.top)
     missing = int(d.loc[d['road'] == 'not in net', 'sensor'].nunique())

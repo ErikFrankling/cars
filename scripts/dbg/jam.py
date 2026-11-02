@@ -321,7 +321,10 @@ def seeds(run, begin, end, stride, min_wait, top, out_dir, signal_wait=150.0):
     ax[0].set(xlabel='simulation time, s', ylabel='cars held', title='Held cars, and those behind the top seeds')
     ax[0].legend(fontsize=7)
     net = run.net
-    ax[1].plot(np.c_[net.lane_x0[::3], net.lane_x1[::3]].T, np.c_[net.lane_y0[::3], net.lane_y1[::3]].T, color='#dddddd', lw=0.3)
+    from matplotlib.collections import LineCollection
+    road = net.lane_internal == 0
+    ax[1].add_collection(LineCollection(np.stack([np.c_[net.lane_x0[road], net.lane_y0[road]], np.c_[net.lane_x1[road], net.lane_y1[road]]], axis=1), colors='#b8b8b8', linewidths=0.35))
+    ax[1].autoscale()
     for n, s in enumerate(rows[:20]):
         ax[1].scatter(s['where']['x'], s['where']['y'], s=30 + 3 * np.sqrt(s['eventual']), color=colors(n % 10), edgecolor='black', lw=0.4, zorder=3)
         if n < 8:
