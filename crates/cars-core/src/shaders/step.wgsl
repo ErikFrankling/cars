@@ -362,6 +362,7 @@ fn adapt_to_leader(gap: f32, seen: f32, cur_len: f32, ls: f32, lb: f32, lcacc: b
         vsafe = follow_speed(pl_speed, gap, ls, lb, lcacc, pl_lane_vmax, pl_limit);
         if (hu_on) {
             if (pl_w_lead >= 1.0) { vsafe = min(vsafe, hu_leader_limit(pl_speed, gap + ty.min_gap, ls, hu_s0)); }
+            vsafe = max(vsafe, hu_launch(pl_speed, gap + ty.min_gap, ls, pl_lane_vmax, hu_s0));
             // Report 18 B7: a share of what following a car still moving over would ask. The guard stays whole.
             let cert = ph_v_cert(gap + ty.min_gap, pl_speed, ls, min(lb, ty.b_lo), ego_acc);
             if (pl_w_lead < 1.0) {

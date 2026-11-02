@@ -74,7 +74,8 @@ fn replay(@builtin(global_invocation_id) id: vec3u) {
     }
     let s = xl - e.x;
     let v = e.v;
-    let wish = min(min(hu_next(v, hu_target(v, s - R.len_model, vl, e.v0, e.s0)), hu_leader_limit(v, s - R.len_model, vl, e.s0)), max_next_speed(v));
+    let wish0 = min(min(hu_next(v, hu_target(v, s - R.len_model, vl, e.v0, e.s0)), hu_leader_limit(v, s - R.len_model, vl, e.s0)), max_next_speed(v));
+    let wish = max(wish0, hu_launch(v, s - R.len_model, vl, e.v0, e.s0));
     var v_safe = wish;
     var cert_binds = false;
     if (R.guard_on != 0u) {
