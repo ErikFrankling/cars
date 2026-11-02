@@ -1060,6 +1060,8 @@ fn blocked_by_foe(r: Approach, a: f32, l: f32, va: f32, vl: f32, same_target: bo
     if (r.leave < a) {
         return same_target && (a - r.leave < h || unsafe_merge(r.leave_speed, va, r.decel, decel));
     } else if (fa > l + h) {
+        // SUMO softens the foe's braking by the waiter's impatience, so a far foe counts as arriving fast and a head that has waited a while needs a gap of 12 s, not the critical gap. Physical mode asks about real braking only.
+        if (mu > 0.0) { return same_target && unsafe_merge(vl, r.braking, decel, r.decel); }
         return same_target && unsafe_merge(vl, ex_foe_brake_arr, decel, r.decel);
     }
     return true;
