@@ -925,7 +925,8 @@ pub fn calibration(x: &mut Setup, out: &Path, o: &CalibrateOpts) -> Result<Vec<C
         let day = last.ok_or("no warm iterations")?;
         let mut row = IterRow::default();
         fill_counts(&mut row, &counts, &day);
-        let stopped = row.selection_wape <= o.noise_floor;
+        let has_selection = counts.rows.iter().any(|c| c.role == Role::Selection);
+        let stopped = has_selection && row.selection_wape <= o.noise_floor;
         let round = CalibrationRound {
             round: r,
             lambda,

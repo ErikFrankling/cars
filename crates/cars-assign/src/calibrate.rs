@@ -14,6 +14,7 @@ use crate::population::{CLASS_FIXED, Population};
 use crate::{mix, unit};
 
 pub const SLICE_S: f32 = 1800.0;
+const BLOCK_M: f32 = 2000.0;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -185,7 +186,20 @@ impl Counts {
             let root = find(&mut parent, s);
             clusters.entry(root).or_default().push(s);
         }
-        let mut list: Vec<Vec<u32>> = clusters.into_values().collect();
+        let mut list: Vec<Vec<u32>> = Vec::new();
+        for (_, c) in clusters {
+            // Dense counters percolate into one cluster the size of the city: blocks then keep the split honest.
+            if c.len() * 10 > n.max(10) {
+                let mut blocks: FxHashMap<(i32, i32), Vec<u32>> = FxHashMap::default();
+                for s in c {
+                    let m = supply.mid[site_edges[s as usize] as usize];
+                    blocks.entry(((m[0] / BLOCK_M) as i32, (m[1] / BLOCK_M) as i32)).or_default().push(s);
+                }
+                list.extend(blocks.into_values());
+            } else {
+                list.push(c);
+            }
+        }
         for l in &mut list {
             l.sort_unstable();
         }
