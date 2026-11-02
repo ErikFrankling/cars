@@ -1216,7 +1216,7 @@ var<private> ex_rng: u32;
 // front, with the speed at that moment. Words per lane after the edges: position in bits (0 for none),
 // count, speed sum in cm/s, vehicles over 7.5 m. They only ever grow.
 fn sensor_pass(lane: u32, whole_lane: bool, before: f32, after: f32, v: f32, length: f32) {
-    let at = (P.n_edges + lane) * 4u;
+    let at = P.n_edges * 8u + lane * 4u;
     let bits = atomicLoad(&edge_acc[at]);
     if (bits == 0u) { return; }
     let s = bitcast<f32>(bits);
@@ -1753,6 +1753,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         e.pos -= len;
         e.route_len += len;
         e.prev2_lane = e.prev_lane;
+        if (!is_internal(e.lane)) { atomicAdd(&edge_acc[lanes[e.lane].edge * 8u + 4u], 1u); }
         e.prev_lane = e.lane;
         e.lane = k.next_lane;
         e.flags &= ~F_HAVE_STOPPED;
@@ -1761,7 +1762,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         if (!is_internal(e.lane)) {
             e.entry_step = NONE;
             e.flags |= F_BEST_DIRTY;
-            atomicAdd(&edge_acc[lanes[e.lane].edge * 4u + 2u], 1u);
+            atomicAdd(&edge_acc[lanes[e.lane].edge * 8u + 2u], 1u);
         }
         j += 1u;
         if (j >= MAX_ITEMS) { break; }
@@ -1816,7 +1817,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     if (P.teleport_steps != 0u && e.wait > f32(P.teleport_steps) * dt) {
         let s0 = seg[first_lane];
         if (first_lane == e.lane && i + 1u == s0.end) {
-            atomicAdd(&edge_acc[lanes[e.lane].edge * 4u + 3u], 1u);
+            atomicAdd(&edge_acc[lanes[e.lane].edge * 8u + 3u], 1u);
             teleport(&e);
             ph_mirror(&e, true);
             atomicAdd(&C[C_TELEPORTS], 1u);
@@ -1941,6 +1942,7 @@ fn teleport(e: ptr<function, Veh>) {
         finish_trip(e, lanes[(*e).lane].length);
         return;
     }
+    if (!is_internal((*e).lane)) { atomicAdd(&edge_acc[lanes[(*e).lane].edge * 8u + 4u], 1u); }
     (*e).route_i += 1u;
     (*e).lane = P.dummy_lane;
     (*e).pos = 0.0;
@@ -1953,6 +1955,7 @@ fn teleport(e: ptr<function, Veh>) {
 }
 
 fn finish_trip(e: ptr<function, Veh>, ap: f32) {
+    if (!is_internal((*e).lane)) { atomicAdd(&edge_acc[lanes[(*e).lane].edge * 8u + 4u], 1u); }
     var out: TripOut;
     out.depart_step = (*e).depart_step;
     out.arrive_step = G.step + 1u;
@@ -2020,6 +2023,7 @@ fn teleporting_step(e: ptr<function, Veh>, index: u32) {
             (*e).speed = max(v, 0.0);
             (*e).wait = 0.0;
             (*e).flags |= F_BEST_DIRTY;
+            atomicAdd(&edge_acc[la.edge * 8u + 6u], 1u);
             atomicMin(&tail[best], pack_back(pos - ty.length, (*e).speed, is_cacc(ty)));
             return;
         }
@@ -2524,6 +2528,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     e.cj_hold = 1e30;
     e.cj_yield = 1e30;
     cur[idx] = e;
+    atomicAdd(&edge_acc[la.edge * 8u + 5u], 1u);
     atomicAdd(&C[C_INSERTED], 1u);
     let lb = pack_back(pos - ty.length, speed, is_cacc(ty));
     atomicMin(&tail[lane], lb);
@@ -2575,9 +2580,9 @@ fn sample_stats(@builtin(global_invocation_id) id: vec3u) {
     let la = lanes[e.lane];
     atomicAdd(&series[at + 3u], u32(e.speed / la.speed * 1000.0));
     if ((la.flags & LANE_INTERNAL) == 0u) {
-        // per edge: samples, distance in 1/8 m, entered, spare
-        atomicAdd(&edge_acc[la.edge * 4u], 1u);
-        atomicAdd(&edge_acc[la.edge * 4u + 1u], u32(e.speed * 8.0 * P.dt * f32(P.sample_steps)));
+        // per edge: samples, distance in 1/8 m, entered, teleports, left, inserted, teleported in, spare
+        atomicAdd(&edge_acc[la.edge * 8u], 1u);
+        atomicAdd(&edge_acc[la.edge * 8u + 1u], u32(e.speed * 8.0 * P.dt * f32(P.sample_steps)));
     }
 }
 

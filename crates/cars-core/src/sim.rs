@@ -94,6 +94,12 @@ pub struct Buffers {
     pub tls: wgpu::Buffer,
     pub queues: wgpu::Buffer,
     pub items: wgpu::Buffer,
+    pub routes: wgpu::Buffer,
+    pub trips: wgpu::Buffer,
+    pub queue_trips: wgpu::Buffer,
+    /// What `Sim::reset` clears, to zero and to all ones.
+    pub reset_zero: Vec<wgpu::Buffer>,
+    pub reset_ones: Vec<wgpu::Buffer>,
     pub energy: wgpu::Buffer,
     pub contacts: wgpu::Buffer,
     pub total_bytes: u64,
@@ -251,7 +257,7 @@ impl Sim {
             p.n_trips as u64 * std::mem::size_of::<GpuTripOut>() as u64,
         );
         let series = empty("series", p.n_samples as u64 * p.n_replicas as u64 * 16);
-        let edge_acc = empty("edge_acc", (p.n_edges as u64 + p.n_lanes as u64) * 16);
+        let edge_acc = empty("edge_acc", p.n_edges as u64 * 32 + p.n_lanes as u64 * 16);
         let advice_init = vec![0xffu8; p.n_trips as usize * 4];
         let advice = init("advice", &advice_init, storage);
         let adv_flags = empty("adv_flags", p.n_trips as u64 * 4);
@@ -551,6 +557,14 @@ impl Sim {
             scatter: s("scatter"),
         };
 
+        let mut reset_zero = vec![
+            counters.clone(), veh[0].clone(), veh[1].clone(), keys[0].clone(), keys[1].clone(), vals[0].clone(), vals[1].clone(),
+            hist.clone(), totals.clone(), seg.clone(), items.clone(), link_count.clone(), trip_out.clone(), series.clone(),
+            edge_acc.clone(), adv_flags.clone(), last_detect.clone(), lc_plan.clone(), lane_free.clone(), indirect.clone(),
+            mirror.clone(), energy.clone(), ph_lane.clone(), poses.clone(), grid_head.clone(), grid_next.clone(), contacts.clone(),
+        ];
+        reset_zero.retain(|b| b.size() > 0);
+        let reset_ones = vec![slots.clone(), partial.clone(), tail.clone(), entrant.clone(), advice.clone(), claims.clone(), hard_limit.clone()];
         let coord = match (world.coord.as_ref(), coord_parts) {
             (Some(cw), Some((buffers, cj_layout, group))) => {
                 let module = gpu.shader("av_junction", &format!("{common}\n{route}\n{}", shader("av_junction.wgsl", AV_JUNCTION)));
@@ -620,6 +634,11 @@ impl Sim {
             tls,
             queues,
             items,
+            routes,
+            trips,
+            queue_trips,
+            reset_zero,
+            reset_ones,
             energy,
             contacts,
             total_bytes: total_bytes.get(),
@@ -889,11 +908,12 @@ impl Sim {
         self.read(gpu, &self.buffers.series, n)
     }
 
-    /// Per edge: samples, distance in 1/8 m, entered, spare. Returned and reset.
-    pub fn take_edge_acc(&self, gpu: &Gpu) -> Vec<[u32; 4]> {
+    /// Per edge: samples, distance in 1/8 m, entered, teleports, left, inserted, teleported in, spare.
+    /// Returned and reset.
+    pub fn take_edge_acc(&self, gpu: &Gpu) -> Vec<[u32; 8]> {
         let out = self.read(gpu, &self.buffers.edge_acc, self.world_params.n_edges as u64);
         let mut enc = gpu.device.create_command_encoder(&Default::default());
-        enc.clear_buffer(&self.buffers.edge_acc, 0, Some(self.world_params.n_edges as u64 * 16));
+        enc.clear_buffer(&self.buffers.edge_acc, 0, Some(self.world_params.n_edges as u64 * 32));
         gpu.queue.submit([enc.finish()]);
         out
     }
@@ -901,7 +921,7 @@ impl Sim {
     /// Set measuring points: (lane, position in metres from the lane's start). See `sensor_pass`.
     pub fn set_sensors(&self, gpu: &Gpu, sensors: &[(u32, f32)]) {
         for &(lane, pos) in sensors {
-            let at = (self.world_params.n_edges as u64 + lane as u64) * 16;
+            let at = self.world_params.n_edges as u64 * 32 + lane as u64 * 16;
             gpu.queue.write_buffer(&self.buffers.edge_acc, at, bytemuck::bytes_of(&pos.max(0.01)));
         }
         gpu.queue.submit([]);
@@ -909,9 +929,47 @@ impl Sim {
 
     /// Per lane since the start: position bits, count, speed sum in cm/s, vehicles over 7.5 m.
     pub fn read_sensors(&self, gpu: &Gpu) -> Vec<[u32; 4]> {
-        let n = self.world_params.n_edges as usize;
+        let n = self.world_params.n_edges as usize * 2;
         let all: Vec<[u32; 4]> = self.read(gpu, &self.buffers.edge_acc, (n + self.world_params.n_lanes as usize) as u64);
         all[n..].to_vec()
+    }
+
+    /// Back to the state `Sim::new` leaves, without rebuilding pipelines. Demand stays as written.
+    pub fn reset(&mut self, gpu: &Gpu, world: &World) {
+        let mut enc = gpu.device.create_command_encoder(&Default::default());
+        for b in &self.buffers.reset_zero {
+            enc.clear_buffer(b, 0, None);
+        }
+        gpu.queue.submit([enc.finish()]);
+        for b in &self.buffers.reset_ones {
+            gpu.queue.write_buffer(b, 0, &vec![0xffu8; b.size() as usize]);
+        }
+        let g = GpuGlobals { step: u32::MAX, ..Default::default() };
+        gpu.queue.write_buffer(&self.buffers.globals, 0, bytemuck::bytes_of(&g));
+        gpu.queue.write_buffer(&self.buffers.lanes, 0, bytemuck::cast_slice(&world.lanes));
+        gpu.queue.write_buffer(&self.buffers.tls, 0, bytemuck::cast_slice(&world.tls));
+        gpu.queue.write_buffer(&self.buffers.queues, 0, bytemuck::cast_slice(&world.queues));
+        gpu.queue.submit([]);
+        gpu.wait();
+        self.step = 0;
+    }
+
+    /// Upload a demand from `World::rewrite_demand`. False if it no longer fits these buffers, which
+    /// means a new `Sim`.
+    pub fn write_demand(&self, gpu: &Gpu, world: &World) -> bool {
+        let fits = world.routes.len() as u64 * 4 <= self.buffers.routes.size()
+            && world.trips.len() as u32 == self.world_params.n_trips
+            && world.queues.len() as u32 == self.world_params.n_queues;
+        if !fits {
+            return false;
+        }
+        gpu.queue.write_buffer(&self.buffers.routes, 0, bytemuck::cast_slice(&world.routes));
+        gpu.queue.write_buffer(&self.buffers.trips, 0, bytemuck::cast_slice(&world.trips));
+        gpu.queue.write_buffer(&self.buffers.queue_trips, 0, bytemuck::cast_slice(&world.queue_trips));
+        gpu.queue.write_buffer(&self.buffers.queues, 0, bytemuck::cast_slice(&world.queues));
+        gpu.queue.submit([]);
+        gpu.wait();
+        true
     }
 
     /// The coordinator's statistics per replica, returned and reset.

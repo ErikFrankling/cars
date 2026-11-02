@@ -1,0 +1,9 @@
+{
+  "mean_planned_km": 2.333146405412378,
+  "planned_vkm": 41996.63529742281,
+  "reversal_share": 0.0,
+  "trips": 18000,
+  "trips_with_reversal": 0,
+  "unknown_edge_dropped": 0,
+  "unreachable_dropped": 0
+}

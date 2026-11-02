@@ -10,6 +10,7 @@ Human-only traffic on the Berlin district (49 km²): teleports off, full demand,
 |---|---|---|
 | Berlin district, teleports off, 10% demand | Finishes, 0 late | Done |
 | Berlin district, 50% demand | Jams: 3.8 x the 10% level by 08:00 | No persistent queue |
+| Same, with assigned routes (`cars-assign`) | First iteration stalled at 10:25, 55% unfinished; 25 iterations running | Relative gap under 2%, no persistent queue |
 | Berlin district, 100% demand | Stopped, 2.6 x at 06:30 | Finishes, under 0.5% unfinished |
 | Hourly flow GEH<5, tuning sites | 23% (10% day x10) | Credible 60%, real floor 93% |
 | Rush-hour dip, motorway, lowest / highest hour | 0.96 | Real 0.46 |

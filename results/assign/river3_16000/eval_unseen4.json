@@ -1,0 +1,135 @@
+{
+  "all_balanced": true,
+  "all_clean": false,
+  "collisions": 0.0,
+  "gap": 0.3780622185410951,
+  "gap_sampled": 2429,
+  "mean_travel_s": 1535.570328125,
+  "p95_travel_s": 5314.5,
+  "sd_travel_s": 181.89492868921943,
+  "seeds": [
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {},
+      "ledger": {
+        "active": 2773,
+        "arrived": 13145,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 16000,
+        "teleports": 0,
+        "waiting_to_insert": 82
+      },
+      "peak_active": 19519,
+      "seed": 9001,
+      "stalled_at_s": 10500.0,
+      "stats": {
+        "arrived": 13145,
+        "mean_insertion_wait_s": 20.401445416508178,
+        "mean_travel_s": 1567.10825,
+        "p50_travel_s": 713.0,
+        "p95_travel_s": 5412.0,
+        "requested": 16000,
+        "route_km": 41333.32934838869,
+        "total_generalised_s": 25073732.0,
+        "unfinished": 2855
+      },
+      "wall_s": 10.702676333
+    },
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {},
+      "ledger": {
+        "active": 1839,
+        "arrived": 14092,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 16000,
+        "teleports": 0,
+        "waiting_to_insert": 69
+      },
+      "peak_active": 19519,
+      "seed": 9002,
+      "stalled_at_s": 10500.0,
+      "stats": {
+        "arrived": 14092,
+        "mean_insertion_wait_s": 28.953306840760714,
+        "mean_travel_s": 1407.3191875,
+        "p50_travel_s": 690.0,
+        "p95_travel_s": 5149.0,
+        "requested": 16000,
+        "route_km": 45079.73682983406,
+        "total_generalised_s": 22517107.0,
+        "unfinished": 1908
+      },
+      "wall_s": 10.702676333
+    },
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {},
+      "ledger": {
+        "active": 1776,
+        "arrived": 14144,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 16000,
+        "teleports": 0,
+        "waiting_to_insert": 80
+      },
+      "peak_active": 19519,
+      "seed": 9003,
+      "stalled_at_s": 10500.0,
+      "stats": {
+        "arrived": 14144,
+        "mean_insertion_wait_s": 22.99851527149321,
+        "mean_travel_s": 1349.1681875,
+        "p50_travel_s": 670.0,
+        "p95_travel_s": 5027.0,
+        "requested": 16000,
+        "route_km": 45825.26444787617,
+        "total_generalised_s": 21586691.0,
+        "unfinished": 1856
+      },
+      "wall_s": 10.702676333
+    },
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {},
+      "ledger": {
+        "active": 4054,
+        "arrived": 11748,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 16000,
+        "teleports": 0,
+        "waiting_to_insert": 198
+      },
+      "peak_active": 19519,
+      "seed": 9004,
+      "stalled_at_s": 10500.0,
+      "stats": {
+        "arrived": 11748,
+        "mean_insertion_wait_s": 11.407643854273068,
+        "mean_travel_s": 1818.6856875,
+        "p50_travel_s": 717.0,
+        "p95_travel_s": 5670.0,
+        "requested": 16000,
+        "route_km": 36412.86149548336,
+        "total_generalised_s": 29098971.0,
+        "unfinished": 4252
+      },
+      "wall_s": 10.702676333
+    }
+  ],
+  "seeds_averaged": 4,
+  "teleports": 0.0,
+  "unfinished_share": 0.16985937499999998
+}

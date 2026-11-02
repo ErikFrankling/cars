@@ -1,0 +1,36 @@
+{
+  "gap_mean": 0.3745171537722063,
+  "seeds": [
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {},
+      "gap": 0.3745171537722063,
+      "ledger": {
+        "active": 30000,
+        "arrived": 90621,
+        "collisions": 265,
+        "imbalance": 0,
+        "not_yet_due": 125502,
+        "requested": 288250,
+        "teleports": 0,
+        "waiting_to_insert": 42127
+      },
+      "peak_active": 30000,
+      "seed": 9001,
+      "stalled_at_s": 52500.0,
+      "stats": {
+        "arrived": 90621,
+        "mean_insertion_wait_s": 163.47434921265491,
+        "mean_travel_s": 2979.9737935819603,
+        "p50_travel_s": 380.0,
+        "p95_travel_s": 19561.0,
+        "requested": 288250,
+        "route_km": 803496.7477229725,
+        "total_generalised_s": 858977446.0,
+        "unfinished": 197629
+      },
+      "wall_s": 74.453347968
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "noise_floor": 0.12245541016890638,
+  "rounds": [
+    {
+      "added": 129519,
+      "alpha": 1.0,
+      "guards": {
+        "cell_intercept": 0.910478435545361,
+        "cell_r2": 0.8356669733364305,
+        "cell_slope": 0.9739498877341051,
+        "ends_r2": 0.9854862148207181,
+        "ends_slope": 0.995218255842865,
+        "length_mean_ratio": 1.0163685968408023,
+        "length_sd_ratio": 1.0180189266922175,
+        "pass": false,
+        "sector_max_change": 3.3335353274831583,
+        "total_ratio": 1.0219483960519122,
+        "vkm_ratio": 1.0386762573389907
+      },
+      "held_peak_wape": 0.6828762862025927,
+      "lambda": 0.5,
+      "lower_standard": true,
+      "predicted_selection_wape": 0.5733888401874588,
+      "removed": 100622,
+      "round": 0,
+      "selection_wape": 0.6310840525941367,
+      "stopped_at_floor": false,
+      "test_geh5": 0.0,
+      "test_other_wape": 0.0,
+      "test_wape": 0.0,
+      "train_wape": 0.5752161200522155,
+      "trips_after": 1347766,
+      "trips_before": 1318869,
+      "unfinished_share": 0.11668123398275368
+    },
+    {
+      "added": 104386,
+      "alpha": 1.0,
+      "guards": {
+        "cell_intercept": 1.620115541781633,
+        "cell_r2": 0.7081907897407086,
+        "cell_slope": 0.9469204900510115,
+        "ends_r2": 0.9687570119592371,
+        "ends_slope": 0.9891624436385879,
+        "length_mean_ratio": 1.027392755319087,
+        "length_sd_ratio": 1.0248228914696509,
+        "pass": false,
+        "sector_max_change": 2.460034426894115,
+        "total_ratio": 1.0308648232761288,
+        "vkm_ratio": 1.0591030511471855
+      },
+      "held_peak_wape": 0.6957386172281088,
+      "lambda": 0.5,
+      "lower_standard": true,
+      "predicted_selection_wape": 0.6303399625510068,
+      "removed": 94533,
+      "round": 1,
+      "selection_wape": 0.6463307376903015,
+      "stopped_at_floor": false,
+      "test_geh5": 0.0,
+      "test_other_wape": 0.0,
+      "test_wape": 0.0,
+      "train_wape": 0.5754885056830714,
+      "trips_after": 1357619,
+      "trips_before": 1347766,
+      "unfinished_share": 0.1534510050316031
+    }
+  ],
+  "tag_enforced": false
+}

@@ -1,8 +1,8 @@
-# Main's default: Krauss, SUMO settings, instant lane changes.
+# Today's main: physical mode, its default driver.
 name = "main"
 branch = "main"
 patch = "instrument/sensors-main.patch"
-kind = "sumo"
+kind = "physical"
 dt = 0.1
 dt_network = 1.0
 time_to_teleport = 0

@@ -1,0 +1,302 @@
+{
+  "edges": [
+    "E12F12",
+    "D12E12",
+    "E0F0",
+    "I4I3"
+  ],
+  "rows": [
+    {
+      "day": "normal",
+      "enroute": {
+        "arena_edges": 0,
+        "considered": 0,
+        "epochs": 0,
+        "out_of_arena": 0,
+        "patched": 0,
+        "route_secs": 0.0
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 18000,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 18000,
+        "teleports": 0,
+        "waiting_to_insert": 0
+      },
+      "navigators": 0.0,
+      "reroutes_per_navigator": 0.0,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 18000,
+        "mean_insertion_wait_s": 0.37772222222222224,
+        "mean_travel_s": 274.43861111111113,
+        "p50_travel_s": 244.0,
+        "p95_travel_s": 553.0,
+        "requested": 18000,
+        "route_km": 45684.048057128995,
+        "total_generalised_s": 4939895.0,
+        "unfinished": 0
+      },
+      "wall_s": 6.99654356
+    },
+    {
+      "day": "incident",
+      "enroute": {
+        "arena_edges": 0,
+        "considered": 0,
+        "epochs": 0,
+        "out_of_arena": 0,
+        "patched": 0,
+        "route_secs": 0.0
+      },
+      "ledger": {
+        "active": 4696,
+        "arrived": 12759,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 18000,
+        "teleports": 0,
+        "waiting_to_insert": 545
+      },
+      "navigators": 0.0,
+      "reroutes_per_navigator": 0.0,
+      "stalled_at_s": 12000.0,
+      "stats": {
+        "arrived": 12759,
+        "mean_insertion_wait_s": 2.5645426757582883,
+        "mean_travel_s": 2044.8262222222222,
+        "p50_travel_s": 309.0,
+        "p95_travel_s": 7214.0,
+        "requested": 18000,
+        "route_km": 30770.606252197238,
+        "total_generalised_s": 36806872.0,
+        "unfinished": 5241
+      },
+      "wall_s": 9.489863551
+    },
+    {
+      "day": "normal",
+      "enroute": {
+        "arena_edges": 9486,
+        "considered": 16562,
+        "epochs": 37,
+        "out_of_arena": 0,
+        "patched": 923,
+        "route_secs": 0.088525499
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 18000,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 18000,
+        "teleports": 0,
+        "waiting_to_insert": 0
+      },
+      "navigators": 0.3,
+      "reroutes_per_navigator": 0.17092592592592593,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 18000,
+        "mean_insertion_wait_s": 0.37277777777777776,
+        "mean_travel_s": 276.2195,
+        "p50_travel_s": 243.0,
+        "p95_travel_s": 567.0,
+        "requested": 18000,
+        "route_km": 45765.85096435563,
+        "total_generalised_s": 4971951.0,
+        "unfinished": 0
+      },
+      "wall_s": 7.08737243
+    },
+    {
+      "day": "incident",
+      "enroute": {
+        "arena_edges": 29508,
+        "considered": 94319,
+        "epochs": 40,
+        "out_of_arena": 0,
+        "patched": 2299,
+        "route_secs": 0.243646174
+      },
+      "ledger": {
+        "active": 3782,
+        "arrived": 13800,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 18000,
+        "teleports": 0,
+        "waiting_to_insert": 418
+      },
+      "navigators": 0.3,
+      "reroutes_per_navigator": 0.42574074074074075,
+      "stalled_at_s": 12000.0,
+      "stats": {
+        "arrived": 13800,
+        "mean_insertion_wait_s": 2.3578985507246375,
+        "mean_travel_s": 1676.2938333333334,
+        "p50_travel_s": 289.0,
+        "p95_travel_s": 6971.0,
+        "requested": 18000,
+        "route_km": 33805.07378930668,
+        "total_generalised_s": 30173289.0,
+        "unfinished": 4200
+      },
+      "wall_s": 9.604862123
+    },
+    {
+      "day": "normal",
+      "enroute": {
+        "arena_edges": 19551,
+        "considered": 16826,
+        "epochs": 37,
+        "out_of_arena": 0,
+        "patched": 1884,
+        "route_secs": 0.13811801799999998
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 18000,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 18000,
+        "teleports": 0,
+        "waiting_to_insert": 0
+      },
+      "navigators": 0.6,
+      "reroutes_per_navigator": 0.17444444444444446,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 18000,
+        "mean_insertion_wait_s": 0.36772222222222223,
+        "mean_travel_s": 281.3569444444444,
+        "p50_travel_s": 244.0,
+        "p95_travel_s": 586.0,
+        "requested": 18000,
+        "route_km": 45850.49633532733,
+        "total_generalised_s": 5064425.0,
+        "unfinished": 0
+      },
+      "wall_s": 8.375348860999999
+    },
+    {
+      "day": "incident",
+      "enroute": {
+        "arena_edges": 30112,
+        "considered": 21245,
+        "epochs": 37,
+        "out_of_arena": 0,
+        "patched": 2827,
+        "route_secs": 0.13161274900000003
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 18000,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 18000,
+        "teleports": 0,
+        "waiting_to_insert": 0
+      },
+      "navigators": 0.6,
+      "reroutes_per_navigator": 0.26175925925925925,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 18000,
+        "mean_insertion_wait_s": 5.328277777777778,
+        "mean_travel_s": 359.4963333333333,
+        "p50_travel_s": 258.0,
+        "p95_travel_s": 1024.0,
+        "requested": 18000,
+        "route_km": 46121.09511889657,
+        "total_generalised_s": 6470934.0,
+        "unfinished": 0
+      },
+      "wall_s": 7.255374654
+    },
+    {
+      "day": "normal",
+      "enroute": {
+        "arena_edges": 34881,
+        "considered": 17402,
+        "epochs": 37,
+        "out_of_arena": 0,
+        "patched": 3395,
+        "route_secs": 0.05681806100000001
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 18000,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 18000,
+        "teleports": 0,
+        "waiting_to_insert": 0
+      },
+      "navigators": 1.0,
+      "reroutes_per_navigator": 0.18861111111111112,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 18000,
+        "mean_insertion_wait_s": 0.3645,
+        "mean_travel_s": 290.31427777777776,
+        "p50_travel_s": 245.0,
+        "p95_travel_s": 635.0,
+        "requested": 18000,
+        "route_km": 46003.35659130875,
+        "total_generalised_s": 5225657.0,
+        "unfinished": 0
+      },
+      "wall_s": 7.141347924
+    },
+    {
+      "day": "incident",
+      "enroute": {
+        "arena_edges": 48284,
+        "considered": 19904,
+        "epochs": 37,
+        "out_of_arena": 0,
+        "patched": 4681,
+        "route_secs": 0.07331869599999999
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 18000,
+        "collisions": 0,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 18000,
+        "teleports": 0,
+        "waiting_to_insert": 0
+      },
+      "navigators": 1.0,
+      "reroutes_per_navigator": 0.26005555555555554,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 18000,
+        "mean_insertion_wait_s": 2.630333333333333,
+        "mean_travel_s": 333.82616666666667,
+        "p50_travel_s": 255.0,
+        "p95_travel_s": 856.0,
+        "requested": 18000,
+        "route_km": 46363.63889685074,
+        "total_generalised_s": 6008871.0,
+        "unfinished": 0
+      },
+      "wall_s": 6.592688248
+    }
+  ],
+  "seed": 9301,
+  "speed_m_s": 1.0,
+  "t0": 3000.0,
+  "t1": 5700.0
+}

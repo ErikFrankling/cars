@@ -108,8 +108,17 @@ pub struct Model {
     pub coordinated: bool,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+pub struct Driver {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+}
+
 #[derive(Clone, Debug, Default, Deserialize)]
 pub struct Registry {
+    #[serde(default)]
+    pub driver: Vec<Driver>,
     #[serde(default)]
     pub scenario: Vec<Scenario>,
     #[serde(default)]
@@ -148,6 +157,9 @@ impl Roots {
 }
 
 impl Registry {
+    pub fn driver(&self, id: &str) -> Option<&Driver> {
+        self.driver.iter().find(|d| d.id == id)
+    }
     pub fn parse(text: &str) -> Result<Self, String> {
         let r: Registry = toml::from_str(text).map_err(|e| e.to_string())?;
         for m in &r.model {
@@ -245,11 +257,13 @@ mod tests {
     #[test]
     fn unmerged_models_say_where_they_are() {
         let r = built_in();
-        for id in ["d1-d7", "m1", "physical", "human"] {
+        for id in ["d1-d7", "m1", "human"] {
             let m = r.model(id).expect(id);
             assert_eq!(m.status, Status::NotMerged);
             assert!(m.branch.starts_with("t3/"));
         }
+        assert_eq!(r.driver.first().map(|d| d.id.as_str()), Some("physical"));
+        assert_eq!(r.driver("sumo").map(|d| d.name.as_str()), Some("SUMO copy"));
         for id in ["krauss", "idm", "acc", "cacc", "glosa", "d8"] {
             assert_eq!(r.model(id).expect(id).status, Status::Merged);
         }

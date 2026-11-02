@@ -1,8 +1,8 @@
 diff --git a/crates/cars-cli/src/run.rs b/crates/cars-cli/src/run.rs
-index bf31189..05eb91c 100644
+index 4a9c511..aea3d42 100644
 --- a/crates/cars-cli/src/run.rs
 +++ b/crates/cars-cli/src/run.rs
-@@ -97,6 +97,12 @@ pub struct Args {
+@@ -130,6 +130,12 @@ pub struct Args {
      /// Trace only lanes touching this box: x0,y0,x1,y1.
      #[arg(long, value_delimiter = ',', allow_negative_numbers = true)]
      trace_bbox: Vec<f32>,
@@ -15,7 +15,7 @@ index bf31189..05eb91c 100644
      /// Steps between traced frames.
      #[arg(long, default_value_t = 1)]
      trace_stride: u32,
-@@ -163,6 +169,20 @@ pub fn run(args: Args) {
+@@ -238,6 +244,20 @@ pub fn run(args: Args) {
          malloc_trim(0);
      }
      eprintln!("gpu buffers: {:.1} MB, sort passes {}", sim.buffers.total_bytes as f64 / 1e6, sim.passes());
@@ -36,7 +36,7 @@ index bf31189..05eb91c 100644
      let steps = ((args.end - args.begin) / args.dt).ceil() as u64;
      let t = Instant::now();
      let mut fcd = args.fcd.as_ref().map(|p| std::io::BufWriter::new(std::fs::File::create(p).expect("fcd")));
-@@ -355,6 +375,17 @@ pub fn run(args: Args) {
+@@ -446,6 +466,17 @@ pub fn run(args: Args) {
          }
          if done % interval == 0 || done >= steps {
              let begin = args.begin + ((done - 1) / interval * interval) as f32 * args.dt;
@@ -55,12 +55,12 @@ index bf31189..05eb91c 100644
                  let acc = sim.take_edge_acc(&gpu);
                  for (e, a) in acc.iter().enumerate() {
 diff --git a/crates/cars-core/src/shaders/step.wgsl b/crates/cars-core/src/shaders/step.wgsl
-index dc650df..d768299 100644
+index d3483f0..d97219a 100644
 --- a/crates/cars-core/src/shaders/step.wgsl
 +++ b/crates/cars-core/src/shaders/step.wgsl
-@@ -1081,6 +1081,21 @@ fn finalize_speed(v_pos: f32, old_v: f32, lane_vmax_: f32, rng: ptr<private, u32
- 
- var<private> ex_rng: u32;
+@@ -1572,6 +1572,21 @@ fn shadow_sync(@builtin(global_invocation_id) id: vec3u) {
+     }
+ }
  
 +// A measuring point set with `cars run --sensors`, counted like a road loop: one per crossing of the
 +// front, with the speed at that moment. Words per lane after the edges: position in bits (0 for none),
@@ -80,7 +80,7 @@ index dc650df..d768299 100644
  @compute @workgroup_size(64)
  fn exec(@builtin(global_invocation_id) id: vec3u) {
      let i = id.x;
-@@ -1226,6 +1241,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
+@@ -1713,6 +1728,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
          // A loop on a lane left in this step was crossed, however short the lane.
          let crossed = lanes[e.lane].det_pos;
          if (crossed >= 0.0 && (j > 0u || old_pos < crossed)) { last_detect[e.lane] = G.step; }
@@ -88,7 +88,7 @@ index dc650df..d768299 100644
          e.pos -= len;
          e.route_len += len;
          e.prev2_lane = e.prev_lane;
-@@ -1243,6 +1259,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
+@@ -1730,6 +1746,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
          if (j >= MAX_ITEMS) { break; }
      }
  
@@ -97,10 +97,10 @@ index dc650df..d768299 100644
      var loop_back = e.pos - ty.length;
      let det = lanes[e.lane].det_pos;
 diff --git a/crates/cars-core/src/sim.rs b/crates/cars-core/src/sim.rs
-index 89066f5..a18d2de 100644
+index 933a55e..5a2f8a2 100644
 --- a/crates/cars-core/src/sim.rs
 +++ b/crates/cars-core/src/sim.rs
-@@ -227,7 +227,7 @@ impl Sim {
+@@ -239,7 +239,7 @@ impl Sim {
              p.n_trips as u64 * std::mem::size_of::<GpuTripOut>() as u64,
          );
          let series = empty("series", p.n_samples as u64 * p.n_replicas as u64 * 16);
@@ -109,7 +109,7 @@ index 89066f5..a18d2de 100644
          let advice_init = vec![0xffu8; p.n_trips as usize * 4];
          let advice = init("advice", &advice_init, storage);
          let adv_flags = empty("adv_flags", p.n_trips as u64 * 4);
-@@ -797,11 +797,27 @@ impl Sim {
+@@ -868,11 +868,27 @@ impl Sim {
      pub fn take_edge_acc(&self, gpu: &Gpu) -> Vec<[u32; 4]> {
          let out = self.read(gpu, &self.buffers.edge_acc, self.world_params.n_edges as u64);
          let mut enc = gpu.device.create_command_encoder(&Default::default());

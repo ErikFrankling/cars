@@ -1,0 +1,302 @@
+{
+  "edges": [
+    "-31622#10",
+    "-31622#10-AddedOffRampEdge",
+    "-31622#10-AddedOnRampEdge",
+    "-31622#7-AddedOffRampEdge"
+  ],
+  "rows": [
+    {
+      "day": "normal",
+      "enroute": {
+        "arena_edges": 0,
+        "considered": 0,
+        "epochs": 0,
+        "out_of_arena": 0,
+        "patched": 0,
+        "route_secs": 0.0
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 288250,
+        "collisions": 1244,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 288250,
+        "teleports": 796,
+        "waiting_to_insert": 0
+      },
+      "navigators": 0.0,
+      "reroutes_per_navigator": 0.0,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 288250,
+        "mean_insertion_wait_s": 133.96252558542932,
+        "mean_travel_s": 769.7676773633998,
+        "p50_travel_s": 611.0,
+        "p95_travel_s": 1312.0,
+        "requested": 288250,
+        "route_km": 2568470.494279785,
+        "total_generalised_s": 221885533.0,
+        "unfinished": 0
+      },
+      "wall_s": 112.208951241
+    },
+    {
+      "day": "incident",
+      "enroute": {
+        "arena_edges": 0,
+        "considered": 0,
+        "epochs": 0,
+        "out_of_arena": 0,
+        "patched": 0,
+        "route_secs": 0.0
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 288250,
+        "collisions": 1410,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 288250,
+        "teleports": 9297,
+        "waiting_to_insert": 0
+      },
+      "navigators": 0.0,
+      "reroutes_per_navigator": 0.0,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 288250,
+        "mean_insertion_wait_s": 201.51608673026885,
+        "mean_travel_s": 1096.7772905464008,
+        "p50_travel_s": 658.0,
+        "p95_travel_s": 4181.0,
+        "requested": 288250,
+        "route_km": 2566157.0731304493,
+        "total_generalised_s": 316146054.0,
+        "unfinished": 0
+      },
+      "wall_s": 116.098711401
+    },
+    {
+      "day": "normal",
+      "enroute": {
+        "arena_edges": 3285289,
+        "considered": 622098,
+        "epochs": 292,
+        "out_of_arena": 0,
+        "patched": 85960,
+        "route_secs": 18.820428662999984
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 288250,
+        "collisions": 1240,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 288250,
+        "teleports": 928,
+        "waiting_to_insert": 0
+      },
+      "navigators": 0.3,
+      "reroutes_per_navigator": 0.9940445215380168,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 288250,
+        "mean_insertion_wait_s": 131.59172593235039,
+        "mean_travel_s": 780.1868829141371,
+        "p50_travel_s": 616.0,
+        "p95_travel_s": 1396.0,
+        "requested": 288250,
+        "route_km": 2586491.1835425193,
+        "total_generalised_s": 224888869.0,
+        "unfinished": 0
+      },
+      "wall_s": 213.191362649
+    },
+    {
+      "day": "incident",
+      "enroute": {
+        "arena_edges": 3510020,
+        "considered": 656689,
+        "epochs": 293,
+        "out_of_arena": 0,
+        "patched": 90933,
+        "route_secs": 9.034108275000003
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 288250,
+        "collisions": 1273,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 288250,
+        "teleports": 1870,
+        "waiting_to_insert": 0
+      },
+      "navigators": 0.3,
+      "reroutes_per_navigator": 1.0515524718126625,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 288250,
+        "mean_insertion_wait_s": 133.2970234171726,
+        "mean_travel_s": 817.6990355594103,
+        "p50_travel_s": 625.0,
+        "p95_travel_s": 1627.0,
+        "requested": 288250,
+        "route_km": 2587952.090699509,
+        "total_generalised_s": 235701747.0,
+        "unfinished": 0
+      },
+      "wall_s": 129.728549173
+    },
+    {
+      "day": "normal",
+      "enroute": {
+        "arena_edges": 7639934,
+        "considered": 679381,
+        "epochs": 293,
+        "out_of_arena": 0,
+        "patched": 202944,
+        "route_secs": 14.328265679999998
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 288250,
+        "collisions": 1259,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 288250,
+        "teleports": 2004,
+        "waiting_to_insert": 0
+      },
+      "navigators": 0.6,
+      "reroutes_per_navigator": 1.1734258456201214,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 288250,
+        "mean_insertion_wait_s": 143.29854640069385,
+        "mean_travel_s": 851.2855368603642,
+        "p50_travel_s": 634.0,
+        "p95_travel_s": 1763.0,
+        "requested": 288250,
+        "route_km": 2608357.4385288795,
+        "total_generalised_s": 245383056.0,
+        "unfinished": 0
+      },
+      "wall_s": 107.875780193
+    },
+    {
+      "day": "incident",
+      "enroute": {
+        "arena_edges": 7830218,
+        "considered": 684222,
+        "epochs": 292,
+        "out_of_arena": 0,
+        "patched": 206436,
+        "route_secs": 12.842939454999996
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 288250,
+        "collisions": 1289,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 288250,
+        "teleports": 1830,
+        "waiting_to_insert": 0
+      },
+      "navigators": 0.6,
+      "reroutes_per_navigator": 1.1936166522116218,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 288250,
+        "mean_insertion_wait_s": 145.82716738941892,
+        "mean_travel_s": 858.9397432784042,
+        "p50_travel_s": 637.0,
+        "p95_travel_s": 1804.0,
+        "requested": 288250,
+        "route_km": 2611465.619914274,
+        "total_generalised_s": 247589381.0,
+        "unfinished": 0
+      },
+      "wall_s": 104.038201683
+    },
+    {
+      "day": "normal",
+      "enroute": {
+        "arena_edges": 8822707,
+        "considered": 730306,
+        "epochs": 292,
+        "out_of_arena": 109555,
+        "patched": 236888,
+        "route_secs": 27.062442593000007
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 288250,
+        "collisions": 1341,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 288250,
+        "teleports": 4363,
+        "waiting_to_insert": 0
+      },
+      "navigators": 1.0,
+      "reroutes_per_navigator": 0.8218143972246313,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 288250,
+        "mean_insertion_wait_s": 133.74038508239374,
+        "mean_travel_s": 895.0310286209888,
+        "p50_travel_s": 636.0,
+        "p95_travel_s": 2353.0,
+        "requested": 288250,
+        "route_km": 2629473.579688858,
+        "total_generalised_s": 257992694.0,
+        "unfinished": 0
+      },
+      "wall_s": 120.329870412
+    },
+    {
+      "day": "incident",
+      "enroute": {
+        "arena_edges": 8822708,
+        "considered": 743305,
+        "epochs": 292,
+        "out_of_arena": 120286,
+        "patched": 231732,
+        "route_secs": 31.880980585999996
+      },
+      "ledger": {
+        "active": 0,
+        "arrived": 288250,
+        "collisions": 1338,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 288250,
+        "teleports": 4628,
+        "waiting_to_insert": 0
+      },
+      "navigators": 1.0,
+      "reroutes_per_navigator": 0.8039271465741544,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 288250,
+        "mean_insertion_wait_s": 143.19422376409366,
+        "mean_travel_s": 917.991885516045,
+        "p50_travel_s": 638.0,
+        "p95_travel_s": 2571.0,
+        "requested": 288250,
+        "route_km": 2627266.320147487,
+        "total_generalised_s": 264611161.0,
+        "unfinished": 0
+      },
+      "wall_s": 127.663581933
+    }
+  ],
+  "seed": 9301,
+  "speed_m_s": 1.0,
+  "t0": 28800.0,
+  "t1": 31500.0
+}

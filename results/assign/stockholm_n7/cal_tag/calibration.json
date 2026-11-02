@@ -1,0 +1,38 @@
+{
+  "noise_floor": 0.12245541016890638,
+  "rounds": [
+    {
+      "added": 0,
+      "alpha": 0.0,
+      "guards": {
+        "cell_intercept": 0.0,
+        "cell_r2": 1.0,
+        "cell_slope": 1.0,
+        "ends_r2": 1.0,
+        "ends_slope": 1.0,
+        "length_mean_ratio": 1.0,
+        "length_sd_ratio": 1.0,
+        "pass": true,
+        "sector_max_change": 0.0,
+        "total_ratio": 1.0,
+        "vkm_ratio": 1.0
+      },
+      "held_peak_wape": 0.6569162351511796,
+      "lambda": 0.5,
+      "lower_standard": true,
+      "predicted_selection_wape": 0.5733888401874588,
+      "removed": 0,
+      "round": 0,
+      "selection_wape": 0.6001976444199116,
+      "stopped_at_floor": false,
+      "test_geh5": 0.0,
+      "test_other_wape": 0.0,
+      "test_wape": 0.0,
+      "train_wape": 0.6242588936407357,
+      "trips_after": 1318869,
+      "trips_before": 1318869,
+      "unfinished_share": 0.05555669289368391
+    }
+  ],
+  "tag_enforced": true
+}

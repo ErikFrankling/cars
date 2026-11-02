@@ -1,0 +1,58 @@
+{
+  "files": [
+    {
+      "bytes": 1031856,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river3.net.xml",
+      "sha256": "dc3b09acb5fc678fc062bf9857ae9f0d4a92302636ce5f12ff6d95db271aaee3"
+    },
+    {
+      "bytes": 151,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/vtypes.add.xml",
+      "sha256": "d599a59a474bbe2b23186d9db31aa658bc8a8bc3a13663b6e1e29bbd9e34d858"
+    },
+    {
+      "bytes": 260141,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river3_16000.csv.gz",
+      "sha256": "1867de3d02a679cc1399ab4e1a53a425329bbce61091eec7ee98ea26e41c5028"
+    },
+    {
+      "bytes": 91,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river3.cuts.csv",
+      "sha256": "948905aef2282c63a1fa79a14b658a8c4e7609fea25279f81036c319c3ecdeec"
+    },
+    {
+      "bytes": 139,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river3.discharge.csv",
+      "sha256": "b563ac60a8e3ace5bd45f19dd5cb7abbb2b1cd2d287175bc9cbbdfa27232f3a8"
+    }
+  ],
+  "scenario": {
+    "additional": [
+      "/home/erikf/projects/personal/cars-data/truth/assign/nets/vtypes.add.xml"
+    ],
+    "begin": 0.0,
+    "capacity": 40000,
+    "counts": null,
+    "cuts": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river3.cuts.csv",
+    "discharge": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river3.discharge.csv",
+    "dt": 1.0,
+    "end": 14000.0,
+    "fixed_prefixes": [],
+    "fixed_vtypes": [],
+    "horizon": 28800.0,
+    "ignore_blocker": null,
+    "init": "",
+    "landmarks": 16,
+    "memory": 0.30000001192092896,
+    "name": "river3_16000",
+    "net": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river3.net.xml",
+    "routes": [],
+    "seed": 0,
+    "share": 0.15,
+    "time_to_teleport": 0.0,
+    "travellers": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river3_16000.csv.gz",
+    "trusted": false,
+    "turnaround_s": 10.0,
+    "zones": null
+  }
+}

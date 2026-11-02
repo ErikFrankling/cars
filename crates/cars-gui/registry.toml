@@ -311,6 +311,19 @@ time_to_teleport = 120.0
 ignore_blocker = 20.0
 speed = 10.0
 
+# What drives everything that is not an automated model. The first is the default. Teleports start off
+# with the physical driver and from the scenario's own setting with the SUMO copy.
+
+[[driver]]
+id = "physical"
+name = "Physical driver"
+description = "Power, brakes, grip, corners and finite lane changes, against what real cars and drivers measure. No teleports: gridlock stays gridlock. Has not passed the validation gate: see research/truth/data-hunt/19-physical-realism.md."
+
+[[driver]]
+id = "sumo"
+name = "SUMO copy"
+description = "The old driver, --sumo-compat: a copy of SUMO's kernel. Instant lane changes, no cornering rule, teleports. It fails report 19's physical checks, so it says nothing about real traffic. For comparison and speed only."
+
 # Automated car models. status = "merged" can be chosen; anything else is listed greyed out with
 # `branch` as the reason. Lighting one up once it merges: set status = "merged" and give it a vtype.
 # A vtype is one <vType> from the demand format, with id="gui_av". `coordinated = true` runs the
@@ -372,13 +385,6 @@ name = "M1 neural driver"
 description = "A trained neural network as the driver."
 status = "not_merged"
 branch = "t3/aea36e36"
-
-[[model]]
-id = "physical"
-name = "Physical driver"
-description = "Vehicle physics: power, grip and energy."
-status = "not_merged"
-branch = "t3/1c6fee50"
 
 [[model]]
 id = "human"
