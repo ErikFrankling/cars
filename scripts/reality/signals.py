@@ -52,7 +52,7 @@ def main():
         x = read_day(f)
         n = len(x)
         print(f.rsplit('/', 1)[1], n, x.light.nunique(), flush=True)
-        if x.light.nunique() < 40 or x.t.dt.hour.nunique() < 24 or (x.groupby('light').t.max().min() - x.t.min()).total_seconds() < 80000:
+        if x.light.nunique() < 40 or n < 2_500_000:
             print('  partial, left out', flush=True)
             continue
         days_used.append(f.rsplit('/', 1)[1][:10])
@@ -69,10 +69,11 @@ def main():
         iqr = iqr[conn.size() >= 4]
         # main-phase: per light, the connection with the longest median green share
         best = conn.green.median().groupby('light').max()
-        rows.append(dict(city='Hamburg', source='measured 2026 report 26', day_type='weekend' if we else 'weekday', hour=h, n_cycles=len(g), n_connections=conn.ngroups, n_lights=g.light.nunique(), cycle_p10=g.cycle.quantile(.1), cycle_p50=g.cycle.median(), cycle_p90=g.cycle.quantile(.9), within_connection_iqr_p50=iqr.median(), green_share_p10=round(g.green.quantile(.1), 3), green_share_p50=round(g.green.median(), 3), green_share_p90=round(g.green.quantile(.9), 3), longest_green_per_light_p10=round(best.quantile(.1), 3), longest_green_per_light_p50=round(best.median(), 3), longest_green_per_light_p90=round(best.quantile(.9), 3), note=''))
+        rows.append(dict(city='Hamburg', source='measured 2026 report 26', day_type='weekend' if we else 'weekday', hour=h, n_cycles=len(g), n_connections=conn.ngroups, n_lights=g.light.nunique(), cycle_p10=g.cycle.quantile(.1), cycle_p50=g.cycle.median(), cycle_p90=g.cycle.quantile(.9), within_connection_iqr_p50=iqr.median(), share_connections_iqr_over_5s=round(float((iqr > 5).mean()), 3), green_share_p10=round(g.green.quantile(.1), 3), green_share_p50=round(g.green.median(), 3), green_share_p90=round(g.green.quantile(.9), 3), longest_green_per_light_p10=round(best.quantile(.1), 3), longest_green_per_light_p50=round(best.median(), 3), longest_green_per_light_p90=round(best.quantile(.9), 3), note=''))
     r = pd.DataFrame(rows)
+    r['days'] = ' '.join(days_used)
     # day-to-day: weekday-hour median per day isn't kept above, so the spread between lights is what the table carries
-    extra = [dict(city='Berlin', source='Senate answer S19-12905, report 23', day_type='weekday', hour=np.nan, cycle_p50=v, note=f'one corridor B1/B5, coordinated, {t}. Which hours carry which cycle not read here') for v, t in ((90, 'published cycle'), (110, 'published cycle'), (100, 'published cycle'))]
+    extra = [dict(city='Berlin', source='Senate answer S19-12905 of 23 Aug 2022', day_type='weekday', hour=h, cycle_p50=v, note=f'B1/B5 Blumberger Damm to the east city limit, coordinated for 60 km/h. {t}. 2022 not 2019; no greens or offsets published') for v, h, t in ((110, 7, 'morning peak, heavy load 07-09'), (110, 8, 'morning peak, heavy load 07-09'), (100, 15, 'afternoon peak, heavy load 15-18'), (100, 16, 'afternoon peak, heavy load 15-18'), (100, 17, 'afternoon peak, heavy load 15-18'), (90, np.nan, 'the third published value; the answer does not say which hours, taken as off peak'))]
     r = pd.concat([r, pd.DataFrame(extra)])
     r.to_csv(OUT / 'real_signals.csv', index=False)
     print('days', days_used)
