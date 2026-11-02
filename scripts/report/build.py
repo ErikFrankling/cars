@@ -165,12 +165,12 @@ B.append(f'''<section class="panel r"><div class="head">{lamp('r')}<h3>Not worki
 <li><b>Full real traffic still locks Stockholm up.</b> 70,595 teleports by 10:00, and 150,956 on the map closest to the real signal register.</li>
 <li><b>No lights in a real district isn\'t ready at full demand.</b> On the new demand it\'s better or level at 30 to 60%, but up to 18% worse than generated signals at 100%, and the planned version up to 41% worse. Only 50 of 199 junctions are coordinated.</li>
 <li><b>Overloaded grid.</b> Planning across junctions cuts contacts from 265 to 3 in 42 runs, not to zero. The zero-collision rule still fails there.</li>
-<li><b>New drivers and physics in a city.</b> On the old demand, Berlin morning: 199,380 cars stuck. The test on the fixed Stockholm demand is still queued. Neither is merged yet.</li>
+<li><b>New drivers and physics in a city.</b> With teleports off, the human driver still locks up on the fixed Stockholm demand: 114,298 of 167,295 cars stuck by 10:00. Neither is merged yet.</li>
 <li><b>Not done.</b> Most self-driving tiers have only smoke tests. D9 and M4 aren't built. The "remove humans step by step" experiment hasn't been run.</li></ul></section>''')
 B.append('</div></div></div>')
 B.append('<div class="page">')
 B.append(clip('gallery__d8__versus_signal', 'Best single clip: three ways to run one junction', 'Same junction, same arrivals. Left: no signal. Middle: a traffic light with the same self-driving cars. Right: a traffic light with human-like cars. At one moment in this run: 56 cars at 49 km/h, 81 at 29 km/h, 193 at 10 km/h. Simulated, no real vehicles.'))
-B.append(note('Read this before the numbers', 'Almost everything after the speed chapter sits on branches not merged into main yet, and agents are still running, so unfinished numbers can move. This is a snapshot from 1 November 2026, about 23:15.'))
+B.append(note('Read this before the numbers', 'Almost everything after the speed chapter sits on branches not merged into main yet, and agents are still running, so unfinished numbers can move. This is a snapshot from 1 November 2026, about 01:30 on 2 November.'))
 
 # ---- Speed
 B.append(head('How fast is it?', 'Every car in a city, on one graphics card'))
@@ -305,7 +305,9 @@ B.append(table(['Run, no teleports', 'Cars', 'Stuck', 'Mean speed'], [
     ['Berlin morning, physical driver', '286,323', '222,559', '1.85 m/s'],
     ['Berlin morning, human driver', '277,620', '199,380', '2.53 m/s'],
     ['Stockholm morning, physical driver', '183,829', '77,641', '1.59 m/s'],
-    ['Stockholm at 50% demand', '119,309', '35,424', ''],
+    ['Stockholm at 50% demand, old trips', '119,309', '35,424', ''],
+    ['Stockholm morning, new demand, physical driver', '160,046', '132,453', '1.61 m/s'],
+    ['Stockholm morning, new demand, human driver', '167,295', '114,298', '2.57 m/s'],
     ['Stockholm at 1% demand', '2,757', '39 (was 184 four builds ago)', ''],
     ['Berlin at 1% demand', '22,481', '3,849 (17%)', ''],
 ]))
@@ -361,7 +363,7 @@ B.append(chart('Route feedback works at reduced load, not at full load', 'Telepo
 B.append('<h3>A Stockholm that doesn\'t lock up</h3><p>The recipe: real paths instead of random walks, fitted to the counts, on a repaired map, at 60%, with drivers learning routes from a day that isn\'t jammed. It isn\'t real Stockholm yet, but for the first time a whole day runs.</p>')
 B.append(table(['Full day', 'Old scenario', 'Recipe'], [['Teleports', '290,352', '<b>2,449</b>'], ['Teleports per 1,000 trips', '177.6', '<b>3.1</b>'], ['Mean speed', '8.9 km/h', '<b>42.8 km/h</b>'], ['Mean time lost', '760 s', '<b>114 s</b>'], ['Still driving at midnight', '18,491', '2,235'], ['Never got on the road', '115,961', '1'], ['Collisions', '35,342', '51'], ['Trips arrived', '1,616,859', '788,725'], ['Distance driven', '3.90 M km', '6.44 M km'], ['Share of real toll-ring traffic (planned)', '40%', '60%']]))
 if 'stockholm_recipe_day' in VIDEOS:
-    B.append(clip('stockholm_recipe_day', 'Stockholm after the fix, one day', 'Same camera and speed as the old clip above. Replacement trips at 60% with route feedback, teleports still on. Not validated Stockholm.'))
+    B.append(clip('stockholm_recipe_day', 'Stockholm after the fix, one day', 'Same camera and speed as the old clip above. At 20:25: 5,032 cars at 42 km/h, where the old clip has 41,237 at 4 km/h. Replacement trips at 60% with route feedback, teleports still on and about half the trips. Not validated Stockholm.'))
 _h = range(24)
 _tp = lambda n: [int(METRICS[n]['by_hour'].get(str(i), {}).get('tp', 0)) for i in _h]
 _sp = lambda n: [round(METRICS[n]['speed_by_hour'].get(str(i), 0), 1) for i in _h]
@@ -639,7 +641,7 @@ for src, cap in [('report/figures/bench_realtime.png', 'A Berlin day runs 480 to
                  ('research/truth/fig/stockholm-gridlock.png', 'Old 60% run: cars climb to about 51,000, teleports to about 294,000.'), ('research/truth/fig/stockholm-hourly.png', 'Invented departure curves with a cliff at 06:00. Neither is observed.'), ('research/truth/fig/stockholm-lengths.png', 'Random-walk trips are mostly very short.'), ('research/truth/fig/demand-assignment.png', 'Toy model: rerouting everyone never settles, capped rerouting does.'),
                  ('research/truth/fig/maps07/s09_sveaplan_base.png', 'Sveaplan: 11 simulated controllers against 1 real installation.'), ('research/truth/fig/09b-capacity.png', 'Maximum flow by layout, Python model. Batch polling is a smarter signal.')]:
     fig(src, cap)
-A.append('<footer><p>Built from the research reports and run logs in the cars repo, with sources listed per claim in <code>report/facts/</code>. Built with <code>scripts/report/build.py</code>.</p><p>Snapshot 1 November 2026, about 23:15. Agents are still running, so numbers on unmerged branches can move.</p></footer></div>')
+A.append('<footer><p>Built from the research reports and run logs in the cars repo, with sources listed per claim in <code>report/facts/</code>. Built with <code>scripts/report/build.py</code>.</p><p>Snapshot 1 November 2026, about 01:30 on 2 November. Agents are still running, so numbers on unmerged branches can move.</p></footer></div>')
 fig_html = ''.join(f'<figure style="margin:0"><img loading="lazy" src="figures/{n}" {dims(OUT / "figures" / n)} alt="{esc(c)}"><figcaption>{esc(c)}</figcaption></figure>' for n, c in figs_all)
 BODY_ALL = '\n'.join(A).replace('{{FIGN}}', str(len(figs_all))).replace('{{FIGS}}', fig_html)
 
