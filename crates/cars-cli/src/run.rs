@@ -97,6 +97,12 @@ pub struct Args {
     /// Trace only lanes touching this box: x0,y0,x1,y1.
     #[arg(long, value_delimiter = ',', allow_negative_numbers = true)]
     trace_bbox: Vec<f32>,
+    /// Measuring points like road loops, as CSV lines: name,lane id,position in metres.
+    #[arg(long)]
+    sensors: Option<PathBuf>,
+    /// Per `edge_interval`: begin, sensor, lane, count, mean speed in m/s, vehicles over 7.5 m.
+    #[arg(long)]
+    sensor_csv: Option<PathBuf>,
     /// Steps between traced frames.
     #[arg(long, default_value_t = 1)]
     trace_stride: u32,
@@ -163,6 +169,20 @@ pub fn run(args: Args) {
         malloc_trim(0);
     }
     eprintln!("gpu buffers: {:.1} MB, sort passes {}", sim.buffers.total_bytes as f64 / 1e6, sim.passes());
+    let sensors: Vec<(String, u32, f32)> = args.sensors.as_ref().map_or(Vec::new(), |p| {
+        std::fs::read_to_string(p).expect("sensors").lines().filter(|l| !l.is_empty() && !l.starts_with('#')).map(|l| {
+            let f: Vec<&str> = l.split(',').collect();
+            let lane = *net.lane_index.get(f[1]).unwrap_or_else(|| panic!("sensor lane {} is not in the net", f[1]));
+            (f[0].to_string(), lane, f[2].parse::<f32>().expect("sensor position").min(world.lanes[lane as usize].length - 0.01))
+        }).collect()
+    });
+    sim.set_sensors(&gpu, &sensors.iter().map(|s| (s.1, s.2)).collect::<Vec<_>>());
+    let sensor_lanes: Vec<String> = sensors.iter().map(|s| net.lanes[s.1 as usize].id.clone()).collect();
+    let mut sensor_out = args.sensor_csv.as_ref().map(|p| std::io::BufWriter::new(std::fs::File::create(p).expect("sensor csv")));
+    if let Some(f) = sensor_out.as_mut() {
+        writeln!(f, "begin,sensor,lane,count,speed,long").unwrap();
+    }
+    let mut sensor_prev = vec![[0u32; 4]; world.lanes.len()];
     let steps = ((args.end - args.begin) / args.dt).ceil() as u64;
     let t = Instant::now();
     let mut fcd = args.fcd.as_ref().map(|p| std::io::BufWriter::new(std::fs::File::create(p).expect("fcd")));
@@ -355,6 +375,17 @@ pub fn run(args: Args) {
         }
         if done % interval == 0 || done >= steps {
             let begin = args.begin + ((done - 1) / interval * interval) as f32 * args.dt;
+            if let Some(f) = sensor_out.as_mut() {
+                let now = sim.read_sensors(&gpu);
+                for (s, lane) in sensors.iter().zip(&sensor_lanes) {
+                    let (a, b) = (now[s.1 as usize], sensor_prev[s.1 as usize]);
+                    let n = a[1] - b[1];
+                    let v = if n > 0 { (a[2] - b[2]) as f64 / 100.0 / n as f64 } else { 0.0 };
+                    writeln!(f, "{},{},{},{},{:.3},{}", begin, s.0, lane, n, v, a[3] - b[3]).unwrap();
+                }
+                f.flush().ok();
+                sensor_prev = now;
+            }
             if let Some(f) = edges_out.as_mut() {
                 let acc = sim.take_edge_acc(&gpu);
                 for (e, a) in acc.iter().enumerate() {

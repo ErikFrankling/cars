@@ -1081,6 +1081,21 @@ fn finalize_speed(v_pos: f32, old_v: f32, lane_vmax_: f32, rng: ptr<private, u32
 
 var<private> ex_rng: u32;
 
+// A measuring point set with `cars run --sensors`, counted like a road loop: one per crossing of the
+// front, with the speed at that moment. Words per lane after the edges: position in bits (0 for none),
+// count, speed sum in cm/s, vehicles over 7.5 m. They only ever grow.
+fn sensor_pass(lane: u32, whole_lane: bool, before: f32, after: f32, v: f32, length: f32) {
+    let at = (P.n_edges + lane) * 4u;
+    let bits = atomicLoad(&edge_acc[at]);
+    if (bits == 0u) { return; }
+    let s = bitcast<f32>(bits);
+    if ((whole_lane || before < s) && after >= s) {
+        atomicAdd(&edge_acc[at + 1u], 1u);
+        atomicAdd(&edge_acc[at + 2u], u32(v * 100.0));
+        if (length > 7.5) { atomicAdd(&edge_acc[at + 3u], 1u); }
+    }
+}
+
 @compute @workgroup_size(64)
 fn exec(@builtin(global_invocation_id) id: vec3u) {
     let i = id.x;
@@ -1226,6 +1241,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         // A loop on a lane left in this step was crossed, however short the lane.
         let crossed = lanes[e.lane].det_pos;
         if (crossed >= 0.0 && (j > 0u || old_pos < crossed)) { last_detect[e.lane] = G.step; }
+        sensor_pass(e.lane, j > 0u, old_pos, len, e.speed, ty.length);
         e.pos -= len;
         e.route_len += len;
         e.prev2_lane = e.prev_lane;
@@ -1243,6 +1259,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         if (j >= MAX_ITEMS) { break; }
     }
 
+    sensor_pass(e.lane, j > 0u, old_pos, e.pos, e.speed, ty.length);
     // A loop stays occupied until the back of the vehicle has passed it.
     var loop_back = e.pos - ty.length;
     let det = lanes[e.lane].det_pos;
