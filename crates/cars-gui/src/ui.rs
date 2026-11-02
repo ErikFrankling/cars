@@ -929,12 +929,12 @@ fn opener_window(ctx: &egui::Context, m: &mut Model) {
     }
     let mut open = true;
     let mut load = false;
-    egui::Window::new("Open any net and route file").open(&mut open).default_width(520.0).show(ctx, |ui| {
+    egui::Window::new("Open any net and route file").open(&mut open).min_width(600.0).collapsible(false).anchor(Align2::CENTER_TOP, Vec2::new(0.0, 90.0)).show(ctx, |ui| {
         let start = m.roots.data.clone();
         egui::Grid::new("open").num_columns(3).show(ui, |ui| {
             for (index, (label, text)) in [("Net", &mut m.ui.open_net), ("Routes", &mut m.ui.open_routes), ("Additional", &mut m.ui.open_additional)].into_iter().enumerate() {
                 ui.label(label);
-                ui.add(egui::TextEdit::singleline(text).desired_width(360.0).hint_text(if index == 0 { ".net.xml" } else { "comma separated, may be empty" }));
+                ui.add_sized([440.0, 22.0], egui::TextEdit::singleline(text).hint_text(if index == 0 { ".net.xml" } else { "comma separated, may be empty" }));
                 if ui.button("Browse").clicked() {
                     let dir = std::path::Path::new(text.split(',').next_back().unwrap_or("").trim()).parent().filter(|p| p.is_dir()).map(PathBuf::from).unwrap_or_else(|| start.clone());
                     m.ui.browse = Some(Browse { entries: read_dir(&dir), dir, target: index as u8 });
