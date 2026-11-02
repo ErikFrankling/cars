@@ -52,7 +52,9 @@ def judge(D, F, N=None, credible=None, thin=False, proxy=False):
     beats = True
     if N is not None and math.isfinite(N):
         rec['skill'] = _r((N - S) / (N - F)) if N != F else None
-        beats = S < N
+        beats = S < N or N <= F
+        if N <= F:
+            rec['note'] = 'the null is inside the ruler too: this cell has no power to reject it'
     if not beats:
         rec['status'] = 'FAIL'
         rec['note'] = 'no better than the null model'

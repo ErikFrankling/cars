@@ -184,7 +184,7 @@ def M14(series):
 
 
 def js1(tabs):
-    real = {1: (3.23, 3.92), 2: (2.20, 2.60), 3: (2.00, 2.20), 4: (2.00, 2.20), 5: (1.8, 2.2), 6: (1.8, 2.2), 7: (1.8, 2.2)}
+    real = {1: (3.23, 3.92), 2: (2.4, 4.0), 3: (2.0, 3.4), 4: (1.9, 3.0), 5: (1.9, 2.8), 6: (1.9, 2.8), 7: (1.9, 2.8)}
     cells = {}
     norm_all = []
     for t in tabs:
@@ -216,8 +216,9 @@ def js2(tabs, tabs_dt1):
         if not v:
             cells[name] = score.no_data('no deep queue')
             continue
-        c = score.band(v, 1800, 2100, N=3600.0)
-        c['D'] = [[abs(x - 1950)] for x in v]
+        c = score.band(v, 1285, 1895, N=3600.0)
+        c['note'] = 'real range over 17 sites, report 25. Handbook 1,900 is the top of it'
+        c['D'] = [[abs(x - 1590)] for x in v]
         cells[name] = c
     return cells
 
@@ -240,7 +241,7 @@ def js4(tabs):
     peak = [float(x.peak.median()) for x in first if len(x)]
     t5 = [float(x.t5.median()) for x in first if len(x) and x.t5.notna().any()]
     cells = {}
-    for name, v, lo, hi, nul in (('start_s', start, 1.42, 1.83, 0.0), ('peak_accel', peak, 1.30, 2.45, 4.0), ('time_to_5', t5, 3.2, 4.8, 2.0)):
+    for name, v, lo, hi, nul in (('start_s', start, 0.80, 1.83, 0.0), ('peak_accel', peak, 1.30, 2.45, 4.0), ('time_to_5', t5, 3.2, 4.8, 2.0)):
         c = score.band(v, lo, hi, N=nul, thin=name == 'time_to_5') if v else score.no_data('no first car')
         c['D'] = [[abs(x - (lo + hi) / 2)] for x in v]
         cells[name] = c
@@ -390,7 +391,7 @@ def jr(rows_by_seed, follow_by_seed):
         if len(f) >= 5:
             fo.append(float(np.median(f)))
     out = {}
-    a = score.band(crit, 2.31, 3.48, N=1.0) if crit else score.no_data('no decisions')
+    a = score.band(crit, 3.18, 3.76, N=1.0) if crit else score.no_data('no decisions')
     a['D'] = [[abs(x - 2.895)] for x in crit]
     b = score.band(fo, 2.52, 3.15, N=1.0, thin=True) if fo else score.no_data('no follow-ups')
     b['D'] = [[abs(x - 2.835)] for x in fo]

@@ -36,6 +36,7 @@ Drivers are `configs/*.toml`: `main` (main's default), `physics` (`t3/1c6fee50`)
 | `instrument/` | The `--sensors` point detector, as a patch per driver. Part of the benchmark, not the simulator. From the Berlin build |
 | `metrics/extract.py` | The drone view: 1 s differences, centre spacing, lane logic, queue positions, as report 05 does on real tracks |
 | `metrics/levels.py` | Levels 0 to 3, one function per metric |
+| `metrics/trackio.py`, `metrics/junction25.py` | Adapter from simulator output to plain tracks, and level 2 against report 25, using its own `scripts/junction_targets/` code on simulated tracks. `floors/junction_targets.csv` holds its tuning rows only, so held-out sites can't be read |
 | `network.py`, `berlin.py` | Level 4, one function for real and simulated days. `read_sensors` is the virtual detector |
 | `floors.py`, `floors/` | Real against real. `selftest`, tick floors per tracker and block, signal targets, real leaders |
 | `score.py` | Statuses of report 22 section 6, skill rule, paired comparison |
@@ -77,5 +78,5 @@ A reveal needs a written reason and an approval only Erik can give: `bench.py ap
 
 - Test scenes are generic geometry with real rates and real signal timings, not rebuilt places. A pass at level 2 on them is weaker than on a rebuilt junction.
 - `dt` is 0.1 at levels 1 to 3 and 1 s on the district, because a day at 0.1 is too slow today. That is one setting differing by scale, recorded in the config and tested by `V5`, `JS2` and `C3` at both steps.
-- `NO DATA` lists its reason in each cell. The biggest holes: give-way and zipper junctions, on-ramp positions until report 18 lands, travel times until Cambridge has a scene and its other seven days, replay `M5`, which needs a kernel only one driver has.
+- `NO DATA` lists its reason in each cell. The biggest holes: right-before-left, off-ramps and weaves without a scene, travel times until Cambridge has a scene and its other seven days, replay `M5`, which needs a kernel only one driver has.
 - `mini_day` feeds real site flows to separate roads. It lets demand-side known-bad cases run in minutes, and because its demand comes from the data that scores it, it's labelled an engine test and is never in a driver's scorecard.

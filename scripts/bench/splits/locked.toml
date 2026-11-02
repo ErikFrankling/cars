@@ -56,3 +56,23 @@ on_disk = true
 source = "Songdo sessions"
 kind = "junction"
 on_disk = false
+
+[set.opendd-rdb2-4]
+source = "OpenDD roundabouts rdb2, 3, 4. Zips on disk, only the maps were opened (report 25). Rows have no values"
+kind = "junction"
+on_disk = true
+
+[set.pneuma-heldout]
+source = "pNEUMA drones d3, d6, d8 and all of 29 Oct 2018. Never downloaded (report 25)"
+kind = "junction"
+on_disk = false
+
+[set.pully]
+source = "Pully drones. Never downloaded (report 22)"
+kind = "junction"
+on_disk = false
+
+[set.tumdot]
+source = "TUMDOT. Never downloaded (report 22)"
+kind = "junction"
+on_disk = false

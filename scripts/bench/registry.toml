@@ -1,5 +1,5 @@
 # Every metric of research/truth/data-hunt/22-what-true-to-life-means.md, section 7. Registered before any simulated score.
-bench_version = 1
+bench_version = 2
 
 [[metric]]
 id = "V1"
@@ -384,6 +384,70 @@ tag = "P"
 gate = "physical"
 name = "Zipper merge"
 plain = "Use of the last third, and alternation"
+
+[[metric]]
+id = "JS9"
+level = 2
+tag = "P"
+gate = "speed"
+name = "Signal: speed inside the junction"
+plain = "How fast cars go through, by turn, unstopped (report 25)"
+
+[[metric]]
+id = "JR5"
+level = 2
+tag = "P"
+gate = "where_when"
+name = "Roundabout: stops and queues"
+plain = "Share stopping, delay, longest queue (report 25)"
+
+[[metric]]
+id = "JR6"
+level = 2
+tag = "W"
+gate = "physical"
+name = "Roundabout: margins on entry"
+plain = "How close entries are to ring cars (report 25)"
+
+[[metric]]
+id = "JP4"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Stop sign: full stops and rolling"
+plain = "Real drivers come to a full stop about one time in five (report 25, one site)"
+
+[[metric]]
+id = "JA1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "All-way stop"
+plain = "Full stops, stopped time, seconds between entries (report 25, one thin site)"
+
+[[metric]]
+id = "JB1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Right before left"
+plain = "Does the car from the right go first. No real site behaves this way yet (report 25)"
+
+[[metric]]
+id = "JF1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Off-ramp"
+plain = "Where and how fast cars leave (report 25, two sites)"
+
+[[metric]]
+id = "JW1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Weaving"
+plain = "Lane changes in a weave (report 25, one site)"
 
 [[metric]]
 id = "C1"

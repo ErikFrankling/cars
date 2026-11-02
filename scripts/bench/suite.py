@@ -13,17 +13,19 @@ import network as net_
 import runner
 import score
 from metrics import extract as X
+from metrics import junction25 as J
 from metrics import levels as L
+from metrics import trackio as T
 
 HERE = Path(__file__).resolve().parent
 NO_SCENE = {
     'M5': 'needs a kernel that replays a real leader; only the human branch has one, so it cannot be scored across drivers yet',
-    'JS8': 'real queue-per-cycle data (Songdo) is not analysed yet',
-    'JP1': 'no clean real source for give-way junctions in hand (report 22)', 'JP2': 'no clean real source for give-way junctions in hand', 'JP3': 'no clean real source for give-way junctions in hand',
-    'JR3': 'entry-against-circulating curve from the Swiss data is not computed yet',
-    'JO1': 'report 18 pending: real merge positions are not tagged yet',
-    'JL1': 'DRaT has 45 forced merges, not analysed into a target yet', 'JL2': 'DRaT discharge per lane not analysed into a target yet',
-    'JZ1': 'no clean real source for zipper merges yet (report 18 pending)',
+    'JS8': 'one real row only (report 25), no scene measures it yet',
+    'JP3': 'report 25 calls delay against major flow noisy, and no minor arm ever saturates: no target yet',
+    'JR3': 'report 25: capacity at roundabouts is a diagnostic, few minutes saturate',
+    'JB1': 'no real site obeys right before left (report 25). inD would fill this',
+    'JF1': 'targets exist for two sites (report 25), no off-ramp scene built yet',
+    'JW1': 'targets exist for one site (report 25), no weave scene built yet',
     'C1': 'real camera data (Cambridge) in hand for one day; no Cambridge scene built yet, and no floor until the other seven days are fetched',
     'C2': 'needs a rebuild of a tracked road, not yet built',
 }
@@ -273,37 +275,96 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
         if rows:
             M['JS6'] = L.js6(rows)
     if want('roundabout'):
-        rows, fol, vs = [], [], []
+        rows, vs = [], []
+        import scenes as Sc
         for s in seeds:
             r = rr('roundabout', s)
             log(f'roundabout s{s} {r.secs:.0f}s')
             f = r.table()
             tally.add('roundabout', r, f, max(r.plan['fcd'], ov.get('dt', cfg['dt'])))
-            a, b = L.roundabout_decisions(f)
-            rows.append(a)
-            fol.append(b)
+            rows.append(J.roundabout_rows(T.tracks(f, r.d.parent / 'net.xml'), 18.0, s, *T.centre(r.d.parent / 'net.xml', {'j0', 'j1', 'j2', 'j3'})))
             ring = f[f.lane.str.startswith('ring')]
-            vs.append(float(ring.speed.mean()) if len(ring) else np.nan)
+            vs.append(float(ring.speed.median()) if len(ring) else np.nan)
             runner.clean(r)
-        M['JR1'], M['JR2'] = L.jr(rows, fol)
-        M['JR4'] = {'ring_mps': dict(score.no_data('reported only'), value=round(float(np.nanmean(vs)), 2))}
+        M.update(J.roundabout_cells(rows))
+        c = J.cell(vs, 'ring_speed_median', 'roundabout_single', 'through', 13.89)
+        M['JR4']['ring_mps'] = c
+    for scene_, jt in (('stopsign', 'priority_stop'), ('giveway', ['priority_unsigned', 'priority_giveway'])):
+        if want(scene_):
+            rows = []
+            for s in seeds:
+                r = rr(scene_, s)
+                log(f'{scene_} s{s} {r.secs:.0f}s')
+                f = r.table()
+                tally.add(scene_, r, f, max(r.plan['fcd'], ov.get('dt', cfg['dt'])))
+                rows.append(J.priority_rows(T.tracks(f, r.d.parent / 'net.xml'), s, [T.lane_end(r.d.parent / 'net.xml', x) for x in ('si_0', 'ni_0')]))
+                runner.clean(r)
+            for k, v in J.priority_cells(rows, jt).items():
+                tag = 'stop' if scene_ == 'stopsign' else 'unsigned'
+                M.setdefault(k, {}).update({f'{tag}|{a}': b for a, b in v.items()})
+    if want('allway'):
+        full, wait, hw = [], [], []
+        for s in seeds:
+            r = rr('allway', s)
+            log(f'allway s{s} {r.secs:.0f}s')
+            f = r.table()
+            tally.add('allway', r, f, max(r.plan['fcd'], ov.get('dt', cfg['dt'])))
+            df, _ = J.junction_tables(T.tracks(f, r.d.parent / 'net.xml'), *T.centre(r.d.parent / 'net.xml', {'c'}), f's{s}', core=14.)
+            if len(df):
+                full.append(float(df.stop.mean()))
+                w = (df.tgo - df.tstop).dropna()
+                wait.append(float(w.median()) if len(w) else np.nan)
+                ent = df.sort_values('tin')
+                waited = ent[ent.stop]
+                hw.append(float(np.median(np.diff(ent.tin.to_numpy())[np.isin(ent.index[1:], waited.index)])) if len(waited) > 1 else np.nan)
+            runner.clean(r)
+        M['JA1'] = {'full_stop_share': J.cell(full, 'full_stop_share', 'all_way_stop', 'all', 1.0), 'stopped_time_s': J.cell(wait, 'stopped_time_median', 'all_way_stop', 'all', 0.0), 'service_headway_s': J.cell(hw, 'service_headway', 'all_way_stop', 'any', 0.0)}
+    if want('junction4'):
+        rows = []
+        for s in seeds:
+            r = rr('junction4', s)
+            log(f'junction4 s{s} {r.secs:.0f}s')
+            f = r.table()
+            tally.add('junction4', r, f, max(r.plan['fcd'], ov.get('dt', cfg['dt'])))
+            rows.append(J.signal_rows(T.tracks(f, r.d.parent / 'net.xml'), *T.centre(r.d.parent / 'net.xml', {'c'}), float(r.plan['span']), s))
+            runner.clean(r)
+        got = J.signal_cells(rows)
+        M['JS9'] = got['JS9']
+        M.setdefault('JS1', {}).update({f'turning|{k}': v for k, v in got['JS1b'].items()})
+        M.setdefault('JS2', {}).update({f'turning|{k}': v for k, v in got['JS2b'].items()})
+        M.setdefault('JS7', {}).update(got['JS7b'])
+    if want('lanedrop'):
+        st, alt, flow = [], [], []
+        for s in seeds:
+            r = rr('lanedrop', s)
+            log(f'lanedrop s{s} {r.secs:.0f}s')
+            f = r.table()
+            interval = max(r.plan['fcd'], ov.get('dt', cfg['dt']))
+            tally.add('lanedrop', r, f, interval)
+            st.append(J.merges(f, 'aux_0', 'aux_1', r.plan['aux_len'], interval, X))
+            alt.append(J.alternation(f, ['aux_0', 'aux_1'], 'down_', interval))
+            d_ = f[f.lane.str.startswith('down_') & (f.pos > 300)]
+            first = d_.groupby('trip').time.min()
+            flow.append(len(first) / max(first.max() - first.min(), 1.0) * 3600 if len(first) > 50 else np.nan)
+            runner.clean(r)
+        M['JL1'] = J.merge_cells(st, 'lane_drop')
+        M['JL2'] = {'flow_per_lane': J.cell(flow, 'flow_per_lane', 'lane_drop', 'downstream', 3600.0)}
+        M['JZ1'] = {'alternation': J.cell(alt, 'alternation_share', 'zipper_proxy', 'congested', .5), 'last_third': J.cell([x.get('last_third') for x in st], 'merge_physical_last_third_share', 'zipper_proxy', 'all', 0.0)}
     if want('ramp'):
-        gaps, drops = [], []
+        st, drops = [], []
         for s in seeds:
             r = rr('ramp', s)
             log(f'ramp s{s} {r.secs:.0f}s')
             f = r.table()
             interval = max(r.plan['fcd'], ov.get('dt', cfg['dt']))
             tally.add('ramp', r, f, interval)
-            ev = X.halfway(f)
-            ev = X.lane_changes(f, interval) if ev is None else ev
-            ev = ev[ev.lane.str.startswith('merge_1')]
-            gaps.append(X.gaps_at_change(f, ev) if len(ev) else pd.DataFrame(columns=['lag', 'lead', 'v']))
+            st.append(J.merges(f, 'merge_0', 'merge_1', 300.0, interval, X))
             if r.plan.get('steps'):
                 drops.append(L.capacity_drop(f, interval, r.plan['steps']))
             runner.clean(r)
-        c = L.M9(gaps, 'congested')['congested']
-        M['JO2'] = {'gaps': c}
+        got = J.merge_cells(st, 'on_ramp')
+        M['JO1'] = {k: got[k] for k in ('merge_position_physical_share_p50', 'merge_physical_last_third_share')}
+        M['JO2'] = {k: got[k] for k in got if k not in M['JO1']}
         M['JO3'] = L.jo3(drops) if drops else {'drop': score.no_data('only the full run raises demand until it breaks down')}
     if want('curves'):
         sideways = {r_: [] for r_ in __import__('scenes').BENDS}

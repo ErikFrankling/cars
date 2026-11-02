@@ -147,7 +147,7 @@ def roundabout(d, cfg, ov, fast, seed):
         nd = ' '.join(f'j{i}' for i in range(arms))
         nodes += f'<roundabout nodes="{nd}" edges="{rb}"/>'
         netconvert(d, nodes, edges)
-    dur = 600 if fast else 1800
+    dur = 900 if fast else 1800
     q = 300 * ov.get('demand_scale', 1.0)
     rng = np.random.default_rng(seed)
     rows = []
@@ -160,7 +160,7 @@ def roundabout(d, cfg, ov, fast, seed):
             rows.append((t, f'<vehicle id="a{arm}_{t:.1f}" type="car" depart="{t:.1f}" departSpeed="max"><route edges="in{arm} {ring} out{ex}"/></vehicle>'))
     rows.sort()
     r = routes(d, cfg, ov, ''.join(x[1] for x in rows), name=f'r{seed}.xml')
-    return dict(routes=r, end=dur + 120, fcd=.5, planned=len(rows))
+    return dict(routes=r, end=dur + 120, fcd=.2, planned=len(rows))
 
 
 def ramp(d, cfg, ov, fast, seed):
@@ -215,6 +215,58 @@ def chain(d, cfg, ov, fast, seed, heads=None):
         body += f'<vehicle id="c{i}" type="foll" depart="{i * 2.5:.1f}" departSpeed="max" route="r"/>'
     (d / f'r{seed}.xml').write_text('<routes>' + vtype(cfg, ov) + types + body + '</routes>')
     return dict(routes=d / f'r{seed}.xml', net=d / f'net{seed}.xml', end=len(prof) + 60, fcd=.5, planned=9)
+
+
+def crossing(d, cfg, ov, fast, seed, typ='traffic_light', major=300, minor=150, name='junction4'):
+    """A plain four-arm junction with turning traffic. Report 25's typical flows, generic geometry. Two lanes on signal approaches."""
+    if not (d / 'net.xml').exists():
+        lanes = 2 if typ == 'traffic_light' else 1
+        L = 400
+        nodes = f'<node id="c" x="0" y="0" type="{typ if ov.get("signals") != "none" else "priority"}"/>' + ''.join(f'<node id="{k}" x="{x}" y="{y}"/>' for k, x, y in (('w', -L, 0), ('e', L, 0), ('s', 0, -L), ('n', 0, L)))
+        edges = ''
+        for k in 'wesn':
+            pr = 2 if k in 'we' else 1
+            edges += f'<edge id="{k}i" from="{k}" to="c" numLanes="{lanes}" speed="13.89" priority="{pr}"/><edge id="{k}o" from="c" to="{k}" numLanes="{lanes}" speed="13.89" priority="{pr}"/>'
+        extra = ['--tls.green.time', '40', '--tls.yellow.time', '3'] if typ == 'traffic_light' else []
+        netconvert(d, nodes, edges, *extra)
+        if ov.get('no_lc'):
+            block_changes(d)
+    dur = (600 if typ == 'traffic_light' else 1200) if fast else 2700
+    body = ''
+    turns = dict(w=('eo', 'no', 'so'), e=('wo', 'so', 'no'), s=('no', 'eo', 'wo'), n=('so', 'wo', 'eo'))
+    for k, (t, le, ri) in turns.items():
+        q = major if k in 'we' else minor
+        for j, (o, sh) in enumerate(((t, .7), (le, .15), (ri, .15))):
+            body += f'<route id="r{k}{j}" edges="{k}i {o}"/>' + flow(f'f{k}{j}', f'r{k}{j}', 0, dur, q * sh, ov)
+    return dict(routes=routes(d, cfg, ov, body), end=dur + 150, fcd=.2, planned=(2 * major + 2 * minor) * dur / 3600 * ov.get('demand_scale', 1.0), span=dur)
+
+
+def junction4(d, cfg, ov, fast, seed):
+    return crossing(d, cfg, ov, fast, seed, 'traffic_light', 800, 600)
+
+
+def stopsign(d, cfg, ov, fast, seed):
+    return crossing(d, cfg, ov, fast, seed, 'priority_stop', 300, 150)
+
+
+def giveway(d, cfg, ov, fast, seed):
+    return crossing(d, cfg, ov, fast, seed, 'priority', 300, 150)
+
+
+def allway(d, cfg, ov, fast, seed):
+    return crossing(d, cfg, ov, fast, seed, 'allway_stop', 76, 76)
+
+
+def lanedrop(d, cfg, ov, fast, seed):
+    """An auxiliary lane that ends, in congestion: I-80 and I-395's shape, for merge position and the zipper proxy."""
+    if not (d / 'net.xml').exists():
+        netconvert(d, '<node id="a" x="0" y="0"/><node id="b" x="300" y="0"/><node id="c" x="600" y="0"/><node id="e" x="1400" y="0"/>',
+                   '<edge id="up" from="a" to="b" numLanes="2" speed="20"/><edge id="aux" from="b" to="c" numLanes="2" speed="20"/><edge id="down" from="c" to="e" numLanes="1" speed="20"/>',
+                   con='<connection from="up" to="aux" fromLane="0" toLane="0"/><connection from="up" to="aux" fromLane="1" toLane="1"/><connection from="aux" to="down" fromLane="1" toLane="0"/>')
+        if ov.get('no_lc'):
+            block_changes(d)
+    dur = 480 if fast else 1500
+    return dict(routes=routes(d, cfg, ov, '<route id="r" edges="up aux down"/>' + flow('f', 'r', 0, dur, 2800, ov, lane='free')), end=dur + 60, fcd=.5, planned=2800 * dur / 3600 * ov.get('demand_scale', 1.0), aux_len=300.0)
 
 
 BENDS = (15, 20, 30, 50)
@@ -282,4 +334,4 @@ def lane_offsets(net):
     return out
 
 
-SCENES = dict(road=road, free3=free3, signal=signal, signal_real=signal_real, yellow=yellow, roundabout=roundabout, ramp=ramp, chain=chain, ring=ring, curves=curves)
+SCENES = dict(road=road, free3=free3, signal=signal, signal_real=signal_real, yellow=yellow, roundabout=roundabout, ramp=ramp, chain=chain, ring=ring, curves=curves, junction4=junction4, stopsign=stopsign, giveway=giveway, allway=allway, lanedrop=lanedrop)
