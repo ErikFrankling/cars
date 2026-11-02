@@ -207,6 +207,7 @@ impl Physics {
                 }
             }
         }
+        places.retain(|&(_, l)| (l as usize) < net.lanes.len());
         places.sort_by(|a, b| b.0.total_cmp(&a.0));
         let worst: Vec<_> = places.iter().take(10).map(|&(w, l)| {
             let xy = self.lane_xy[l as usize];
