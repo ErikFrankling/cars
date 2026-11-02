@@ -105,6 +105,10 @@ fn ph_setup(e: Veh) {
     let u = pcg(e.trip ^ 0x3c6ef372u);
     let z = (f32(u & 255u) + f32((u >> 8u) & 255u) + f32((u >> 16u) & 255u) + f32(u >> 24u)) / 255.0 - 2.0;
     ph_ay = P.lateral_median * exp(0.30 * z * 1.732);
+    // How close each driver follows. Real time gaps reach down to 0.4-0.9 s at p5 with a median near 1.6, report 19.
+    let w = pcg(e.trip ^ 0x1b873593u);
+    let y = (f32(w & 255u) + f32((w >> 8u) & 255u) + f32((w >> 16u) & 255u) + f32(w >> 24u)) / 255.0 - 2.0;
+    ph_gap_f = exp(P.gap_spread * y * 1.732);
 }
 
 fn ph_curve_limit(l: Lane) -> f32 {

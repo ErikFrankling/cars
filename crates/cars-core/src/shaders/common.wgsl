@@ -101,7 +101,7 @@ struct Params {
     lateral_median: f32,
     vis_floor: f32,
     lc_patience: f32,
-    pad_c: f32,
+    gap_spread: f32,
     pad_d: f32,
 }
 
@@ -705,6 +705,7 @@ var<private> cert_on: bool;
 var<private> ph_gz: f32;
 var<private> ph_gz_lead: f32;
 var<private> ph_ay: f32;
+var<private> ph_gap_f: f32;
 var<private> ph_load: f32;
 var<private> ph_power: f32;
 var<private> ph_curved: f32;
@@ -905,7 +906,7 @@ fn safe_stop(gap: f32, decel: f32, v: f32, headway: f32, relax: bool) -> f32 {
 }
 
 fn safe_follow(gap: f32, v: f32, vp: f32, bp: f32, on_insertion: bool) -> f32 {
-    if (mu > 0.0) { return ph_stop_driver(max(gap, 0.0) + vp * vp / (2.0 * ty.b_assume), v, ty.decel, ty.ph_tau); }
+    if (mu > 0.0) { return ph_stop_driver(max(gap, 0.0) / select(ph_gap_f, 1.0, ph_gap_f <= 0.0) + vp * vp / (2.0 * ty.b_assume), v, ty.decel, ty.ph_tau); }
     var x: f32;
     if (gap >= 0.0) {
         x = safe_stop(gap + brake_gap(vp, max(ty.decel, bp), 0.0), ty.decel, v, ty.tau, false);

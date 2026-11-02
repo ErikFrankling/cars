@@ -59,7 +59,8 @@ pub struct GpuParams {
     pub vis_floor: f32,
     /// Seconds at a stand a driver keeps holding back for someone else's lane change.
     pub lc_patience: f32,
-    pub pad_c: f32,
+    /// Spread between drivers of the gap they keep: sigma of a lognormal around 1.
+    pub gap_spread: f32,
     pub pad_d: f32,
 }
 
@@ -613,7 +614,7 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
     g.v_lat = num("phys.v_lat", cfg.tune("v_lat", 0.6));
     g.width = t.width;
-    g.ph_tau = num("phys.tau", cfg.tune("tau", 0.65));
+    g.ph_tau = num("phys.tau", cfg.tune("tau", 1.0));
     // Krauss's 0.5 is inherited. 0.2 brings 50 km/h saturation into report 04's band, 1,846 against 1,714.
     if t.sigma == 0.5 { g.sigma = 0.2; }
     g.sigma = cfg.tune("sigma", g.sigma);
@@ -624,7 +625,7 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     if t.model == CfModel::Krauss {
         g.decel = num("phys.b_plan", cfg.tune("driver_b", 3.0));
     }
-    g.b_assume = num("phys.b_assume", cfg.tune("leader_b", if t.model == CfModel::Krauss { 4.5 } else { g.decel }));
+    g.b_assume = num("phys.b_assume", cfg.tune("leader_b", g.decel));
     // Leaders and tails are judged by their hardest possible stop.
     g.apparent = g.b_hi;
 }
@@ -828,7 +829,7 @@ impl World {
             lateral_median: cfg.tune("lateral_median", 2.2),
             vis_floor: cfg.tune("vis_floor", 30.0),
             lc_patience: cfg.tune("lc_patience", 10.0),
-            pad_c: 0.0,
+            gap_spread: cfg.tune("gap_spread", 0.3),
             pad_d: 0.0,
         };
         w
