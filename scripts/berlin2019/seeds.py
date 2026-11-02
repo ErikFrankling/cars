@@ -6,7 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import *
 
 run, nd = sys.argv[1], sys.argv[2]
-net = read_net(B19 / 'district' / nd / 'net.net.xml', B19 / 'district' / nd / 'net.pkl')
+net = read_net(DISTRICT / nd / 'net.net.xml', DISTRICT / nd / 'net.pkl')
 e = pd.read_csv(B19 / 'runs' / run / 'edges.csv', on_bad_lines='skip')
 e = e[e.samples > 0]
 e = e[e.begin < e.begin.max()]

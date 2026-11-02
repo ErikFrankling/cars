@@ -7,7 +7,7 @@ for spec in "$@"; do
   IFS='|' read -r n flags routes <<< "$spec"
   routes=${routes:-$B/district/m10/routes_f$f.rou.gz}
   o=$B/runs/sw_$n; mkdir -p "$o"
-  cmd=("$bin" run --net "${NETF:-$B/district/$nd/net.net.xml}" --routes "$routes" --dt "${DT:-1}" --begin 14400 --end 28800 --capacity 70000 --time-to-teleport 0 --trusted --summary-csv "$o/summary.csv" --report-json "$o/report.json" $flags)
+  cmd=("$bin" run --net "${NETF:-$B/district/$nd/net.net.xml}" --routes "$routes" --dt "${DT:-1}" --begin 14400 --end 28800 --capacity "${CAP:-70000}" --time-to-teleport 0 --trusted --summary-csv "$o/summary.csv" --report-json "$o/report.json" --edge-csv "$o/edges.csv" --edge-interval 900 $flags)
   if [ "${CARS_ADAPTER:-}" = llvmpipe ]; then "${cmd[@]}" > "$o/stdout.txt" 2> "$o/stderr.txt"; else flock /tmp/cars-gpu.lock "${cmd[@]}" > "$o/stdout.txt" 2> "$o/stderr.txt"; fi
   echo "$n: $(awk -F, '$1==21600||$1==23400||$1==25200||$1==27000||$1==28800{printf "%s ",$2}' "$o/summary.csv") | wall $(tail -n1 "$o/summary.csv" | cut -d, -f6)"
 done

@@ -23,8 +23,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import *
 
-OUT = B19 / 'district'
-BASE = B19 / 'district'
+OUT = DISTRICT
+BASE = DISTRICT
 TRUCK_MODES = ('truck', 'freight')
 # Estimated lengths by class, EU limits and common models. MATSim's own 7.5 and 15 m are road-space units, not bodies.
 VTYPES = '''  <vType id="car" vClass="passenger" length="4.6" width="1.8"/>

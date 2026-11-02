@@ -1,5 +1,6 @@
 """Shared paths and readers for the Berlin 2019 first gate. Run scripts with python3 -I."""
 import gzip
+import os
 import pickle
 import zipfile
 import xml.etree.ElementTree as ET
@@ -11,6 +12,7 @@ from lxml import etree
 
 DATA = Path('/home/erikf/projects/personal/cars-data')
 B19 = DATA / 'berlin2019'
+DISTRICT = B19 / os.environ.get('B19_DISTRICT', 'district')
 RAW = B19 / 'raw'
 STAMM = DATA / 'berlin-detectors/Stammdaten_Verkehrsdetektion_2022_07_20.xlsx'
 MQ = DATA / 'datasets/berlin-2019-detectors/mq_hr_2019_05.csv.gz'

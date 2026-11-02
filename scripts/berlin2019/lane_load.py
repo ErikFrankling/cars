@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import *
 
 nd = sys.argv[1]
-d = B19 / 'district' / nd
+d = DISTRICT / nd
 routes = sys.argv[2] if len(sys.argv) > 2 else d / 'routes_f10.rou.gz'
 n = read_net(d / 'net.net.xml', d / 'net.pkl')
 e = {k: v for k, v in n['edges'].items() if car_lanes(v)}
