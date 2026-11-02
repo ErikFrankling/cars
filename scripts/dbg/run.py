@@ -63,6 +63,15 @@ class Net:
         self.junction_xy = {j: (x, y) for j, x, y in zip(d['junctions']['id'], d['junctions']['x'], d['junctions']['y'])}
         self.tls = d['tls']
         self.n_lanes = len(self.lane_ids)
+        self._before = None
+
+    def lanes_before(self, lane):
+        """Lanes with a link straight onto this one."""
+        if self._before is None:
+            order = np.argsort(self.link_next_lane, kind='stable')
+            self._before = (self.link_next_lane[order], self.link_from_lane[order])
+        nexts, froms = self._before
+        return froms[np.searchsorted(nexts, lane):np.searchsorted(nexts, lane, side='right')].tolist()
 
     def lane_name(self, lane):
         lane = int(lane)

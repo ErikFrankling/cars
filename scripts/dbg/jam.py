@@ -56,12 +56,23 @@ class Frame:
         lanes, first = np.unique(self.lanes[order], return_index=True)
         rear = (lanes, order[first])
         lengths = np.array([t['length'] for t in self.run.trace.header['vtypes']], dtype=float)
-        behind = (self.pos < lengths[self.rec['lane_type'] >> 24]) & (prevs_of(self.rec) != 0xffffff)
+        car_len = lengths[self.rec['lane_type'] >> 24]
+        prev_all = prevs_of(self.rec)
+        behind = (self.pos < car_len) & (prev_all != 0xffffff)
         idx = np.nonzero(behind)[0]
-        prev = prevs_of(self.rec)[idx]
-        o2 = np.argsort(prev, kind='stable')
-        lanes2, first2 = np.unique(prev[o2], return_index=True)
-        hang = (lanes2, idx[o2[first2]])
+        lanes_hit, cars_hit = list(prev_all[idx]), list(idx)
+        # A body long enough reaches back one lane more. The trace holds one previous lane, so that one comes from the net.
+        net = self.run.net
+        prev_len = net.lane_length[np.minimum(prev_all[idx], net.n_lanes - 1)]
+        for at in idx[self.pos[idx] + prev_len < car_len[idx]]:
+            for lane in net.lanes_before(int(prev_all[at])):
+                lanes_hit.append(lane)
+                cars_hit.append(at)
+        lanes_hit = np.array(lanes_hit, dtype=np.int64)
+        cars_hit = np.array(cars_hit, dtype=np.int64)
+        o2 = np.argsort(lanes_hit, kind='stable')
+        lanes2, first2 = np.unique(lanes_hit[o2], return_index=True)
+        hang = (lanes2, cars_hit[o2[first2]])
         return rear, hang
 
     @staticmethod
@@ -93,7 +104,8 @@ class Frame:
             from_rear = self._find(rear, wanted)
             from_hang = self._find(hang, wanted)
             tailish = (self.kind[lane_blame] == K['tail']) | (self.kind[lane_blame] == K['junction'])
-            who = np.where(tailish & (from_hang >= 0), from_hang, np.where(from_rear >= 0, from_rear, from_hang))
+            # A tail is that of a car ahead, never whoever is last on the lane.
+            who = np.where(tailish, from_hang, np.where(from_rear >= 0, from_rear, from_hang))
             ok = (who >= 0) & (who != lane_blame)
             self.next[lane_blame[ok]] = who[ok]
         # At the end of a lane its route cannot leave: whoever blocks the lane change it needs.
@@ -184,8 +196,22 @@ def wait_start(run, trip, i):
     return t
 
 
-def walk(run, trip, i, out, depth=0, seen=None, max_depth=8):
-    """Print the chain now, then go back to when its root stopped and ask again."""
+def last_not_at_signal(run, trip, i):
+    """The latest earlier frame when this car stopped for something other than the signal, that is, its last green."""
+    t = i - 1
+    while t >= 0:
+        rec, why = run.read(t)
+        hit = np.nonzero(trips_of(rec) == trip)[0]
+        if not len(hit):
+            return None
+        if why is not None and why['plan'][hit[0]] != K['signal']:
+            return t
+        t -= 1
+    return None
+
+
+def walk(run, trip, i, out, depth=0, seen=None, max_depth=10):
+    """The chain now. Then back: to a red-held car's last green, a ring's first stop, or when the root stopped."""
     seen = seen if seen is not None else set()
     fr = Frame(run, i)
     hit = np.nonzero(fr.trips == trip)[0]
@@ -196,26 +222,34 @@ def walk(run, trip, i, out, depth=0, seen=None, max_depth=8):
     steps = [fr.describe(h) for h in hops]
     held = hops[-2] if end == 'moving' and len(hops) > 1 else hops[-1]
     stage = dict(time=float(run.times[i]), hops=steps, end=end, root=fr.describe(held))
-    if end == 'cycle':
-        at = hops.index(hops[-1])
-        stage['cycle'] = [fr.describe(h)['car'] for h in hops[at:-1]]
     out.append(stage)
     root_trip = int(fr.trips[held])
-    key = (root_trip, int(fr.kind[held]))
+    key = (root_trip, int(fr.kind[held]), end)
     if depth >= max_depth or key in seen:
         return stage
     seen.add(key)
     if end == 'cycle':
-        # The first of the ring to stop started it.
         members = hops[hops.index(hops[-1]):-1]
+        stage['cycle'] = [fr.describe(h)['car'] for h in members]
         starts = [(wait_start(run, int(fr.trips[m]), i), int(fr.trips[m])) for m in members]
         t0, root_trip = min(starts)
         stage['cycle_first_stop'] = dict(car=run.name(root_trip), time=float(run.times[t0]))
-    else:
-        t0 = wait_start(run, root_trip, i)
-    if t0 >= i and end != 'cycle':
+        stage['cycle_closed'] = dict(car=run.name(max(starts)[1]), time=float(run.times[max(starts)[0]]))
+        if t0 < i:
+            return walk(run, root_trip, t0, out, depth + 1, seen, max_depth)
         return stage
-    return walk(run, root_trip, t0, out, depth + 1, seen, max_depth)
+    if end == 'moving':
+        return stage
+    if fr.kind[held] == K['signal'] and fr.wait[held] >= 30:
+        back = last_not_at_signal(run, root_trip, i)
+        if back is not None:
+            stage['last_green'] = float(run.times[back])
+            return walk(run, root_trip, back, out, depth + 1, seen, max_depth)
+        return stage
+    t0 = wait_start(run, root_trip, i)
+    if t0 < i:
+        return walk(run, root_trip, t0, out, depth + 1, seen, max_depth)
+    return stage
 
 
 def print_walk(stages):
@@ -227,10 +261,17 @@ def print_walk(stages):
         for h in s['hops']:
             more = ' '.join(f'{x}={h[x]}' for x in ('blame', 'link_state', 'foe', 'wants') if h.get(x))
             print(f"   car {h['car']:<14} on {h['lane']:<24} pos {h['pos']:>6}/{h['lane_length']:<6} at ({h['x']:.0f},{h['y']:.0f}) v {h['speed']:<5} waited {h['wait']:>3.0f}s  held by {h['kind']}  {more}")
+        if 'last_green' in s:
+            print(f"   held at red now; looking at its last green, t={s['last_green']:.1f}")
         if 'cycle' in s:
             print(f"   CYCLE of {len(s['cycle'])} cars: {' -> '.join(s['cycle'])}")
             if 'cycle_first_stop' in s:
                 print(f"   first of them to stop: {s['cycle_first_stop']['car']} at t={s['cycle_first_stop']['time']:.1f}")
+                print(f"   ring closed when the last of them stopped: {s['cycle_closed']['car']} at t={s['cycle_closed']['time']:.1f}")
+    rings = [s for s in stages if 'cycle' in s]
+    if rings:
+        r = rings[0]
+        print(f"DEADLOCK: ring of {len(r['cycle'])} cars closed at t={r['cycle_closed']['time']:.1f}: {' -> '.join(r['cycle'])}")
     last = next((s for s in reversed(stages) if 'hops' in s), None)
     if last:
         h = last['root']
@@ -282,20 +323,26 @@ def seeds(run, begin, end, stride, min_wait, top, out_dir, signal_wait=150.0):
             s['car_seconds'] += float(c) * run.dt * max(stride, 1)
             s['series'].append((t, int(c)))
             s['cars'].update(int(x) for x in fr.trips[held & (root == r)])
-    # Merges: a seed whose cars show up under a later seed.
+    # A seed whose root car is held behind another seed at some moment drains into that seed.
     rows = sorted(table.values(), key=lambda s: -len(s['cars']))
-    for a in rows:
-        for b in rows:
-            if a is b or b['first'] <= a['first']:
-                continue
-            if a['trip'] in b['cars']:
-                merged.setdefault(b['trip'], []).append(a['trip'])
+    held_by = {}
+    for b in rows:
+        for a in rows:
+            if a is not b and a['trip'] in b['cars']:
+                held_by.setdefault(b['trip'], []).append(a['trip'])
     for s in rows:
-        reach = set(s['cars'])
-        for t2 in merged.get(s['trip'], []):
-            reach |= table[t2]['cars']
+        s['eventual'] = len(s['cars']) + sum(len(table[t2]['cars']) for t2 in held_by.get(s['trip'], []))
+    for s in sorted(rows, key=lambda s: -s['eventual'])[:200]:
+        reach, todo, done = set(s['cars']), list(held_by.get(s['trip'], [])), {s['trip']}
+        while todo:
+            t2 = todo.pop()
+            if t2 not in done:
+                done.add(t2)
+                reach |= table[t2]['cars']
+                todo.extend(held_by.get(t2, []))
         s['eventual'] = len(reach)
-    rows.sort(key=lambda s: -s['eventual'])
+        s['drains'] = len(done) - 1
+    rows.sort(key=lambda s: (-s['eventual'], s['first']))
     report = dict(frames=len(frames), seeds=len(rows), first_blocked=run.name(first_blocked) if first_blocked is not None else None, top=[])
     print(f'{len(frames)} frames, {len(rows)} seeds with a root waiting at least {min_wait:.0f} s')
     if first_blocked is not None:
