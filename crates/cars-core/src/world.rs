@@ -55,6 +55,12 @@ pub struct GpuParams {
     pub lc_carry: u32,
     pub meter_n: u32,
     pub lateral_median: f32,
+    /// Metres from which a driver can see whether a give-way line is free, at least. The map's 4.5 m means stopping at every one.
+    pub vis_floor: f32,
+    /// Seconds at a stand a driver keeps holding back for someone else's lane change.
+    pub lc_patience: f32,
+    pub pad_c: f32,
+    pub pad_d: f32,
 }
 
 #[repr(C)]
@@ -611,6 +617,7 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     // Krauss's 0.5 is inherited. 0.2 brings 50 km/h saturation into report 04's band, 1,846 against 1,714.
     if t.sigma == 0.5 { g.sigma = 0.2; }
     g.sigma = cfg.tune("sigma", g.sigma);
+    g.lc_strategic = cfg.tune("lc_strategic", g.lc_strategic);
     let automated = matches!(t.model, CfModel::Acc | CfModel::Cacc);
     g.exit_comply = num("phys.exit_comply", if automated { 1.0 } else { cfg.tune("exit_comply", 0.9) });
     // Gipps' two decelerations: what the driver plans with, and what it expects of the leader.
@@ -819,6 +826,10 @@ impl World {
             lc_carry: cfg.tune("lc_carry", 0.0) as u32,
             meter_n: cfg.meter_n,
             lateral_median: cfg.tune("lateral_median", 2.2),
+            vis_floor: cfg.tune("vis_floor", 30.0),
+            lc_patience: cfg.tune("lc_patience", 10.0),
+            pad_c: 0.0,
+            pad_d: 0.0,
         };
         w
     }
@@ -1161,7 +1172,7 @@ impl World {
                     before: l.internal_before.map(|b| b + lane0).unwrap_or(NONE),
                     state: l.state as u32,
                     from_lane: l.from_lane + lane0,
-                    tc: if cfg.mu > 0.0 { (critical_gap(net, topo, l) * cfg.tune("tc_scale", 1.0) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { 0.0 },
+                    tc: if cfg.mu > 0.0 { (critical_gap(net, topo, l) * cfg.tune("tc_scale", 0.7) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { 0.0 },
                 });
             }
         }

@@ -99,6 +99,10 @@ struct Params {
     lc_carry: u32,
     meter_n: u32,
     lateral_median: f32,
+    vis_floor: f32,
+    lc_patience: f32,
+    pad_c: f32,
+    pad_d: f32,
 }
 
 struct Globals {

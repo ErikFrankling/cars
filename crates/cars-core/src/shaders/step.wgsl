@@ -708,7 +708,7 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
         }
         if (pl_n > 0u) { adapt_leave(pl_base + pl_n - 1u, lane_max); }
         var arr_speed = pl_pass;
-        let vis = lk.visibility;
+        let vis = max(lk.visibility, P.vis_floor);
         let determined = seen <= vis;
         let could_brake_minor = !have_priority(state) && brake_dist < seen && !last_was_cont_major(link);
         if (could_brake_minor && !determined) {
@@ -1093,8 +1093,6 @@ fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f3
 var<private> fin_min: f32;
 var<private> fin_max: f32;
 
-const LC_PATIENCE: f32 = 10.0;
-
 // MSLCM_LC2013::_patchSpeed: what lane changing wants from the speed this step.
 fn lc_patch_speed(wanted: f32, e: Veh, vmax: f32) -> f32 {
     var mn = fin_min;
@@ -1119,7 +1117,7 @@ fn lc_patch_speed(wanted: f32, e: Veh, vmax: f32) -> f32 {
         // Stored rounded down, so compare with the rounding in mind.
         let v = f32(adv) / 1024.0;
         // A driver holds back for someone's lane change for a while, not for good.
-        if (v >= mn - 0.002 && v <= mx && !(mu > 0.0 && e.wait > LC_PATIENCE)) {
+        if (v >= mn - 0.002 && v <= mx && !(mu > 0.0 && e.wait > P.lc_patience)) {
             nv = min(max(v, mn), nv);
             got = true;
         }
@@ -1269,7 +1267,7 @@ fn walk_links(e: ptr<function, Veh>, base: u32, n: u32, speed: f32, vmax_lane: f
             if (((*e).flags & F_HAVE_STOPPED) != 0u) { my_wait = 1e9; }
             let opened = yellow || through || link_opened(it.link, it.arrival, it.arr_speed, leave, ty.length, imp, ty.decel, my_wait, (*e).trip);
             let k = links[it.link];
-            let determined = it.dist <= k.visibility;
+            let determined = it.dist <= max(k.visibility, P.vis_floor);
             if (opened && (state == CH_s || state == CH_w) && determined) { (*e).flags |= F_HAVE_STOPPED; }
             if (opened && !have_priority(state) && !last_was_cont_major(it.link) && (k.flags & L_CONT) == 0u) {
                 if (!determined && (can_brake || !yellow)) {
