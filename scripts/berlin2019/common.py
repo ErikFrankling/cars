@@ -55,7 +55,7 @@ def read_net(path, cache=None):
             elif e.tag == 'tlLogic':
                 tls += 1
             elif e.tag == 'connection' and not e.get('from', '').startswith(':'):
-                conns.append((e.get('from'), e.get('to'), int(e.get('fromLane')), int(e.get('toLane')), e.get('tl', ''), e.get('dir', ''), e.get('state', '')))
+                conns.append((e.get('from'), e.get('to'), int(e.get('fromLane')), int(e.get('toLane')), e.get('tl', ''), e.get('dir', ''), e.get('state', ''), e.get('allow', ''), e.get('disallow', '')))
             elif e.tag == 'junction' and e.get('type') != 'internal':
                 junctions[e.get('id')] = (e.get('type'), float(e.get('x')), float(e.get('y')))
             e.clear()

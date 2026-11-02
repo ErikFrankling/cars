@@ -101,10 +101,17 @@ def cut_demand(a):
     cut = read_net(OUT / 'net.net.xml', OUT / 'net.pkl')
     remap = edge_remap(cut)
     edges = {k: e for k, e in cut['edges'].items() if car_lanes(e)}
-    nexts = collections.defaultdict(set)
-    for f, t, *_ in cut['conns']:
+    # one graph per vehicle class: a connection or a lane can be closed to one of them, and cars refuses such a route
+    CLASS = {'car': 'passenger', 'van': 'delivery', 'truck8t': 'truck', 'truck18t': 'truck', 'truck40t': 'trailer'}
+    def ok_for(cl, allow, disallow):
+        return cl in allow.split() or 'all' in allow.split() if allow else cl not in disallow.split()
+    lane_ok = {c: {k: {l['index'] for l in e['lanes'] if ok_for(c, l['allow'], l['disallow'])} for k, e in edges.items()} for c in set(CLASS.values())}
+    graph = {c: collections.defaultdict(set) for c in set(CLASS.values())}
+    for f, t, fl, tl, _tl, _d, _s, al, dis in cut['conns']:
         if f in edges and t in edges:
-            nexts[f].add(t)
+            for c in graph:
+                if ok_for(c, al, dis) and fl in lane_ok[c][f] and tl in lane_ok[c][t]:
+                    graph[c][f].add(t)
     tt = pickle.loads((B19 / 'step0/free_time.pkl').read_bytes())
     length = {k: car_lanes(e)[0]['length'] for k, e in edges.items()}
     log = collections.Counter()
@@ -114,9 +121,10 @@ def cut_demand(a):
     def is_reverse(u, v):
         return u in edges and v in edges and edges[u]['start'] == edges[v]['end'] and edges[u]['end'] == edges[v]['start']
 
-    def bridge(u, v):
-        if (u, v) in memo:
-            return memo[(u, v)]
+    def bridge(u, v, nexts):
+        key = (u, v, id(nexts))
+        if key in memo:
+            return memo[key]
         q, seen = [(0.0, u, ())], {u}
         path = None
         while q and len(seen) < 3000:
@@ -129,7 +137,7 @@ def cut_demand(a):
                 if n not in seen and c < 1500:
                     seen.add(n)
                     heapq.heappush(q, (c + length[n], n, p + (n,)))
-        memo[(u, v)] = path
+        memo[key] = path
         return path
 
     classes = vehicle_classes()
@@ -147,6 +155,8 @@ def cut_demand(a):
             if not any(l in edges for l in links):
                 continue
             dep, trav = int(dep), int(trav)
+            vt = classes.get((person, mode), 'car')
+            nexts = graph[CLASS[vt]]
             times = [tt.get(l, 5.0) for l in raw]
             total = max(sum(times), 1.0)
             run, part, cur, t_start = 0.0, 0, [], None
@@ -173,7 +183,7 @@ def cut_demand(a):
                     seg = seg[:-1]
                     log['uturn_trimmed_end'] += 1
                 fixed = [seg[0]]
-                ok = True
+                pieces = []
                 for u, v in zip(seg[:-1], seg[1:]):
                     if v in nexts[u]:
                         fixed.append(v)
@@ -182,24 +192,28 @@ def cut_demand(a):
                         continue
                     if is_reverse(u, v):
                         log['uturn_replaced'] += 1
-                    p = bridge(u, v)
+                    p = bridge(u, v, nexts)
                     if p is None:
-                        ok = False
-                        repaired[(u, v, 'unrepaired')] += 1
-                        break
+                        # no way through on this map: the car still drives the rest, it does not vanish
+                        repaired[(u, v, 'split')] += 1
+                        log['segments_split_no_path'] += 1
+                        pieces.append(fixed)
+                        fixed = [v]
+                        continue
                     repaired[(u, v, 'bridged')] += 1
                     fixed += list(p) + [v]
                 log['segments'] += 1
-                if not ok:
-                    log['segments_dropped_no_path'] += 1
-                    continue
+                pieces.append(fixed)
                 kind = 'inner' if not starts_cut and not ends_cut else 'through' if starts_cut and ends_cut else 'in' if starts_cut else 'out'
                 log['kind_' + kind] += 1
-                rows.append((t0, f'{person}.{leg}.{part}', classes.get((person, mode), 'car'), fixed, starts_cut))
-                part += 1
+                run = 0.0
+                for i, piece in enumerate(pieces):
+                    rows.append((t0 + run * trav / total, f'{person}.{leg}.{part}', vt, piece, starts_cut or i > 0))
+                    run += sum(length[e] / max(edges[e]['lanes'][0]['speed'], 1) for e in piece)
+                    part += 1
     log = dict(log)
     print(log)
-    print('route pairs without a connection, repaired', sum(v for k, v in repaired.items() if k[2] == 'bridged'), 'distinct', sum(1 for k in repaired if k[2] == 'bridged'), 'unrepaired', sum(v for k, v in repaired.items() if k[2] == 'unrepaired'))
+    print('route pairs without a connection, repaired', sum(v for k, v in repaired.items() if k[2] == 'bridged'), 'distinct', sum(1 for k in repaired if k[2] == 'bridged'), 'split', sum(v for k, v in repaired.items() if k[2] == 'split'))
     (OUT / 'route_repairs.csv').write_text('from,to,what,uses\n' + ''.join(f'{k[0]},{k[1]},{k[2]},{v}\n' for k, v in repaired.most_common()))
     (OUT / 'demand_stats.json').write_text(json.dumps(dict(log=log, trips_10pct=len(rows), km_10pct=sum(sum(length[e] for e in r[3]) for r in rows) / 1000), indent=1))
     rng = random.Random(20190515)
