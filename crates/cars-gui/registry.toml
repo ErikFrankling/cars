@@ -1,0 +1,388 @@
+# What cars-gui offers. Read from this file at start, so adding a scenario or lighting up a model
+# needs no rebuild. See README.md, "Adding a scenario".
+#
+# trust is required on every scenario and is what the picker shows, from research/truth/VALIDATION-GATE.md:
+#   matches_real_day  passed every check of the gate against a real measured day
+#   partly_checked    passed some of them; say which in trust_note
+#   not_checked       a real place, never compared with a real measured day
+#   speed_benchmark   cannot pass: no real day to compare with. Only good for measuring speed
+# Having been used before earns nothing. Move an entry up only with the gate's evidence.
+#
+# Paths starting with $DATA are under the cars data directory, $THESIS under the thesis config,
+# $REPO under this repository and $CACHE under the generated files. `generate` builds missing files:
+# it runs from $REPO and gets the scenario's cache directory as its last argument.
+
+# Generated roads. There is no real day to compare these with.
+
+[[scenario]]
+id = "phantom-jam"
+name = "Phantom jam ring"
+group = "Test roads"
+description = "22 drivers on a 330 m ring. A 3 m nudge grows into stop-and-go waves with no obstacle."
+trust = "speed_benchmark"
+trust_note = "A made-up ring: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py phantom_jam"
+net = "$CACHE/net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 1800.0
+
+[[scenario]]
+id = "one-av-ring"
+name = "One smooth driver ring"
+group = "Test roads"
+description = "The same ring with one long-headway driver in it, which limits the stop-and-go wave."
+trust = "speed_benchmark"
+trust_note = "A made-up ring: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py one_av"
+net = "$CACHE/net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 1800.0
+
+[[scenario]]
+id = "lane-drop"
+name = "Lane drop"
+group = "Test roads"
+description = "Three lanes become two. Watch the merge and the queue behind it."
+trust = "speed_benchmark"
+trust_note = "A made-up road: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py lane-drop"
+net = "$CACHE/net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 900.0
+
+[[scenario]]
+id = "on-ramp"
+name = "On-ramp"
+group = "Test roads"
+description = "A motorway with a ramp joining it, a short auxiliary lane, then two lanes again."
+trust = "speed_benchmark"
+trust_note = "A made-up road: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py on-ramp"
+net = "$CACHE/net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 900.0
+
+[[scenario]]
+id = "zipper"
+name = "Zipper merge"
+group = "Test roads"
+description = "Two roads meet at a zipper junction and take turns."
+trust = "speed_benchmark"
+trust_note = "A made-up road: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py zipper"
+net = "$CACHE/net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 900.0
+
+[[scenario]]
+id = "roundabout"
+name = "Roundabout"
+group = "Test roads"
+description = "A four-arm roundabout with give-way entries."
+trust = "speed_benchmark"
+trust_note = "A made-up junction: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py roundabout"
+net = "$CACHE/net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 900.0
+
+[[scenario]]
+id = "signal-junction"
+name = "Signal junction"
+group = "Test roads"
+description = "A crossroads with traffic lights, two-lane main road, one-lane side road, some trucks."
+trust = "speed_benchmark"
+trust_note = "A made-up junction: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py signal"
+net = "$CACHE/net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 900.0
+
+[[scenario]]
+id = "priority-junction"
+name = "Priority junction"
+group = "Test roads"
+description = "The same crossroads with no signals: the side road gives way."
+trust = "speed_benchmark"
+trust_note = "A made-up junction: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py priority"
+net = "$CACHE/net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 900.0
+
+# The signal-free test nets, with demand drawn by scripts/d8/demand.py.
+
+[[scenario]]
+id = "d8-j1"
+name = "Test junction, 1 lane"
+group = "Signal-free test nets"
+description = "One four-arm junction with one lane per arm. Signals by default; coordinated junctions are under Automated cars."
+trust = "speed_benchmark"
+trust_note = "A made-up junction with drawn demand: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py d8 $REPO/research/truth/fig/09-nets/j1.net.xml 3000"
+net = "$REPO/research/truth/fig/09-nets/j1.net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 800.0
+coordinated = "B1"
+
+[[scenario]]
+id = "d8-j2"
+name = "Test junction, 2 lanes"
+group = "Signal-free test nets"
+description = "One four-arm junction with two lanes per arm."
+trust = "speed_benchmark"
+trust_note = "A made-up junction with drawn demand: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py d8 $REPO/research/truth/fig/09-nets/j2.net.xml 5000"
+net = "$REPO/research/truth/fig/09-nets/j2.net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 800.0
+coordinated = "B1"
+
+[[scenario]]
+id = "d8-j3"
+name = "Test junction, 3 lanes"
+group = "Signal-free test nets"
+description = "One four-arm junction with three lanes per arm."
+trust = "speed_benchmark"
+trust_note = "A made-up junction with drawn demand: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py d8 $REPO/research/truth/fig/09-nets/j3.net.xml 7000"
+net = "$REPO/research/truth/fig/09-nets/j3.net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 800.0
+coordinated = "B1"
+
+[[scenario]]
+id = "d8-grid1"
+name = "Test grid, 1 lane"
+group = "Signal-free test nets"
+description = "A grid of junctions, one lane per direction."
+trust = "speed_benchmark"
+trust_note = "A made-up grid with drawn demand: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py d8 $REPO/research/truth/fig/09-nets/grid1.net.xml 3000"
+net = "$REPO/research/truth/fig/09-nets/grid1.net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 800.0
+coordinated = "all"
+
+[[scenario]]
+id = "d8-grid2"
+name = "Test grid, 2 lanes"
+group = "Signal-free test nets"
+description = "A grid of junctions, two lanes per direction."
+trust = "speed_benchmark"
+trust_note = "A made-up grid with drawn demand: there is no real day to compare it with."
+generate = "python3 scripts/gui_scenarios.py d8 $REPO/research/truth/fig/09-nets/grid2.net.xml 5000"
+net = "$REPO/research/truth/fig/09-nets/grid2.net.xml"
+routes = ["$CACHE/routes.xml"]
+dt = 0.1
+end = 800.0
+coordinated = "all"
+
+# Real places. None of them has been compared with a real measured day, and Berlin's demand is known
+# to be far off (report 03).
+
+[[scenario]]
+id = "bologna"
+name = "Bologna"
+group = "Cities"
+description = "The Bologna district from the thesis, rush hour demand."
+trust = "not_checked"
+trust_note = "A real map, but its demand and signal timings have never been compared with a real measured day."
+net = "$THESIS/scenarios/bologna/joined_buslanes.net.xml"
+routes = ["$THESIS/scenarios/bologna/bologna_cars.rou.xml"]
+additional = ["$THESIS/vtypes.xml", "$THESIS/scenarios/bologna/joined_tls.add.xml"]
+dt = 0.1
+end = 5400.0
+capacity = 2500
+speed = 2.0
+
+[[scenario]]
+id = "lust"
+name = "LuST, Luxembourg"
+group = "Cities"
+description = "Luxembourg, the LuST scenario with static signals. Starts at 07:00."
+trust = "not_checked"
+trust_note = "A real map, but its demand and signal timings have never been compared with a real measured day."
+net = "$DATA/lust/LuSTScenario-2.0/scenario/lust.net.xml"
+routes = ["$DATA/lust/LuSTScenario-2.0/scenario/DUARoutes/local.0.rou.xml", "$DATA/lust/LuSTScenario-2.0/scenario/DUARoutes/local.1.rou.xml", "$DATA/lust/LuSTScenario-2.0/scenario/DUARoutes/local.2.rou.xml"]
+additional = ["$DATA/lust/LuSTScenario-2.0/scenario/vtypes.add.xml", "$DATA/lust/LuSTScenario-2.0/scenario/tll.static.xml"]
+dt = 1.0
+begin = 25200.0
+end = 43200.0
+capacity = 60000
+time_to_teleport = 600.0
+ignore_blocker = 20.0
+speed = 10.0
+
+[[scenario]]
+id = "charlottenburg"
+name = "Charlottenburg, Berlin"
+group = "Cities"
+description = "A cutout of the BeST Berlin scenario. Starts at 07:00."
+trust = "speed_benchmark"
+trust_note = "A speed test: report 03 found BeST carries about half of the traffic in Berlin's official road counts, and its day has the wrong shape. Not a true-to-life Berlin."
+net = "$DATA/charlottenburg/charlottenburg.net.xml"
+routes = ["$DATA/charlottenburg/charlottenburg.rou.gz"]
+dt = 1.0
+begin = 25200.0
+end = 43200.0
+capacity = 200000
+time_to_teleport = 120.0
+ignore_blocker = 20.0
+speed = 10.0
+
+[[scenario]]
+id = "mitte"
+name = "Mitte, Berlin"
+group = "Cities"
+description = "The centre of Berlin, cut from the BeST scenario. Starts at 07:00."
+trust = "speed_benchmark"
+trust_note = "A speed test: report 03 found BeST carries about half of the traffic in Berlin's official road counts, and its day has the wrong shape. Not a true-to-life Berlin."
+net = "$DATA/mitte/mitte.net.xml"
+routes = ["$DATA/mitte/mitte.rou.gz"]
+dt = 1.0
+begin = 25200.0
+end = 43200.0
+capacity = 200000
+time_to_teleport = 120.0
+ignore_blocker = 20.0
+speed = 10.0
+
+[[scenario]]
+id = "berlin"
+name = "Berlin"
+group = "Cities"
+description = "All of Berlin, the BeST scenario: 257,000 lanes. Starts at 07:00. Takes a while to load."
+trust = "speed_benchmark"
+trust_note = "A speed test: report 03 found BeST carries about half of the traffic in Berlin's official road counts, and its day has the wrong shape. Not a true-to-life Berlin."
+net = "$DATA/best/berlin.net.xml"
+routes = ["$DATA/best/berlin.rou.gz"]
+dt = 1.0
+begin = 25200.0
+end = 43200.0
+capacity = 300000
+time_to_teleport = 120.0
+ignore_blocker = 20.0
+speed = 10.0
+
+[[scenario]]
+id = "stockholm-old"
+name = "Stockholm, old demand"
+group = "Cities"
+description = "Stockholm with the first demand estimate, fitted to city traffic counts. Starts at 07:00."
+trust = "not_checked"
+trust_note = "A real map with estimated demand, cut to 60% of what the counts suggest so that it does not lock up (report 02). Never compared with a real measured day."
+net = "$DATA/stockholm/stockholm.net.xml"
+routes = ["$DATA/stockholm/stockholm60.rou.gz"]
+dt = 1.0
+begin = 25200.0
+end = 43200.0
+capacity = 300000
+time_to_teleport = 120.0
+ignore_blocker = 20.0
+speed = 10.0
+
+[[scenario]]
+id = "stockholm-new"
+name = "Stockholm, new demand"
+group = "Cities"
+description = "Stockholm on the corrected map with the corrected demand. Starts at 07:00."
+trust = "not_checked"
+trust_note = "A real map with estimated demand. It has never passed a comparison with a real measured day."
+net = "$DATA/truth/stockholm/factorial/n7_ramps.net.xml"
+routes = ["$DATA/truth/stockholm/factorial/v2_c4.rou.gz"]
+dt = 1.0
+begin = 25200.0
+end = 43200.0
+capacity = 300000
+time_to_teleport = 120.0
+ignore_blocker = 20.0
+speed = 10.0
+
+# Automated car models. status = "merged" can be chosen; anything else is listed greyed out with
+# `branch` as the reason. Lighting one up once it merges: set status = "merged" and give it a vtype.
+# A vtype is one <vType> from the demand format, with id="gui_av". `coordinated = true` runs the
+# signal-free coordinator and needs every car automated, because this build has no mixed mode.
+
+[[model]]
+id = "krauss"
+name = "Krauss"
+description = "Thesis tier: Krauss car following with no driver noise and a short headway."
+status = "merged"
+vtype = '<vType id="gui_av" vClass="passenger" length="5" carFollowModel="Krauss" accel="3.5" decel="2.2" emergencyDecel="4.5" sigma="0.0" tau="0.6" minGap="1.5" speedFactor="1.0" speedDev="0.0"/>'
+
+[[model]]
+id = "idm"
+name = "IDM"
+description = "Thesis tier: the intelligent driver model with a short headway."
+status = "merged"
+vtype = '<vType id="gui_av" vClass="passenger" length="5" carFollowModel="IDM" accel="3.5" decel="2.2" emergencyDecel="4.5" tau="0.6" minGap="1.5" speedFactor="1.0" speedDev="0.0"/>'
+
+[[model]]
+id = "acc"
+name = "ACC"
+description = "Thesis tier: adaptive cruise control."
+status = "merged"
+vtype = '<vType id="gui_av" vClass="passenger" length="5" carFollowModel="ACC" accel="1.0" maxSpeed="33.33" tau="1.5" minGap="2.0" speedDev="0.0"/>'
+
+[[model]]
+id = "cacc"
+name = "CACC"
+description = "Thesis tier: cooperative adaptive cruise control."
+status = "merged"
+vtype = '<vType id="gui_av" vClass="passenger" length="5" carFollowModel="CACC" accel="1.0" maxSpeed="33.33" tau="0.6" minGap="1.0" speedDev="0.0"><param key="headwayTimeACC" value="1.5"/></vType>'
+
+[[model]]
+id = "glosa"
+name = "GLOSA"
+description = "Thesis tier: IDM with green light speed advice within 300 m of a signal."
+status = "merged"
+vtype = '<vType id="gui_av" vClass="passenger" length="5" carFollowModel="IDM" accel="2.6" decel="2.0" emergencyDecel="4.5" tau="1.0" minGap="2.5" speedFactor="1.0" speedDev="0.1"><param key="has.glosa.device" value="true"/><param key="device.glosa.range" value="300"/></vType>'
+
+[[model]]
+id = "d8"
+name = "D8 coordinated junctions"
+description = "Signal-free junctions: a coordinator gives every car a slot through the box. All cars automated, no lane changes unless the demand allows them."
+status = "merged"
+coordinated = true
+vtype = '<vType id="gui_av" carFollowModel="CarsAV" length="5" width="1.8" minGap="2.0" accel="2.6" decel="2.5" emergencyDecel="7" apparentDecel="4.5" tau="0.8" sigma="0" maxSpeed="50" speedDev="0" lcStrategic="1" lcSpeedGain="0" lcKeepRight="0" lcCooperative="0"><param key="reactionTime" value="0.3"/></vType>'
+
+[[model]]
+id = "d1-d7"
+name = "D1 to D7 tiers"
+description = "The communicating tiers."
+status = "not_merged"
+branch = "t3/882bd39f"
+
+[[model]]
+id = "m1"
+name = "M1 neural driver"
+description = "A trained neural network as the driver."
+status = "not_merged"
+branch = "t3/aea36e36"
+
+[[model]]
+id = "physical"
+name = "Physical driver"
+description = "Vehicle physics: power, grip and energy."
+status = "not_merged"
+branch = "t3/1c6fee50"
+
+[[model]]
+id = "human"
+name = "Fitted human driver"
+description = "Human driving fitted to real measurements."
+status = "not_merged"
+branch = "t3/1b36c9cf"
