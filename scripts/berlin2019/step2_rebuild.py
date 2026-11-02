@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import *
 
-D = B19 / 'district'
+D = DISTRICT
 
 
 def add_lane_feeds(con, spec, fixes):

@@ -1,6 +1,6 @@
 {
  "name": "berlin-2019-district-v1",
- "net": "/home/erikf/projects/personal/cars-data/berlin2019/district/m10/net.net.xml",
+ "net": "/home/erikf/projects/personal/cars-data/berlin2019/district/m12/net.net.xml",
  "routes": {
   "10pct": "/home/erikf/projects/personal/cars-data/berlin2019/district/m10/routes_f01.rou.gz",
   "50pct": "/home/erikf/projects/personal/cars-data/berlin2019/district/m10/routes_f05.rou.gz",
@@ -16,5 +16,6 @@
  "run_command": "cars run --net NET --routes ROUTES --dt 1 --begin 0 --end 93600 --time-to-teleport 0 --sensors SENSORS --sensor-csv sensors.csv --edge-csv edges.csv --edge-interval 900 --summary-csv summary.csv --trip-csv trips.csv",
  "reader": "scripts/berlin2019/read_run.py",
  "locked": "freeze.json locked_sites_all_berlin; other 2019 months not downloaded; 15 May is tuning data (report 22)",
- "engine_patch": "--sensors and --sensor-csv are on branch t3/45597235: crates/cars-cli/src/run.rs, sim.rs, step.wgsl"
+ "engine_patch": "--sensors and --sensor-csv are on branch t3/45597235: crates/cars-cli/src/run.rs, sim.rs, step.wgsl",
+ "note": "Map m12: m10 with one signal program per junction. Routes and sensors are m10s, same edges."
 }
