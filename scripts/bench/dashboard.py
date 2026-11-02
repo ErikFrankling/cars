@@ -164,3 +164,5 @@ def build(res_dir, hist, serve, knownbad=None):
 <h2>Can the benchmark catch a wrong simulation?</h2>{knownbad_section(knownbad or Path(res_dir).parent / 'knownbad.json')}
 </div></div><script type="application/json" id=data>{data}</script><script>{JS}</script>"""
     (serve / 'index.html').write_text(page)
+    import trust
+    (serve / 'trust.json').write_text(json.dumps(trust.build(runs), indent=1))

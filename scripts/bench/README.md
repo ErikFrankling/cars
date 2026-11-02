@@ -74,6 +74,10 @@ A metric given as a real band (M4, JS1 to JS6, JR, C3, C4) is scored as distance
 
 A reveal needs a written reason and an approval only Erik can give: `bench.py approve --locked SET --reason "..."` refuses without a real terminal or inside an agent session, and needs the set's name typed back. `bench.py reveal` then appends to `ledger.tsv` and prints only each level's status and z rounded to 0.25. At most 5 per set, then the set is spent and a new month opens. That is discipline, not cryptography: an agent could forge the file, and that's a rule broken in plain sight rather than a thing prevented.
 
+## For the GUI
+
+`/bench/trust.json` next to the dashboard gives, per driver, the latest run's status per level and gate check. `crates/cars-gui/registry.toml`'s trust labels can read it. `matches_real_day` stays false until every gate check passes on held-out data.
+
 ## Known limits
 
 - Test scenes are generic geometry with real rates and real signal timings, not rebuilt places. A pass at level 2 on them is weaker than on a rebuilt junction.

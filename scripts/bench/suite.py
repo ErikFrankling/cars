@@ -334,7 +334,7 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
         M.setdefault('JS2', {}).update({f'turning|{k}': v for k, v in got['JS2b'].items()})
         M.setdefault('JS7', {}).update(got['JS7b'])
     if want('lanedrop'):
-        st, alt, flow = [], [], []
+        st, alt, flow, gaps_end = [], [], [], []
         for s in seeds:
             r = rr('lanedrop', s)
             log(f'lanedrop s{s} {r.secs:.0f}s')
@@ -342,12 +342,16 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
             interval = max(r.plan['fcd'], ov.get('dt', cfg['dt']))
             tally.add('lanedrop', r, f, interval)
             st.append(J.merges(f, 'aux_0', 'aux_1', r.plan['aux_len'], interval, X))
+            ev = X.halfway(f)
+            ev = X.lane_changes(f, interval) if ev is None else ev
+            gaps_end.append(X.gaps_at_change(f, ev[ev.lane == 'aux_1']))
             alt.append(J.alternation(f, ['aux_0', 'aux_1'], 'down_', interval))
             d_ = f[f.lane.str.startswith('down_') & (f.pos > 300)]
             first = d_.groupby('trip').time.min()
             flow.append(len(first) / max(first.max() - first.min(), 1.0) * 3600 if len(first) > 50 else np.nan)
             runner.clean(r)
         M['JL1'] = J.merge_cells(st, 'lane_drop')
+        M.setdefault('M9', {})['congested_lane_end'] = L.M9(gaps_end, 'congested')['congested']
         M['JL2'] = {'flow_per_lane': J.cell(flow, 'flow_per_lane', 'lane_drop', 'downstream', 3600.0)}
         M['JZ1'] = {'alternation': J.cell(alt, 'alternation_share', 'zipper_proxy', 'congested', .5), 'last_third': J.cell([x.get('last_third') for x in st], 'merge_physical_last_third_share', 'zipper_proxy', 'all', 0.0)}
     if want('ramp'):
@@ -460,7 +464,7 @@ def assemble(M, cfg, mode, seeds, seconds, registry, ov=None, name=None, bench_c
             c.setdefault('note', '')
         ro = score.rollup(cells)
         metrics[i] = dict(id=i, level=r['level'], tag=r['tag'], gate=r['gate'], name=r['name'], plain=r['plain'], status=ro['status'], z=ro['z'], cells=_clean(cells))
-    return dict(run_id=name, driver=cfg['name'], mode=mode, commit=cfg['commit'], branch=cfg['branch'], binary_sha=cfg['binary_sha'], config_hash=cfg['hash'], instrument_patch=cfg['patch_sha'],
+    return dict(bench_version=2, run_id=name, driver=cfg['name'], mode=mode, commit=cfg['commit'], branch=cfg['branch'], binary_sha=cfg['binary_sha'], config_hash=cfg['hash'], instrument_patch=cfg['patch_sha'],
                 seeds=seeds, overrides=ov or {}, seconds={k: round(v) for k, v in seconds.items()}, bench_code=code_sha(), bench_commit=bench_commit, metrics=metrics, levels=levels(metrics), created=time.strftime('%Y-%m-%dT%H:%M:%S'))
 
 

@@ -19,7 +19,7 @@ BAD = [
     dict(n=3, name='Calibrated IDM', driver='main', ov={'vtype': IDM}, scenes=['signal', 'chain'], must=['JS1', 'M6'], need='all'),
     dict(n=4, name='Calibrated Krauss, decel 0.33', driver='main', ov={'vtype': KRAUSS33}, scenes=['signal', 'yellow'], must=['JS6', 'M12', 'JS1'], need='any'),
     dict(n=5, name='Instant lane changes', driver='main', ov={}, scenes=['free3'], must=['M7'], need='all'),
-    dict(n=6, name='SUMO secure gap test', driver='main', ov={}, scenes=['free3', 'road'], must=['M9', 'M8'], need='all'),
+    dict(n=6, name='SUMO secure gap test', driver='main', ov={}, scenes=['free3', 'road', 'lanedrop'], must=['M9', 'M8'], need='any', note='At free flow its lane-change rate is right, which is why M8 alone would not catch it'),
     dict(n=7, name='Lane changing off', driver=BASE, ov={'no_lc': True}, scenes=['free3'], must=['M8'], need='all', note='C6 needs the district'),
     dict(n=8, name='Acceleration noise 0.53 m/s2', driver='human53', ov={}, scenes=['road', 'signal'], must=['V2', 'M3'], need='any'),
     dict(n=9, name='Car length 3 m, demand raised to match flow', driver=BASE, ov={'length': 3.0}, scenes=['signal'], must=['M4', 'JS1'], need='any', mini={'length': 3.0}, note='The point of this case: N1 may pass while levels 1 and 2 fail'),
@@ -54,6 +54,8 @@ def differs(M, B, i):
     """Is this configuration really somewhere else than the baseline on this metric, by more than the ruler?"""
     for sub, c in (M.get(i) or {}).items():
         b = (B.get(i) or {}).get(sub)
+        if c.get('status') == 'FAIL' and not b:
+            return True
         if not b or c.get('F') in (None, 0):
             continue
         x, y = c.get('value', c.get('S')), b.get('value', b.get('S'))
