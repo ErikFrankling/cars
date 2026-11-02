@@ -161,6 +161,7 @@ impl Physics {
             }
             places.push((v.wait, lane));
             let link = items[i * 8][0];
+            let link = if (link as usize) < world.links.len() { link } else { u32::MAX };
             let denied = items[i * 8][9] == 1;
             let cause = if link == u32::MAX || v.n_items == 0 {
                 if v.lc_own & 3 != 0 { "wants another lane" } else { "no link ahead" }
@@ -207,6 +208,7 @@ impl Physics {
                 }
             }
         }
+        places.retain(|&(_, l)| (l as usize) < net.lanes.len());
         places.sort_by(|a, b| b.0.total_cmp(&a.0));
         let worst: Vec<_> = places.iter().take(10).map(|&(w, l)| {
             let xy = self.lane_xy[l as usize];

@@ -1,0 +1,11 @@
+kind,count
+bus_lane_2019_not_on_map,96
+edge_no_entry,30
+edge_no_exit,28
+edge_shorter_than_a_car,540
+lane_no_exit,278
+lanes_2023_vs_2019,172
+loops_cover_part,26
+more_loops_than_lanes,5
+speed_2023_vs_2019,371
+way_not_in_osm_2019,2112

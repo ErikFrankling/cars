@@ -1,0 +1,14 @@
+{
+ "box": [
+  143226.74495925184,
+  124919.26203564927,
+  150226.74495925184,
+  131919.26203564927
+ ],
+ "km2": 49.0,
+ "sites": 98,
+ "clean_200m": 6,
+ "signals_on_map": 425,
+ "rule": "Most trusted sites among 25, 36 and 49 km2 windows on a 1 km grid; ties by sites over 200 m from a v6.4 calibration station. No Berlin window has real signal plans, so signals do not separate windows.",
+ "crs": "net coordinates of v6.4 sumo.net.xml, UTM 32 minus netOffset"
+}

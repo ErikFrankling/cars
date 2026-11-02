@@ -16,7 +16,7 @@ mkdir -p "$STORE/bin" "$STORE/src"
 if [ ! -e "$src/.git" ]; then git -C "$HERE" worktree add --detach "$src" "$commit" >&2; fi
 git -C "$src" checkout -q --force --detach "$commit"
 git -C "$src" clean -qfd
-git -C "$src" apply "$patch"
+git -C "$src" apply --allow-empty "$patch"
 cd "$src"
 CARGO_TARGET_DIR=$STORE/target nice -n 15 cargo build --release -j2 -p cars-cli --bin cars >&2
 cp -f "$STORE/target/release/cars" "$out"
