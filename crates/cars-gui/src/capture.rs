@@ -46,7 +46,8 @@ pub fn save_png(pixels: Vec<u8>, w: u32, h: u32, path: PathBuf, report: Sender<R
 }
 
 /// A clip being written. Frames go to ffmpeg on a thread, and dropping back to fewer frames is
-/// better than holding the simulation up: a full queue skips the frame.
+/// better than holding the simulation up: a full queue skips the frame. The finished clip's
+/// timestamps are scaled to the real time recorded, so it plays at true speed however many were lost.
 pub struct Recorder {
     tx: Option<SyncSender<Vec<u8>>>,
     pub path: PathBuf,
@@ -54,6 +55,9 @@ pub struct Recorder {
     pub skipped: u32,
     pub size: (u32, u32),
     pub next_at: f64,
+    fps: u32,
+    started: std::time::Instant,
+    stretch: std::sync::Arc<std::sync::Mutex<f64>>,
     report: Sender<Result<String, String>>,
     worker: Option<std::thread::JoinHandle<Result<String, String>>>,
 }
@@ -74,6 +78,8 @@ impl Recorder {
         let mut pipe = child.stdin.take().ok_or("no pipe to ffmpeg")?;
         let (tx, rx) = sync_channel::<Vec<u8>>(6);
         let done = path.clone();
+        let stretch = std::sync::Arc::new(std::sync::Mutex::new(1.0f64));
+        let stretch_for_worker = stretch.clone();
         let worker = std::thread::Builder::new()
             .name("clip".into())
             .spawn(move || {
@@ -87,11 +93,26 @@ impl Recorder {
                 if !out.status.success() {
                     return Err(format!("ffmpeg failed: {}", String::from_utf8_lossy(&out.stderr)));
                 }
-                std::fs::rename(&partial, &done).map_err(|e| e.to_string())?;
+                let factor = stretch_for_worker.lock().map_or(1.0, |f| *f);
+                if (factor - 1.0).abs() < 0.02 {
+                    std::fs::rename(&partial, &done).map_err(|e| e.to_string())?;
+                } else {
+                    let out = Command::new("ffmpeg")
+                        .args(["-y", "-v", "error", "-threads", "1", "-itsscale", &format!("{factor:.4}"), "-i"])
+                        .arg(&partial)
+                        .args(["-c", "copy", "-movflags", "+faststart"])
+                        .arg(&done)
+                        .output()
+                        .map_err(|e| e.to_string())?;
+                    if !out.status.success() {
+                        return Err(format!("ffmpeg failed: {}", String::from_utf8_lossy(&out.stderr)));
+                    }
+                    let _ = std::fs::remove_file(&partial);
+                }
                 Ok(format!("Saved {}", done.display()))
             })
             .map_err(|e| e.to_string())?;
-        Ok(Self { tx: Some(tx), path, frames: 0, skipped: 0, size: (w, h), next_at: 0.0, report, worker: Some(worker) })
+        Ok(Self { tx: Some(tx), path, frames: 0, skipped: 0, size: (w, h), next_at: 0.0, fps, started: std::time::Instant::now(), stretch, report, worker: Some(worker) })
     }
 
     pub fn push(&mut self, frame: Vec<u8>) {
@@ -105,6 +126,11 @@ impl Recorder {
 
     /// Stop on the side, so a slow finish does not hold up the window.
     pub fn finish(mut self) {
+        if self.frames > 0
+            && let Ok(mut f) = self.stretch.lock()
+        {
+            *f = self.started.elapsed().as_secs_f64() / (self.frames as f64 / self.fps as f64);
+        }
         self.tx = None;
         let worker = self.worker.take();
         let report = self.report.clone();
