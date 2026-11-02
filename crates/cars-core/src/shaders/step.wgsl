@@ -1410,6 +1410,18 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
                 }
             }
             let last_block = la.links_count == 0u || !is_internal(links[la.links_start].next_lane);
+            // A stub too short to hold a body is no place to wait: the tail stands across the approach, and two of
+            // them can each sit in the other's way for good. Wait at the line until the way past it is free.
+            if (ok && !last_block && la.length < need_own && j + 1u < n && items[base + j + 1u].link != NONE) {
+                let onward = lanes[links[items[base + j + 1u].link].next_lane];
+                for (var z = 0u; z < onward.zone_count; z++) {
+                    let zn = zones[onward.zone_start + z];
+                    if (zone_taken(zn) && !zone_clears(zn, onward, it.dist + la.length, v)) {
+                        ok = false;
+                        break;
+                    }
+                }
+            }
             if (ok && last_block) {
                 let to = k.to_lane;
                 if (lanes[to].length < need_own) {

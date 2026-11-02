@@ -191,7 +191,7 @@ fn keeps_apart(net: &Net, a: u32, b: u32, dist: f32) -> bool {
         (dx / n, dy / n)
     };
     let (ca, cb) = (chord(&la.shape), chord(&lb.shape));
-    dist > 0.3 && ca.0 * cb.0 + ca.1 * cb.1 < -0.95
+    dist > 1.4 && ca.0 * cb.0 + ca.1 * cb.1 < -0.7
 }
 
 /// Where along `a`, in lane positions, its centre line is within reach of `b`.
