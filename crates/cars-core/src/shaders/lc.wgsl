@@ -960,7 +960,9 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
     let check_otr = avoid_overtake_right(e.speed, lane.speed);
     let tl = 0.2 / max(1e-6, ty.lc_speed_gain);
     let tr = tl / max(1e-6, ty.lc_speed_gain_right);
-    if (change_to_best && best_offset == curr_offset && usable / f32(abs(best_offset)) < la_dist) {
+    // Report 18 B1: must-change by time left. At speed that is the start of the lane, not the last 150 m.
+    let by_time = ty.model == MODEL_HUMAN && (P.hu_flags & HS_TTE) != 0u && usable / f32(abs(best_offset)) / max(e.speed, 1.0) < P.hm_a.x;
+    if (change_to_best && best_offset == curr_offset && (by_time || usable / f32(abs(best_offset)) < la_dist)) {
         ret |= lca | LCA_STRATEGIC | LCA_URGENT;
     } else {
         if (has_neigh && neigh.leader_trip != NONE && check_otr && !right) {
@@ -1383,7 +1385,7 @@ fn ph_lc_room(e: Veh, dest: u32) -> bool {
     if ((e.phys >> 30u) != 0u || (e.flags & F_HAS_SHADOW) != 0u || e.pos < min(ty.length, lanes[e.lane].length - 1.0)) { return false; }
     let w = lanes[dest].width;
     let road = ph_lc_road(e, dest);
-    if (ty.v_lat <= 0.0) { return 4.0 * e.speed <= lanes[e.lane].length - e.pos; }
+    if (ty.v_lat <= 0.0) { return 1.875 * w / 1.3 * e.speed <= lanes[e.lane].length - e.pos; }
     if (road < 0.0) {
         let left = lanes[e.lane].length - e.pos;
         return left >= w / 0.21256 && (w / ty.v_lat + 1.0) * e.speed <= left;

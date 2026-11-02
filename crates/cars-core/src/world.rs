@@ -154,6 +154,7 @@ pub struct GpuLane {
     pub curve_v: f32,
     /// Square root of the tightest radius, 0 when straight.
     pub sqrt_r: f32,
+    pub sqrt_path_r: f32,
     pub s_curve: f32,
     pub s_curve_end: f32,
     pub width: f32,
@@ -438,8 +439,10 @@ pub struct HumanParams {
     pub lag_shift: f32,
     /// Vissim's 0.6 on the safety distance during a lane change.
     pub lc_safety: f32,
-    /// A driver's lowest speed through a junction corner, however tight the lane's shape.
-    pub turn_min: f32,
+    /// Median sideways acceleration a driver holds through a corner, report 19.
+    pub a_y: f32,
+    /// Region's mean of free speed against the limit, Sweden's from VTI 1001. 0 off.
+    pub free_table: f32,
     /// Invented, see HUMAN.md: Gipps approach to a standing target.
     pub b_approach: f32,
     pub tau_approach: f32,
@@ -482,14 +485,14 @@ pub struct HumanParams {
 
 impl Default for HumanParams {
     fn default() -> Self {
-        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 0.65, gap_roundabout: 1.5, t_scale: 1.0, s0_scale: 1.2, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6, turn_min: 8.0, b_approach: 1.2, tau_approach: 2.0, overshoot: 1.4, standing: 0.5, see: 30.0, lc_slope: 1.0, stop_s0: 1.0, comfort: 1.5, stub: 7.0, w_s_near: 0.45, b_end: 2.5, tte0: 43.0, s_0: -1.23, s_t: -1.544, s_lag: 0.133, s_lead: 0.164, s_driver: 0.5, w_f: 0.756, t_f: 0.5, b_f: 3.0, w_s_neg: 0.12, w_s_pos: 0.25, k_c: 0.05, q_edge: 0.13, v_edge: 15.0, tau_a: 1.87, tau_sd: 1.44, gipps_b: 4.5, gipps_tau: 0.4, lead_far: -6.0, lag_far: -2.0 }
+        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 0.65, gap_roundabout: 1.5, t_scale: 1.0, s0_scale: 1.2, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6, a_y: 2.2, free_table: 0.0, b_approach: 1.2, tau_approach: 2.0, overshoot: 1.4, standing: 0.5, see: 30.0, lc_slope: 1.0, stop_s0: 1.0, comfort: 1.5, stub: 7.0, w_s_near: 0.45, b_end: 2.5, tte0: 43.0, s_0: -1.23, s_t: -1.544, s_lag: 0.133, s_lead: 0.164, s_driver: 0.5, w_f: 0.756, t_f: 0.5, b_f: 3.0, w_s_neg: 0.12, w_s_pos: 0.25, k_c: 0.05, q_edge: 0.13, v_edge: 15.0, tau_a: 1.87, tau_sd: 1.44, gipps_b: 3.0, gipps_tau: 0.5, lead_far: -6.0, lag_far: -2.0 }
     }
 }
 
 impl HumanParams {
     /// Sweden: Trafikverket's jam spacing and through saturation flow, from `TRVMB Kapacitet`.
     pub fn sweden() -> Self {
-        Self { t_scale: 0.55, s0_scale: 0.47, ..Self::default() }
+        Self { free_table: 1.0, t_scale: 0.55, s0_scale: 0.47, ..Self::default() }
     }
 
     /// With what `--tune` names. Names that are not this driver's belong to the physics.
@@ -515,7 +518,8 @@ impl HumanParams {
                 "lead_shift" => self.lead_shift = v,
                 "lag_shift" => self.lag_shift = v,
                 "lc_safety" => self.lc_safety = v,
-                "turn_min" => self.turn_min = v,
+                "a_y" => self.a_y = v,
+                "free_table" => self.free_table = v,
                 "b_approach" => self.b_approach = v,
                 "tau_approach" => self.tau_approach = v,
                 "overshoot" => self.overshoot = v,
@@ -961,10 +965,10 @@ impl World {
             hu_b: [human.stop_offset, human.sig_react, human.r_urg, human.coop_decel],
             hu_c: [human.tau_gate, human.tau_min, human.b_em, human.gap_model],
             hu_d: [human.gap_junction, human.gap_roundabout, human.t_scale, human.s0_scale],
-            hu_e: [human.lead_shift, human.lag_shift, human.lc_safety, human.turn_min],
+            hu_e: [human.lead_shift, human.lag_shift, human.lc_safety, human.a_y],
             hu_f: [human.b_approach, human.tau_approach, human.overshoot, human.standing],
             hu_g: [human.see, human.lc_slope, human.stop_s0, human.comfort],
-            hu_i: [human.gipps_b, human.gipps_tau, human.w_s_near, 0.0],
+            hu_i: [human.gipps_b, human.gipps_tau, human.w_s_near, human.free_table],
             hu_h: [human.stub, human.lead_far, human.lag_far, human.b_end],
             hm_a: [human.tte0, human.s_0, human.s_t, human.s_lag],
             hm_b: [human.s_lead, human.s_driver, human.w_f, human.t_f],
@@ -1129,6 +1133,7 @@ impl World {
                 let lp = &ph[li];
                 g.gz = lp.gz;
                 g.curve_v = lp.curve_v;
+                g.sqrt_path_r = lp.sqrt_path_r;
                 g.sqrt_r = lp.sqrt_r;
                 g.s_curve = lp.s_curve;
                 g.s_curve_end = lp.s_curve_end;

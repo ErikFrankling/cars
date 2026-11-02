@@ -211,6 +211,7 @@ struct Lane {
     gz: f32,
     curve_v: f32,
     sqrt_r: f32,
+    sqrt_path_r: f32,
     s_curve: f32,
     s_curve_end: f32,
     width: f32,
@@ -626,8 +627,8 @@ var<private> hu_comfort: f32 = 1.5;
 var<private> hu_stop_s0: f32 = 1.0;
 var<private> pl_bias: f32 = 0.0;
 var<private> pl_w_lead: f32 = 1.0;
-var<private> hu_gipps_b: f32 = 4.5;
-var<private> hu_gipps_tau: f32 = 0.4;
+var<private> hu_gipps_b: f32 = 3.0;
+var<private> hu_gipps_tau: f32 = 0.5;
 
 // The persona as stored by world.rs: T 0.6-3 s, s0 0.5-6 m, amax 1-3 m/s2. Places have their own medians.
 
@@ -637,6 +638,7 @@ fn hu_load(persona: u32, af: f32, n: f32, k: f32, t_scale: f32, s0_scale: f32) {
     hu_t = (0.6 + p.x * 2.4) * t_scale;
     hu_s0 = (0.5 + p.y * 5.5) * s0_scale;
     hu_amax = 1.0 + p.z * 2.0;
+    if (ty.a0 > 0.0) { hu_amax = min(hu_amax, ty.a0); }
     hu_af = af;
     hu_n = n;
     hu_k = k;
@@ -665,6 +667,8 @@ fn hu_target(v: f32, g: f32, vl: f32, v0: f32, s0: f32) -> f32 {
     let k2e = HU_K2 * sqrt(15.0 / max(g, 2.0));
     var a = clamp(HU_K1 * (g - s0 - hu_t * v) + k2e * dv, -HU_BMAX, hu_a_up(v, v0));
     if (dv < 0.0) { a = min(a, -dv * dv / (2.0 * max(g - 0.5, 0.3))); }
+    // Report 19 fix 10: pulling away, drivers use what the car has, not the gap feedback, once the gap is opening.
+    if (v < 5.0 && dv > 0.0 && g > s0 + hu_t * v) { a = max(a, hu_a_up(v, v0)); }
     return a;
 }
 

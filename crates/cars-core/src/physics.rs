@@ -16,6 +16,8 @@ pub struct LanePhys {
     pub gz: f32,
     pub curve_v: f32,
     pub sqrt_r: f32,
+    /// Root of the radius a driver's path has: over a whole junction turn, over 30 m on a road. See report 19.
+    pub sqrt_path_r: f32,
     pub s_curve: f32,
     pub s_curve_end: f32,
     pub geom_length: f32,
@@ -64,6 +66,35 @@ fn radius(a: [f32; 2], b: [f32; 2], c: [f32; 2]) -> f32 {
 /// Lateral acceleration drivers accept at a radius: Xu et al., capped at Bosetti's measured comfort.
 fn driver_lateral(r: f32, cap: f32) -> f32 {
     (20.5 * r.powf(-0.46) - 0.35).min(cap)
+}
+
+/// Map junctions are drawn 3 to 6 times tighter than cars drive, and a short chord turns each vertex of a polyline into
+/// a corner. So: a turn as one arc, its length over the angle it turns through; a road, the tightest over 30 m.
+fn path_radius(internal: bool, shape: &[[f32; 2]], cum: &[f32], geom: f32) -> f32 {
+    if internal {
+        let mut angle = 0.0f32;
+        for w in shape.windows(3) {
+            let a = (w[1][1] - w[0][1]).atan2(w[1][0] - w[0][0]);
+            let b = (w[2][1] - w[1][1]).atan2(w[2][0] - w[1][0]);
+            let mut d = b - a;
+            while d > std::f32::consts::PI {
+                d -= 2.0 * std::f32::consts::PI;
+            }
+            while d < -std::f32::consts::PI {
+                d += 2.0 * std::f32::consts::PI;
+            }
+            angle += d;
+        }
+        return if angle.abs() < 0.05 { 1e6 } else { geom / angle.abs() };
+    }
+    let half = 15.0f32.min(geom / 2.0);
+    let mut r = 1e6f32;
+    let mut s = half;
+    while s <= geom - half {
+        r = r.min(radius(point_at(shape, cum, s - half), point_at(shape, cum, s), point_at(shape, cum, s + half)));
+        s += 2.0;
+    }
+    r
 }
 
 pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
@@ -119,6 +150,7 @@ pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
             }
             p.curve_v = lowest;
             p.sqrt_r = tightest.sqrt();
+            p.sqrt_path_r = path_radius(net.edges[l.edge as usize].func == crate::net::EdgeFunc::Internal, &l.shape, &cum, geom).max(5.0).sqrt();
             p.s_curve = lo as f32 * scale;
             p.s_curve_end = (hi as f32 + 1.0) * scale;
             p

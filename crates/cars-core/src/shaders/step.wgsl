@@ -99,7 +99,20 @@ struct LcPlan {
 
 fn is_internal(l: u32) -> bool { return (lanes[l].flags & LANE_INTERNAL) != 0u; }
 
-fn lane_vmax(l: u32, sf: f32) -> f32 { return min(lanes[l].speed * sf, ty.max_speed); }
+fn lane_vmax(l: u32, sf: f32) -> f32 {
+    var v = lanes[l].speed * sf;
+    // Report 19 fix 12, VTI 1001, municipal main streets: mean free speed against the limit at 40, 50, 60, 70 km/h.
+    if (P.hu_i.w > 0.0 && ty.model == MODEL_HUMAN && mu > 0.0) {
+        let k = lanes[l].speed;
+        var m = 1.0;
+        if (k < 13.89) { m = mix(0.98, 0.90, clamp((k - 11.11) / 2.78, 0.0, 1.0)); }
+        else if (k < 16.67) { m = mix(0.90, 0.85, (k - 13.89) / 2.78); }
+        else if (k < 19.44) { m = mix(0.85, 0.89, (k - 16.67) / 2.77); }
+        else if (k < 22.22) { m = mix(0.89, 1.0, (k - 19.44) / 2.78); }
+        v *= m;
+    }
+    return min(v, ty.max_speed);
+}
 
 fn ph_setup(e: Veh) {
     if (mu <= 0.0) { return; }
@@ -125,12 +138,26 @@ fn hu_follower_share(trip: u32, lag: f32, closing: f32) -> f32 {
     return P.hm_b.z * wd * clamp(0.2 + lag / 5.0, 0.2, 1.0) * select(1.0, 0.5, closing > 3.0);
 }
 
+// Report 19: drivers hold about the same sideways acceleration whatever the radius, 3,584 real turns. Per driver, on the
+// radius a car drives rather than the one a polyline draws. No floor.
+fn is_internal_flag(l: Lane) -> bool { return (l.flags & LANE_INTERNAL) != 0u; }
+
+fn hu_corner(l: Lane, trip: u32) -> f32 {
+    if (l.sqrt_path_r <= 0.0) { return 0.0; }
+    let u1 = max(f32(pcg(trip * 2654435761u ^ 51u) >> 8u) / 16777216.0, 1e-4);
+    let u2 = f32(pcg(trip * 2654435761u ^ 52u) >> 8u) / 16777216.0;
+    let a_y = min(P.hu_e.w * exp(0.30 * sqrt(-2.0 * log(u1)) * cos(6.2831853 * u2)), 4.3);
+    var road = l.speed;
+    if (l.links_count != 0u && is_internal_flag(l)) { road = lanes[links[l.links_start].to_lane].speed; }
+    return min(l.sqrt_path_r * sqrt(a_y), road);
+}
+
 fn hu_setup(e: Veh) {
     hu_on = false;
     if (ty.model != MODEL_HUMAN || mu <= 0.0) { return; }
     hu_load(trips[e.trip].persona, e.hu_acc, e.hu_noise, P.hu_k, P.hu_d.z, P.hu_d.w);
     hu_v0 = lane_vmax(e.lane, e.sf);
-    if (is_internal(e.lane)) { hu_v0 = max(hu_v0, min(P.hu_e.w, lanes[e.lane].speed * 2.0)); }
+    if (is_internal(e.lane)) { hu_v0 = max(hu_v0, hu_corner(lanes[e.lane], e.trip)); }
 }
 
 // A driver's critical gap at this link: TRVMB's as the physics holds it, and the Swiss measurement at roundabouts.
@@ -147,7 +174,8 @@ fn hu_can_stop(state: u32, seen: f32, speed: f32, kinematic: bool, trip: u32) ->
     let ttl = seen / max(speed, 0.1);
     if (have_yellow(state)) {
         if (go) { return false; }
-        if (ttl >= hu_yellow_ttl(trips[trip].persona2)) { return true; }
+        // Report 19: real drivers do not stop for yellow on more than about 3 m/s².
+        if (ttl >= hu_yellow_ttl(trips[trip].persona2) && speed * speed / (2.0 * max(seen, 0.1)) <= 3.0) { return true; }
         ego_flags |= F_YELLOW_GO;
         return false;
     }
@@ -714,7 +742,7 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
             let la = lanes[lane];
             // netconvert's corners are tighter than the paths drivers take through them. Calibrated on the
             // turning saturation flow of TRVMB, and a parameter.
-            let vc = select(ph_curve_limit(la), max(ph_curve_limit(la), P.hu_e.w), hu_on);
+            let vc = select(ph_curve_limit(la), hu_corner(la, ego.trip), hu_on);
             let start = seen - la.length + la.s_curve;
             if (seen - la.length + la.s_curve_end >= 0.0) {
                 var va = vc;
@@ -850,7 +878,7 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
         lane = next_lane;
         lane_max = lane_vmax(lane, ego.sf);
         // The same on netconvert's speed for the corner as on its shape.
-        if (hu_on && is_internal(lane)) { lane_max = max(lane_max, min(P.hu_e.w, lanes[lane].speed * 2.0)); }
+        if (hu_on && is_internal(lane)) { lane_max = max(lane_max, hu_corner(lanes[lane], ego.trip)); }
         let va = max(free_speed(speed, seen, lane_max, pl_lane_vmax), v_min_comfort - EPS);
         pl_v = min(va, pl_v);
         let len = lanes[lane].length;
@@ -1987,10 +2015,11 @@ fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32) {
     if (v_lat <= 0.0) {
         let d = max(f32(((*e).hu_state >> 8u) & 255u) * 0.1, 1.0);
         var du = min(1.0, 0.5 * (v0 + v1) * P.hu_g.y * d / (1.875 * w)) * dt / d;
+        let du_cap = 1.3 * dt / (1.875 * w);   // report 19 fix 13: peak 1.3 m/s, real p95 1.26
         // Faster than planned if the lane is running out: the body must be across by its end.
         let left = (lanes[(*e).lane].length - (*e).pos) / max(0.5 * (v0 + v1), 0.1);
         if (left < (1.0 - u) * d) { du = max(du, (1.0 - u) * dt / max(left, dt)); }
-        u = min(1.0, u + du);
+        u = min(1.0, u + min(du, du_cap));
     } else {
         let total = w / v_lat + 1.0;
         u = min(1.0, u + min(1.0, 0.5 * (v0 + v1) * 0.21256 / v_lat) * dt / total);

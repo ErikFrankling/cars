@@ -23,10 +23,10 @@ MG = Path(os.environ.get('MG_SCRIPTS', '/home/erikf/.t3/projects/cars/research/t
 W = 3.2
 # zone m, approach m, main veh/h, ramp veh/h, main limit, ramp limit, neck m/s, speed spread
 SCENES = {
-    'i80': dict(zone=54, up=800, main=800, ramp=750, v=20, von=20, neck=8, dev=0.1),
-    'us101': dict(zone=216, up=800, main=1500, ramp=500, v=20, von=20, neck=12, dev=0.1),
-    'i395': dict(zone=63, up=800, main=1300, ramp=700, v=20, von=20, neck=14, dev=0.1),
-    'a39': dict(zone=400, up=1500, main=1500, ramp=500, v=36, von=22, neck=36, dev=0.18),
+    'i80': dict(zone=54, up=800, main=600, ramp=550, v=20, von=20, neck=5, dev=0.1),
+    'us101': dict(zone=216, up=800, main=1150, ramp=300, v=20, von=20, neck=12, dev=0.1),
+    'i395': dict(zone=63, up=800, main=700, ramp=400, v=20, von=20, neck=8, dev=0.1),
+    'a39': dict(zone=400, up=1500, main=1200, ramp=300, v=36, von=22, neck=36, dev=0.18),
 }
 # Row: (name, key in the row dict, I-80, US-101, I-395, A39). A target is (low, high), or None.
 TARGETS = [
