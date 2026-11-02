@@ -1,6 +1,6 @@
 # Working in this repo
 
-A GPU reimplementation of SUMO's microscopic traffic simulation, in Rust and WGSL. Goal: flows statistically comparable to SUMO at far higher speed.
+A GPU microscopic traffic simulator in Rust and WGSL. Goal: match real measured traffic, at network level, on data the model never saw. Reality is the reference, not SUMO; see `research/truth/VALIDATION-GATE.md`. Human-only traffic must pass that gate before any self-driving work counts. It began as a reimplementation of SUMO, and it still reads SUMO's file formats. Matching SUMO is only a regression check that the old compatibility mode hasn't broken, never evidence of accuracy.
 
 The GPU also drives Erik's desktop. Scale every experiment from small to big, keep GPU submissions short (Sim::run does this), keep 3 GB of VRAM spare, run one GPU job at a time, leave nothing running. CPU jobs over about 10 minutes go to the homelab with `heavy`.
 
@@ -8,8 +8,12 @@ The GPU also drives Erik's desktop. Scale every experiment from small to big, ke
 - `scripts/golden.py` compares trajectories with SUMO. `scripts/junction_tests.py` compares junctions route by route. `scripts/cmp_thesis.py`, `cmp_edges.py`, `cmp_lanes.py` compare runs. `target/release/sweep` runs a thesis sweep as replicas in one GPU world; thesis SUMO results are in `/home/erikf/projects/personal/thesis-src/bachelor/results/processed/metrics.csv`.
 - `research/sumo-0*.md` are the implementation specs, transcribed from SUMO 1.28. The SUMO source is at `/home/erikf/projects/personal/thesis-src/sumo/src`.
 
+- `shaders/av_junction.wgsl` and `coord.rs` are the signal-free coordinator (D8, research/truth/09). `cars av` runs it and prints JSON; `scripts/d8/` holds demand, sweeps, plots and clips; `--cj` works on `cars record` too. `--cj-plan off|profile|stable|full|cubic|dr|route` switches the planned approach (research/truth/09d, 09e); `route` is the design and adds storage credit across junctions, `off` stays bit-identical to the D8 baseline. `--cj-plan-peak` caps peak lateral acceleration. `scripts/d8/brake.py` is the braking metric, `plan_runs.py` the sweeps, `stockholm2.py` the Stockholm district on the corrected demand; on the homelab run them through `heavy --big -- scripts/d8/worker.sh ...`, which brings Mesa's CPU Vulkan driver. Set `CARS_ADAPTER=llvmpipe` for debugging without the GPU lock, `CARS_SHADER_DIR` to load shaders without rebuilding.
 - `cars run --trace` writes trajectories and `cars replay` draws them with no simulation, so an incident stays in the run that had it. `cars record`, `cars shot` and `cars junctions` also look at intersections up close. `scripts/intersection_gallery.py`, `scripts/physics_qa.py` and `scripts/cars_trace.py` build on them; see `crates/cars-cli/RECORDING.md`.
+- `crates/cars-gui` is the desktop app (winit, egui, wgpu), started with `scripts/cars-gui.sh`; its README is the tutorial. `crates/cars-gui/registry.toml` lists scenarios, each with a required trust label from research/truth/VALIDATION-GATE.md, and models; adding either needs no rebuild. Overlays live in `cars-core/src/overlay.rs` behind a `Paint` trait, shared with `cars record`.
 
 Off the GPU, `CARS_ADAPTER=llvmpipe` runs small scenes without the GPU lock. llvmpipe's default 256-bit vectors silently mix up vehicles in the plan kernel, so the binary sets `LP_NATIVE_VECTOR_WIDTH=128` itself; never override it to 256.
 
 No GPU kernel may use function-local arrays outside `lc_best`. Comments stay sparse.
+
+To find out why something happens, see `crates/cars-cli/DEBUGGING.md`: `cars run --trace f --why`, then `cars why`, `cars jam`, `cars tsd`, `cars junction`, `cars compare`, `cars dist`. Reasons are probes in `crates/cars-core/src/why.rs`, patched in only with `--why`; a new limit in a kernel needs one there.

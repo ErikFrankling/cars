@@ -1,9 +1,44 @@
 {
- "r4_n7_ramps.rou.gz": {
-  "vehicles_0600_1830": 1041369,
-  "cordon_crossings": 331298,
-  "essingeleden": 58905,
-  "total": 390203,
-  "ratio_to_real": 0.9731330553449583
+ "stockholm.rou.gz": {
+  "vehicles_0600_1830": 2262705,
+  "cordon_crossings": 220990,
+  "essingeleden": 37278,
+  "total": 258268,
+  "ratio_to_real": 0.6440983999042337
+ },
+ "stockholm60.rou.gz": {
+  "vehicles_0600_1830": 1388309,
+  "cordon_crossings": 135532,
+  "essingeleden": 22915,
+  "total": 158447,
+  "ratio_to_real": 0.395153325884841
+ },
+ "r2_short60.rou.gz": {
+  "vehicles_0600_1830": 1388309,
+  "cordon_crossings": 90777,
+  "essingeleden": 21008,
+  "total": 111785,
+  "ratio_to_real": 0.27878227125813015
+ },
+ "r4_km3.rou.gz": {
+  "vehicles_0600_1830": 1085396,
+  "cordon_crossings": 314806,
+  "essingeleden": 58393,
+  "total": 373199,
+  "ratio_to_real": 0.9307265272734527
+ },
+ "r4_km6.rou.gz": {
+  "vehicles_0600_1830": 1006723,
+  "cordon_crossings": 308352,
+  "essingeleden": 59746,
+  "total": 368098,
+  "ratio_to_real": 0.9180050676349707
+ },
+ "r4_km12.rou.gz": {
+  "vehicles_0600_1830": 960130,
+  "cordon_crossings": 361574,
+  "essingeleden": 64385,
+  "total": 425959,
+  "ratio_to_real": 1.0623054746418739
  }
 }

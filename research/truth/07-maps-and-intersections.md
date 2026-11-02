@@ -4,7 +4,7 @@ First draft by another model, 2026-10-31. Checked and corrected by Opus on 2026-
 
 ## Short answer
 
-Is the problem the map data? Partly, and mostly not the part the first draft stressed. Lane counts and geometry agree with OSM on almost every edge where OSM has a tag, though 188 major-road edges fall to one lane because the tag is missing. The signal layer is the weak part: one real installation becomes several independent controllers, every controller gets the same generated 90 s program with offset 0, and many stop lines sit on edges shorter than a car. Bus lanes are also open to cars, which errs the other way and adds capacity that does not exist. How much of Stockholm's overload this explains is measured separately by the agent running the simulator; this report does not claim an effect size.
+Is the problem the map data? Partly, and mostly not the part the first draft stressed. Lane counts and geometry agree with OSM on almost every edge where OSM has a tag, though 188 major-road edges fall to one lane because the tag is missing. The signal layer is the weak part: one real installation becomes several independent controllers, every controller gets the same generated 90 s program with offset 0, and many stop lines sit on edges shorter than a car. Bus lanes are also open to cars, which errs the other way and adds capacity that does not exist. How much of Stockholm's overload this explains is measured in [report 02](02-stockholm-why-overloaded.md#the-register-based-net-locks-up-harder): the map conversion is a real cause, demand a larger one, and this report's register-based net makes traffic worse until real signal plans exist.
 
 ## Findings, corrected
 
@@ -282,7 +282,7 @@ Checked 2026-11-01 by rerunning the scripts and adding new measurements. New scr
 
 ### What remains unknown
 
-- Effect on traffic. A separate agent is running it. Nothing here shows the new net reduces overload. It has less bus-lane capacity and fewer signal stops, which pull opposite ways.
+- ~~Effect on traffic.~~ Now measured, [report 02](02-stockholm-why-overloaded.md#the-register-based-net-locks-up-harder). On identical shortest-path demand, teleports by 10:00: original net 1,721, `--osm.lane-access` 2,692, `--tls.join` alone 8,572, stage 1 12,172, `v5_inventory` 13,444. A full day of 60% demand: 631,888 on `v5_inventory` against 9,558 on a net with `--tls.discard-simple --tls.join`, at the same point of route feedback. Over half of its stuck lane heads wait on red. So the most faithful signal positions perform worst while their programs are generated. What remains unknown is whether real plans close that gap.
 - Real phase order, greens, offsets and detectors, except one corridor's cycles. Signal group counts are known, not what they do.
 - State-road signals. The register is the city's. Where it is silent or has only poles and NVDB says yes, as at Roslagstull and Lindhagensplan, I kept the signal and cannot say who runs it or how.
 - Register age. Lanterns in Slussen's work site may be stale or not yet active. 41 installations with vehicle lanterns have a car road but no OSM signal, for example 4413 Norrbro with 5 groups, where OSM has give-way signs. Either the register or OSM is wrong; a street check decides. [list](maps-signal-missing-baseline.csv)

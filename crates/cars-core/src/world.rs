@@ -45,7 +45,8 @@ pub struct GpuParams {
     pub lost_after: f32,
     /// Hold zones by where a body can reach, and ask again for those ahead on the lane. Off: by lane.
     pub zones_ahead: u32,
-    pub pad: [f32; 2],
+    pub meter_n: u32,
+    pub pad: f32,
     pub hu_k: f32,
     pub hu_rho: f32,
     pub hu_nscale: f32,
@@ -126,6 +127,20 @@ pub struct GpuVeh {
     pub hu_state: u32,
     pub lc_bias: f32,
     pub lc_edge: f32,
+    pub cj_t_line: f32,
+    pub cj_v_line: f32,
+    pub cj_v_cruise: f32,
+    pub cj_link: u32,
+    pub cj_state: u32,
+    pub cj_zone_t: f32,
+    pub cj_seq: u32,
+    pub cj_hold: f32,
+    pub cj_v_cmd: f32,
+    pub cj_yield: f32,
+    pub cj_t_ms: u32,
+    pub cj_plan_ms: u32,
+    pub cj_rx_ms: u32,
+    pub cj_rank: u32,
 }
 
 #[repr(C)]
@@ -271,6 +286,8 @@ pub struct GpuVType {
     pub m_ref: f32,
     /// How hard a driver assumes the leader will brake, Gipps' b-hat.
     pub b_assume: f32,
+    pub reaction: f32,
+    pub pad2: f32,
 }
 
 #[repr(C)]
@@ -410,6 +427,7 @@ pub fn human_flags(off: &[String]) -> u32 {
 }
 
 /// Rules of `research/truth/14-human-courtesy.md`, as bits of `GpuParams::hu_flags`.
+pub const F_SHADOW: u32 = 16384;
 pub const HUMAN_RULES: [(&str, u32); 13] = [("courtesy", 1), ("shrink", 2), ("offset", 4), ("anticipate", 8), ("miss", 16), ("gate", 32), ("yellow", 64), ("tte", 128), ("start", 256), ("edge", 512), ("follow", 1024), ("match", 2048), ("steer", 4096)];
 
 /// The human driver's numbers that are ours to choose. Provenance of each: `shaders/HUMAN.md`.
@@ -600,6 +618,12 @@ pub struct SimConfig {
     pub route_arena: u32,
     /// Physical parameters a sensitivity test wants to move. See `tune`.
     pub tune: Vec<(String, f32)>,
+    /// Junctions run by the coordinator instead of SUMO's rules.
+    pub coord: Option<crate::coord::CoordConfig>,
+    /// One insertion queue per lane for trips with a fixed departure lane, instead of one per edge.
+    pub per_lane_queues: bool,
+    /// Hold new vehicles outside the network while this many are on it. 0 for no metering.
+    pub meter_n: u32,
 }
 
 impl SimConfig {
@@ -632,6 +656,9 @@ impl Default for SimConfig {
             human: HumanParams::default(),
             route_arena: 0,
             tune: Vec::new(),
+            coord: None,
+            per_lane_queues: false,
+            meter_n: 0,
         }
     }
 }
@@ -679,6 +706,7 @@ pub struct World {
     pub speed_trace: Vec<f32>,
     /// Lane geometry for the detector: x, y, distance along, per point.
     pub shape_points: Vec<[f32; 4]>,
+    pub coord: Option<crate::coord::CoordWorld>,
 }
 
 fn splitmix(state: &mut u64) -> u64 {
@@ -823,7 +851,8 @@ fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
         CfModel::Idm => 1,
         CfModel::Acc => 2,
         CfModel::Cacc => 3,
-        CfModel::Human => 4,
+        CfModel::Av => 4,
+        CfModel::Human => 5,
     };
     let delta = t.params.get("delta").and_then(|v| v.parse().ok()).unwrap_or(4.0);
     let stepping: f32 = t.params.get("stepping").and_then(|v| v.parse().ok()).unwrap_or(0.25);
@@ -856,8 +885,9 @@ fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
         collision_factor: t.params.get("collisionMinGapFactor").and_then(|v| v.parse().ok()).unwrap_or(match t.model {
             CfModel::Krauss | CfModel::Eidm => 1.0,
             CfModel::Idm | CfModel::Acc | CfModel::Cacc => 0.1,
-            CfModel::Human => 0.0,
+            CfModel::Human | CfModel::Av => 0.0,
         }),
+        reaction: t.params.get("reactionTime").and_then(|v| v.parse().ok()).unwrap_or(0.3),
         ..Default::default()
     }
 }
@@ -900,8 +930,22 @@ impl World {
         }];
         let reps: &[Replica] = if replicas.is_empty() { &single } else { replicas };
         let mut key_base = 0u64;
+        let coord_base = cfg.coord.as_ref().map(|c| crate::coord::build(net, &topo, c, cfg.dt, cfg.seed));
+        if let Some(base) = &coord_base {
+            w.coord = Some(crate::coord::CoordWorld {
+                cfg: base.cfg,
+                ids: base.ids.clone(),
+                refused: base.refused.clone(),
+                mov_chain: base.mov_chain.clone(),
+                ..Default::default()
+            });
+        }
         for (ri, rep) in reps.iter().enumerate() {
-            w.append_replica(net, &topo, demand, cfg, rep, ri as u32, &mut key_base, phys.as_ref());
+            let lane0 = w.lanes.len() as u32;
+            w.append_replica(net, &topo, demand, cfg, rep, ri as u32, &mut key_base, phys.as_ref(), coord_base.as_ref());
+            if let (Some(base), Some(out)) = (&coord_base, w.coord.as_mut()) {
+                crate::coord::add_replica(out, base, lane0, ri as u32);
+            }
         }
         // Teleporting vehicles wait on one extra lane that nothing connects to.
         w.lanes.push(GpuLane {
@@ -920,6 +964,29 @@ impl World {
         w.total_cells = key_base;
         let key_bits = 64 - (key_base + 2).leading_zeros();
         assert!(key_bits < 32, "too many sort cells: {key_base}");
+        if let Some(out) = w.coord.as_mut() {
+            out.cfg.n_junctions = out.junctions.len() as u32;
+            out.cfg.n_apps = out.apps.len() as u32;
+            out.cfg.n_exits = out.exits.len() as u32;
+            out.n_replicas = reps.len() as u32;
+            // Which coordinator record each simulated lane belongs to, in every replica.
+            out.lane_info = vec![crate::coord::GpuCjLaneInfo { app: NONE, exit: NONE, box_mov: NONE, s_offset: 0.0 }; w.lanes.len()];
+            if let Some(base) = &coord_base {
+                let per_lanes = net.lanes.len();
+                for r in 0..reps.len() {
+                    let (a0, e0, m0) = (r * base.apps.len(), r * base.exits.len(), r * base.links.len());
+                    for (l, i) in base.lane_info.iter().enumerate() {
+                        let shift = |x: u32, by: usize| if x == NONE { NONE } else { x + by as u32 };
+                        out.lane_info[r * per_lanes + l] = crate::coord::GpuCjLaneInfo {
+                            app: shift(i.app, a0),
+                            exit: shift(i.exit, e0),
+                            box_mov: shift(i.box_mov, m0),
+                            s_offset: i.s_offset,
+                        };
+                    }
+                }
+            }
+        }
         let n_trips = w.trips.len() as u32;
         let capacity = if cfg.capacity == 0 { n_trips } else { cfg.capacity.min(n_trips) };
         // Shadows of lane changes share the vehicle array and get their own slice of it.
@@ -976,7 +1043,8 @@ impl World {
             hm_d: [human.q_edge, human.v_edge, human.tau_a, human.tau_sd],
             lost_after: cfg.tune("lost_after", 0.0),
             zones_ahead: cfg.tune("zones_ahead", 0.0) as u32,
-            pad: [0.0; 2],
+            meter_n: cfg.meter_n,
+            pad: 0.0,
         };
         w
     }
@@ -992,6 +1060,7 @@ impl World {
         ri: u32,
         key_base: &mut u64,
         phys: Option<&(Vec<crate::physics::LanePhys>, Vec<Vec<GpuZone>>)>,
+        coord: Option<&crate::coord::CoordWorld>,
     ) {
         let lane0 = self.lanes.len() as u32;
         let node_ids: std::collections::HashMap<&str, u32> = net.junctions.iter().enumerate().map(|(i, j)| (j.id.as_str(), i as u32)).collect();
@@ -1173,6 +1242,11 @@ impl World {
                 self.zones.extend(list.iter().map(|z| GpuZone { foe_lane: z.foe_lane + lane0, ..*z }));
             }
         }
+        if let Some(c) = coord {
+            for &(l, f) in &c.lane_flags {
+                self.lanes[lane0 as usize + l as usize].flags |= f;
+            }
+        }
 
         // Links must sit contiguously per lane: rebuild them lane by lane.
         // Connection order within a lane is preserved.
@@ -1275,7 +1349,10 @@ impl World {
                     flags |= 64;
                 }
                 flags |= (l.dir as u32) << 8;
-                if watched[id as usize] {
+                let coordinated = coord.is_some_and(|c| c.link_flags[id as usize] != 0);
+                if coordinated {
+                    flags |= crate::coord::L_COORD;
+                } else if watched[id as usize] {
                     flags |= 1 << 16;
                 }
                 self.links.push(GpuLink {
@@ -1310,6 +1387,7 @@ impl World {
         let _ = route0;
         let mut rng_state = rep.seed.wrapping_mul(0x2545F4914F6CDD1D) ^ (ri as u64 + 1);
         let mut by_edge: Vec<Vec<u32>> = vec![Vec::new(); net.edges.len()];
+        let mut by_lane: std::collections::BTreeMap<(u32, u32), Vec<u32>> = Default::default();
         let mut masks: std::collections::HashMap<(u32, u32), u32> = std::collections::HashMap::new();
         for (ti, t) in demand.trips.iter().enumerate() {
             if t.depart < cfg.begin_seconds as f64 {
@@ -1383,7 +1461,15 @@ impl World {
                 persona,
                 persona2,
             });
-            by_edge[route[0] as usize].push(id);
+            match t.depart_lane {
+                DepartLane::Index(l) if cfg.per_lane_queues => by_lane.entry((route[0], l)).or_default().push(id),
+                _ => by_edge[route[0] as usize].push(id),
+            }
+        }
+        for ((e, _), list) in by_lane {
+            let next = self.queue_trips.len() as u32;
+            self.queue_trips.extend_from_slice(&list);
+            self.queues.push(GpuQueue { edge: e + edge0, next, end: self.queue_trips.len() as u32, pad: 0 });
         }
         for (e, list) in by_edge.into_iter().enumerate() {
             if list.is_empty() {

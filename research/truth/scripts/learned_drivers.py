@@ -35,6 +35,7 @@ class P:
 
 # Calibrated in `baselines` against Stern's 22 cars, 260 m (see report section 4).
 HUMAN = P(a=2.0, b=2.1, T=0.7, s0=2.0, v0=30.0, noise=0.2, length=5.0)
+H05 = HUMAN.with_(model="feedback", k1=0.012807, k2=0.463185, T=1.27657, amax=1.65890, bmax=4.55588, s0=2.8, v0=30.0, q=0.2, tau_a=1.0, noise=0.0)
 RING = P(n=22, length=260.0, dt=0.1, warm=120.0, horizon=300.0)
 
 
@@ -178,6 +179,22 @@ class Ring:
             des = np.minimum(np.minimum(self.v + h.a * dt, vsafe), h.v0)
             des = des - h.sigma * h.a * dt * self.rng.random(des.shape)
             a = (np.maximum(des, 0.0) - self.v) / dt
+        elif getattr(h, "model", "idm") == "feedback":
+            # Report 05's chosen human: gap-speed feedback with a 1 s lag and correlated noise.
+            if not hasattr(self, "a_f"):
+                self.a_f = np.zeros_like(self.v)
+                self.n_ou = np.zeros_like(self.v)
+            dv = vl - self.v
+            k2e = h.k2 * np.sqrt(15.0 / np.maximum(gap, 2.0))
+            at = h.k1 * (gap - h.s0 - h.T * self.v) + k2e * dv
+            up = h.amax * np.maximum(1.0 - (self.v / h.v0) ** 4, -1.0)
+            at = np.maximum(np.minimum(at, up), -h.bmax)
+            at = np.where(dv < 0, np.minimum(at, -dv * dv / (2.0 * np.maximum(gap - 0.5, 0.3))), at)
+            self.a_f += (1.0 - np.exp(-dt / h.tau_a)) * (at - self.a_f)
+            rho = np.exp(-dt / 3.0)
+            self.n_ou = rho * self.n_ou + h.q * np.sqrt(1.0 - rho * rho) * self.rng.normal(0.0, 1.0, self.v.shape)
+            # Report 05 requires a guard: lag and noise alone can reach contact.
+            a = np.minimum(self.a_f + self.n_ou, (shield_limit(self.v, vl, gap, dt, b_f=6.0, b_l=6.0, m=0.3) - self.v) / dt)
         elif self.scale is None:
             a = idm(self.v, vl, gap, h)
         else:
@@ -470,15 +487,31 @@ def cmd_es_ring(a):
     if a.lmin:
         pass
     h = HUMAN
+    def humans(seed):
+        if a.humans == "h05":
+            return H05
+        if a.humans == "mix":
+            return H05 if seed % 2 else HUMAN
+        return HUMAN
     def rollout(th, seed):
         if a.lmin:
             r = np.random.default_rng(seed)
             c = cfg.with_(length=float(r.uniform(a.lmin, a.lmax)))
         else:
             c = cfg
-        env, steps = policy_rollout(th, c, h, seed, k=a.k, shield=a.shield, memory=a.memory)
+        k = a.k
+        if a.kmix:
+            k = int(np.random.default_rng(seed + 1).choice([int(x) for x in a.kmix.split(",")]))
+        env, steps = policy_rollout(th, c, humans(seed), seed, k=k, shield=a.shield, memory=a.memory)
         return fitness_from(env, a.reward, steps), (int(c.warm / c.dt) + steps) * c.n * th.shape[0]
     val = ring_val(cfg, h, a.memory, a.shield, a.reward, k=a.k)
+    if a.humans != "idm":
+        val_h = ring_val(cfg.with_(length=400.0), H05, a.memory, a.shield, a.reward, k=a.k)
+        val_i = val
+
+        def val(theta):
+            x, y = val_i(theta), val_h(theta)
+            return dict(x, score=0.5 * (x["score"] + y["score"]), h05_flow=y["flow"], h05_sd=y["sd"], h05_coll=y["coll"], coll=max(x["coll"], y["coll"]))
     OUT.mkdir(exist_ok=True)
     tag = a.tag
     def log(curve, best):
@@ -537,14 +570,17 @@ def ctrl_factory(cls, **kw0):
 
 def brake_test(act, cfg, h, seed, R=64, b=9.0, every=60.0, memory="ema", shield=False):
     """The car ahead of the AV brakes hard to a stop at random times, then drives on."""
-    if act == "idm":
-        env = Ring(R, cfg, h, seed, k=1, shield=False, memory=memory)
+    ctrl = None
+    if isinstance(act, str):
+        env = Ring(R, cfg, h, seed, k=1, shield=shield, memory=memory)
         net = None
     else:
         env = Ring(R, cfg, h, seed, k=1, shield=shield, memory=memory)
         net = Net(np.tile(act, (R, 1)))
     for _ in range(int(cfg.warm / cfg.dt)):
         env.step()
+    if isinstance(act, str) and act != "idm":
+        ctrl = {"pi": PISaturation, "fs": FollowerStopper}[act](env)
     env.reset_acc()
     rng = np.random.default_rng(seed + 1)
     steps = int(cfg.horizon / cfg.dt)
@@ -554,7 +590,7 @@ def brake_test(act, cfg, h, seed, R=64, b=9.0, every=60.0, memory="ema", shield=
         start = rng.random(R) < cfg.dt / every
         brake = (brake | start) & (env.v[:, lead] > 0.05)
         u = net(env.obs()) if net is not None else None
-        env_noise_a = out_to_accel(u[..., 0]) if u is not None else None
+        env_noise_a = out_to_accel(u[..., 0]) if u is not None else (ctrl() if ctrl else None)
         v_before = env.v[:, lead].copy()
         x_before = env.x[:, lead].copy()
         env.step(env_noise_a, u[..., 1:] if u is not None else None)
@@ -594,9 +630,30 @@ def cmd_brake(a):
             r = brake_test(z["theta"], cfg, HUMAN, 555, memory=args.get("memory", "ema"), shield=sh)
             out[f"{tag}{' + shield' if sh else ''}"] = r
             print(tag, sh, json.dumps(r), flush=True)
-    r = brake_test("idm", cfg, HUMAN, 555)
-    out["IDM"] = r
-    print("IDM", json.dumps(r))
+    for name, act in (("IDM", "idm"), ("PI with saturation", "pi"), ("FollowerStopper", "fs")):
+        for sh in (False, True):
+            if act == "idm" and sh:
+                continue
+            r = brake_test(act, cfg, HUMAN, 555, shield=sh)
+            out[f"{name}{' + shield' if sh else ''}"] = r
+            print(name, sh, json.dumps(r), flush=True)
+    (OUT / f"{a.out}.json").write_text(json.dumps(out, indent=1))
+
+
+def cmd_h05(a):
+    """Policies trained on IDM humans, tested on report 05's fitted human model at several densities."""
+    h05 = H05
+    base = RING.with_(horizon=600.0)
+    out = {}
+    for L_ in (150.0, 200.0, 260.0, 400.0):
+        c = base.with_(length=L_)
+        for name, fac in [("IDM (no noise)", ctrl_factory(IdmAV)), ("PI with saturation", ctrl_factory(PISaturation))] + [
+            (Path(p).stem, policy_factory(np.load(p)["theta"], json.loads(str(np.load(p)["args"])).get("memory", "ema"))) for p in a.policies
+        ]:
+            for sh in (False, True):
+                r = agg(fac(c, h05, 777001, 32, 1, shield=sh))
+                out.setdefault(name, {})[f"L={L_:.0f}" + (" rule" if sh else "")] = r
+                print(L_, name, sh, {k: round(r[k], 3) for k in ("flow", "sd", "wh_km", "gap", "coll", "shield")}, flush=True)
     (OUT / f"{a.out}.json").write_text(json.dumps(out, indent=1))
 
 
@@ -793,6 +850,8 @@ def main():
     c.add_argument("--warm", type=float, default=120.0); c.add_argument("--horizon", type=float, default=300.0)
     c.add_argument("--eval-every", type=int, default=10); c.add_argument("--init", default=None)
     c.add_argument("--lmin", type=float, default=0.0); c.add_argument("--lmax", type=float, default=0.0)
+    c.add_argument("--kmix", default="")
+    c.add_argument("--humans", default="idm")
     c = sp.add_parser("ppo"); c.set_defaults(fn=cmd_ppo)
     c.add_argument("--tag", required=True); c.add_argument("--seed", type=int, default=0)
     c.add_argument("--iters", type=int, default=100); c.add_argument("--envs", type=int, default=16)
@@ -808,6 +867,10 @@ def main():
     c.add_argument("--epochs", type=int, default=30)
     c = sp.add_parser("eval"); c.set_defaults(fn=cmd_eval)
     c.add_argument("policies", nargs="*"); c.add_argument("--out", required=True); c.add_argument("--baselines", action="store_true")
+    c = sp.add_parser("h05")
+    c.set_defaults(fn=cmd_h05)
+    c.add_argument("policies", nargs="*")
+    c.add_argument("--out", required=True)
     c = sp.add_parser("brake"); c.set_defaults(fn=cmd_brake)
     c.add_argument("policies", nargs="*"); c.add_argument("--out", required=True)
     args = p.parse_args()

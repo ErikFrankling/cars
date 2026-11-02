@@ -1,0 +1,44 @@
+## v2_day2
+| AM peak hour, share of daily km | 0.0773 | 0.05 to 0.085 | 0.045 to 0.1 | PASS |
+| PM peak hour, share of daily km | 0.0876 | 0.055 to 0.095 | 0.05 to 0.11 | PASS |
+| AM peak / midday hour | 1.51 | 1 to 1.4 | 0.9 to 1.7 | WARN |
+| PM peak / midday hour | 1.71 | 1 to 1.55 | 0.95 to 1.9 | WARN |
+| Night 22-06, share of daily km | 0.0716 | 0.055 to 0.125 | 0.04 to 0.17 | PASS |
+| 07-19, share of daily km | 0.782 | 0.7 to 0.82 | 0.65 to 0.85 | PASS |
+| Lowest hour / midday hour | 0.0592 | 0.04 to 0.16 | 0.02 to 0.2 | PASS |
+| Vehicle-km per person per weekday | 3.56 | 8 to 15 | 6 to 20 | FAIL |
+| Vehicles on road at peak, share of cars | 0.0228 | 0.05 to 0.11 | 0.035 to 0.15 | FAIL |
+| Mean network speed, km/h | 42.8 | 28 to 46 | 20 to 55 | PASS |
+| Worst hour 06-22 / night speed | 0.931 | 0.51 to 0.745 | 0.42 to 0.84 | FAIL |
+| Worst hour 06-22 / midday speed | 0.954 | 0.735 to 0.9 | 0.67 to 0.95 | FAIL |
+| Hour of worst speed (local, 24h) | 16 | 8 to 18 | 7 to 19 | PASS |
+| Hours with travel-time index above 1.3 | 0 | 6 to 15 | 2 to 17 | FAIL |
+| Mean trip length, km | 8.76 | 7 to 13 | 5 to 19 | PASS |
+| Mean trip duration, min | 12.6 | 16 to 30 | 13 to 35 | FAIL |
+| Mean trip speed, km/h | 41.8 | 20 to 35 | 16 to 40 | FAIL |
+| Main-road peak flow / capacity 521 veh/h/lane | 0.274 | 0.5 to 1.05 | 0.4 to 1.2 | FAIL |
+| Main-road peak density / critical 27.8 veh/km/lane | 0.13 | 0.4 to 1.05 | 0.3 to 1.4 | FAIL |
+| Main-road daily mean speed, km/h | 39.4 | 19 to 36 | 15 to 40 | WARN |
+{'PASS': 8, 'WARN': 3, 'FAIL': 9}
+## berlin_day
+| AM peak hour, share of daily km | 0.0611 | 0.05 to 0.085 | 0.045 to 0.1 | PASS |
+| PM peak hour, share of daily km | 0.0734 | 0.055 to 0.095 | 0.05 to 0.11 | PASS |
+| AM peak / midday hour | 0.941 | 1 to 1.4 | 0.9 to 1.7 | WARN |
+| PM peak / midday hour | 1.13 | 1 to 1.55 | 0.95 to 1.9 | PASS |
+| Night 22-06, share of daily km | 0.0478 | 0.055 to 0.125 | 0.04 to 0.17 | WARN |
+| 07-19, share of daily km | 0.778 | 0.7 to 0.82 | 0.65 to 0.85 | PASS |
+| Lowest hour / midday hour | 0.00609 | 0.04 to 0.16 | 0.02 to 0.2 | FAIL |
+| Vehicle-km per person per weekday | 4.27 | 8 to 15 | 6 to 20 | FAIL |
+| Vehicles on road at peak, share of cars | 0.0309 | 0.05 to 0.11 | 0.035 to 0.15 | FAIL |
+| Mean network speed, km/h | 34.3 | 28 to 46 | 20 to 55 | PASS |
+| Worst hour 06-22 / night speed | 0.57 | 0.51 to 0.745 | 0.42 to 0.84 | PASS |
+| Worst hour 06-22 / midday speed | 0.628 | 0.735 to 0.9 | 0.67 to 0.95 | FAIL |
+| Hour of worst speed (local, 24h) | 20 | 8 to 18 | 7 to 19 | FAIL |
+| Hours with travel-time index above 1.3 | 14 | 6 to 15 | 2 to 17 | PASS |
+| Mean trip length, km | 7.86 | 7 to 13 | 5 to 19 | PASS |
+| Mean trip duration, min | 14 | 16 to 30 | 13 to 35 | WARN |
+| Mean trip speed, km/h | 33.7 | 20 to 35 | 16 to 40 | PASS |
+| Main-road peak flow / capacity 521 veh/h/lane | 0.361 | 0.5 to 1.05 | 0.4 to 1.2 | FAIL |
+| Main-road peak density / critical 27.8 veh/km/lane | 0.205 | 0.4 to 1.05 | 0.3 to 1.4 | FAIL |
+| Main-road daily mean speed, km/h | 33 | 19 to 36 | 15 to 40 | PASS |
+{'PASS': 10, 'WARN': 3, 'FAIL': 7}

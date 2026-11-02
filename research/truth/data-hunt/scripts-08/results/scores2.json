@@ -1,0 +1,72 @@
+{
+ "flow_W_ff.npz": {
+  "ratios": {
+   "toll_op_plus_ess": 0.523,
+   "innerstad_0630_1830": 0.373,
+   "innerstad_dygn": 0.338,
+   "saltsjo_malar": 0.434,
+   "essingeleden_grondal": 0.357,
+   "centralbron": 0.424,
+   "vasterbron": 0.882,
+   "munkbroleden": 0.0,
+   "skeppsbron": 2.222,
+   "sodra_lanken_aby": 0.179,
+   "citysnittet": 0.461,
+   "regioncentrum": 0.366
+  },
+  "geomean_ratio": 0.404,
+  "shape_rmse_log": 0.378,
+  "shape_mape_pct": 27.5,
+  "vkm_stockholm_kommun_M": 2899.8,
+  "raw": {
+   "toll_op_plus_ess": 221936,
+   "innerstad_0630_1830": 116291,
+   "innerstad_dygn": 139220,
+   "essingeleden_grondal": 60927,
+   "centralbron": 42023,
+   "vasterbron": 19396,
+   "munkbroleden": 0,
+   "skeppsbron": 12222,
+   "saltsjo_malar": 134567,
+   "sodra_lanken_aby": 19188,
+   "citysnittet": 104958,
+   "regioncentrum": 356470,
+   "vkm_stockholm_kommun_M": 2900
+  }
+ },
+ "flow_S250_ff.npz": {
+  "ratios": {
+   "toll_op_plus_ess": 1.127,
+   "innerstad_0630_1830": 0.867,
+   "innerstad_dygn": 0.831,
+   "saltsjo_malar": 0.896,
+   "essingeleden_grondal": 0.78,
+   "centralbron": 0.954,
+   "vasterbron": 0.657,
+   "munkbroleden": 0.348,
+   "skeppsbron": 5.698,
+   "sodra_lanken_aby": 0.295,
+   "citysnittet": 1.275,
+   "regioncentrum": 0.854
+  },
+  "geomean_ratio": 0.805,
+  "shape_rmse_log": 0.377,
+  "shape_mape_pct": 23.0,
+  "vkm_stockholm_kommun_M": 6428.0,
+  "raw": {
+   "toll_op_plus_ess": 478299,
+   "innerstad_0630_1830": 270038,
+   "innerstad_dygn": 342589,
+   "essingeleden_grondal": 133041,
+   "centralbron": 94455,
+   "vasterbron": 14445,
+   "munkbroleden": 4529,
+   "skeppsbron": 31337,
+   "saltsjo_malar": 277807,
+   "sodra_lanken_aby": 31665,
+   "citysnittet": 290067,
+   "regioncentrum": 832332,
+   "vkm_stockholm_kommun_M": 6428
+  }
+ }
+}

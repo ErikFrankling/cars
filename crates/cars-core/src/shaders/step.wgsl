@@ -190,6 +190,7 @@ fn ph_curve_limit(l: Lane) -> f32 {
 }
 
 fn link_state(l: u32) -> u32 {
+    if ((links[l].flags & L_COORD) != 0u) { return CH_r; }
     let k = links[l].tl;
     if (k == NONE) { return links[l].state; }
     let ts = tls[k];
@@ -610,54 +611,6 @@ fn apply_script(flags: u32, cap: f32) {
 
 fn route_has_next(route_i: u32, route_end: u32) -> bool { return route_i + 1u < route_end; }
 
-// How far a vehicle can stay on from `lane` along its route without changing lanes.
-fn continuation_length(start: u32, route_i: u32, route_end: u32) -> f32 {
-    var l = start;
-    var r = route_i;
-    var total = 0.0;
-    for (var d = 0u; d < 8u; d++) {
-        total += lanes[l].length;
-        if (total > 3000.0 || r + 1u >= route_end) { return 1e9; }
-        let la = lanes[l];
-        let want = routes[r + 1u];
-        var next = NONE;
-        for (var k = 0u; k < la.links_count; k++) {
-            let t = links[la.links_start + k].to_lane;
-            if (links[la.links_start + k].to_edge == want && (next == NONE || t > next)) { next = t; }
-        }
-        if (next == NONE) { return total; }
-        l = next;
-        r += 1u;
-    }
-    return total;
-}
-
-// The link out of `lane` that continues the route. With several, as SUMO's best lanes: the target
-// lane with the longest continuation, and the first of equals.
-fn pick_link(lane: u32, route_i: u32, route_end: u32) -> u32 {
-    let l = lanes[lane];
-    if (l.links_count == 0u) { return NONE; }
-    if ((l.flags & LANE_INTERNAL) != 0u) { return l.links_start; }
-    if (route_i + 1u >= route_end) { return NONE; }
-    let want = routes[route_i + 1u];
-    var first = NONE;
-    var best_len = -1.0;
-    var count = 0u;
-    for (var k = 0u; k < l.links_count; k++) {
-        let c = l.links_start + k;
-        if (links[c].to_edge != want || (lanes[links[c].to_lane].allow & ty.vclass) != ty.vclass) { continue; }
-        count += 1u;
-        if (count == 1u) { first = c; continue; }
-        if (count == 2u) { best_len = continuation_length(links[first].to_lane, route_i + 1u, route_end); }
-        let len = continuation_length(links[c].to_lane, route_i + 1u, route_end);
-        if (len > best_len) {
-            best_len = len;
-            first = c;
-        }
-    }
-    return first;
-}
-
 fn push_item(link: u32, v_pass: f32, v_wait: f32, request: bool, arrival: f32, arr_speed: f32, braking: f32, dist: f32, leave: f32) {
     if (pl_n >= MAX_ITEMS) {
         atomicAdd(&C[C_ITEMS_FULL], 1u);
@@ -677,6 +630,34 @@ fn push_item(link: u32, v_pass: f32, v_wait: f32, request: bool, arrival: f32, a
     pl_n += 1u;
 }
 
+// Only the links it will cross: cj_apply has decided the speed.
+fn plan_cj(i: u32, ego: Veh) {
+    pl_base = i * MAX_ITEMS;
+    pl_n = 0u;
+    var lane = ego.lane;
+    var route_i = ego.route_i;
+    var seen = lanes[lane].length - ego.pos;
+    let reach = 2.0 * max(ego.speed, ty.max_speed) * dt + 5.0;
+    loop {
+        if (!is_internal(lane) && route_i + 1u >= ego.route_end) {
+            push_item(NONE, 1e9, 1e9, false, 0.0, 0.0, 0.0, seen, -1.0);
+            break;
+        }
+        let link = pick_link(lane, route_i, ego.route_end);
+        if (link == NONE) {
+            push_item(NONE, 1e9, 1e9, false, 0.0, 0.0, 0.0, seen, -1.0);
+            break;
+        }
+        push_item(link, 1e9, 1e9, false, 0.0, 0.0, 0.0, seen, -1.0);
+        if (seen > reach || pl_n >= MAX_ITEMS) { break; }
+        let lk = links[link];
+        if ((lk.flags & L_HAS_VIA) == 0u) { route_i += 1u; }
+        lane = lk.next_lane;
+        seen += lanes[lane].length;
+    }
+    cur[i].n_items = pl_n;
+}
+
 @compute @workgroup_size(64)
 fn plan(@builtin(global_invocation_id) id: vec3u) {
     let i = id.x;
@@ -690,6 +671,10 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     dt = P.dt;
     mu = P.mu;
     cert_on = (P.safety & 1u) != 0u;
+    if (cj_controlled(ego)) {
+        plan_cj(i, ego);
+        return;
+    }
     ego_flags = ego.flags;
     ego_acc = ego.acc;
     mode_done = false;
@@ -1754,6 +1739,12 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     v_next = lc_patch_speed(v_next, e, vmax_here);
     v_next = max(v_next, v_safe_min);
     if (v_next < 0.1 * EPS * dt) { v_next = 0.0; }
+    let cj = cj_controlled(e);
+    if (cj) {
+        // A car with no grant yet can still slow for a lane change next to it. A firm one flies its slot.
+        let st = e.cj_state & CJ_STATE_MASK;
+        if (st == CJ_FIRM || st == CJ_BOX || (e.cj_state & CJ_STALLED) != 0u) { v_next = e.cj_v_cmd; } else { v_next = min(v_next, e.cj_v_cmd); }
+    }
 
     var acc = (v_next - speed) / dt;
     let old_pos = e.pos;
@@ -1799,6 +1790,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         ph_lateral(&e, speed, v_next);
     } else {
         e.pos += v_next * dt;
+        if (cj) { e.pos -= 0.5 * (v_next - speed) * dt; }
         e.speed = v_next;
         e.acc = acc;
     }
@@ -2211,6 +2203,11 @@ fn collide(@builtin(global_invocation_id) id: vec3u) {
     cert_on = (P.safety & 1u) != 0u;
     let gap = b.pos - types[b.vtype].length - a.pos - ty.collision_factor * ty.min_gap;
     if (gap < -EPS) {
+        if (ty.model == MODEL_AV) {
+            // The auditor counts it. Never repaired.
+            atomicAdd(&C[C_COLLISIONS], 1u);
+            return;
+        }
         var e = a;
         teleport(&e);
         cur[i] = e;
@@ -2398,7 +2395,7 @@ fn lane_is_good(l: u32, route_i: u32, route_end: u32) -> bool {
     let want = routes[route_i + 1u];
     let la = lanes[l];
     for (var k = 0u; k < la.links_count; k++) {
-        if (links[la.links_start + k].to_edge == want) { return true; }
+        if (links[la.links_start + k].to_edge == want && link_usable(la.links_start + k)) { return true; }
     }
     return false;
 }
@@ -2581,6 +2578,11 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     let gap = lead_back - pos - ty.min_gap;
     if (lead_back < 1e8) {
         if (gap < 0.0) { return false; }
+        if (ty.model == MODEL_AV) {
+            // The upstream queue discharges at the equilibrium headway of the tail's speed.
+            speed = min(speed, lead_v + 1.0);
+            if (gap < 0.5 + speed * ty.tau) { return false; }
+        }
         // The speed we may start with behind the leader, as SUMO's insertionFollowSpeed.
         let vsafe = insertion_follow(speed, gap, lead_v, lead_b, vmax, lead_cacc);
         if (vsafe < speed) {
@@ -2664,11 +2666,25 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     e.best_cur = 1e9;
     e.best_left = 0.0;
     e.best_right = 0.0;
+    e.cj_link = NONE;
+    e.cj_rank = NONE;
+    e.cj_zone_t = f32(G.step) * dt;
+    e.cj_hold = 1e30;
+    e.cj_yield = 1e30;
     cur[idx] = e;
     atomicAdd(&C[C_INSERTED], 1u);
     let lb = pack_back(pos - ty.length, speed, is_cacc(ty));
     atomicMin(&tail[lane], lb);
     return true;
+}
+
+// Perimeter metering: while the network holds its critical number of cars, new ones wait outside.
+// Queues near the limit take turns by hash, so no entrance is starved by its place in the dispatch.
+fn metered_in(q: u32) -> bool {
+    let on = G.n_active + atomicLoad(&C[C_NEW]);
+    if (on >= P.meter_n) { return false; }
+    let free = f32(P.meter_n - on);
+    return f32(pcg(q * 2654435761u ^ G.step) >> 8u) / 16777216.0 < free / f32(P.n_queues);
 }
 
 @compute @workgroup_size(16)
@@ -2677,6 +2693,7 @@ fn insert(@builtin(global_invocation_id) id: vec3u) {
     if (q >= P.n_queues) { return; }
     let qq = queues[q];
     if (qq.next >= qq.end) { return; }
+    if (P.meter_n != 0u && !metered_in(q)) { return; }
     let n_lanes = edges[qq.edge].lane_count;
     var next = qq.next;
     for (var attempt = 0u; attempt < n_lanes; attempt++) {

@@ -47,4 +47,4 @@ for path in sys.argv[2:]:
         c=sum(e in cross for e in r);tot+=n*c;ess_tot+=n*sum(e in ess for e in r)
     res[path.rsplit('/',1)[1]]=dict(vehicles_0600_1830=veh,cordon_crossings=tot,essingeleden=ess_tot,total=tot+ess_tot,ratio_to_real=(tot+ess_tot)/400976)
     print(path.rsplit('/',1)[1],res[path.rsplit('/',1)[1]],flush=True)
-json.dump(res,open('research/truth/stockholm-cordon.json','w'),indent=1)
+import os;json.dump(res,open(os.environ.get('CORDON_OUT','research/truth/stockholm-cordon.json'),'w'),indent=1)
