@@ -100,13 +100,16 @@ diff --git a/crates/cars-core/src/sim.rs b/crates/cars-core/src/sim.rs
 index 607f636..b76897b 100644
 --- a/crates/cars-core/src/sim.rs
 +++ b/crates/cars-core/src/sim.rs
-@@ -219,4 +219,4 @@ impl Sim {
+@@ -259,7 +259,7 @@ impl Sim {
              p.n_trips as u64 * std::mem::size_of::<GpuTripOut>() as u64,
          );
          let series = empty("series", p.n_samples as u64 * p.n_replicas as u64 * 16);
 -        let edge_acc = empty("edge_acc", p.n_edges as u64 * 16);
 +        let edge_acc = empty("edge_acc", (p.n_edges as u64 + p.n_lanes as u64) * 16);
-@@ -721,11 +721,27 @@ impl Sim {
+         // Second half in physical mode: the hard limits, per trip. llvmpipe caps storage buffers per stage at 48.
+         let advice_init = vec![0xffu8; p.n_trips as usize * 4 * if p.mu > 0.0 { 2 } else { 1 }];
+         let advice = init("advice", &advice_init, storage);
+@@ -907,11 +907,27 @@ impl Sim {
      pub fn take_edge_acc(&self, gpu: &Gpu) -> Vec<[u32; 4]> {
          let out = self.read(gpu, &self.buffers.edge_acc, self.world_params.n_edges as u64);
          let mut enc = gpu.device.create_command_encoder(&Default::default());
@@ -132,6 +135,6 @@ index 607f636..b76897b 100644
 +        all[n..].to_vec()
 +    }
 +
-     /// Run one step with a GPU timer around every kernel. Returns (kernel, milliseconds).
-     pub fn profile_step(&mut self, gpu: &Gpu) -> Vec<(String, f64)> {
-         let period = gpu.queue.get_timestamp_period() as f64 * 1e-6;
+     /// The coordinator's statistics per replica, returned and reset.
+     pub fn take_coord_stats(&self, gpu: &Gpu) -> Vec<u32> {
+         let Some(cj) = &self.coord else { return Vec::new() };
