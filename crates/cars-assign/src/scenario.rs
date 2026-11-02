@@ -60,6 +60,9 @@ pub struct Scenario {
     pub seed: u64,
     /// Most vehicles on the road at once, per replica.
     pub capacity: u32,
+    /// Road friction. 0 is the Krauss port, above 0 the physical driver.
+    #[serde(default)]
+    pub mu: f32,
     /// Labelled diagnostics only. A counted run leaves these off.
     #[serde(default)]
     pub time_to_teleport: f32,

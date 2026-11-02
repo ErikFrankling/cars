@@ -360,6 +360,7 @@ pub fn assignment(x: &mut Setup, out: &Path, o: &LoopOpts) -> Result<bool, Strin
         );
         writeln!(csv, "{}", row.csv()).map_err(|e| e.to_string())?;
         x.pop.save_state(&out.join("state.bin"))?;
+        x.pop.save_csv(&out.join("pop.csv.gz"), &x.net)?;
         save_costs(&costs, &cost_file)?;
         std::fs::write(out.join("iter.txt"), format!("{}", k + 1)).map_err(|e| e.to_string())?;
         std::fs::write(out.join("convergence.json"), serde_json::to_string_pretty(&conv).unwrap()).map_err(|e| e.to_string())?;

@@ -575,6 +575,7 @@ fn gpu_scenario() -> (Scenario, Net, Supply) {
         dt: 1.0,
         seed: 3,
         capacity: 3000,
+        mu: 0.0,
         time_to_teleport: 0.0,
         ignore_blocker: None,
         share: 0.15,

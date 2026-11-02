@@ -87,6 +87,8 @@ pub struct Population {
     /// Arena in `routes`, vehicle types in `vtypes`, sorted trips in `trips`.
     pub demand: Demand,
     pub procedures: Vec<Procedures>,
+    /// The demand file's vehicle id, by traveller id, where there was one.
+    pub vehicle_ids: Vec<String>,
     index: FxHashMap<u64, u32>,
 }
 
@@ -99,7 +101,7 @@ fn route_hash(r: &[u32], salt: u64) -> u64 {
 
 impl Population {
     pub fn new(demand: Demand, procedures: Vec<Procedures>, travellers: Vec<Traveller>) -> Self {
-        let mut p = Self { travellers, demand, procedures, index: FxHashMap::default() };
+        let mut p = Self { travellers, demand, procedures, vehicle_ids: Vec::new(), index: FxHashMap::default() };
         p.rebuild_index();
         p
     }
@@ -216,8 +218,12 @@ impl Population {
             tr.n_plan = 1;
             travellers.push(tr);
         }
+        // Vehicle ids go with the trip's order here, as `Traveller::id` does.
+        let vehicle_ids = demand.trips.iter().map(|t| demand.ids[t.id as usize].clone()).collect();
         demand.ids = Vec::new();
-        Self::new(demand, procedures, travellers)
+        let mut p = Self::new(demand, procedures, travellers);
+        p.vehicle_ids = vehicle_ids;
+        p
     }
 
     /// `id,class,o_edge,d_edge,desired_arrival_s,depart_s,earliest_s,latest_s,tour,tour_seq,vtype` with edge names.
@@ -266,13 +272,13 @@ impl Population {
     pub fn save_csv(&self, path: &Path, net: &Net) -> Result<(), String> {
         let f = std::fs::File::create(path).map_err(|e| e.to_string())?;
         let mut w = std::io::BufWriter::new(GzEncoder::new(f, Compression::fast()));
-        writeln!(w, "id,class,o_edge,d_edge,desired_arrival_s,depart_s,earliest_s,latest_s,tour,tour_seq,vtype,route").map_err(|e| e.to_string())?;
+        writeln!(w, "id,class,o_edge,d_edge,desired_arrival_s,depart_s,earliest_s,latest_s,tour,tour_seq,vtype,route,vehicle").map_err(|e| e.to_string())?;
         for t in &self.travellers {
             let route: Vec<&str> = self.demand.routes[t.route() as usize].iter().map(|&e| net.edges[e as usize].id.as_str()).collect();
             writeln!(
                 w,
-                "{},{},{},{},{},{},{},{},{},{},{},{}",
-                t.id, t.class, net.edges[t.o_edge as usize].id, net.edges[t.d_edge as usize].id, t.desired_arrival_s, t.depart_s, t.earliest_s, t.latest_s, t.tour, t.tour_seq, self.demand.vtypes[t.vtype as usize].id, route.join(" ")
+                "{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                t.id, t.class, net.edges[t.o_edge as usize].id, net.edges[t.d_edge as usize].id, t.desired_arrival_s, t.depart_s, t.earliest_s, t.latest_s, t.tour, t.tour_seq, self.demand.vtypes[t.vtype as usize].id, route.join(" "), self.vehicle_ids.get(t.id as usize).map(String::as_str).unwrap_or("")
             )
             .map_err(|e| e.to_string())?;
         }

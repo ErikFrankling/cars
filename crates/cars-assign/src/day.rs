@@ -22,7 +22,7 @@ const C_COLLISIONS: usize = 7;
 
 pub fn open_gpu(trusted: bool) -> Result<Gpu, String> {
     let checks = if trusted { Checks::Trusted } else { Checks::Safe };
-    pollster::block_on(Gpu::headless(GpuOptions { adapter_name: Some("7900".into()), checks }))
+    pollster::block_on(Gpu::headless(GpuOptions { adapter_name: Some(std::env::var("CARS_ADAPTER").unwrap_or("7900".into())), checks }))
 }
 
 pub fn sim_config(s: &Scenario, replicas: u32) -> SimConfig {
@@ -35,6 +35,7 @@ pub fn sim_config(s: &Scenario, replicas: u32) -> SimConfig {
         ignore_blocker: s.ignore_blocker.unwrap_or(1e9),
         capacity: s.capacity * replicas,
         sample_seconds: 10.0,
+        mu: s.mu,
         ..Default::default()
     }
 }
