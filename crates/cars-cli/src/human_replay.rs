@@ -81,7 +81,8 @@ pub fn run(a: Args) {
     let rec_buf = init("rec", &rec);
     let type_buf = init("types", bytemuck::cast_slice(&types));
     let stats = init("stats", &[0u8; 16]);
-    let source = format!("{}\n{}", cars_core::sim::COMMON, include_str!("../../cars-core/src/shaders/human_replay.wgsl"));
+    let common = std::env::var("CARS_SHADER_DIR").ok().and_then(|d| std::fs::read_to_string(format!("{d}/common.wgsl")).ok()).unwrap_or_else(|| cars_core::sim::COMMON.to_string());
+    let source = format!("{common}\n{}", include_str!("../../cars-core/src/shaders/human_replay.wgsl"));
     let module = d.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("replay"), source: wgpu::ShaderSource::Wgsl(source.into()) });
     let pipeline = d.create_compute_pipeline(&wgpu::ComputePipelineDescriptor { label: Some("replay"), layout: None, module: &module, entry_point: Some("replay"), compilation_options: Default::default(), cache: None });
     let layout = pipeline.get_bind_group_layout(0);
