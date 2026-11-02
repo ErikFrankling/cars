@@ -137,6 +137,8 @@ def build(edges, conns, tl, junc):
                         if o is not None and (o['frm'], o['to']) not in seen:
                             seen.add((o['frm'], o['to']))
                             c['foes'].append(o)
+        if c['ctrl'] and c['ctrl'] not in tl:
+            c['ctrl'] = ''
         if c['ctrl']:
             c['gp'], c['gq'], c['C'], c['nst'] = green(tl[c['ctrl']], c['idx'])
     for c in cs:
