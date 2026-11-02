@@ -1,5 +1,5 @@
 //! Which junctions are worth looking at: busiest of each kind, with ids and coordinates.
-use cars_core::net::{EdgeFunc, Net};
+use cars_core::net::{Net, JunctionRow as Row};
 use clap::Parser;
 use std::{collections::HashMap, path::PathBuf};
 
@@ -21,16 +21,6 @@ pub struct Args {
     limit: usize,
     #[arg(long)]
     json: bool,
-}
-
-struct Row {
-    kind: &'static str,
-    id: String,
-    x: f32,
-    y: f32,
-    lanes: usize,
-    links: usize,
-    score: f64,
 }
 
 fn edge_weights(a: &Args) -> Result<HashMap<String, f64>, String> {
@@ -61,52 +51,11 @@ fn edge_weights(a: &Args) -> Result<HashMap<String, f64>, String> {
 pub fn run(a: Args) -> Result<(), String> {
     let net = Net::load(&a.net)?;
     let weights = edge_weights(&a)?;
-    let mut incoming: HashMap<&str, Vec<u32>> = HashMap::new();
-    let mut outgoing: HashMap<&str, Vec<u32>> = HashMap::new();
-    for (i, e) in net.edges.iter().enumerate() {
-        if e.func == EdgeFunc::Normal {
-            incoming.entry(e.to.as_str()).or_default().push(i as u32);
-            outgoing.entry(e.from.as_str()).or_default().push(i as u32);
+    let mut rows = net.junction_rows();
+    if a.edge_csv.is_some() {
+        for r in &mut rows {
+            r.score = r.incoming.iter().map(|&e| weights.get(&net.edges[e as usize].id).copied().unwrap_or(0.0)).sum();
         }
-    }
-    let mut rows = Vec::new();
-    for j in &net.junctions {
-        let empty = Vec::new();
-        let inc = incoming.get(j.id.as_str()).unwrap_or(&empty);
-        let out = outgoing.get(j.id.as_str()).unwrap_or(&empty);
-        if inc.is_empty() || j.jtype == "internal" || j.jtype == "dead_end" {
-            continue;
-        }
-        let speed = inc
-            .iter()
-            .chain(out)
-            .map(|&e| net.lanes[net.edges[e as usize].first_lane as usize].speed)
-            .fold(0.0, f32::max);
-        let contested = j.requests.iter().any(|r| r.foes.iter().any(|f| *f));
-        let kind = if inc.iter().any(|e| net.roundabout_edges.contains(e)) {
-            "roundabout"
-        } else if j.jtype.starts_with("traffic_light") {
-            "signal"
-        } else if j.jtype == "zipper" {
-            "zipper"
-        } else if speed >= 19.4 && ((inc.len() >= 2 && out.len() == 1) || (inc.len() == 1 && out.len() >= 2)) {
-            "ramp"
-        } else if j.jtype == "allway_stop" {
-            "allway"
-        } else if j.jtype.starts_with("right_before_left") {
-            "rbl"
-        } else if j.jtype.starts_with("priority") && contested {
-            "priority"
-        } else {
-            continue;
-        };
-        let lanes: usize = inc.iter().map(|&e| net.edges[e as usize].lane_count as usize).sum();
-        let score = if a.edge_csv.is_some() {
-            inc.iter().map(|&e| weights.get(&net.edges[e as usize].id).copied().unwrap_or(0.0)).sum()
-        } else {
-            lanes as f64
-        };
-        rows.push(Row { kind, id: j.id.clone(), x: j.x, y: j.y, lanes, links: j.requests.len(), score });
     }
     rows.sort_by(|p, q| q.score.total_cmp(&p.score).then_with(|| p.id.cmp(&q.id)));
     let mut seen: HashMap<&str, usize> = HashMap::new();
