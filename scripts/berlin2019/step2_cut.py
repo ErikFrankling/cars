@@ -111,6 +111,9 @@ def cut_demand(a):
     repaired = collections.Counter()
     memo = {}
 
+    def is_reverse(u, v):
+        return u in edges and v in edges and edges[u]['start'] == edges[v]['end'] and edges[u]['end'] == edges[v]['start']
+
     def bridge(u, v):
         if (u, v) in memo:
             return memo[(u, v)]
@@ -160,6 +163,15 @@ def cut_demand(a):
             if cur:
                 segs.append((t_start, cur, True))
             for t0, seg, ends_here in segs:
+                starts_cut = links[0] != seg[0]
+                ends_cut = links[-1] != seg[-1]
+                # an out-and-back at either end is MATSim's link-based activity location, not a drive
+                if len(seg) >= 2 and is_reverse(seg[0], seg[1]) and seg[1] not in nexts[seg[0]]:
+                    seg = seg[1:]
+                    log['uturn_trimmed_start'] += 1
+                if len(seg) >= 2 and is_reverse(seg[-2], seg[-1]) and seg[-1] not in nexts[seg[-2]]:
+                    seg = seg[:-1]
+                    log['uturn_trimmed_end'] += 1
                 fixed = [seg[0]]
                 ok = True
                 for u, v in zip(seg[:-1], seg[1:]):
@@ -168,6 +180,8 @@ def cut_demand(a):
                         continue
                     if u == v:
                         continue
+                    if is_reverse(u, v):
+                        log['uturn_replaced'] += 1
                     p = bridge(u, v)
                     if p is None:
                         ok = False
@@ -179,8 +193,6 @@ def cut_demand(a):
                 if not ok:
                     log['segments_dropped_no_path'] += 1
                     continue
-                starts_cut = links[0] != seg[0]
-                ends_cut = links[-1] != seg[-1]
                 kind = 'inner' if not starts_cut and not ends_cut else 'through' if starts_cut and ends_cut else 'in' if starts_cut else 'out'
                 log['kind_' + kind] += 1
                 rows.append((t0, f'{person}.{leg}.{part}', classes.get((person, mode), 'car'), fixed, starts_cut))

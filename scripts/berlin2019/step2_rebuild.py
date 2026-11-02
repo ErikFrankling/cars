@@ -12,6 +12,7 @@ Writes district/NAME/net.net.xml, fixes.csv.
 """
 import argparse
 import collections
+import json
 import re
 import subprocess
 import sys
@@ -20,6 +21,36 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import *
 
 D = B19 / 'district'
+
+
+def add_lane_feeds(con, spec, fixes):
+    """A route needs a lane no car can reach in time on a short piece of road, because the road before it does not
+    feed that lane. Let the nearest lane of the road before feed it too: the driver then takes it earlier, as real
+    markings make them. Lanes never cross: only an extra feed from the upstream lane closest to the one needed."""
+    path, base = spec.split(':')
+    base_net = read_net(D / base / 'net.net.xml', D / base / 'net.pkl')
+    by_from, into = collections.defaultdict(list), collections.defaultdict(list)
+    for c in base_net['conns']:
+        by_from[c[0]].append(c)
+        into[c[1]].append(c)
+    extra = collections.defaultdict(set)
+    for pl in json.load(open(path))['top']:
+        a, need = pl['edge'], pl['lanes_that_go_there']
+        for c in into[a]:
+            lj = min(need, key=lambda n: abs(n - c[3]))
+            best = min((x for x in into[a] if x[0] == c[0]), key=lambda x: abs(x[3] - lj))
+            if not any(x[0] == c[0] and x[2] == best[2] and x[3] == lj for x in into[a]):
+                extra[c[0]].add((best[2], a, lj))
+    for c in list(con):
+        if c.tag == 'connection' and c.get('from') in extra:
+            con.remove(c)
+    for u, new in extra.items():
+        for c in by_from[u]:
+            etree.SubElement(con, 'connection', {'from': c[0], 'to': c[1], 'fromLane': str(c[2]), 'toLane': str(c[3])})
+        for li, a, lj in sorted(new):
+            etree.SubElement(con, 'connection', {'from': u, 'to': a, 'fromLane': str(li), 'toLane': str(lj)})
+            fixes.append((u, 'lane_feed', f'lane {li} also feeds {a} lane {lj}'))
+    print('roads given an extra lane feed', len(extra), 'feeds', sum(len(v) for v in extra.values()))
 
 
 def main():
@@ -37,6 +68,8 @@ def main():
     p.add_argument('--per-node', action='store_true', help='report 10: one generated program per junction, not one over several')
     p.add_argument('--radii', action='store_true', help="report 19's junction geometry flags")
     p.add_argument('--smooth', action='store_true', help="report 19's polyline flags")
+    p.add_argument('--no-uturn', action='store_true', help='no turnarounds except at dead ends: MATSim routes ignore turn rules, drivers do not')
+    p.add_argument('--lane-fix', help='cars lanes --json of a base net built the same way, plus the base name: FILE:BASE')
     a = p.parse_args()
     out = D / a.name
     out.mkdir(exist_ok=True)
@@ -200,12 +233,24 @@ def main():
         for c in list(c2):
             if c.tag == 'connection' and c.get('from') in edges and edges[c.get('from')].get('to') in joined:
                 c2.remove(c)
+        if a.lane_fix:
+            add_lane_feeds(c2, a.lane_fix, fixes)
+        if a.no_uturn:
+            outs_of = collections.Counter(e.get('from') for e in edges.values())
+            for c in list(c2):
+                if c.tag != 'connection' or c.get('from') not in edges or c.get('to') not in edges:
+                    continue
+                u, v = edges[c.get('from')], edges[c.get('to')]
+                if u.get('to') == v.get('from') and u.get('from') == v.get('to') and outs_of[u.get('to')] > 1:
+                    c2.remove(c)
         etree.ElementTree(c2).write(str(pfx) + '_build.con.xml')
-        cmd = ['netconvert', '-n', str(pfx) + '_fixed.nod.xml', '-e', str(pfx) + '_fixed.edg.xml', '-x', str(pfx) + '_build.con.xml', '-t', str(pfx) + '.typ.xml', '--no-internal-links', 'false', '--offset.disable-normalization', 'true', '--no-turnarounds', 'false', '--geometry.remove', 'true', '--tls.default-type', a.tls, '--output.original-names', 'false', '--remove-edges.isolated', 'true', '--junctions.corner-detail', '5', '--roundabouts.guess', 'true', '-o', str(out / 'net.net.xml')]
+        cmd = ['netconvert', '-n', str(pfx) + '_fixed.nod.xml', '-e', str(pfx) + '_fixed.edg.xml', '-x', str(pfx) + '_build.con.xml', '-t', str(pfx) + '.typ.xml', '--no-internal-links', 'false', '--offset.disable-normalization', 'true'] + ([] if a.no_uturn else ['--no-turnarounds', 'false']) + ['--geometry.remove', 'true', '--tls.default-type', a.tls, '--output.original-names', 'false', '--remove-edges.isolated', 'true', '--junctions.corner-detail', '5', '--roundabouts.guess', 'true', '-o', str(out / 'net.net.xml')]
         if a.join_dist:
             cmd += ['--junctions.join', 'true', '--junctions.join-dist', str(a.join_dist)]
         if a.cycle:
             cmd += ['--tls.cycle.time', str(a.cycle)]
+        if a.no_uturn:
+            cmd += ['--no-turnarounds', 'true', '--no-turnarounds.except-deadend', 'true']
         if a.radii:
             cmd += ['--default.junctions.radius', '10', '--junctions.small-radius', '8', '--junctions.limit-turn-speed', '2.5']
         if a.smooth:
