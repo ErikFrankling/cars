@@ -39,6 +39,7 @@ var<private> wy_who_b: u32 = WHY_NONE;
 var<private> wy_stop_k: u32 = K_YIELD;
 var<private> wy_stop_b: u32 = WHY_NONE;
 var<private> wy_full: u32 = WHY_NONE;
+var<private> wy_wanted: u32 = WHY_NONE;
 var<private> wy_src: u32 = WHY_NONE;
 var<private> wy_closed: u32 = 0u;
 var<private> wy_foe: u32 = WHY_NONE;
@@ -145,6 +146,8 @@ fn why_stop(state: u32, v: f32, link: u32) {
 fn why_item(link: u32, v_pass: f32, v_wait: f32, dist: f32) {
     if (pl_n >= MAX_ITEMS) { return; }
     let r = wy_i * WHY_WORDS;
+    // With no link on, this word says which road the route asked for. why_final fills it from wy_foe_link only when a link closed.
+    if (link == NONE && pl_n == 0u) { why_buf[r + 11u] = wy_wanted; }
     if (pl_n == 0u) {
         why_buf[r + 8u] = link;
         why_buf[r + 9u] = bitcast<u32>(dist);
@@ -252,7 +255,7 @@ fn why_final(v_safe: f32, v_next: f32, cj: bool) {
     why_buf[r + 3u] = bitcast<u32>(gap);
     why_buf[r + 4u] = bitcast<u32>(v_safe);
     why_buf[r + 10u] = wy_foe;
-    why_buf[r + 11u] = wy_foe_link;
+    if (wy_closed != 0u) { why_buf[r + 11u] = wy_foe_link; }
     why_buf[r + 12u] = bitcast<u32>(wy_foe_gap);
 }
 

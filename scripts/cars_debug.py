@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""The debugging tools behind `cars why`, `cars tsd`, `cars jam`, `cars compare`, `cars junction` and `cars dist`.
+"""The debugging tools behind `cars why`, `cars tsd`, `cars jam`, `cars compare`, `cars junction`, `cars dist`, `cars cut` and `cars lanes`.
 Every tool prints what an agent needs on the terminal and writes a PNG it can view. crates/cars-cli/DEBUGGING.md."""
 import importlib
 import sys
 from pathlib import Path
 
-TOOLS = ['why', 'tsd', 'jam', 'compare', 'junction', 'dist']
+TOOLS = ['why', 'tsd', 'jam', 'compare', 'junction', 'dist', 'cut', 'lanes']
 
 
 def main():

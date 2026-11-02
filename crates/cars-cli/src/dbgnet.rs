@@ -51,6 +51,9 @@ struct Lanes<'a> {
     internal: Vec<u8>,
     links_start: Vec<u32>,
     links_count: Vec<u32>,
+    allow: Vec<u32>,
+    change_left: Vec<u32>,
+    change_right: Vec<u32>,
     x0: Vec<f32>,
     y0: Vec<f32>,
     x1: Vec<f32>,
@@ -125,6 +128,9 @@ pub fn write(out: &Path, net_path: &Path, net: &Net, world: &World) -> Result<()
         lanes.internal.push((g.flags & 1) as u8);
         lanes.links_start.push(g.links_start);
         lanes.links_count.push(g.links_count);
+        lanes.allow.push(l.allow);
+        lanes.change_left.push(l.change_left);
+        lanes.change_right.push(l.change_right);
         let (a, b) = (l.shape.first().copied().unwrap_or([0.0, 0.0]), l.shape.last().copied().unwrap_or([0.0, 0.0]));
         lanes.x0.push(a[0]);
         lanes.y0.push(a[1]);

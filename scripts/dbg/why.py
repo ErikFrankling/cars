@@ -25,6 +25,26 @@ def lc_side(run, side, state, gap, fgap, leader, follower):
     return out
 
 
+def wrong_lane(net, lane, wanted):
+    """Which lanes of this road go where the route asks, and whether the markings let the car reach them."""
+    e = int(net.lane_edge[lane])
+    first, count = int(net.edge_first[e]), int(net.edge_lanes[e])
+    to = net.edge_index.get(wanted)
+    good = [l - first for l in range(first, first + count) if to in net.link_to_edge[int(net.lane_links_start[l]):int(net.lane_links_start[l] + net.lane_links_count[l])]]
+    here = lane - first
+    out = dict(wants_road=wanted, on_lane=here, lanes_that_go_there=good)
+    bit = 64
+    reach = {here}
+    for step, masks in ((-1, net.lane_change_right), (1, net.lane_change_left)):
+        at = here
+        while 0 <= at + step < count and masks[first + at] & bit and net.lane_allow[first + at + step] & bit:
+            at += step
+            reach.add(at)
+    out['lanes_it_may_change_to'] = sorted(reach)
+    out['verdict'] = 'reachable: it should change lane' if set(good) & reach else 'impossible: line markings forbid every way to those lanes' if good else 'no lane of this road leads there'
+    return out
+
+
 def explain(run, i, rec, why, index):
     """Everything known about one record, as plain data."""
     r = rec[index]
@@ -52,6 +72,8 @@ def explain(run, i, rec, why, index):
         out['next_link'] = dict(link=net.link_name(k), state=link_state(run, i, k), metres_to_it=round(float(w['first_dist']), 1), junction=net.junction_of_lane(lane), junction_type=net.junction_type.get(net.junction_of_lane(lane), ''))
     elif w['item'] != 255 and w['decider']:
         out['next_link'] = dict(link=None, metres_to_it=round(float(w['first_dist']), 1), note='no link from this lane on its route, or route ends')
+        if w['closed'] == 0 and w['foe_link'] != NONE32 and int(w['foe_link']) < len(net.edge_ids) and lane < net.n_lanes:
+            out['route_blocked'] = wrong_lane(net, lane, net.edge_ids[int(w['foe_link'])])
     if w['closed']:
         out['link_closed'] = dict(reason=CLOSED[w['closed']], foe=run.name(w['foe_trip']) if w['foe_trip'] != NONE32 else None, foe_link=net.link_name(w['foe_link']) if w['foe_link'] != NONE32 else None,
                                   foe_arrives_after_s=round(float(w['foe_gap']), 2))
@@ -86,6 +108,9 @@ def print_tick(e):
     if 'next_link' in e:
         n = e['next_link']
         print(f"  next link: {n.get('link')}  state {n.get('state', '')}  {n['metres_to_it']} m ahead  {n.get('junction_type', '')} {n.get('junction', '')} {n.get('note', '')}")
+    if 'route_blocked' in e:
+        b = e['route_blocked']
+        print(f"  route wants {b['wants_road']}: lanes that go there {b['lanes_that_go_there']}, it is on lane {b['on_lane']} and may change to {b['lanes_it_may_change_to']}. {b['verdict']}")
     if 'link_closed' in e:
         c = e['link_closed']
         print(f"  link closed: {c['reason']}" + (f"  foe {c['foe']} on {c['foe_link']}, arrives {c['foe_arrives_after_s']} s after this car would" if c['foe'] else ''))

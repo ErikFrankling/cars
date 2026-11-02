@@ -34,9 +34,13 @@ class Frame:
         else:
             self.dec = self.kind
         self.next = np.full(self.n, -1, dtype=np.int64)
+        if why is not None and len(why) != self.n:
+            raise SystemExit(f'{run.path}.why: frame {i} holds {len(why)} records against {self.n} in the trace')
         order = np.argsort(self.trips)
         self._sorted_trips = self.trips[order]
         self._order = order
+        if self.n == 0:
+            return
         if why is None:
             self._infer_same_lane()
         else:
@@ -125,6 +129,8 @@ class Frame:
 
     def roots(self):
         """Root of each record. Chains follow only cars that are held still. -2 marks a record on a waiting cycle."""
+        if self.n == 0:
+            return np.zeros(0, dtype=np.int64), np.zeros(0, dtype=bool)
         nxt = self.next.copy()
         idx = np.arange(self.n)
         linked = nxt >= 0

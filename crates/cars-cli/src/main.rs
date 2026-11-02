@@ -39,6 +39,10 @@ enum Command {
     Junction(dbgnet::Forward),
     /// Distances between runs, or a run and real tracks: acceleration, braking, gaps, speeds, lane changes.
     Dist(dbgnet::Forward),
+    /// A small scene around one place of a city recipe, to study a seed tick by tick on llvmpipe.
+    Cut(dbgnet::Forward),
+    /// Walk every route lane by lane against links and line markings; list what cannot be driven.
+    Lanes(dbgnet::Forward),
 }
 fn fail(name: &str, e: impl std::fmt::Display) -> ! {
     eprintln!("{name}: {e}");
@@ -78,6 +82,8 @@ fn main() {
         Command::Compare(a) => dbgnet::forward("compare", a),
         Command::Junction(a) => dbgnet::forward("junction", a),
         Command::Dist(a) => dbgnet::forward("dist", a),
+        Command::Cut(a) => dbgnet::forward("cut", a),
+        Command::Lanes(a) => dbgnet::forward("lanes", a),
         Command::Junctions(a) => {
             if let Err(e) = junctions::run(a) {
                 fail("junctions", e);

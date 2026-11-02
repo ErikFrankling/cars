@@ -71,7 +71,7 @@ The buffer is at binding 63, above anything the main layout will reach. Probes o
 | `blame_gap`, `v_safe` | metres to what it blames, the speed the plan allowed |
 | `leader`, `leader_gap`, `leader_speed` | nearest vehicle ahead in its plan |
 | `first_link`, `first_dist` | next link and metres to it |
-| `foe_trip`, `foe_link`, `foe_gap` | the foe that closed the link, its link, seconds it arrives after this car would |
+| `foe_trip`, `foe_link`, `foe_gap` | the foe that closed the link, its link, seconds it arrives after this car would. With `closed` 0 and no next link, `foe_link` is the edge its route asks for |
 | `lc_right`, `lc_left`, `lc_chosen` | LCA flags of each side, and the side taken |
 | `*_gap`, `*_leader`, `*_follower` | gaps and cars on each side |
 | `limits` | u16 × 22: value of each kind, m/s × 128, 0xffff for silent |

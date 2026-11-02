@@ -129,7 +129,7 @@ const PROBES: &[Probe] = &[
     p("check_link_leader", "pl_v = max(pl_v, items[pl_base + pl_n - 1u].v_wait);", "pl_v = max(pl_v, items[pl_base + pl_n - 1u].v_wait); why_floor();"),
     p("plan", "items[last].v_wait = min(items[last].v_wait, pl_v);", "why_wait_lower(last); items[last].v_wait = min(items[last].v_wait, pl_v);"),
     p("plan", "pl_v = min(pl_v, va);", "why_lim_k(K_ARRIVAL, va); pl_v = min(pl_v, va);"),
-    p("plan", "pl_v = min(va, pl_v);\n            push_item(NONE", "why_lim_k(K_LANE_END, va); pl_v = min(va, pl_v);\n            push_item(NONE"),
+    p("plan", "pl_v = min(va, pl_v);\n            push_item(NONE", "why_lim_k(K_LANE_END, va); wy_wanted = routes[route_i + 1u]; pl_v = min(va, pl_v);\n            push_item(NONE"),
     p("plan", "pl_v_wait = min(pl_v, stop_v);", "pl_v_wait = min(pl_v, stop_v); why_stop(state, stop_v, link);"),
     p("plan", "pl_v = min(va, pl_v);\n        let len", "why_next_lane(next_lane, va); pl_v = min(va, pl_v);\n        let len"),
     p("push_item", "items[pl_base + pl_n] = it;", "why_item(link, v_pass, v_wait, dist); items[pl_base + pl_n] = it;"),

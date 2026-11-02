@@ -184,6 +184,7 @@ struct Slot {
     n: u64,
     n_tls: u64,
     n_why: u64,
+    has_why: bool,
     step: u32,
     teleports: u32,
     collisions: u32,
@@ -391,6 +392,7 @@ impl Tracer {
         g.queue.submit([e.finish()]);
         slot.n = n;
         slot.n_why = why_bytes / (WHY_WORDS * 4);
+        slot.has_why = sim.buffers.why.is_some();
         slot.n_tls = self.n_tls;
         slot.step = sim.step as u32;
         slot.teleports = counters[4];
@@ -433,6 +435,7 @@ impl Tracer {
             n: 0,
             n_tls: 0,
             n_why: 0,
+            has_why: false,
             step: 0,
             teleports: 0,
             collisions: 0,
@@ -679,7 +682,7 @@ impl Writer {
         self.file.write_all(&self.names).expect("trace write");
         self.file.write_all(&phase_data).expect("trace write");
         self.file.write_all(bytemuck::cast_slice(&self.records)).expect("trace write");
-        if !why.is_empty() && self.why_file.is_none() {
+        if c.has_why && self.why_file.is_none() {
             self.why_file = Some(why_head(&self.why_path).expect("why write"));
         }
         if let Some(w) = self.why_file.as_mut() {

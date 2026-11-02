@@ -123,7 +123,7 @@ class Run:
         self.dt = float(self.trace.header['dt']) * int(self.trace.header.get('stride', 1))
         self.trip_id = {v: k for k, v in self.trace.trips.items()}
         self.has_why = os.path.exists(trace_path + '.why')
-        self.why_at = []
+        self.why_at = {}
         if self.has_why:
             self.why_f = open(trace_path + '.why', 'rb')
             if self.why_f.read(8) != b'CARSWHY1':
@@ -141,7 +141,7 @@ class Run:
                     raise SystemExit(f'{trace_path}.why: damaged frame at byte {at}')
                 if at + 16 + n * WHY.itemsize > total:
                     break
-                self.why_at.append((at + 16, n))
+                self.why_at[step] = (at + 16, n)
                 at += 16 + n * WHY.itemsize
             self.has_why = len(self.why_at) > 0
         self._net_arg = net
@@ -178,10 +178,13 @@ class Run:
         """One frame's records, and its reasons when the run has them."""
         rec = self.trace.records(self.frames[i])
         why = None
-        if self.has_why and i < len(self.why_at):
-            at, n = self.why_at[i]
-            self.why_f.seek(at)
-            why = np.fromfile(self.why_f, WHY, n)
+        if self.has_why:
+            # By step: a frame with no cars may have none.
+            at, n = self.why_at.get(self.frames[i]['step'], (0, 0))
+            why = np.zeros(0, WHY)
+            if n:
+                self.why_f.seek(at)
+                why = np.fromfile(self.why_f, WHY, n)
         return rec, why
 
     def phases(self, i):
