@@ -82,7 +82,7 @@ F080,2,C-S5,two heads swapping lanes offset 7 and 12 m both done by (s),30,one-s
 F081,2,C-S7,saturated minor crossing 2 major lanes major 1200 1800 2400 (veh/h),277 133 64,20%,Siegloch 5.9 3.0 C mechanism 2,2026-11-02,,
 F082,2,C-S7,longest hold at the head (s),300,one-sided,C mechanism 2,2026-11-02,,
 F083,2,C-S8,cross capacity b 0 .75 1 and two lanes b .75 (veh/h per lane),900 675 600 788,5%,s(g-b*tau)/C C mechanism 5; b set by exit_comply 1-b,2026-11-02,,
-F084,2,X1,input check: var/mean of 5 min counts trips copied 1 3 5.6,1 3 5.6,20%,dispersion.py,2026-11-02,,
+F084,2,X1,input check: var/mean of 5 min counts trips copied 1 3 5.6,1 3 5.6,20%,"dispersion.py; 3 and 5.6 are var/mean of 5 min counts, reached by 5 and 10 copies within +-150 s (scripts/theory/dispersion.py). First draft took them as copy counts and read 1.9 and 4.3: scene wrong, line unchanged",2026-11-02,,
 F085,2,S8,delay x .9 and x 1.12 over 15 min (s),34 99,25%,Akcelik B§2,2026-11-02,,
 F086,2,dt,L1-L4 S1-S3 G1 at the frozen dt against dt .1,within seed spread,noise,freeze rule PLAN rung 2,2026-11-02,,
 F087,2,N10,left across a saturated opposing stream: cars cleared per cycle at the phase end at least,1,one-sided,C mechanism 2; report 15 sneakers B§2,2026-11-02,,

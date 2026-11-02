@@ -85,11 +85,12 @@ class Cell:
     def node(self, i, x, y, t='priority'):
         self.w.nodes.append(f'<node id="{self.id(i)}" x="{x:.2f}" y="{y + self.y0:.2f}" type="{t}"/>')
 
-    def edge(self, i, a, b, lanes=1, v=V50, prio=1, shape=None, lane_speed=None):
+    def edge(self, i, a, b, lanes=1, v=V50, prio=1, shape=None, lane_speed=None, lane_change=None):
         s = ''
         if shape is not None:
             s = ' shape="' + ' '.join(f'{x:.2f},{y + self.y0:.2f}' for x, y in shape) + '"'
         inner = ''.join(f'<lane index="{k}" speed="{u:.3f}"/>' for k, u in (lane_speed or {}).items())
+        inner += ''.join(f'<lane index="{k}" changeLeft="{u}"/>' for k, u in (lane_change or {}).items())
         self.w.edges.append(f'<edge id="{self.id(i)}" from="{self.id(a)}" to="{self.id(b)}" numLanes="{lanes}" speed="{v:.3f}" priority="{prio}"{s}>{inner}</edge>')
 
     def conn(self, a, b, fl, tl):
@@ -168,15 +169,20 @@ class Run:
 
     def fcd(self):
         if self._fcd is None:
-            f = pd.read_csv(self.d / 'fcd.csv', usecols=['time', 'trip', 'lane', 'pos', 'speed'], dtype={'trip': 'category', 'lane': 'category'})
-            f['cell'] = f.trip.astype(str).str.split('.').str[0].astype('category')
+            f = pd.read_csv(self.d / 'fcd.csv', usecols=['time', 'trip', 'lane', 'pos', 'speed'], dtype={'trip': 'category', 'lane': 'category', 'time': 'float32', 'pos': 'float32', 'speed': 'float32'})
+            names = pd.Index(f.trip.cat.categories.str.split('.').str[0])
+            cells = names.unique()
+            f['cell'] = pd.Categorical.from_codes(cells.get_indexer(names)[f.trip.cat.codes.to_numpy()], categories=cells)
             self._fcd = f
-            self._groups = {k: g for k, g in f.groupby('cell', observed=True)}
+            self._groups = {k: g.index.to_numpy() for k, g in f.groupby('cell', observed=True)}
         return self._fcd
 
     def cell(self, name):
-        self.fcd()
-        return self._groups[name].copy()
+        f = self.fcd()
+        g = f.iloc[self._groups[name]].copy()
+        g['trip'] = g.trip.cat.remove_unused_categories()
+        g['lane'] = g.lane.cat.remove_unused_categories()
+        return g
 
     def trips(self, name=None):
         t = pd.read_csv(self.d / 'trips.csv', usecols=['trip', 'depart', 'arrival', 'duration', 'time_loss', 'route_length'])
@@ -321,7 +327,9 @@ BATCH_CFG = {
     'drop_city': dict(end=1500, fcd=0.5),
     'slow': dict(end=800, fcd=1.0),
     'net': dict(end=1200, fcd=1.0),
-    'net_long': dict(end=3000, fcd=1.0),
+    'net_long': dict(end=3000, fcd=5.0),
+    'n9': dict(end=2900, fcd=1.0),
+    'n10': dict(end=3000, fcd=1.0),
     'grid': dict(end=7200, fcd=0),
     'grid_sig': dict(end=7200, fcd=0),
     'miss60': dict(end=1500, fcd=0.5, tune=['miss_patience=60']),
@@ -388,6 +396,8 @@ class Lane:
         book.check('L1', 'F001', 0, caps[50], seeds=tag)
         book.check('L1', 'F002', 0, caps[100], seeds=tag)
         book.check('L1', 'F003', 0, caps[30], seeds=tag)
+        m = float(np.mean(caps[50]))
+        book.verdict('L1', 'F089', 'saturation 50 km/h: real read 1750 sweep 1640-1900', '1750', fmt(m), '1640-1900', 1640 <= m <= 1900, seeds=tag)
         book.check('L3', 'F004', 0, spacing, seeds=tag)
         book.check('L4', 'F005', 0, wave, seeds=tag)
         st['s'] = float(np.mean(spacing)) if spacing else float('nan')
@@ -618,6 +628,7 @@ class Sat:
             t = run.trips(name)
             out.append(((t.arrival >= 450) & (t.arrival < 450 + 1350)).sum() * 3600 / 1350)
         book.check('S4', 'F011', 0, out, seeds=seedtag('S4'))
+        book.verdict('S4', 'F090', 'capacity at real saturation', '778', fmt(float(np.mean(out))), '729-844', 729 <= np.mean(out) <= 844, seeds=seedtag('S4'))
         st['c'] = float(np.mean(out))
 
 
@@ -776,13 +787,14 @@ class Clones:
         s_cell(w, 'Xuni', uniform(qa, 0, 8400))
         st['x1']['Xuni'] = uniform(qa, 0, 8400)
         for n in (1, 3, 5.6):
+            # Copied within +-150 s, the demand's own rule. Five and ten copies give 2.97 and 5.63 in 5 min counts (dispersion.py).
+            copies = {1: 1, 3: 5, 5.6: 10}[n]
             for r in range(SEEDS):
                 rng = arrival_rng(f'X1{n}', r)
-                base = poisson(rng, qa / n, 0, 8400)
+                base = poisson(rng, qa / copies, 0, 8400)
                 times = []
                 for b in base:
-                    k = int(n) + (rng.random() < n - int(n))
-                    times += [b] if n == 1 else list(b + rng.uniform(-150, 150, k))
+                    times += [b] if n == 1 else list(b + rng.uniform(-150, 150, copies))
                 times = sorted(t for t in times if 0 <= t < 8400)
                 st['x1'][f'X1n{n}r{r}'] = times
                 s_cell(w, f'X1n{str(n).replace(".", "p")}r{r}', times)
@@ -1731,40 +1743,97 @@ class N5:
         book.check('N5', 'F075', 1, c0, quantity='3 lanes, closed lane (veh/h)', seeds=seedtag('N5c'), tol='30')
 
 
-@scene('N9', 'net_long')
+N9_CASES = (('z', 'offset 0', 0.0, 40, 1), ('o', 'opposed', 45.0, 40, 1), ('h', 'Hamburg +2 overlap .65', 2.0, 26, 1), ('i', 'Hamburg +2 end +4', 2.0, 42, 1),
+            ('w', 'Hamburg, 2 lanes, lane wish', 2.0, 26, 2), ('x', 'opposed, 2 lanes, lane wish', 45.0, 40, 2))
+N9_END = 1800
+N9_GAP = {1: 20.0, 2: 20.0}
+N9_FEED = dict(z=1000, o=180, h=650, i=1000, w=650, x=360)
+
+
+@scene('N9', 'n9')
 class N9:
     @staticmethod
     def build(w, st):
-        for off, label in ((0.0, 'z'), (45.0, 'o')):
+        for label, _, off, g2, lanes in N9_CASES:
             for r in range(SEEDS):
-                c = w.cell(f'N9{label}{r}', 50)
+                c = w.cell(f'N9{label}{r}', 300)
                 c.node('a', 0, 0)
                 c.node('s', 800, 0, 'traffic_light')
-                c.node('t', 824, 0, 'traffic_light')
+                c.node('t', 800 + N9_GAP[lanes], 0, 'traffic_light')
                 c.node('b', 1124, 0)
-                c.edge('up', 'a', 's')
-                c.edge('lk', 's', 't')
+                c.edge('up', 'a', 's', lanes=lanes)
+                c.edge('lk', 's', 't', lanes=lanes)
                 c.edge('dn', 't', 'b')
-                ph = [(40, 'G'), (3, 'y'), (47, 'r')]
-                c.signal('s', ph, 0.0)
-                c.signal('t', ph, off)
-                for k, t in enumerate(uniform(1500, 0, 2950)):
-                    c.car(f'v{k}', t, ['up', 'lk', 'dn'])
+                c.signal('s', [(40, 'G'), (3, 'y'), (47, 'r')], 0.0)
+                c.signal('t', [(g2, 'G'), (3, 'y'), (90 - g2 - 3, 'r')], off)
+                if lanes == 1:
+                    for k, t in enumerate(uniform(N9_FEED[label], 0, N9_END)):
+                        c.car(f'v{k}', t, ['up', 'lk', 'dn'])
+                else:
+                    c.node('e', 1124, -100)
+                    c.edge('rt', 't', 'e')
+                    fs = c.feeders('up', 2, 'a', 0, 0)
+                    c.conn('up', 'lk', 0, 0)
+                    c.conn('up', 'lk', 1, 1)
+                    c.conn('lk', 'rt', 0, 0)
+                    c.conn('lk', 'dn', 1, 0)
+                    rng = arrival_rng(f'N9{label}', r)
+                    for li in range(2):
+                        for k, t in enumerate(uniform(N9_FEED[label] / 2, 0, N9_END)):
+                            c.car(f'v{li}k{k}', t, [fs[li], 'up', 'lk', 'rt' if rng.random() < 0.5 else 'dn'])
 
     @staticmethod
     def measure(run, book, st):
-        for i, label in enumerate('zo'):
-            out, L = [], []
+        for label, text, off, g2, lanes in N9_CASES:
+            out, L, trend, holds, left, why = [], [], [], [], [], []
             for r in range(SEEDS):
                 name = f'N9{label}{r}'
                 x = run.trips(name)
-                out.append(((x.arrival >= 900) & (x.arrival < 2880)).sum() / 22)
+                a = x.arrival.to_numpy()
+                n = ((a >= 400) & (a < N9_END)).sum() / ((N9_END - 400) / 90)
+                out.append(n)
+                early = ((a >= 400) & (a < 850)).sum() / 5
+                late = ((a >= N9_END - 450) & (a < N9_END)).sum() / 5
+                trend.append(late / max(early, 0.1))
                 L.append(run.lane_len(name, 'lk_0'))
-            book.check('N9', 'F047', i, out, quantity=f"cars per cycle, {'offset 0' if i == 0 else 'opposed'}", seeds=seedtag('N9'))
-        book.info('N9', 'link lane length (m), forecast 20', float(np.mean(L)))
+                f = run.cell(name).sort_values(['trip', 'time'], kind='stable')
+                holds.append(longest_stand(f, on=('.lk_', '.up_')))
+                left.append(len(f[f.time >= 2890]))
+            q = [f"{np.mean(out):.1f}"]
+            if lanes == 1:
+                fid, i = {'z': ('F047', 0), 'o': ('F047', 1), 'h': ('F091', 0), 'i': ('F092', 0)}[label]
+                book.check('N9', fid, i, out, quantity=f'{text}: cars per cycle', seeds=seedtag('N9'))
+            else:
+                book.check('N9', 'F095', 0, out, quantity=f'{text}: cars per cycle', seeds=seedtag(f'N9{label}'), mode='low', tol='0')
+            book.check('N9', 'F093', 0, holds, quantity=f'{text}: longest stand on link or approach (s)', seeds=seedtag('N9'), mode='high', tol='0')
+            book.check('N9', 'F094', 0, left, quantity=f'{text}: cars left {2890 - N9_END} s after the feed ends', seeds=seedtag('N9'), tol='0')
+            book.info('N9', f'{text}: flow late over early (1 = no decay); link lane (m)', f'{np.mean(trend):.2f}; {np.mean(L):.1f}')
 
 
-@scene('N10', 'net_long')
+def longest_stand(f, on=None):
+    """Longest time one car stands still without a break, on lanes whose id holds one of the given strings."""
+    g = f
+    if on:
+        lanes = f.lane.astype(str)
+        m = np.zeros(len(f), bool)
+        for o in on:
+            m |= lanes.str.contains(o, regex=False).to_numpy()
+        g = f[m]
+    tr = g.trip.cat.codes.to_numpy()
+    ti = g.time.to_numpy()
+    st_ = g.speed.to_numpy() < 0.1
+    best, cur, start = 0.0, -1, 0.0
+    for j in range(len(g)):
+        if st_[j]:
+            if tr[j] != cur:
+                cur, start = tr[j], ti[j]
+            best = max(best, ti[j] - start)
+        else:
+            cur = -1
+    return float(best)
+
+
+@scene('N10', 'n10')
 class N10:
     @staticmethod
     def build(w, st):
@@ -1799,21 +1868,7 @@ class N10:
             for r in range(SEEDS):
                 name = f'N10{key}{r}'
                 f = run.cell(name).sort_values(['trip', 'time'], kind='stable')
-                stopped = f.speed.values < 0.1
-                tr = f.trip.cat.codes.values
-                hold = 0.0
-                run_len, prev_tr, prev_t, start = 0.0, -1, 0.0, 0.0
-                ti = f.time.values
-                for j in range(len(f)):
-                    if stopped[j] and tr[j] == prev_tr:
-                        hold = max(hold, ti[j] - start)
-                    elif stopped[j]:
-                        start = ti[j]
-                    else:
-                        start = ti[j]
-                    prev_tr = tr[j] if stopped[j] else -1
-                # a queue moves car by car, so a hold is one car standing still without a break
-                worst.append(hold)
+                worst.append(longest_stand(f))
                 x = run.trips(name)
                 l = x[x.trip.str.contains(r'\.l')]
                 per.append(((l.arrival >= 300) & (l.arrival < 2900)).sum() / (2600 / 86))
@@ -1827,42 +1882,38 @@ class N10:
 
 # --- C's scenes
 def hole_ring(w, name, N, P, repeat):
-    """Cars come in by a side road, one by one, until N were offered: only what fits gets in."""
     c = w.cell(name, 340)
-    c.ring(P / (2 * math.pi), 4, node='priority')
+    edges = c.ring(P / (2 * math.pi), 4)
     for i in range(4):
-        pass
-    c.node('x', P / (2 * math.pi) + 60, P / (2 * math.pi) - 60)
-    c.edge('sd', 'x', 'n0', prio=1)
-    for k in range(N):
-        c.car(f'v{k}', k * 4.0, ['sd'] + ['e0', 'e1', 'e2', 'e3'] * 60)
+        c.signal(f'n{i}', [(25, 'r'), (9000, 'G')])
+    ring_cars(c, N, P, edges, repeat)
     return c
 
 
-S2_NS = (38, 39, 40, 41, 42)
-
-
-def s2_build(w, st, tag):
-    for N in S2_NS:
-        for r in range(SEEDS):
-            hole_ring(w, f'S2{tag}n{N}r{r}', N, 300.0, 60)
+# (N, perimeter): one hole, as C's 39 of 300 but evenly placed per edge; full; full with a whisker of slack,
+# since insertion refuses exact spacing by float rounding
+S2_NS = ((36, 277.5), (40, 300.0), (40, 301.0), (40, 303.0))
 
 
 def s2_flow(run, name):
     f = run.cell(name)
-    t0 = f.time.max() - 200
-    g = f[(f.time >= t0) & f.lane.astype(str).str.contains(r'\.e\d_0')]
+    g = f[(f.time >= 300)]
     n = g.groupby('time').size().median() if len(g) else 0
     P = sum(run.lane_len(name, f'e{i}_0') for i in range(4))
-    q = g.speed.mean() * n / P * 3600 if len(g) else 0.0
-    return float(q), float(n)
+    return float(g.speed.mean() * n / P * 3600) if len(g) else 0.0, float(n), P
 
 
-def s2_table(run, book, st, tag):
-    P = sum(v for k, v in run.lengths.items() if k.startswith(f'S2{tag}n40r0.e') or k.startswith(f':S2{tag}n40r0.n'))
-    res = {N: [s2_flow(run, f'S2{tag}n{N}r{r}') for r in range(SEEDS)] for N in S2_NS}
-    book.info('C-S2', f'perimeter {P:.1f}; offered:in ring:flow ' + ' '.join(f'{N}:{np.mean([x[1] for x in res[N]]):.1f}:{np.mean([x[0] for x in res[N]]):.0f}' for N in S2_NS), 0.0)
-    return P, res
+def s2_all(run, st, tag):
+    res = {}
+    for N, P in S2_NS:
+        res[(N, P)] = [s2_flow(run, f'S2{tag}n{N}p{int(P)}r{r}') for r in range(SEEDS)]
+    return res
+
+
+def s2_build(w, st, tag):
+    for N, P in S2_NS:
+        for r in range(SEEDS):
+            hole_ring(w, f'S2{tag}n{N}p{int(P)}r{r}', N, P, 60)
 
 
 @scene('C-S2', 'sringon')
@@ -1873,17 +1924,18 @@ class S2On:
 
     @staticmethod
     def measure(run, book, st):
-        P, res = s2_table(run, book, st, 'on')
-        # by how many cars actually got in: flow with exactly one hole, and with none
-        rows = [x for v in res.values() for x in v]
-        most = max(x[1] for x in rows)
-        full = int((P + 0.1) // st.get('s', 7.5))
-        w_own = st.get('w', 19.3)
-        hole = [x[0] for x in rows if x[1] == full - 1]
-        none = [x[0] for x in rows if x[1] >= full]
-        book.info('C-S2', f'most cars in the ring {most:.0f}, fits {full}', 0.0)
-        book.check('C-S2', 'F032', 0, hole, quantity='one hole: flow against w/perimeter', forecast=w_own * 1000 / P, tol='20%', seeds=seedtag('C-S2'))
-        book.check('C-S2', 'F032', 0, none, quantity='full ring flow', forecast=0.0, tol='1', seeds=seedtag('C-S2'))
+        res = s2_all(run, st, 'on')
+        book.info('C-S2', 'N,P: in ring, flow ' + ' '.join(f'{k[0]},{k[1]:.0f}:{np.mean([x[1] for x in v]):.1f},{np.mean([x[0] for x in v]):.0f}' for k, v in res.items()), 0.0)
+        T = st.get('T', 1.3)
+        s_ = st.get('s', 7.5)
+        hole = [x[0] for x in res[(36, 277.5)]]
+        book.check('C-S2', 'F032', 0, hole, quantity='one hole, N 36 of 277.5 m: flow against w/perimeter', forecast=(s_ / T) / 277.5 * 3600, tol='20%', seeds=seedtag('C-S2'))
+        for key in ((40, 300.0), (40, 301.0)):
+            v = res[key]
+            if np.mean([x[1] for x in v]) >= 39.5:
+                book.check('C-S2', 'F032', 0, [x[0] for x in v], quantity=f'N 40 of {key[1]:.0f} m flow', forecast=0.0, tol=f'{(key[1] - 300 + .01) / T * 40 / key[1] * 3600 * 1.5:.0f}', seeds=seedtag('C-S2'))
+            else:
+                book.verdict('C-S2', 'F032', f'N 40 of {key[1]:.0f} m', '40 in', f'{np.mean([x[1] for x in v]):.1f} in', 'exact', False, seeds='insertion refuses it')
 
 
 @scene('C-S2off', 'sringoff')
@@ -1894,48 +1946,50 @@ class S2Off:
 
     @staticmethod
     def measure(run, book, st):
-        P, res = s2_table(run, book, st, 'of')
-        full = int((P + 0.1) // st.get('s', 7.5))
-        none = [x[0] for v in res.values() for x in v if x[1] >= full]
-        book.check('C-S2', 'F079', 0, none, tol='1', seeds=seedtag('C-S2'))
+        res = s2_all(run, st, 'of')
+        v = res[(40, 301.0)]
+        book.check('C-S2', 'F079', 0, [x[0] for x in v], quantity='N 40 of 301 m, exit clear off', tol='30', seeds=seedtag('C-S2'))
 
 
 def s3_cell(w, name, f_share, lanes=2, r=0, key='S3'):
-    """Lane 0 turns right, the others go through. A share of lane 0 wants through, blocked by a saturated lane 1."""
+    """Lane 0 turns off gently, the others go through. A share of lane 0 wants through.
+    lanes 2 (S3): a line no one may cross stands in for C's 'no gaps', so the head can only wait or give up.
+    lanes 3 (S4): through lanes stand in a queue behind a short green, so a head needing two changes is held back."""
     c = w.cell(name, 300)
     c.node('a', 0, 0)
     c.node('m', 300, 0)
-    c.node('t', 600, 0)
+    c.node('t', 600, 0, 'traffic_light' if lanes == 3 else 'priority')
     c.node('z', 1000, 0)
-    c.node('r', 300, -100)
-    c.node('q', 600, -100)
-    c.edge('in', 'a', 'm', lanes=lanes)
+    c.node('r', 600, -80)
+    c.node('q', 800, -80)
+    c.edge('in', 'a', 'm', lanes=lanes, lane_change={0: 'authority'} if lanes == 2 else None)
     c.edge('thr', 'm', 't', lanes=lanes - 1)
     c.edge('rt', 'm', 'r')
     c.edge('r2', 'r', 'q')
-    c.edge('r3', 'q', 't')
-    c.edge('end', 't', 'z', lanes=lanes)
+    c.edge('r3', 'q', 'z')
+    c.node('y', 1400, 0)
+    c.edge('end', 't', 'z', lanes=lanes - 1)
+    c.edge('fin', 'z', 'y')
     c.conn('in', 'rt', 0, 0)
     for li in range(1, lanes):
         c.conn('in', 'thr', li, li - 1)
-        c.conn('thr', 'end', li - 1, li)
-    c.conn('rt', 'r2', 0, 0)
-    c.conn('r2', 'r3', 0, 0)
-    c.conn('r3', 'end', 0, 0)
+    if lanes == 3:
+        c.signal('t', [(12, 'G'), (3, 'y'), (75, 'r')])
     fs = c.feeders('in', lanes, 'a', 0, 0)
     rng = arrival_rng(f'{key}{f_share}', r)
+    through = ['in', 'thr', 'end', 'fin']
     for li in range(1, lanes):
         for k, t in enumerate(uniform(2400, 0, 1450)):
-            c.car(f't{li}k{k}', t, [fs[li], 'in', 'thr', 'end'])
+            c.car(f't{li}k{k}', t, [fs[li]] + through)
     for k, t in enumerate(uniform(2400, 0, 1450)):
-        c.car(f'c{k}', t, [fs[0], 'in', 'thr', 'end'] if rng.random() < f_share else [fs[0], 'in', 'rt', 'r2', 'r3', 'end'])
+        c.car(f'c{k}', t, [fs[0]] + (through if rng.random() < f_share else ['in', 'rt', 'r2', 'r3', 'fin']))
 
 
 def s3_flow(run, name):
+    """Everything leaving lane 0: its own turn, and those who gave up theirs."""
     e = run.edges()
     x = e[(e.begin >= 300) & (e.begin < 1450)]
-    rt = x[x.edge == f'{name}.rt'].entered.sum() * 3600 / 1150
-    return rt
+    return x[x.edge == f'{name}.rt'].entered.sum() * 3600 / 1150
 
 
 def s3_measure(run, book, fid, batch_vals, prefix, lanes=2):
@@ -1949,6 +2003,7 @@ class S3a:
     @staticmethod
     def build(w, st):
         for r in range(SEEDS):
+            s3_cell(w, f'CS3f00r{r}', 0.0, r=r)
             s3_cell(w, f'CS3f05r{r}', 0.05, r=r)
             s3_cell(w, f'CS3f10r{r}', 0.1, r=r)
             s3_cell(w, f'CS4f05r{r}', 0.05, lanes=3, r=r, key='S4')
@@ -1956,6 +2011,7 @@ class S3a:
 
     @staticmethod
     def measure(run, book, st):
+        book.info('C-S3', 'lane 0 flow with no wrong-lane car, formula 1800', float(np.mean([s3_flow(run, f'CS3f00r{r}') for r in range(SEEDS)])))
         for pre, scene_name, fid in (('CS3', 'C-S3', 'F033'), ('CS4', 'C-S4', 'F034')):
             for i, lab in enumerate(('f05', 'f10')):
                 vals = [s3_flow(run, f'{pre}{lab}r{r}') for r in range(SEEDS)]
@@ -2403,7 +2459,7 @@ def run_batch(name, scenes, a, book, st, out):
         (d / 'fcd.csv').unlink(missing_ok=True)
 
 
-ORDER = ['signal', 'lane', 'ring', 'sringon', 'sringoff', 'signal_long', 'xone', 'give', 'give2', 'lc', 'lc2', 'drop', 'drop_city', 'slow', 'net', 'net_long', 'miss60', 'miss120', 'miss0', 'block1', 'block25', 'block0', 'grid', 'grid_sig']
+ORDER = ['signal', 'lane', 'ring', 'sringon', 'sringoff', 'signal_long', 'xone', 'give', 'give2', 'lc', 'lc2', 'drop', 'drop_city', 'slow', 'net', 'net_long', 'n9', 'n10', 'miss60', 'miss120', 'miss0', 'block1', 'block25', 'block0', 'grid', 'grid_sig']
 
 
 def main():
@@ -2431,6 +2487,7 @@ def main():
     st = {}
     res = ROOT / 'results/theory' / f'{tag}.csv'
     res.parent.mkdir(parents=True, exist_ok=True)
+    res_old = pd.read_csv(res, dtype=str, keep_default_na=False) if only and res.exists() else None
     for name in ORDER:
         scenes = [s for s in Scene.registry if s.batch == name and (not only or only & set(s.names)) and not (skip & set(s.names))]
         if not scenes:
@@ -2439,7 +2496,11 @@ def main():
             run_batch(name, scenes, a, book, st, out)
         except Exception as e:
             book.row(name, '', f'batch failed: {e!r}'[:200], '', '', '', 'ERROR')
-        pd.DataFrame(book.rows).to_csv(res, index=False)
+        new = pd.DataFrame(book.rows)
+        # A partial run replaces its own scenes in the table and leaves the rest.
+        if only and res_old is not None and len(new):
+            new = pd.concat([res_old[~res_old.scene.isin(set(new.scene))], new], ignore_index=True)
+        new.to_csv(res, index=False)
     d = pd.DataFrame(book.rows)
     if not len(d):
         return
