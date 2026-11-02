@@ -1,0 +1,10 @@
+# Branch t3/1c6fee50: physical mode, its default driver.
+name = "physics"
+branch = "t3/1c6fee50"
+patch = "instrument/sensors-physics.patch"
+kind = "physical"
+dt = 0.1
+dt_network = 1.0
+time_to_teleport = 0
+flags = []
+vtype = 'carFollowModel="Krauss"'
