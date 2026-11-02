@@ -98,7 +98,6 @@ pub struct Buffers {
     pub tls: wgpu::Buffer,
     pub queues: wgpu::Buffer,
     pub items: wgpu::Buffer,
-    pub routes: wgpu::Buffer,
     pub trips: wgpu::Buffer,
     pub queue_trips: wgpu::Buffer,
     /// What `Sim::reset` clears, to zero and to all ones.
@@ -572,10 +571,10 @@ impl Sim {
             counters.clone(), veh[0].clone(), veh[1].clone(), keys[0].clone(), keys[1].clone(), vals[0].clone(), vals[1].clone(),
             hist.clone(), totals.clone(), seg.clone(), items.clone(), link_count.clone(), trip_out.clone(), series.clone(),
             edge_acc.clone(), adv_flags.clone(), last_detect.clone(), lc_plan.clone(), lane_free.clone(), indirect.clone(),
-            mirror.clone(), energy.clone(), ph_lane.clone(), poses.clone(), grid_head.clone(), grid_next.clone(), contacts.clone(),
+            mirror.clone(), energy.clone(), ph_lane.clone(), poses.clone(), grid_head.clone(), grid_next.clone(), contacts.clone(), route_patch.clone(),
         ];
         reset_zero.retain(|b| b.size() > 0);
-        let reset_ones = vec![slots.clone(), partial.clone(), tail.clone(), entrant.clone(), advice.clone(), claims.clone(), hard_limit.clone()];
+        let reset_ones = vec![slots.clone(), partial.clone(), tail.clone(), entrant.clone(), advice.clone(), claims.clone()];
         let coord = match (world.coord.as_ref(), coord_parts) {
             (Some(cw), Some((buffers, cj_layout, group))) => {
                 let module = gpu.shader("av_junction", &format!("{common}\n{route}\n{}", shader("av_junction.wgsl", AV_JUNCTION)));
@@ -652,7 +651,6 @@ impl Sim {
             reset_ones,
             energy,
             contacts,
-            routes,
             route_patch,
             route_arena_at,
             total_bytes: total_bytes.get(),
