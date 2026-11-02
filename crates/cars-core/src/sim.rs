@@ -76,6 +76,8 @@ pub struct Sim {
 }
 
 pub struct Buffers {
+    /// Per-step reasons, only with `Sim::with_why`.
+    pub why: Option<wgpu::Buffer>,
     pub params: wgpu::Buffer,
     pub globals: wgpu::Buffer,
     pub counters: wgpu::Buffer,
@@ -88,8 +90,6 @@ pub struct Buffers {
     pub tls: wgpu::Buffer,
     pub queues: wgpu::Buffer,
     pub items: wgpu::Buffer,
-    /// Per-step reasons, only with `Sim::with_why`.
-    pub why: Option<wgpu::Buffer>,
     pub total_bytes: u64,
 }
 
@@ -214,6 +214,7 @@ impl Sim {
                 mapped_at_creation: false,
             })
         };
+        let why_buffer = why.then(|| empty("why", cap * (crate::why::WHY_WORDS + crate::why::MAX_ITEMS * crate::why::ITEM_WORDS) * 4));
         let veh_bytes = std::mem::size_of::<GpuVeh>() as u64;
         let veh = [empty("veh_a", cap * veh_bytes), empty("veh_b", cap * veh_bytes)];
         let keys = [empty("keys0", cap * 4), empty("keys1", cap * 4)];
@@ -249,7 +250,6 @@ impl Sim {
         let lc_plan = empty("lc_plan", cap * LCPLAN_BYTES);
         let unused = empty("unused", 16);
         let lane_free = empty("lane_free", p.n_lanes as u64 * 16);
-        let why_buffer = why.then(|| empty("why", cap * (crate::why::WHY_WORDS + crate::why::MAX_ITEMS * crate::why::ITEM_WORDS) * 4));
 
         // Layouts.
         let main_layout = {
@@ -440,13 +440,16 @@ impl Sim {
             std::env::var("CARS_SHADER_DIR").ok().and_then(|d| std::fs::read_to_string(format!("{d}/{name}")).ok()).unwrap_or_else(|| builtin.to_string())
         };
         let (common, route, step, lc) = (shader("common.wgsl", COMMON), shader("route.wgsl", ROUTE), shader("step.wgsl", STEP), shader("lc.wgsl", LC));
-        let mut main_src = format!("{common}\n{route}\n{step}\n{lc}");
-        if why {
-            main_src = crate::why::instrument(&main_src).map_err(|lost| format!("--why: probes that no longer fit, see why.rs:\n  {}", lost.join("\n  ")))?;
-        }
+        let main_src = format!("{common}\n{route}\n{step}\n{lc}");
         let main_module = gpu.shader("step", &main_src);
         let control_module = gpu.shader("control", &format!("{common}\n{CONTROL}"));
         let sort_module = gpu.shader("sort", &format!("{common}\n{SORT}"));
+        let main_module = if why {
+            let probed = crate::why::instrument(&main_src).map_err(|lost| format!("--why: probes that no longer fit, see why.rs:\n  {}", lost.join("\n  ")))?;
+            gpu.shader("step", &probed)
+        } else {
+            main_module
+        };
         let main_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("main"),
             bind_group_layouts: &[Some(&main_layout)],
@@ -570,6 +573,7 @@ impl Sim {
         };
 
         let buffers = Buffers {
+            why: why_buffer,
             params,
             globals,
             counters,
@@ -582,7 +586,6 @@ impl Sim {
             tls,
             queues,
             items,
-            why: why_buffer,
             total_bytes: total_bytes.get(),
         };
         Ok(Self {

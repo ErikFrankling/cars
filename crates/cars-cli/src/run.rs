@@ -107,6 +107,10 @@ pub struct Args {
 }
 
 pub fn run(args: Args) {
+    if args.why && std::env::var("CARS_ADAPTER").is_ok_and(|a| a.to_lowercase().contains("llvmpipe")) && std::env::var_os("LP_NATIVE_VECTOR_WIDTH").is_none() {
+        // Its 256-bit code miscompiles kernels this size. Set before the driver or any other thread starts.
+        unsafe { std::env::set_var("LP_NATIVE_VECTOR_WIDTH", "128") };
+    }
     let t = Instant::now();
     let mut net = Net::load(&args.net).expect("net");
     for a in &args.additional {
@@ -134,10 +138,6 @@ pub fn run(args: Args) {
         t.elapsed().as_secs_f64(), world.lanes.len(), world.links.len(), world.foes.len(), world.conflicts.len(),
         world.tls.len(), world.trips.len(), world.params.capacity, world.params.key_bits
     );
-    if args.why && std::env::var("CARS_ADAPTER").is_ok_and(|a| a.to_lowercase().contains("llvmpipe")) && std::env::var_os("LP_NATIVE_VECTOR_WIDTH").is_none() {
-        // Its 256-bit code miscompiles kernels this size. Set before the driver or any other thread starts.
-        unsafe { std::env::set_var("LP_NATIVE_VECTOR_WIDTH", "128") };
-    }
     let checks = if args.trusted { Checks::Trusted } else { Checks::Safe };
     let gpu = pollster::block_on(Gpu::headless(GpuOptions { adapter_name: Some(std::env::var("CARS_ADAPTER").unwrap_or("7900".into())), checks })).expect("gpu");
     if args.why && args.trace.is_none() {
@@ -155,11 +155,11 @@ pub fn run(args: Args) {
         })
         .collect();
     let widths: Vec<f32> = demand.vtypes.iter().map(|t| t.width).collect();
+    if let (true, Some(p)) = (args.why, &args.trace) {
+        crate::dbgnet::write(std::path::Path::new(&format!("{}.net.json", p.display())), &args.net, &net, &world).expect("net sidecar");
+    }
     let mut tracer = args.trace.as_ref().map(|p| {
-        if args.why {
-            crate::dbgnet::write(std::path::Path::new(&format!("{}.net.json", p.display())), &args.net, &net, &world).expect("net sidecar");
-        }
-        let options = crate::trace::Options { begin: args.trace_begin.unwrap_or(args.begin), end: args.trace_end.unwrap_or(args.end), stride: args.trace_stride, bbox: args.trace_bbox.clone(), why: args.why };
+        let options = crate::trace::Options { begin: args.trace_begin.unwrap_or(args.begin), end: args.trace_end.unwrap_or(args.end), stride: args.trace_stride, bbox: args.trace_bbox.clone() };
         crate::trace::Tracer::new(p, options, &net, &mut world, &demand, &widths, args.begin, args.time_to_teleport, &gpu).expect("trace")
     });
     // The GPU has its copies now. A day of Berlin would otherwise keep gigabytes in RAM.

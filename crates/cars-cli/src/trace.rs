@@ -174,8 +174,6 @@ pub struct Options {
     pub end: f32,
     pub stride: u32,
     pub bbox: Vec<f32>,
-    /// Also copy `Sim::with_why`'s reasons, to `<trace>.why`.
-    pub why: bool,
 }
 
 const WHY_MAGIC: &[u8; 8] = b"CARSWHY1";
@@ -203,7 +201,6 @@ pub struct Tracer {
     back: mpsc::Receiver<Slot>,
     writer: Option<std::thread::JoinHandle<Stats>>,
     n_tls: u64,
-    why: bool,
     capture_ms: f64,
     frames: u64,
     path: PathBuf,
@@ -287,23 +284,12 @@ impl Tracer {
         file.write_all(&((json.len() + pad) as u32).to_le_bytes())?;
         file.write_all(&json)?;
         file.write_all(&b"    "[..pad])?;
-        let why_file = if o.why {
-            let mut w = BufWriter::with_capacity(1 << 20, File::create(format!("{}.why", path.display()))?);
-            let json = serde_json::to_vec(&serde_json::json!({"record": size_of::<WhyRecord>(), "kinds": KINDS})).map_err(std::io::Error::other)?;
-            let pad = json.len().next_multiple_of(4) - json.len();
-            w.write_all(WHY_MAGIC)?;
-            w.write_all(&((json.len() + pad) as u32).to_le_bytes())?;
-            w.write_all(&json)?;
-            w.write_all(&b"    "[..pad])?;
-            Some(w)
-        } else {
-            None
-        };
         let (send, take) = mpsc::channel::<Slot>();
         let (give, back) = mpsc::channel();
         let writer = Writer {
             file,
-            why_file,
+            why_path: PathBuf::from(format!("{}.why", path.display())),
+            why_file: None,
             why_records: Vec::new(),
             give,
             routes: std::mem::take(&mut world.routes),
@@ -342,7 +328,6 @@ impl Tracer {
             back,
             writer: Some(handle),
             n_tls: world.tls.len() as u64,
-            why: o.why,
             capture_ms: 0.0,
             frames: 0,
             path: path.to_path_buf(),
@@ -390,7 +375,7 @@ impl Tracer {
         let n = n_active as u64 + counters[0] as u64;
         let veh_bytes = n * size_of::<GpuVeh>() as u64;
         let tls_bytes = self.n_tls * size_of::<GpuTlsState>() as u64;
-        let why_bytes = if self.why { n * WHY_WORDS * 4 } else { 0 };
+        let why_bytes = if sim.buffers.why.is_some() { n * WHY_WORDS * 4 } else { 0 };
         let size = (veh_bytes + tls_bytes + why_bytes).max(256);
         let mut slot = self.take_slot(g, size);
         let mut e = g.device.create_command_encoder(&Default::default());
@@ -405,7 +390,7 @@ impl Tracer {
         }
         g.queue.submit([e.finish()]);
         slot.n = n;
-        slot.n_why = if self.why { n } else { 0 };
+        slot.n_why = why_bytes / (WHY_WORDS * 4);
         slot.n_tls = self.n_tls;
         slot.step = sim.step as u32;
         slot.teleports = counters[4];
@@ -493,6 +478,7 @@ struct Last {
 
 struct Writer {
     file: BufWriter<File>,
+    why_path: PathBuf,
     why_file: Option<BufWriter<File>>,
     why_records: Vec<WhyRecord>,
     give: mpsc::Sender<Slot>,
@@ -512,6 +498,17 @@ struct Writer {
     names: Vec<u8>,
     records: Vec<Record>,
     stats: Stats,
+}
+
+fn why_head(path: &Path) -> std::io::Result<BufWriter<File>> {
+    let mut w = BufWriter::with_capacity(1 << 20, File::create(path)?);
+    let json = serde_json::to_vec(&serde_json::json!({"record": size_of::<WhyRecord>(), "kinds": KINDS})).map_err(std::io::Error::other)?;
+    let pad = json.len().next_multiple_of(4) - json.len();
+    w.write_all(WHY_MAGIC)?;
+    w.write_all(&((json.len() + pad) as u32).to_le_bytes())?;
+    w.write_all(&json)?;
+    w.write_all(&b"    "[..pad])?;
+    Ok(w)
 }
 
 fn name_entry(out: &mut Vec<u8>, id: u32, name: &str) {
@@ -579,7 +576,7 @@ impl Writer {
         let words = WHY_WORDS as usize;
         let mut running = 0u32;
         let mut speed_sum = 0f64;
-        for (index, v) in vehicles.iter().enumerate() {
+        for v in vehicles {
             if v.replica != 0 {
                 continue;
             }
@@ -660,6 +657,7 @@ impl Writer {
                 speed: (v.speed * 512.0).round().clamp(0.0, 65535.0) as u16,
             });
             if !why.is_empty() {
+                let index = (std::ptr::from_ref(v).addr() - vehicles.as_ptr().addr()) / size_of::<GpuVeh>();
                 self.why_records.push(WhyRecord::from_words(&why[index * words..(index + 1) * words], c.step).unwrap_or_default());
             }
         }
@@ -681,6 +679,9 @@ impl Writer {
         self.file.write_all(&self.names).expect("trace write");
         self.file.write_all(&phase_data).expect("trace write");
         self.file.write_all(bytemuck::cast_slice(&self.records)).expect("trace write");
+        if !why.is_empty() && self.why_file.is_none() {
+            self.why_file = Some(why_head(&self.why_path).expect("why write"));
+        }
         if let Some(w) = self.why_file.as_mut() {
             w.write_all(b"WHYF").expect("why write");
             w.write_all(&c.step.to_le_bytes()).expect("why write");
