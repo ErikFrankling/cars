@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Recipe step 1. Freeze the test, the held-out sites and the metric code, and compute the floor.
+"""Recipe step 1. Register the test, the held-out sites and the metric code, and compute the floor.
 
 No simulated number is read here. Writes step1/{real_days.csv.gz,freeze.json,floor.json,floor.md}.
-Rules, fixed before any run:
-- Whole day closed: 15 May 2019 is opened once, at recipe step 9. Development uses Tue 14 May.
-- Whole sites closed: every site over 200 m from a v6.4 calibration station, then whole streets, both
-  directions, by a hash of the street name until a third of the district's sites are held out.
+Rules follow report 22 section 9, which replaced the first version of this freeze before any score:
+- May 2019 is tuning data, 15 May included: it has been read, so it is not blind. Other 2019 months are locked and not downloaded.
+- Sites: 70% tuning by sha256(site + "cars-bench-v1") within each road class, 30% locked, plus every station over 200 m from a v6.4 calibration link, the only blind flow result.
 - A site-day that looks faulty is dropped from real data alone (rules from reference_day_build.py).
 """
 import hashlib
@@ -17,7 +16,7 @@ from common import *
 import metrics
 
 OUT = B19 / 'step1'
-SALT = 'berlin2019-gate1'
+SALT = 'cars-bench-v1'
 DAYS = ['2019-05-07', '2019-05-14', '2019-05-15', '2019-05-16', '2019-05-21', '2019-05-22', '2019-05-23', '2019-05-28']
 SELECTION_DAY = '2019-05-14'
 
@@ -64,21 +63,21 @@ def main():
     clean.to_csv(OUT / 'real_days.csv.gz', index=False)
     inside = inside[inside.site.isin(usable)]
 
-    held = set(inside[inside.site.isin(far)].site)
-    streets = sorted(inside.street.fillna(inside.site).unique(), key=lambda s: hashlib.sha256((SALT + s).encode()).hexdigest())
-    for s in streets:
-        if len(held) >= len(inside) / 3:
-            break
-        held |= set(inside[inside.street == s].site)
+    # the split is registered for all of Berlin, so a grown district keeps it
+    held_all = set(sites[sites.site.isin(far)].site)
+    for c, g in sites[sites.quality == 'trusted'].groupby('road_class'):
+        order = sorted(g.site, key=lambda x: hashlib.sha256((x + SALT).encode()).hexdigest())
+        held_all |= set(order[:int(np.ceil(.3 * len(order)))])
+    held = set(inside.site) & held_all
     selection = sorted(set(inside.site) - held)
     classes = dict(zip(sites.site, sites.road_class))
     code = hashlib.sha256((Path(__file__).parent / 'metrics.py').read_bytes()).hexdigest()
-    freeze = dict(frozen_before_any_run=True, test_day=TEST_DAY, selection_day=SELECTION_DAY, floor_days=DAYS, district=district, district_sites=sorted(inside.site), selection_sites=selection, held_out_sites=sorted(held), held_out_clean_200m=sorted(held & far), metrics_sha256=code, salt=SALT, rule='recipe step 9 opens test_day and held_out_sites once; anything after that is a new model')
+    freeze = dict(frozen_before_any_score=True, tuning_days=DAYS, read_day_of_report_12=TEST_DAY, district=district, district_sites=sorted(inside.site), tuning_sites=selection, locked_sites=sorted(held), locked_clean_200m=sorted(held & far), locked_sites_all_berlin=sorted(held_all), metrics_sha256=code, salt=SALT, rule='report 22 section 9: locked sites are never scored or read for a simulated day here; other 2019 months stay undownloaded; the benchmark reveals them')
     (OUT / 'freeze.json').write_text(json.dumps(freeze, indent=1))
-    print(f'district sites {len(inside)}, selection {len(selection)}, held out {len(held)}, of which clean {len(held & far)}')
+    print(f'district sites {len(inside)}, tuning {len(selection)}, locked {len(held)}, of which clean {len(held & far)}; Berlin locked {len(held_all)}')
 
     res = {}
-    groups = {'city, all usable': sorted(usable), 'district': sorted(inside.site), 'district selection': selection, 'district held out': sorted(held)}
+    groups = {'city, all usable': sorted(usable), 'district': sorted(inside.site), 'district tuning sites': selection, 'district locked sites': sorted(held)}
     for name, ss in groups.items():
         for ref_day in (TEST_DAY, SELECTION_DAY):
             q = clean[clean.site.isin(ss)]

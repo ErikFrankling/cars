@@ -82,82 +82,82 @@ Each other normal day scored against the reference day with `metrics.score`. Med
 | Network curve, peak flow err | 0.003 | 0.014 |
 | Network curve, critical k err | 0.035 | 0.092 |
 
-## district selection, against 2019-05-15
+## district tuning sites, against 2019-05-15
 
 | Check | Median | Worst |
 |---|---:|---:|
-| Hourly site RMSN, 07-18 | 0.094 | 0.167 |
-| Hourly site R2 | 0.959 | 0.859 |
-| Hourly slope | 0.952 | 1.002 |
-| Hourly GEH<5 | 0.941 | 0.844 |
-| Hourly WAPE | 0.065 | 0.101 |
-| Total, sites, ratio-1 | 0.012 | 0.035 |
-| Day shape, mean abs share, points | 0.108 | 0.152 |
+| Hourly site RMSN, 07-18 | 0.094 | 0.147 |
+| Hourly site R2 | 0.960 | 0.892 |
+| Hourly slope | 0.964 | 1.004 |
+| Hourly GEH<5 | 0.932 | 0.862 |
+| Hourly WAPE | 0.065 | 0.091 |
+| Total, sites, ratio-1 | 0.016 | 0.029 |
+| Day shape, mean abs share, points | 0.094 | 0.120 |
 | Speed, site median abs, km/h | 2.000 | 2.000 |
-| Jam site-hours caught | 0.661 | 0.491 |
-| Jam false alarms | 0.342 | 0.599 |
-| Top bottlenecks shared | 0.750 | 0.650 |
+| Jam site-hours caught | 0.726 | 0.611 |
+| Jam false alarms | 0.325 | 0.493 |
+| Top bottlenecks shared | 0.800 | 0.600 |
 | Onset, AM, median abs min | 30.000 | 60.000 |
 | Clearance, PM, median abs min | 60.000 | 60.000 |
-| Network curve, peak flow err | -0.008 | 0.035 |
-| Network curve, critical k err | -0.045 | 0.177 |
+| Network curve, peak flow err | 0.000 | 0.012 |
+| Network curve, critical k err | 0.026 | 0.230 |
 
-## district selection, against 2019-05-14
+## district tuning sites, against 2019-05-14
 
 | Check | Median | Worst |
 |---|---:|---:|
-| Hourly site RMSN, 07-18 | 0.096 | 0.175 |
-| Hourly site R2 | 0.957 | 0.846 |
-| Hourly slope | 0.957 | 1.000 |
-| Hourly GEH<5 | 0.933 | 0.816 |
-| Hourly WAPE | 0.067 | 0.110 |
+| Hourly site RMSN, 07-18 | 0.090 | 0.153 |
+| Hourly site R2 | 0.961 | 0.884 |
+| Hourly slope | 0.971 | 1.005 |
+| Hourly GEH<5 | 0.934 | 0.839 |
+| Hourly WAPE | 0.065 | 0.097 |
+| Total, sites, ratio-1 | 0.017 | 0.028 |
+| Day shape, mean abs share, points | 0.093 | 0.152 |
+| Speed, site median abs, km/h | 2.000 | 2.000 |
+| Jam site-hours caught | 0.712 | 0.541 |
+| Jam false alarms | 0.305 | 0.552 |
+| Top bottlenecks shared | 0.750 | 0.600 |
+| Onset, AM, median abs min | 0.000 | 0.000 |
+| Clearance, PM, median abs min | 60.000 | 60.000 |
+| Network curve, peak flow err | -0.009 | 0.014 |
+| Network curve, critical k err | 0.124 | 0.206 |
+
+## district locked sites, against 2019-05-15
+
+| Check | Median | Worst |
+|---|---:|---:|
+| Hourly site RMSN, 07-18 | 0.087 | 0.138 |
+| Hourly site R2 | 0.964 | 0.909 |
+| Hourly slope | 0.974 | 0.996 |
+| Hourly GEH<5 | 0.944 | 0.900 |
+| Hourly WAPE | 0.059 | 0.080 |
 | Total, sites, ratio-1 | 0.019 | 0.030 |
-| Day shape, mean abs share, points | 0.117 | 0.162 |
+| Day shape, mean abs share, points | 0.102 | 0.172 |
 | Speed, site median abs, km/h | 2.000 | 2.000 |
-| Jam site-hours caught | 0.648 | 0.481 |
-| Jam false alarms | 0.314 | 0.620 |
-| Top bottlenecks shared | 0.750 | 0.650 |
-| Onset, AM, median abs min | 0.000 | 30.000 |
-| Clearance, PM, median abs min | 60.000 | 120.000 |
-| Network curve, peak flow err | 0.014 | 0.025 |
-| Network curve, critical k err | 0.009 | 0.131 |
-
-## district held out, against 2019-05-15
-
-| Check | Median | Worst |
-|---|---:|---:|
-| Hourly site RMSN, 07-18 | 0.087 | 0.108 |
-| Hourly site R2 | 0.964 | 0.944 |
-| Hourly slope | 0.989 | 0.994 |
-| Hourly GEH<5 | 0.937 | 0.927 |
-| Hourly WAPE | 0.059 | 0.067 |
-| Total, sites, ratio-1 | 0.016 | 0.021 |
-| Day shape, mean abs share, points | 0.102 | 0.131 |
-| Speed, site median abs, km/h | 2.000 | 2.000 |
-| Jam site-hours caught | 0.685 | 0.603 |
-| Jam false alarms | 0.360 | 0.419 |
-| Top bottlenecks shared | 0.833 | 0.778 |
+| Jam site-hours caught | 0.569 | 0.542 |
+| Jam false alarms | 0.323 | 0.582 |
+| Top bottlenecks shared | 0.842 | 0.842 |
 | Onset, AM, median abs min | 0.000 | 60.000 |
-| Clearance, PM, median abs min | 60.000 | 60.000 |
-| Network curve, peak flow err | 0.006 | 0.025 |
-| Network curve, critical k err | -0.003 | 0.102 |
+| Clearance, PM, median abs min | 60.000 | 90.000 |
+| Network curve, peak flow err | 0.004 | 0.027 |
+| Network curve, critical k err | -0.026 | 0.090 |
 
-## district held out, against 2019-05-14
+## district locked sites, against 2019-05-14
 
 | Check | Median | Worst |
 |---|---:|---:|
-| Hourly site RMSN, 07-18 | 0.089 | 0.113 |
-| Hourly site R2 | 0.962 | 0.937 |
-| Hourly slope | 0.994 | 0.999 |
-| Hourly GEH<5 | 0.949 | 0.909 |
-| Hourly WAPE | 0.060 | 0.071 |
-| Total, sites, ratio-1 | 0.005 | 0.033 |
-| Day shape, mean abs share, points | 0.100 | 0.168 |
-| Speed, site median abs, km/h | 1.000 | 2.000 |
-| Jam site-hours caught | 0.734 | 0.688 |
-| Jam false alarms | 0.415 | 0.510 |
-| Top bottlenecks shared | 0.882 | 0.706 |
+| Hourly site RMSN, 07-18 | 0.096 | 0.149 |
+| Hourly site R2 | 0.959 | 0.894 |
+| Hourly slope | 0.973 | 0.995 |
+| Hourly GEH<5 | 0.938 | 0.872 |
+| Hourly WAPE | 0.063 | 0.089 |
+| Total, sites, ratio-1 | 0.012 | 0.038 |
+| Day shape, mean abs share, points | 0.102 | 0.167 |
+| Speed, site median abs, km/h | 2.000 | 2.000 |
+| Jam site-hours caught | 0.672 | 0.639 |
+| Jam false alarms | 0.449 | 0.606 |
+| Top bottlenecks shared | 0.941 | 0.824 |
 | Onset, AM, median abs min | 30.000 | 60.000 |
-| Clearance, PM, median abs min | 60.000 | 60.000 |
-| Network curve, peak flow err | -0.008 | 0.025 |
-| Network curve, critical k err | 0.022 | 0.083 |
+| Clearance, PM, median abs min | 60.000 | 120.000 |
+| Network curve, peak flow err | 0.012 | 0.019 |
+| Network curve, critical k err | 0.055 | 0.087 |
