@@ -34,7 +34,6 @@ class Frame:
         else:
             self.dec = self.kind
         self.next = np.full(self.n, -1, dtype=np.int64)
-        self.by_trip = {}
         order = np.argsort(self.trips)
         self._sorted_trips = self.trips[order]
         self._order = order
@@ -52,11 +51,29 @@ class Frame:
         return out
 
     def _lane_ends(self):
-        """Rear-most car on each lane, and the car whose tail still hangs on a lane."""
-        rear, hang = {}, {}
-        for idx in np.argsort(-self.pos):
-            rear[int(self.lanes[idx])] = int(idx)
+        """For lanes as arrays: rear-most car on each, and a car whose body still hangs back onto each."""
+        order = np.lexsort((self.pos, self.lanes))
+        lanes, first = np.unique(self.lanes[order], return_index=True)
+        rear = (lanes, order[first])
+        lengths = np.array([t['length'] for t in self.run.trace.header['vtypes']], dtype=float)
+        behind = (self.pos < lengths[self.rec['lane_type'] >> 24]) & (prevs_of(self.rec) != 0xffffff)
+        idx = np.nonzero(behind)[0]
+        prev = prevs_of(self.rec)[idx]
+        o2 = np.argsort(prev, kind='stable')
+        lanes2, first2 = np.unique(prev[o2], return_index=True)
+        hang = (lanes2, idx[o2[first2]])
         return rear, hang
+
+    @staticmethod
+    def _find(table, wanted):
+        lanes, who = table
+        out = np.full(len(wanted), -1, dtype=np.int64)
+        if not len(lanes):
+            return out
+        at = np.minimum(np.searchsorted(lanes, wanted), len(lanes) - 1)
+        hit = lanes[at] == wanted
+        out[hit] = who[at[hit]]
+        return out
 
     def _infer_same_lane(self):
         order = np.lexsort((self.pos, self.lanes))
@@ -71,18 +88,14 @@ class Frame:
         self.next[plain] = self.lookup(b[plain].astype(np.uint32))
         lane_blame = np.nonzero((b >= BLAME_LANE) & (b != NONE32))[0]
         if len(lane_blame):
-            rear, _ = self._lane_ends()
-            prev = prevs_of(self.rec)
-            hang = {}
-            for idx in np.nonzero(prev != 0xffffff)[0]:
-                hang.setdefault(int(prev[idx]), int(idx))
-            for idx in lane_blame:
-                lane = int(b[idx] & 0x7fffffff)
-                who = hang.get(lane) if self.kind[idx] == K['tail'] or self.kind[idx] == K['junction'] else None
-                if who is None:
-                    who = rear.get(lane, hang.get(lane))
-                if who is not None and who != idx:
-                    self.next[idx] = who
+            rear, hang = self._lane_ends()
+            wanted = (b[lane_blame] & 0x7fffffff).astype(np.int64)
+            from_rear = self._find(rear, wanted)
+            from_hang = self._find(hang, wanted)
+            tailish = (self.kind[lane_blame] == K['tail']) | (self.kind[lane_blame] == K['junction'])
+            who = np.where(tailish & (from_hang >= 0), from_hang, np.where(from_rear >= 0, from_rear, from_hang))
+            ok = (who >= 0) & (who != lane_blame)
+            self.next[lane_blame[ok]] = who[ok]
         # At the end of a lane its route cannot leave: whoever blocks the lane change it needs.
         end = np.nonzero(self.kind == K['lane_end'])[0]
         for idx in end:
@@ -109,8 +122,15 @@ class Frame:
         p = cut.copy()
         for _ in range(int(np.log2(max(self.n, 2))) + 2):
             p = p[p]
-        # A record is on a cycle if it does not settle on a self-pointing root.
+        # A record is on a cycle if it does not settle on a self-pointing root. One name per ring: its lowest trip.
         settled = cut[p] == p
+        for start in np.unique(p[~settled]):
+            ring, at = [], int(start)
+            while at not in ring:
+                ring.append(at)
+                at = int(cut[at])
+            name = min(ring, key=lambda k: int(self.trips[k]))
+            p[np.isin(p, ring)] = name
         return p, ~settled
 
     def describe(self, idx):
@@ -118,7 +138,7 @@ class Frame:
         lane = int(self.lanes[idx])
         x, y = run.net.lane_xy(lane, self.pos[idx])
         k = KINDS[self.kind[idx]] if self.kind[idx] < len(KINDS) else '?'
-        out = dict(car=run.name(self.trips[idx]), time=float(run.times[self.i]), lane=run.net.lane_name(lane), pos=round(float(self.pos[idx]), 1), x=round(x, 1), y=round(y, 1), speed=round(float(self.v[idx]), 2), wait=float(self.wait[idx]), kind=k)
+        out = dict(car=run.name(self.trips[idx]), time=float(run.times[self.i]), lane=run.net.lane_name(lane), lane_length=round(float(run.net.lane_length[lane]), 1), pos=round(float(self.pos[idx]), 1), x=round(x, 1), y=round(y, 1), speed=round(float(self.v[idx]), 2), wait=float(self.wait[idx]), kind=k)
         if self.why is not None:
             w = self.why[idx]
             out['decider'] = KINDS[w['decider']]
@@ -206,7 +226,7 @@ def print_walk(stages):
         print(f"{'NOW' if k == 0 else 'EARLIER'} t={s['time']:.1f}, {len(s['hops'])} cars in the chain, ends: {s['end']}")
         for h in s['hops']:
             more = ' '.join(f'{x}={h[x]}' for x in ('blame', 'link_state', 'foe', 'wants') if h.get(x))
-            print(f"   car {h['car']:<14} on {h['lane']:<24} pos {h['pos']:>6} at ({h['x']:.0f},{h['y']:.0f}) v {h['speed']:<5} waited {h['wait']:>3.0f}s  held by {h['kind']}  {more}")
+            print(f"   car {h['car']:<14} on {h['lane']:<24} pos {h['pos']:>6}/{h['lane_length']:<6} at ({h['x']:.0f},{h['y']:.0f}) v {h['speed']:<5} waited {h['wait']:>3.0f}s  held by {h['kind']}  {more}")
         if 'cycle' in s:
             print(f"   CYCLE of {len(s['cycle'])} cars: {' -> '.join(s['cycle'])}")
             if 'cycle_first_stop' in s:
@@ -214,7 +234,7 @@ def print_walk(stages):
     last = next((s for s in reversed(stages) if 'hops' in s), None)
     if last:
         h = last['root']
-        print(f"FIRST CAUSE: car {h['car']} on {h['lane']} pos {h['pos']} at ({h['x']:.0f},{h['y']:.0f}), t={last['time']:.1f}: held by {h['kind']}" + (f" ({h.get('blame')})" if h.get('blame') else '') + (f", link state {h['link_state']}" if h.get('link_state') else '') + (f", wants {h['wants']}" if h.get('wants') else '') + (', and what it waits for keeps moving' if last['end'] == 'moving' else ''))
+        print(f"FIRST CAUSE: car {h['car']} on {h['lane']} pos {h['pos']}/{h['lane_length']} at ({h['x']:.0f},{h['y']:.0f}), t={last['time']:.1f}: held by {h['kind']}" + (f" ({h.get('blame')})" if h.get('blame') else '') + (f", link state {h['link_state']}" if h.get('link_state') else '') + (f", wants {h['wants']}" if h.get('wants') else '') + (', and what it waits for keeps moving' if last['end'] == 'moving' else ''))
 
 
 def congested_car(run, edge, i):

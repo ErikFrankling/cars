@@ -515,7 +515,7 @@ pub fn run(mut r: Args) -> Result<(), Box<dyn std::error::Error>> {
         Err(format!("trip {id} is not in this trace"))
     })?;
     let gpu = pollster::block_on(Gpu::headless(GpuOptions {
-        adapter_name: Some("7900".into()),
+        adapter_name: Some(std::env::var("CARS_ADAPTER").unwrap_or("7900".into())),
         ..Default::default()
     }))?;
     let mut renderer = Renderer::new(&gpu, &world, &net, &widths, a.width, a.height, far_roads);
