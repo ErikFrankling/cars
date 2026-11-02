@@ -1,0 +1,146 @@
+[
+{
+"site": "norr_malarstrand",
+"net": "n7",
+"controllers": 0,
+"register": 1,
+"lanes": 19,
+"under_7_5": 2
+},
+{
+"site": "norr_malarstrand",
+"net": "v5",
+"controllers": 1,
+"register": 1,
+"lanes": 19,
+"under_7_5": 2
+},
+{
+"site": "norr_malarstrand",
+"net": "r12m",
+"controllers": 1,
+"register": 1,
+"lanes": 17,
+"under_7_5": 0
+},
+{
+"site": "fleminggatan",
+"net": "n7",
+"controllers": 3,
+"register": 4,
+"lanes": 40,
+"under_7_5": 0
+},
+{
+"site": "fleminggatan",
+"net": "v5",
+"controllers": 4,
+"register": 4,
+"lanes": 46,
+"under_7_5": 5
+},
+{
+"site": "fleminggatan",
+"net": "r12m",
+"controllers": 3,
+"register": 4,
+"lanes": 35,
+"under_7_5": 0
+},
+{
+"site": "fridhemsplan",
+"net": "n7",
+"controllers": 3,
+"register": 3,
+"lanes": 44,
+"under_7_5": 2
+},
+{
+"site": "fridhemsplan",
+"net": "v5",
+"controllers": 4,
+"register": 3,
+"lanes": 67,
+"under_7_5": 22
+},
+{
+"site": "fridhemsplan",
+"net": "r12m",
+"controllers": 4,
+"register": 3,
+"lanes": 44,
+"under_7_5": 0
+},
+{
+"site": "tegelbacken",
+"net": "n7",
+"controllers": 6,
+"register": 5,
+"lanes": 74,
+"under_7_5": 3
+},
+{
+"site": "tegelbacken",
+"net": "v5",
+"controllers": 5,
+"register": 5,
+"lanes": 86,
+"under_7_5": 4
+},
+{
+"site": "tegelbacken",
+"net": "r12m",
+"controllers": 4,
+"register": 5,
+"lanes": 71,
+"under_7_5": 0
+},
+{
+"site": "sankt_eriksplan",
+"net": "n7",
+"controllers": 2,
+"register": 2,
+"lanes": 34,
+"under_7_5": 2
+},
+{
+"site": "sankt_eriksplan",
+"net": "v5",
+"controllers": 2,
+"register": 2,
+"lanes": 39,
+"under_7_5": 7
+},
+{
+"site": "sankt_eriksplan",
+"net": "r12m",
+"controllers": 2,
+"register": 2,
+"lanes": 29,
+"under_7_5": 0
+},
+{
+"site": "sveavagen",
+"net": "n7",
+"controllers": 2,
+"register": 3,
+"lanes": 43,
+"under_7_5": 2
+},
+{
+"site": "sveavagen",
+"net": "v5",
+"controllers": 2,
+"register": 3,
+"lanes": 48,
+"under_7_5": 7
+},
+{
+"site": "sveavagen",
+"net": "r12m",
+"controllers": 2,
+"register": 3,
+"lanes": 43,
+"under_7_5": 0
+}
+]
