@@ -21,11 +21,13 @@ ROOT = Path(__file__).resolve().parents[1]
 BIN = os.environ.get('CARS_BIN', str(ROOT / 'target/release/cars'))
 MG = Path(os.environ.get('MG_SCRIPTS', '/home/erikf/.t3/projects/cars/research/truth/scripts/merging'))
 W = 3.2
-# zone m, approach m, main veh/h, ramp veh/h, main limit, ramp limit, neck m/s, speed spread
+# zone m, approach m, main veh/h, ramp veh/h, main limit, ramp limit, neck m/s, speed spread. Flows are set for the
+# measured lane speeds, by limit where the site was congested by something outside the scene: the model's queue flow is
+# under the real one (report 16, capacity), so real flows would jam it.
 SCENES = {
-    'i80': dict(zone=54, up=800, main=600, ramp=550, v=20, von=20, neck=5, dev=0.1),
-    'us101': dict(zone=216, up=800, main=1150, ramp=300, v=20, von=20, neck=12, dev=0.1),
-    'i395': dict(zone=63, up=800, main=700, ramp=400, v=20, von=20, neck=8, dev=0.1),
+    'i80': dict(zone=54, up=800, main=520, ramp=480, v=6, von=6, neck=6, dev=0.1),
+    'us101': dict(zone=216, up=800, main=850, ramp=250, v=12, von=17, vramp=17, neck=12, dev=0.1),
+    'i395': dict(zone=63, up=800, main=600, ramp=350, v=9, von=9, neck=9, dev=0.1),
     'a39': dict(zone=400, up=1500, main=1200, ramp=300, v=36, von=22, neck=36, dev=0.18),
 }
 # Row: (name, key in the row dict, I-80, US-101, I-395, A39). A target is (low, high), or None.
@@ -61,7 +63,7 @@ def build(d, sc):
     b = sc['up']
     c = b + sc['zone']
     (d / 'n.nod.xml').write_text(f'<nodes><node id="a" x="0" y="0"/><node id="r" x="{b - 500}" y="-60"/><node id="b" x="{b}" y="0"/><node id="c" x="{c}" y="0"/><node id="d" x="{c + 300}" y="0"/><node id="e" x="{c + 400}" y="0"/><node id="f" x="{c + 1000}" y="0"/></nodes>')
-    (d / 'n.edg.xml').write_text(f'''<edges><edge id="up" from="a" to="b" numLanes="1" speed="{sc['v']}"/><edge id="on" from="r" to="b" numLanes="1" speed="{sc['von']}"/><edge id="merge" from="b" to="c" numLanes="2" speed="{sc['v']}"/><edge id="down" from="c" to="d" numLanes="1" speed="{sc['v']}"/><edge id="neck" from="d" to="e" numLanes="1" speed="{sc['neck']}"/><edge id="out" from="e" to="f" numLanes="1" speed="{sc['v']}"/></edges>''')
+    (d / 'n.edg.xml').write_text(f'''<edges><edge id="up" from="a" to="b" numLanes="1" speed="{sc['v']}"/><edge id="on" from="r" to="b" numLanes="1" speed="{sc['von']}"/><edge id="merge" from="b" to="c" numLanes="2" speed="{sc['v']}"><lane index="0" speed="{sc.get('vramp', sc['von'] if sc['von'] > sc['v'] else sc['v'])}"/></edge><edge id="down" from="c" to="d" numLanes="1" speed="{sc['v']}"/><edge id="neck" from="d" to="e" numLanes="1" speed="{sc['neck']}"/><edge id="out" from="e" to="f" numLanes="1" speed="{sc['v']}"/></edges>''')
     (d / 'n.con.xml').write_text('<connections><connection from="up" to="merge" fromLane="0" toLane="1"/><connection from="on" to="merge" fromLane="0" toLane="0"/><connection from="merge" to="down" fromLane="1" toLane="0"/></connections>')
     run(['netconvert', '-n', d / 'n.nod.xml', '-e', d / 'n.edg.xml', '-x', d / 'n.con.xml', '-o', d / 'net.xml', '--no-turnarounds', 'true'])
 

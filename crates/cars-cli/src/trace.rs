@@ -25,7 +25,7 @@ use std::{
     time::Instant,
 };
 
-pub const MAGIC: &[u8; 8] = b"CARSTRC1";
+pub const MAGIC: &[u8; 8] = b"CARSTRC2";
 const FRAME_MAGIC: u32 = u32::from_le_bytes(*b"TRFR");
 pub const NONE_LANE: u32 = 0xff_ffff;
 pub const NO_LINK: u32 = 63;
@@ -44,7 +44,7 @@ const F_WILL_PASS: u32 = 512;
 const F_HAVE_TO_WAIT: u32 = 2048;
 const NAME_LANE: u32 = 1 << 31;
 
-/// One vehicle in one frame, 20 bytes. A taken off vehicle keeps its last lane and position.
+/// One vehicle in one frame, 24 bytes. A taken off vehicle keeps its last lane and position.
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Default)]
 pub struct Record {
@@ -60,8 +60,14 @@ pub struct Record {
     pub acc: i16,
     /// 1/512 m/s.
     pub speed: u16,
+    /// Sideways from the lane centre, left positive, in 1/256 m.
+    pub lat: i16,
+    pub pad: u16,
 }
 impl Record {
+    pub fn lat(&self) -> f32 {
+        self.lat as f32 / 256.0
+    }
     pub fn trip(&self) -> u32 {
         self.trip_flags & 0xff_ffff
     }
@@ -293,6 +299,8 @@ impl Tracer {
             dummy: world.params.dummy_lane,
             threshold: if time_to_teleport > 0.0 { time_to_teleport - o.stride.max(1) as f32 * dt - 1e-3 } else { f32::MAX },
             last_seen: vec![Last { lane: u32::MAX, pos: 0.0, wait: 0.0 }; world.trips.len()],
+            lane_width: world.lanes.iter().map(|l| l.width).collect(),
+            vtype_lat: world.vtypes.iter().map(|t| t.v_lat).collect(),
             trip_seen: vec![false; world.trips.len()],
             lane_seen: vec![false; net.lanes.len()],
             trip_names: world.trip_source.iter().map(|&s| demand.ids[demand.trips[s as usize].id as usize].clone()).collect(),
@@ -474,6 +482,8 @@ struct Writer {
     dummy: u32,
     threshold: f32,
     last_seen: Vec<Last>,
+    lane_width: Vec<f32>,
+    vtype_lat: Vec<f32>,
     trip_seen: Vec<bool>,
     lane_seen: Vec<bool>,
     trip_names: Vec<String>,
@@ -576,6 +586,8 @@ impl Writer {
                         pos_link: ((last.pos * 256.0).round().clamp(0.0, 16777215.0) as u32) | NO_LINK << 24,
                         acc: 0,
                         speed: 0,
+                        lat: 0,
+                        pad: 0,
                     });
                 }
                 self.last_seen[t].lane = if removed { u32::MAX } else { self.dummy };
@@ -605,10 +617,18 @@ impl Writer {
             if v.flags & F_ON_JUNCTION != 0 {
                 flags |= ON_JUNCTION;
             }
-            if v.lc_own & 1 != 0 {
+            // Report 18: 60% signal before moving over, 33% after they start, 7% never.
+            let w = self.lane_width[v.lane as usize];
+            let dir = v.phys >> 30;
+            let lat = if dir == 0 { v.lc_edge } else { cars_core::physics::lateral_offset(v.phys, w, self.vtype_lat[v.vtype as usize]) * (1.0 - v.lc_edge.abs() / w) };
+            let style = (v.trip.wrapping_mul(2654435761) >> 8) as f32 / 16777216.0;
+            let human = self.vtype_lat[v.vtype as usize] <= 0.0;
+            let moving = dir != 0 || v.lc_edge.abs() > 0.1;
+            let signals = !human || style < 0.6 || (style < 0.93 && moving);
+            if signals && (v.lc_own & 1 != 0 || (human && dir != 0 && lat < 0.0)) {
                 flags |= WANT_LEFT;
             }
-            if v.lc_own & 2 != 0 {
+            if signals && (v.lc_own & 2 != 0 || (human && dir != 0 && lat > 0.0)) {
                 flags |= WANT_RIGHT;
             }
             let prev = if v.prev_lane == u32::MAX { NONE_LANE } else { v.prev_lane };
@@ -619,6 +639,8 @@ impl Writer {
                 pos_link: ((v.pos * 256.0).round().clamp(0.0, 16777215.0) as u32) | self.next_link(v) << 24,
                 acc: (v.acc * 256.0).round().clamp(-32768.0, 32767.0) as i16,
                 speed: (v.speed * 512.0).round().clamp(0.0, 65535.0) as u16,
+                lat: (lat * 256.0).round().clamp(-32768.0, 32767.0) as i16,
+                pad: 0,
             });
         }
         let phases: Vec<u16> = self.tls_scope.iter().map(|&i| tls[i as usize].phase as u16).collect();

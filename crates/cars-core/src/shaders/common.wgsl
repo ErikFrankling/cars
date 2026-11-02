@@ -668,7 +668,7 @@ fn hu_target(v: f32, g: f32, vl: f32, v0: f32, s0: f32) -> f32 {
     var a = clamp(HU_K1 * (g - s0 - hu_t * v) + k2e * dv, -HU_BMAX, hu_a_up(v, v0));
     if (dv < 0.0) { a = min(a, -dv * dv / (2.0 * max(g - 0.5, 0.3))); }
     // Report 19 fix 10: pulling away, drivers use what the car has, not the gap feedback, once the gap is opening.
-    if (v < 5.0 && dv > 0.0 && g > s0 + hu_t * v) { a = max(a, hu_a_up(v, v0)); }
+    if (v < 2.0 && dv > 0.0 && g > s0 + hu_t * v) { a = max(a, hu_a_up(v, v0)); }
     return a;
 }
 

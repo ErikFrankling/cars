@@ -334,6 +334,8 @@ pub fn run(args: Args) {
                     let route: Vec<u32> = sim.read(&gpu, &sim.buffers.routes, v.route_end as u64);
                     let ahead: Vec<&str> = route[v.route_i as usize..v.route_end as usize].iter().take(5).map(|&e| net.edges[e as usize].id.as_str()).collect();
                     println!("      route {} of {}: {ahead:?}", v.route_i, v.route_end);
+                    let near: Vec<String> = vs.iter().filter(|o| o.lane == lane).map(|o| format!("{:.1}/{:.2}b{:.2}e{:.2}a{:.2}", o.pos, o.speed, o.lc_bias, o.lc_edge, o.acc)).collect();
+                    println!("      detail {near:?}");
                     let ed = net.lanes[lane as usize].edge as usize;
                     for li in 0..net.edges[ed].lane_count {
                         let l2 = net.edges[ed].first_lane + li;

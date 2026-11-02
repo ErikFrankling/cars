@@ -123,6 +123,9 @@ struct History {
     cur_dir: V2,
     drawn: V2,
     lat: f32,
+    prev_lat: f32,
+    cur_lat: f32,
+    dlat: f32,
     changed: f32,
     time: f32,
     lane: u32,
@@ -181,7 +184,7 @@ impl TraceSource<'_> {
             }
             if self.slots[t] == NONE {
                 self.slots[t] = self.history.len() as u32;
-                self.history.push(History { prev_xy: center, prev_dir: dir, cur_xy: center, cur_dir: dir, drawn: center, lat: 0.0, changed: -1e9, time: step_time, lane: r.lane() });
+                self.history.push(History { prev_xy: center, prev_dir: dir, cur_xy: center, cur_dir: dir, drawn: center, lat: 0.0, prev_lat: r.lat(), cur_lat: r.lat(), dlat: 0.0, changed: -1e9, time: step_time, lane: r.lane() });
                 continue;
             }
             let h = &mut self.history[self.slots[t] as usize];
@@ -189,6 +192,10 @@ impl TraceSource<'_> {
                 continue;
             }
             let elapsed = step_time - h.time;
+            h.prev_lat = h.cur_lat;
+            h.cur_lat = r.lat();
+            h.dlat = (h.cur_lat - h.prev_lat) / elapsed.max(0.01);
+            let traced_lat = h.prev_lat != 0.0 || h.cur_lat != 0.0;
             h.prev_xy = h.cur_xy;
             h.prev_dir = h.cur_dir;
             let n = perp(dir);
@@ -197,7 +204,7 @@ impl TraceSource<'_> {
                 h.prev_xy = center;
                 h.prev_dir = dir;
                 h.lat = 0.0;
-            } else if h.lane != r.lane() && lanes[h.lane as usize].edge == lanes[r.lane() as usize].edge {
+            } else if !traced_lat && h.lane != r.lane() && lanes[h.lane as usize].edge == lanes[r.lane() as usize].edge {
                 let u = ((h.time - h.changed) / CHANGE_SECONDS).clamp(0.0, 1.0);
                 let old = add(h.cur_xy, scale(perp(h.cur_dir), h.lat * (1.0 - u * u * (3.0 - 2.0 * u))));
                 h.lat = dot(sub(old, center), n);
@@ -227,9 +234,11 @@ impl TraceSource<'_> {
             d = if length(d) > 0.2 { scale(d, 1.0 / length(d)) } else { h.cur_dir };
             let dn = perp(d);
             let u = ((time - h.changed) / CHANGE_SECONDS).clamp(0.0, 1.0);
-            let xy = add(b, scale(dn, h.lat * (1.0 - u * u * (3.0 - 2.0 * u))));
+            let traced = h.prev_lat + (h.cur_lat - h.prev_lat) * blend;
+            let xy = add(add(b, scale(dn, h.lat * (1.0 - u * u * (3.0 - 2.0 * u)))), scale(dn, traced));
             let speed = r.speed();
-            let yaw = (-h.lat * 6.0 * u * (1.0 - u) / CHANGE_SECONDS).atan2(speed.max(2.0)).clamp(-0.35, 0.35);
+            let dlat = h.dlat;
+            let yaw = (-h.lat * 6.0 * u * (1.0 - u) / CHANGE_SECONDS + dlat).atan2(speed.max(2.0)).clamp(-0.35, 0.35);
             let drawn_dir = add(scale(d, yaw.cos()), scale(dn, yaw.sin()));
             h.drawn = xy;
             let lane = &world.lanes[r.lane() as usize];
