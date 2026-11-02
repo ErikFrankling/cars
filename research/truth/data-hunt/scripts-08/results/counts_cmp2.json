@@ -1,0 +1,22 @@
+{
+ "flow_S250_ff.npz": {
+  "n": 298,
+  "zero_flow": 10,
+  "median_ratio": 0.63,
+  "total_ratio": 0.894,
+  "r2_log": 0.332,
+  "spearman": 0.623,
+  "mape_after_k": 53.6,
+  "within_50pct_after_k": 0.47
+ },
+ "flow_W_ff.npz": {
+  "n": 298,
+  "zero_flow": 179,
+  "median_ratio": 0.001,
+  "total_ratio": 0.345,
+  "r2_log": 0.219,
+  "spearman": 0.48,
+  "mape_after_k": 100.0,
+  "within_50pct_after_k": 0.0
+ }
+}

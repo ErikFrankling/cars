@@ -1,0 +1,146 @@
+{
+ "source": "/home/erikf/projects/personal/cars-data/berlin-detectors/detektoren_2024_09.tgz",
+ "rows": 574632,
+ "days": [
+  "2024-09-03",
+  "2024-09-26"
+ ],
+ "note": "Same detector, same weekday, seven days apart. a=later day, b=earlier day. All vehicles (qkfz).",
+ "lane": {
+  "hourly_07_18": {
+   "n": 25198,
+   "rmsn": 0.2715,
+   "wape": 0.1248,
+   "r2": 0.7719,
+   "slope": 0.8406,
+   "bias": 0.0081,
+   "geh_lt5": 0.8921,
+   "median_geh": 1.613
+  },
+  "hourly_07_18_rmsn_per_date_p10_p50_p90": [
+   0.1875,
+   0.2562,
+   0.3201
+  ],
+  "hourly_all_hours": {
+   "n": 46727,
+   "rmsn": 0.3508,
+   "wape": 0.1343,
+   "r2": 0.825,
+   "slope": 0.8768,
+   "bias": 0.0052,
+   "geh_lt5": 0.9148,
+   "median_geh": 1.438
+  },
+  "hourly_all_hours_rmsn_per_date_p10_p50_p90": [
+   0.2677,
+   0.324,
+   0.427
+  ],
+  "hourly_07_18_day_vs_mean_of_others": {
+   "n": 36064,
+   "rmsn": 0.2394,
+   "wape": 0.1121,
+   "r2": 0.8065,
+   "slope": 0.942,
+   "bias": 0.0,
+   "geh_lt5": 0.9093,
+   "median_geh": 1.434
+  },
+  "daily_total": {
+   "n": 492,
+   "rmsn": 0.1049,
+   "wape": 0.063,
+   "r2": 0.9374,
+   "slope": 0.9654,
+   "bias": 0.0104,
+   "geh_lt5": 0.685,
+   "median_geh": 3.093
+  }
+ },
+ "site": {
+  "hourly_07_18": {
+   "n": 12489,
+   "rmsn": 0.1941,
+   "wape": 0.0909,
+   "r2": 0.9012,
+   "slope": 0.94,
+   "bias": 0.0079,
+   "geh_lt5": 0.8921,
+   "median_geh": 1.612
+  },
+  "hourly_07_18_rmsn_per_date_p10_p50_p90": [
+   0.1339,
+   0.19,
+   0.2325
+  ],
+  "hourly_all_hours": {
+   "n": 23229,
+   "rmsn": 0.2555,
+   "wape": 0.1025,
+   "r2": 0.9118,
+   "slope": 0.9448,
+   "bias": 0.0051,
+   "geh_lt5": 0.9074,
+   "median_geh": 1.512
+  },
+  "hourly_all_hours_rmsn_per_date_p10_p50_p90": [
+   0.197,
+   0.2435,
+   0.3112
+  ],
+  "hourly_07_18_day_vs_mean_of_others": {
+   "n": 17876,
+   "rmsn": 0.1718,
+   "wape": 0.0831,
+   "r2": 0.9188,
+   "slope": 0.9773,
+   "bias": 0.0,
+   "geh_lt5": 0.8998,
+   "median_geh": 1.454
+  },
+  "daily_total": {
+   "n": 229,
+   "rmsn": 0.0815,
+   "wape": 0.0479,
+   "r2": 0.9707,
+   "slope": 0.9942,
+   "bias": 0.012,
+   "geh_lt5": 0.6943,
+   "median_geh": 2.826
+  }
+ },
+ "sites_in_panel": 177,
+ "network": {
+  "sites": 91,
+  "days": 10,
+  "daily_total_cv": 0.0168,
+  "hourly_total_cv_median": 0.0297,
+  "hourly_total_cv_max": 0.2036,
+  "hourly_share_mean_abs_diff_pct_points_same_weekday": 0.1476,
+  "peak_hour_by_day": [
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8
+  ],
+  "pm_peak_hour_by_day": [
+   15,
+   15,
+   15,
+   16,
+   15,
+   16,
+   15,
+   16,
+   16,
+   15
+  ]
+ }
+}

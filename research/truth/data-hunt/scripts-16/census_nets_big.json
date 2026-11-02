@@ -1,0 +1,284 @@
+{
+ "nets": {
+  "stockholm_n7": {
+   "edges": 74599,
+   "lanes": 80126,
+   "car_lanes": 80126,
+   "tls": 457,
+   "edges_under_7_5m": 4559,
+   "lanes_with_z": 0,
+   "conn_allow": 53,
+   "conn_disallow": 211,
+   "junctions": {
+    "priority": 22321,
+    "right_before_left": 10545,
+    "traffic_light": 485,
+    "dead_end": 95
+   },
+   "tls_types": {
+    "actuated": 457
+   },
+   "cycle_top": [
+    [
+     90,
+     456
+    ],
+    [
+     256,
+     1
+    ]
+   ],
+   "pattern_top": [
+    [
+     "42-3-42-3",
+     201
+    ],
+    [
+     "38-3-6-3-37-3",
+     52
+    ],
+    [
+     "36-4-6-4-36-4",
+     31
+    ],
+    [
+     "41-4-41-4",
+     25
+    ]
+   ],
+   "green_limits_top": [
+    [
+     "5-50",
+     974
+    ],
+    [
+     "7-50",
+     123
+    ],
+    [
+     "8-50",
+     27
+    ],
+    [
+     "10-50",
+     9
+    ]
+   ],
+   "speed_kmh_lanes_top": [
+    [
+     30,
+     47573
+    ],
+    [
+     50,
+     11910
+    ],
+    [
+     40,
+     9819
+    ],
+    [
+     10,
+     4348
+    ],
+    [
+     60,
+     2525
+    ],
+    [
+     70,
+     1966
+    ],
+    [
+     80,
+     1108
+    ],
+    [
+     20,
+     425
+    ]
+   ],
+   "type_top": [
+    [
+     "highway.residential",
+     49478
+    ],
+    [
+     "highway.tertiary",
+     8638
+    ],
+    [
+     "highway.unclassified",
+     5996
+    ],
+    [
+     "highway.living_street",
+     4455
+    ],
+    [
+     "highway.secondary",
+     3803
+    ],
+    [
+     "highway.motorway_link",
+     694
+    ],
+    [
+     "highway.motorway",
+     566
+    ],
+    [
+     "highway.primary",
+     324
+    ],
+    [
+     "highway.secondary_link",
+     195
+    ],
+    [
+     "highway.primary_link",
+     140
+    ]
+   ]
+  },
+  "stockholm_v5": {
+   "edges": 76681,
+   "lanes": 82709,
+   "car_lanes": 82403,
+   "closed_to_cars": 306,
+   "tls": 903,
+   "edges_under_7_5m": 5396,
+   "lanes_with_z": 0,
+   "conn_allow": 34,
+   "conn_disallow": 200,
+   "junctions": {
+    "priority": 22295,
+    "traffic_light": 1891,
+    "right_before_left": 10675,
+    "dead_end": 95
+   },
+   "tls_types": {
+    "actuated": 903
+   },
+   "cycle_top": [
+    [
+     90,
+     903
+    ]
+   ],
+   "pattern_top": [
+    [
+     "82-3-5",
+     279
+    ],
+    [
+     "42-3-42-3",
+     235
+    ],
+    [
+     "38-3-6-3-37-3",
+     33
+    ],
+    [
+     "36-4-6-4-36-4",
+     28
+    ]
+   ],
+   "green_limits_top": [
+    [
+     "5-50",
+     1681
+    ],
+    [
+     "7-50",
+     180
+    ],
+    [
+     "8-50",
+     29
+    ],
+    [
+     "10-100",
+     21
+    ]
+   ],
+   "speed_kmh_lanes_top": [
+    [
+     30,
+     48455
+    ],
+    [
+     50,
+     12494
+    ],
+    [
+     40,
+     10855
+    ],
+    [
+     10,
+     4394
+    ],
+    [
+     60,
+     2649
+    ],
+    [
+     70,
+     1828
+    ],
+    [
+     80,
+     1154
+    ],
+    [
+     20,
+     428
+    ]
+   ],
+   "type_top": [
+    [
+     "highway.residential",
+     50025
+    ],
+    [
+     "highway.tertiary",
+     9333
+    ],
+    [
+     "highway.unclassified",
+     6158
+    ],
+    [
+     "highway.living_street",
+     4503
+    ],
+    [
+     "highway.secondary",
+     4342
+    ],
+    [
+     "highway.motorway_link",
+     701
+    ],
+    [
+     "highway.motorway",
+     563
+    ],
+    [
+     "highway.primary",
+     365
+    ],
+    [
+     "highway.secondary_link",
+     230
+    ],
+    [
+     "highway.primary_link",
+     145
+    ]
+   ]
+  }
+ },
+ "routes": {}
+}

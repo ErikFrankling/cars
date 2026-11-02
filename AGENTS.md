@@ -1,6 +1,6 @@
 # Working in this repo
 
-A GPU reimplementation of SUMO's microscopic traffic simulation, in Rust and WGSL. Goal: flows statistically comparable to SUMO at far higher speed.
+A GPU microscopic traffic simulator in Rust and WGSL. Goal: match real measured traffic, at network level, on data the model never saw. Reality is the reference, not SUMO; see `research/truth/VALIDATION-GATE.md`. Human-only traffic must pass that gate before any self-driving work counts. It began as a reimplementation of SUMO, and it still reads SUMO's file formats. Matching SUMO is only a regression check that the old compatibility mode hasn't broken, never evidence of accuracy.
 
 The GPU also drives Erik's desktop. Scale every experiment from small to big, keep GPU submissions short (Sim::run does this), keep 3 GB of VRAM spare, run one GPU job at a time, leave nothing running. CPU jobs over about 10 minutes go to the homelab with `heavy`.
 
@@ -14,3 +14,5 @@ The GPU also drives Erik's desktop. Scale every experiment from small to big, ke
 `CARS_ADAPTER=llvmpipe` runs kernels on the CPU, for what might hang and for small scenes when the GPU queue is long. It forces 128-bit code: LLVM 21's 256-bit code miscompiled `lc_ahead_load` silently. A cut of a real net with `randomTrips.py` runs in seconds this way. Over seeds: lockup is chaotic, one seed says nothing.
 
 No GPU kernel may use function-local arrays outside `lc_best`. Comments stay sparse.
+
+To find out why something happens, see `crates/cars-cli/DEBUGGING.md`: `cars run --trace f --why`, then `cars why`, `cars jam`, `cars tsd`, `cars junction`, `cars compare`, `cars dist`. Reasons are probes in `crates/cars-core/src/why.rs`, patched in only with `--why`; a new limit in a kernel needs one there.

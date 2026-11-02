@@ -165,12 +165,12 @@ B.append(f'''<section class="panel r"><div class="head">{lamp('r')}<h3>Not worki
 <li><b>Full real traffic still locks Stockholm up.</b> 70,595 teleports by 10:00, and 150,956 on the map closest to the real signal register.</li>
 <li><b>No lights in a real district isn\'t ready at full demand.</b> On the new demand it\'s better or level at 30 to 60%, but up to 18% worse than generated signals at 100%, and the planned version up to 41% worse. Only 50 of 199 junctions are coordinated.</li>
 <li><b>Overloaded grid.</b> Planning across junctions cuts contacts from 265 to 3 in 42 runs, not to zero. The zero-collision rule still fails there.</li>
-<li><b>New drivers and physics in a city.</b> On the old demand, Berlin morning: 199,380 cars stuck. The test on the fixed Stockholm demand is still queued. Neither is merged yet.</li>
+<li><b>New drivers and physics in a city.</b> With teleports off, the human driver still locks up on the fixed Stockholm demand: 114,298 of 167,295 cars stuck by 10:00. Neither is merged yet.</li>
 <li><b>Not done.</b> Most self-driving tiers have only smoke tests. D9 and M4 aren't built. The "remove humans step by step" experiment hasn't been run.</li></ul></section>''')
 B.append('</div></div></div>')
 B.append('<div class="page">')
 B.append(clip('gallery__d8__versus_signal', 'Best single clip: three ways to run one junction', 'Same junction, same arrivals. Left: no signal. Middle: a traffic light with the same self-driving cars. Right: a traffic light with human-like cars. At one moment in this run: 56 cars at 49 km/h, 81 at 29 km/h, 193 at 10 km/h. Simulated, no real vehicles.'))
-B.append(note('Read this before the numbers', 'Almost everything after the speed chapter sits on branches not merged into main yet, and agents are still running, so unfinished numbers can move. This is a snapshot from 1 November 2026, about 23:15.'))
+B.append(note('Read this before the numbers', 'Almost everything after the speed chapter sits on branches not merged into main yet, and agents are still running, so unfinished numbers can move. This is a snapshot from 1 November 2026, about 01:30 on 2 November.'))
 
 # ---- Speed
 B.append(head('How fast is it?', 'Every car in a city, on one graphics card'))
@@ -193,33 +193,6 @@ B.append(table(['Whole job', 'SUMO', 'cars'], [['Bologna sweep', '6.4 h (not log
 B.append('<h4>Rendering costs the simulation nothing</h4><p>You asked for this directly. Pictures are drawn afterwards from a recorded file with <code>cars replay</code>, with no simulation running, and a normal run draws nothing. Recording only costs when you ask for it: tracing all 7,200 steps of Charlottenburg takes 12.2 s instead of 9.6 s. Half an hour of Stockholm with its last 600 steps traced takes 3.24 s instead of 3.00 s. A 600 s window costs 0.2 s.</p>')
 B.append(clip('berlin_zoom', 'From the whole city down to one roundabout', None))
 B.append(clips('stockholm_slussen', 'bologna_rush', 'render-samples__bologna', 'render-samples__ring'))
-
-# ---- Correct engine
-B.append(head('Is the engine correct?', 'It reproduces the reference simulator, including its flaws'))
-B.append('<p class="answer">Given identical inputs, it gives nearly identical cities to SUMO, with nothing fitted between them. That proves the engine. It says nothing about reality.</p>')
-B.append(chart('Mean trip duration in seconds, same inputs', 'Whole-city runs, SUMO 1.28 against cars on the GPU.', 'bars', ['Berlin|05:00-10:00', 'Mitte|24 h', 'Charlottenburg|24 h'], [('SUMO', 'old', [789.0, 414.3, 293.9]), ('cars', 'ours', [788.1, 414.3, 292.9])]))
-B.append(facts(
-    ('a', 'Road by road: vehicles per road match at r² 1.0000 in all three cities, mean speed at 0.986, 0.983 and 0.979.'),
-    ('a', 'Berlin morning, SUMO then cars: 95th percentile trip 1,882 and 1,883 s. Waiting 67.6 and 66.4 s. Time lost 181.2 and 179.2 s.'),
-    ('a', 'Thesis sweeps: speed error 0.08 to 0.80% on the ring, 0.19 to 0.36% on two signals, 0.25 to 2.78% on I-80, 2.98 to 7.34% on Bologna.'),
-    ('r', 'Known misses: CACC on I-80 has a 22.9% time loss error. Isolated junction tests reach 84 to 100% worst-case error with Krauss drivers and 161% with IDM. A tightly packed ring inserts 22 of 260 cars where SUMO inserts 260.'),
-    ('r', 'Berlin\'s evening departs from published SUMO after 17:00: 23,715 teleports over the day, against 2,090 published. Cause not found.'),
-))
-B.append(fig('report/figures/berlin_running.png', 'Vehicles on the road in Berlin: SUMO and cars lie on top of each other.'))
-B.append(fig('report/figures/berlin_edges.png', 'Road by road, counts and speeds against SUMO.'))
-B.append('<h3>Thirteen traffic phenomena appear by themselves</h3><p>All 13 scripted phenomena show up in both simulators, each by its own pass rule, without being programmed in. These are from the baseline drivers.</p>')
-B.append(table(['Phenomenon', 'cars', 'SUMO'], [
-    ['Phantom jam on a ring, cars stopped', '51.0%', '53.3%'],
-    ['One smooth driver calms it, speed swing', '2.76 to 0.023 m/s', '2.73 to 0.0005 m/s'],
-    ['One 20 s red, cars stopped', '15', '15'],
-    ['Motorway capacity, peak flow', '2,737 cars/h', '2,757 cars/h'],
-    ['Queue spillback blocks an exit', '1,680 s', '1,680 s'],
-    ['Gridlock: arrivals, keep-clear rule off / on', '144 / 322', '153 / 309'],
-    ['Grid loading, peak', '219 cars', '224 cars'],
-]))
-B.append(clip('phantom_jam', 'A phantom jam from nothing', 'A small disturbance grows into a stop-and-go wave circling a ring, with no obstacle anywhere.'))
-B.append(clips('one_av', 'capacity_drop', 'brake_wave', 'spillback', 'gridlock', 'signal_discharge', 'onramp_merge', 'mfd', 'freeway_fd', 'thesis_ring', 'i80_day'))
-B.append(note('Why this wasn\'t enough', 'These drivers are wrong in ways only real data shows. The baseline jam wave moves at 7.2 km/h where a real ring gives about 20. Its queue leaves a green light every 1.20 s where real drivers need 2.0 s. The capacity drop only appears with deliberately weak drivers. That is why the next chapters exist.', True))
 
 # ---- Trust
 B.append(head('Can you trust any traffic simulator?', 'What the field knows about itself'))
@@ -305,7 +278,9 @@ B.append(table(['Run, no teleports', 'Cars', 'Stuck', 'Mean speed'], [
     ['Berlin morning, physical driver', '286,323', '222,559', '1.85 m/s'],
     ['Berlin morning, human driver', '277,620', '199,380', '2.53 m/s'],
     ['Stockholm morning, physical driver', '183,829', '77,641', '1.59 m/s'],
-    ['Stockholm at 50% demand', '119,309', '35,424', ''],
+    ['Stockholm at 50% demand, old trips', '119,309', '35,424', ''],
+    ['Stockholm morning, new demand, physical driver', '160,046', '132,453', '1.61 m/s'],
+    ['Stockholm morning, new demand, human driver', '167,295', '114,298', '2.57 m/s'],
     ['Stockholm at 1% demand', '2,757', '39 (was 184 four builds ago)', ''],
     ['Berlin at 1% demand', '22,481', '3,849 (17%)', ''],
 ]))
@@ -361,7 +336,7 @@ B.append(chart('Route feedback works at reduced load, not at full load', 'Telepo
 B.append('<h3>A Stockholm that doesn\'t lock up</h3><p>The recipe: real paths instead of random walks, fitted to the counts, on a repaired map, at 60%, with drivers learning routes from a day that isn\'t jammed. It isn\'t real Stockholm yet, but for the first time a whole day runs.</p>')
 B.append(table(['Full day', 'Old scenario', 'Recipe'], [['Teleports', '290,352', '<b>2,449</b>'], ['Teleports per 1,000 trips', '177.6', '<b>3.1</b>'], ['Mean speed', '8.9 km/h', '<b>42.8 km/h</b>'], ['Mean time lost', '760 s', '<b>114 s</b>'], ['Still driving at midnight', '18,491', '2,235'], ['Never got on the road', '115,961', '1'], ['Collisions', '35,342', '51'], ['Trips arrived', '1,616,859', '788,725'], ['Distance driven', '3.90 M km', '6.44 M km'], ['Share of real toll-ring traffic (planned)', '40%', '60%']]))
 if 'stockholm_recipe_day' in VIDEOS:
-    B.append(clip('stockholm_recipe_day', 'Stockholm after the fix, one day', 'Same camera and speed as the old clip above. Replacement trips at 60% with route feedback, teleports still on. Not validated Stockholm.'))
+    B.append(clip('stockholm_recipe_day', 'Stockholm after the fix, one day', 'Same camera and speed as the old clip above. At 20:25: 5,032 cars at 42 km/h, where the old clip has 41,237 at 4 km/h. Replacement trips at 60% with route feedback, teleports still on and about half the trips. Not validated Stockholm.'))
 _h = range(24)
 _tp = lambda n: [int(METRICS[n]['by_hour'].get(str(i), {}).get('tp', 0)) for i in _h]
 _sp = lambda n: [round(METRICS[n]['speed_by_hour'].get(str(i), 0), 1) for i in _h]
@@ -586,6 +561,33 @@ B.append('<ol class="steps">'
          '<li><b>GPU queue.</b> One card, many agents: jobs wait over an hour, which is why some results ran on the CPU or are stale.</li></ol>')
 B.append('<p>Still needs you: Stockholm\'s signal plans, now the most valuable missing data. Also the Lastkajen and Trafikverket keys, tax passages per station from Transportstyrelsen, access to the regional demand models, and a Trafiklab key (all on your to-do list). And the choice of safety level for stalled cars.</p>')
 
+# ---- Correct engine
+B.append(head('Old SUMO copy: a regression check only', 'Not evidence of accuracy. SUMO is where we started, not the goal'))
+B.append('<p class="answer">SUMO is not the target. The reference is real traffic and real car physics. This chapter only shows that the old compatibility mode runs as designed, flaws included, and it says nothing about reality.</p>')
+B.append(chart('Mean trip duration in seconds, same inputs', 'Whole-city runs, SUMO 1.28 against cars on the GPU.', 'bars', ['Berlin|05:00-10:00', 'Mitte|24 h', 'Charlottenburg|24 h'], [('SUMO', 'old', [789.0, 414.3, 293.9]), ('cars', 'ours', [788.1, 414.3, 292.9])]))
+B.append(facts(
+    ('a', 'Road by road: vehicles per road match at r² 1.0000 in all three cities, mean speed at 0.986, 0.983 and 0.979.'),
+    ('a', 'Berlin morning, SUMO then cars: 95th percentile trip 1,882 and 1,883 s. Waiting 67.6 and 66.4 s. Time lost 181.2 and 179.2 s.'),
+    ('a', 'Thesis sweeps: speed error 0.08 to 0.80% on the ring, 0.19 to 0.36% on two signals, 0.25 to 2.78% on I-80, 2.98 to 7.34% on Bologna.'),
+    ('r', 'Known misses: CACC on I-80 has a 22.9% time loss error. Isolated junction tests reach 84 to 100% worst-case error with Krauss drivers and 161% with IDM. A tightly packed ring inserts 22 of 260 cars where SUMO inserts 260.'),
+    ('r', 'Berlin\'s evening departs from published SUMO after 17:00: 23,715 teleports over the day, against 2,090 published. Cause not found.'),
+))
+B.append(fig('report/figures/berlin_running.png', 'Vehicles on the road in Berlin: SUMO and cars lie on top of each other.'))
+B.append(fig('report/figures/berlin_edges.png', 'Road by road, counts and speeds against SUMO.'))
+B.append('<h3>Thirteen traffic phenomena appear by themselves</h3><p>All 13 scripted phenomena show up in both simulators, each by its own pass rule, without being programmed in. These are from the baseline drivers.</p>')
+B.append(table(['Phenomenon', 'cars', 'SUMO'], [
+    ['Phantom jam on a ring, cars stopped', '51.0%', '53.3%'],
+    ['One smooth driver calms it, speed swing', '2.76 to 0.023 m/s', '2.73 to 0.0005 m/s'],
+    ['One 20 s red, cars stopped', '15', '15'],
+    ['Motorway capacity, peak flow', '2,737 cars/h', '2,757 cars/h'],
+    ['Queue spillback blocks an exit', '1,680 s', '1,680 s'],
+    ['Gridlock: arrivals, keep-clear rule off / on', '144 / 322', '153 / 309'],
+    ['Grid loading, peak', '219 cars', '224 cars'],
+]))
+B.append(clip('phantom_jam', 'A phantom jam from nothing', 'A small disturbance grows into a stop-and-go wave circling a ring, with no obstacle anywhere.'))
+B.append(clips('one_av', 'capacity_drop', 'brake_wave', 'spillback', 'gridlock', 'signal_discharge', 'onramp_merge', 'mfd', 'freeway_fd', 'thesis_ring', 'i80_day'))
+B.append(note('Why this is not the goal', 'These drivers are wrong in ways only real data shows. The baseline jam wave moves at 7.2 km/h where a real ring gives about 20. Its queue leaves a green light every 1.20 s where real drivers need 2.0 s. The capacity drop only appears with deliberately weak drivers. That is why the next chapters exist.', True))
+
 B.append('</div>')
 BODY_MAIN = '\n'.join(B)
 
@@ -639,7 +641,7 @@ for src, cap in [('report/figures/bench_realtime.png', 'A Berlin day runs 480 to
                  ('research/truth/fig/stockholm-gridlock.png', 'Old 60% run: cars climb to about 51,000, teleports to about 294,000.'), ('research/truth/fig/stockholm-hourly.png', 'Invented departure curves with a cliff at 06:00. Neither is observed.'), ('research/truth/fig/stockholm-lengths.png', 'Random-walk trips are mostly very short.'), ('research/truth/fig/demand-assignment.png', 'Toy model: rerouting everyone never settles, capped rerouting does.'),
                  ('research/truth/fig/maps07/s09_sveaplan_base.png', 'Sveaplan: 11 simulated controllers against 1 real installation.'), ('research/truth/fig/09b-capacity.png', 'Maximum flow by layout, Python model. Batch polling is a smarter signal.')]:
     fig(src, cap)
-A.append('<footer><p>Built from the research reports and run logs in the cars repo, with sources listed per claim in <code>report/facts/</code>. Built with <code>scripts/report/build.py</code>.</p><p>Snapshot 1 November 2026, about 23:15. Agents are still running, so numbers on unmerged branches can move.</p></footer></div>')
+A.append('<footer><p>Built from the research reports and run logs in the cars repo, with sources listed per claim in <code>report/facts/</code>. Built with <code>scripts/report/build.py</code>.</p><p>Snapshot 1 November 2026, about 01:30 on 2 November. Agents are still running, so numbers on unmerged branches can move.</p></footer></div>')
 fig_html = ''.join(f'<figure style="margin:0"><img loading="lazy" src="figures/{n}" {dims(OUT / "figures" / n)} alt="{esc(c)}"><figcaption>{esc(c)}</figcaption></figure>' for n, c in figs_all)
 BODY_ALL = '\n'.join(A).replace('{{FIGN}}', str(len(figs_all))).replace('{{FIGS}}', fig_html)
 

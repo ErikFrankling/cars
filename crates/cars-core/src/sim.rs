@@ -84,6 +84,8 @@ pub struct Buffers {
     pub globals: wgpu::Buffer,
     pub counters: wgpu::Buffer,
     pub lanes: wgpu::Buffer,
+    /// Per-step reasons, only with `Sim::with_why`.
+    pub why: Option<wgpu::Buffer>,
     pub veh: [wgpu::Buffer; 2],
     pub trip_out: wgpu::Buffer,
     pub series: wgpu::Buffer,
@@ -160,6 +162,15 @@ fn uniform_entry(binding: u32) -> wgpu::BindGroupLayoutEntry {
 
 impl Sim {
     pub fn new(gpu: &Gpu, world: &World) -> Result<Self, String> {
+        Self::build(gpu, world, false)
+    }
+
+    /// As `new`, with per-step reasons written to `buffers.why` (see why.rs).
+    pub fn with_why(gpu: &Gpu, world: &World) -> Result<Self, String> {
+        Self::build(gpu, world, true)
+    }
+
+    fn build(gpu: &Gpu, world: &World, why: bool) -> Result<Self, String> {
         let device = &gpu.device;
         let p = world.params;
         let total_bytes = std::cell::Cell::new(0u64);
@@ -215,6 +226,7 @@ impl Sim {
                 mapped_at_creation: false,
             })
         };
+        let why_buffer = why.then(|| empty("why", cap * (crate::why::WHY_WORDS + crate::why::MAX_ITEMS * crate::why::ITEM_WORDS) * 4));
         let veh_bytes = std::mem::size_of::<GpuVeh>() as u64;
         let veh = [empty("veh_a", cap * veh_bytes), empty("veh_b", cap * veh_bytes)];
         let keys = [empty("keys0", cap * 4), empty("keys1", cap * 4)];
@@ -267,7 +279,7 @@ impl Sim {
 
         // Layouts.
         let main_layout = {
-            let entries: Vec<_> = MAIN_BINDINGS
+            let mut entries: Vec<_> = MAIN_BINDINGS
                 .iter()
                 .enumerate()
                 .map(|(b, &ro)| {
@@ -278,6 +290,9 @@ impl Sim {
                     }
                 })
                 .collect();
+            if why {
+                entries.push(storage_entry(crate::why::WHY_BINDING, false));
+            }
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("main"),
                 entries: &entries,
@@ -339,7 +354,7 @@ impl Sim {
                 &mirror, &energy, &hard_limit, &zones, &speed_trace,
                 &poses, &grid_head, &grid_next, &shape_points, &contacts,
             ];
-            let entries: Vec<_> = list
+            let mut entries: Vec<_> = list
                 .iter()
                 .enumerate()
                 .map(|(i, b)| wgpu::BindGroupEntry {
@@ -347,6 +362,9 @@ impl Sim {
                     resource: b.as_entire_binding(),
                 })
                 .collect();
+            if let Some(b) = &why_buffer {
+                entries.push(wgpu::BindGroupEntry { binding: crate::why::WHY_BINDING, resource: b.as_entire_binding() });
+            }
             device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("main"),
                 layout: &main_layout,
@@ -454,6 +472,12 @@ impl Sim {
         let main_module = gpu.shader("step", &main_src);
         let control_module = gpu.shader("control", &format!("{common}\n{CONTROL}"));
         let sort_module = gpu.shader("sort", &format!("{common}\n{SORT}"));
+        let main_module = if why {
+            let probed = crate::why::instrument(&main_src).map_err(|lost| format!("--why: probes that no longer fit, see why.rs:\n  {}", lost.join("\n  ")))?;
+            gpu.shader("step", &probed)
+        } else {
+            main_module
+        };
         let main_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("main"),
             bind_group_layouts: &[Some(&main_layout)],
@@ -587,6 +611,7 @@ impl Sim {
             globals,
             counters,
             lanes,
+            why: why_buffer,
             veh,
             trip_out,
             series,

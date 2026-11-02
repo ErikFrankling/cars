@@ -1,0 +1,846 @@
+{
+ "nets": {},
+ "routes": {
+  "ring": {
+   "vehicles": 200,
+   "hours": [
+    200,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "vtypes": {},
+   "depart_lane": [
+    [
+     "0",
+     200
+    ]
+   ],
+   "depart_speed": [
+    [
+     "0",
+     200
+    ]
+   ],
+   "types": [
+    [
+     "human",
+     200
+    ]
+   ],
+   "inline_routes": 200,
+   "inline_reversal": 0,
+   "inline_first_reversal": 0,
+   "distinct_origin_edges": 80,
+   "top100_origin_share": 1.0
+  },
+  "glosa": {
+   "flows": 6,
+   "hours": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "vtypes": {},
+   "depart_lane": [],
+   "depart_speed": [],
+   "types": [
+    [
+     null,
+     6
+    ]
+   ],
+   "inline_routes": 0,
+   "inline_reversal": 0,
+   "inline_first_reversal": 0,
+   "distinct_origin_edges": 0,
+   "top100_origin_share": 0.0
+  },
+  "i80": {
+   "vehicles": 24242,
+   "hours": [
+    2770,
+    5200,
+    8302,
+    5200,
+    2770,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "vtypes": {},
+   "depart_lane": [
+    [
+     "best",
+     15101
+    ],
+    [
+     "random",
+     9141
+    ]
+   ],
+   "depart_speed": [
+    [
+     "25.00",
+     15901
+    ],
+    [
+     "20.00",
+     4400
+    ],
+    [
+     "15.00",
+     3181
+    ]
+   ],
+   "types": [
+    [
+     "human",
+     24242
+    ]
+   ],
+   "inline_routes": 24242,
+   "inline_reversal": 0,
+   "inline_first_reversal": 0,
+   "distinct_origin_edges": 7,
+   "top100_origin_share": 1.0
+  },
+  "bologna": {
+   "vehicles": 10069,
+   "hours": [
+    10069,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "vtypes": {},
+   "depart_lane": [
+    [
+     "best",
+     10069
+    ]
+   ],
+   "depart_speed": [
+    [
+     null,
+     10069
+    ]
+   ],
+   "types": [
+    [
+     "human",
+     10069
+    ]
+   ],
+   "inline_routes": 0,
+   "inline_reversal": 0,
+   "inline_first_reversal": 0,
+   "distinct_origin_edges": 0,
+   "top100_origin_share": 0.0
+  },
+  "lust_bus": {
+   "vehicles": 2240,
+   "stops": 37376,
+   "hours": [
+    24,
+    24,
+    24,
+    24,
+    152,
+    128,
+    128,
+    128,
+    128,
+    128,
+    64,
+    128,
+    128,
+    128,
+    64,
+    64,
+    128,
+    128,
+    128,
+    128,
+    64,
+    88,
+    88,
+    24,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "vtypes": {},
+   "depart_lane": [
+    [
+     "best",
+     2240
+    ]
+   ],
+   "depart_speed": [
+    [
+     null,
+     2240
+    ]
+   ],
+   "types": [
+    [
+     "bus",
+     2240
+    ]
+   ],
+   "inline_routes": 2240,
+   "inline_reversal": 0,
+   "inline_first_reversal": 0,
+   "distinct_origin_edges": 55,
+   "top100_origin_share": 1.0
+  },
+  "lust_transit": {
+   "vehicles": 70484,
+   "hours": [
+    475,
+    980,
+    1430,
+    1888,
+    2349,
+    2454,
+    4727,
+    4712,
+    4840,
+    2424,
+    959,
+    2448,
+    4761,
+    4844,
+    3707,
+    2888,
+    1918,
+    2823,
+    3813,
+    4770,
+    4674,
+    3285,
+    2381,
+    934,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "vtypes": {},
+   "depart_lane": [
+    [
+     null,
+     70484
+    ]
+   ],
+   "depart_speed": [
+    [
+     "13.89",
+     70484
+    ]
+   ],
+   "types": [
+    [
+     "passenger1",
+     27981
+    ],
+    [
+     "passenger2b",
+     14241
+    ],
+    [
+     "passenger2a",
+     14023
+    ],
+    [
+     "passenger3",
+     7157
+    ],
+    [
+     "passenger4",
+     3560
+    ],
+    [
+     "passenger5",
+     3522
+    ]
+   ],
+   "inline_routes": 70484,
+   "inline_reversal": 0,
+   "inline_first_reversal": 0,
+   "distinct_origin_edges": 4,
+   "top100_origin_share": 1.0
+  },
+  "lust_local0": {
+   "vehicles": 72000,
+   "hours": [
+    379,
+    347,
+    391,
+    431,
+    1178,
+    4469,
+    11704,
+    19316,
+    20542,
+    13243,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "vtypes": {},
+   "depart_lane": [
+    [
+     null,
+     72000
+    ]
+   ],
+   "depart_speed": [
+    [
+     "0.00",
+     72000
+    ]
+   ],
+   "types": [
+    [
+     "passenger1",
+     28882
+    ],
+    [
+     "passenger2a",
+     14494
+    ],
+    [
+     "passenger2b",
+     14289
+    ],
+    [
+     "passenger3",
+     7200
+    ],
+    [
+     "passenger4",
+     3612
+    ],
+    [
+     "passenger5",
+     3523
+    ]
+   ],
+   "inline_routes": 72000,
+   "inline_reversal": 0,
+   "inline_first_reversal": 0,
+   "distinct_origin_edges": 4776,
+   "top100_origin_share": 0.5657083333333334
+  },
+  "lust_local1": {
+   "vehicles": 72000,
+   "hours": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1091,
+    8997,
+    6925,
+    12236,
+    12970,
+    8856,
+    6658,
+    11925,
+    2342,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "vtypes": {},
+   "depart_lane": [
+    [
+     null,
+     72000
+    ]
+   ],
+   "depart_speed": [
+    [
+     "0.00",
+     72000
+    ]
+   ],
+   "types": [
+    [
+     "passenger1",
+     28740
+    ],
+    [
+     "passenger2a",
+     14422
+    ],
+    [
+     "passenger2b",
+     14306
+    ],
+    [
+     "passenger3",
+     7255
+    ],
+    [
+     "passenger4",
+     3677
+    ],
+    [
+     "passenger5",
+     3600
+    ]
+   ],
+   "inline_routes": 72000,
+   "inline_reversal": 0,
+   "inline_first_reversal": 0,
+   "distinct_origin_edges": 4405,
+   "top100_origin_share": 0.4465277777777778
+  },
+  "lust_local2": {
+   "vehicles": 71526,
+   "hours": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    15258,
+    19629,
+    15205,
+    7748,
+    4938,
+    4442,
+    4306,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "vtypes": {},
+   "depart_lane": [
+    [
+     null,
+     71526
+    ]
+   ],
+   "depart_speed": [
+    [
+     "0.00",
+     71526
+    ]
+   ],
+   "types": [
+    [
+     "passenger1",
+     28825
+    ],
+    [
+     "passenger2a",
+     14328
+    ],
+    [
+     "passenger2b",
+     14205
+    ],
+    [
+     "passenger3",
+     7104
+    ],
+    [
+     "passenger5",
+     3555
+    ],
+    [
+     "passenger4",
+     3509
+    ]
+   ],
+   "inline_routes": 71526,
+   "inline_reversal": 0,
+   "inline_first_reversal": 0,
+   "distinct_origin_edges": 4695,
+   "top100_origin_share": 0.2770181472471549
+  },
+  "charlottenburg": {
+   "vehicles": 330358,
+   "hours": [
+    313,
+    187,
+    286,
+    468,
+    846,
+    4382,
+    11205,
+    14437,
+    18532,
+    22308,
+    23364,
+    22979,
+    22267,
+    23945,
+    23509,
+    24530,
+    24401,
+    24299,
+    22756,
+    19668,
+    12537,
+    6965,
+    4022,
+    2066,
+    86,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "vtypes": {
+    "DefaultVehicle": {
+     "accel": "1.50",
+     "decel": "4.50",
+     "sigma": "0.50",
+     "tau": "1.00",
+     "length": "5.00",
+     "minGap": "2.00",
+     "maxSpeed": "50.00"
+    }
+   },
+   "depart_lane": [
+    [
+     null,
+     174928
+    ],
+    [
+     "best",
+     155430
+    ]
+   ],
+   "depart_speed": [
+    [
+     null,
+     174928
+    ],
+    [
+     "max",
+     155430
+    ]
+   ],
+   "types": [
+    [
+     "DefaultVehicle",
+     330358
+    ]
+   ],
+   "inline_routes": 330358,
+   "inline_reversal": 12120,
+   "inline_first_reversal": 4802,
+   "distinct_origin_edges": 2529,
+   "top100_origin_share": 0.557113797758795
+  },
+  "mitte": {
+   "vehicles": 357934,
+   "hours": [
+    173,
+    195,
+    236,
+    473,
+    1010,
+    5252,
+    12244,
+    16126,
+    20411,
+    23313,
+    25312,
+    24236,
+    23921,
+    24679,
+    25732,
+    26395,
+    27399,
+    25346,
+    24501,
+    21205,
+    14077,
+    8274,
+    5074,
+    2285,
+    65,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "vtypes": {
+    "DefaultVehicle": {
+     "accel": "1.50",
+     "decel": "4.50",
+     "sigma": "0.50",
+     "tau": "1.00",
+     "length": "5.00",
+     "minGap": "2.00",
+     "maxSpeed": "50.00"
+    }
+   },
+   "depart_lane": [
+    [
+     "best",
+     180360
+    ],
+    [
+     null,
+     177574
+    ]
+   ],
+   "depart_speed": [
+    [
+     "max",
+     180360
+    ],
+    [
+     null,
+     177574
+    ]
+   ],
+   "types": [
+    [
+     "DefaultVehicle",
+     357934
+    ]
+   ],
+   "inline_routes": 357934,
+   "inline_reversal": 11116,
+   "inline_first_reversal": 2684,
+   "distinct_origin_edges": 3523,
+   "top100_origin_share": 0.5599021048573201
+  },
+  "v2_c4": {
+   "vehicles": 790967,
+   "hours": [
+    7000,
+    4034,
+    2840,
+    2346,
+    4007,
+    5750,
+    35913,
+    65128,
+    59452,
+    41791,
+    35369,
+    38939,
+    41647,
+    41743,
+    44683,
+    56524,
+    74175,
+    59626,
+    62466,
+    34725,
+    23416,
+    18000,
+    20071,
+    11322,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "vtypes": {
+    "passenger": {
+     "accel": "2.6",
+     "decel": "4.5",
+     "sigma": "0.5",
+     "tau": "1",
+     "length": "5",
+     "minGap": "2"
+    }
+   },
+   "depart_lane": [
+    [
+     "best",
+     790967
+    ]
+   ],
+   "depart_speed": [
+    [
+     "max",
+     790967
+    ]
+   ],
+   "types": [
+    [
+     "passenger",
+     790967
+    ]
+   ],
+   "inline_routes": 0,
+   "inline_reversal": 0,
+   "inline_first_reversal": 0,
+   "defined_route_vehicles": 790967,
+   "routes_used": 16725,
+   "reversal_vehicles": 83604,
+   "reversal_at_trip_end_vehicles": 29188,
+   "distinct_origin_edges": 4009,
+   "top100_origin_share": 0.22131138214362925,
+   "top1000_route_share": 0.5207562388822795
+  }
+ }
+}

@@ -2,9 +2,9 @@
 
 # cars
 
-A GPU reimplementation of SUMO's microscopic traffic simulation, in Rust and WGSL compute shaders. It reads SUMO networks and demand files and produces the same flows, statistically: same trip durations, same queues, same lane use, 100 times faster or more on city-sized jobs and large ensembles.
+A GPU microscopic traffic simulator in Rust and WGSL compute shaders. The goal is to match real measured traffic at network level, not to match another simulator. It began as a reimplementation of SUMO and still reads SUMO networks and demand files.
 
-**Status.** This is the SUMO parity baseline, tagged `sumo-parity`. Matching SUMO says nothing about matching reality. The current Berlin and Stockholm scenarios are not true to life: Berlin's demand has no morning rush and half the measured volume, and Stockholm's demand and network are defective. The move to real data, physically based vehicles and communicating self-driving cars is in progress; the findings are in [research/truth](research/truth).
+**Status.** The default driver on main is still the SUMO copy, tagged `sumo-parity`. On the same inputs it gives nearly the same results as SUMO, and that says nothing about reality. No city scenario matches a real day yet: Berlin's demand holds about half the measured traffic, and Stockholm's demand and signal timing are not real. Human-only traffic must pass [the validation gate](research/truth/VALIDATION-GATE.md) before any self-driving result counts. The findings are in [research/truth](research/truth).
 
 The summary with charts is [report/index.html](report/index.html). Figures are in [report/figures](report/figures), raw numbers in [results](results).
 
