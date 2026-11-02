@@ -123,7 +123,7 @@ Fitting these took T × 0.55, which is not what replay finds on US and German ro
 
 All **software GPU** (llvmpipe), dt 0.5 unless stated, then repeated on the GPU only through the city runs. Commits 4b920ba to 2a8b319.
 
-**A short lane with no way on.** At 10% of Stockholm's demand, heads had waited since the first minutes. Two read closely wanted lane 0 of an edge 2.9 and 6.6 m long while their junction lane fed lane 1. The offset stop point, 5 or 12 m before the lane end, lay back on the junction lane, where the missed-turn rule does not look, so each stood for good and blocked the junction behind. Stockholm has 11,015 lanes under 15 m of 82,709, Berlin 4,722 of 84,546. Now the stop point stays on the lane, and a driver who reaches the end of a lane under 15 m gives the route up at once. `scripts/human_tests.py stub_lane`: on a 5 m stub, 7 of 96 inserted cars arrived in 1,200 s before, and 140 of 140 now, 20 of them lost. No contacts.
+**A short lane with no way on.** At 10% of Stockholm's demand, heads had waited since the first minutes. Two read closely wanted lane 0 of an edge 2.9 and 6.6 m long while their junction lane fed lane 1. The offset stop point, 5 or 12 m before the lane end, lay back on the junction lane, where the missed-turn rule does not look, so each stood for good and blocked the junction behind. Stockholm has 11,015 lanes under 15 m of 82,709, Berlin 4,722 of 84,546. Now the stop point stays on the lane, far enough along for a lane change to be allowed, and a driver who reaches the end of a lane under 7 m gives the route up at once. 15 m at first made cars lost who could have changed lane. `scripts/human_tests.py stub_lane`: on a 5 m stub, 7 of 96 inserted cars arrived in 1,200 s before, and 140 of 140 now, 20 of them lost. No contacts.
 
 Cost, on the old demand on the GPU: Stockholm at 10% stuck at the end 2,658 → 970, arrived 22,933 → 25,142, jam and yield cases 658, 255 → 156, 110. At full demand arrived 96,780 → 110,912, stuck at the end 75,906 → 70,520. These two runs also carry the physics merge, so they do not separate its share. Contacts rose: 5,709 → 7,293 at full demand, same lane 251 → 719, lane start 662 → 1,089. Not explained yet; small scenes show none. Route patches rose to about 20 for each lost car at 10% demand, 21,963 for 1,091 cars: the router works on edges, so a new route can meet the next short wrong lane.
 
@@ -157,45 +157,96 @@ The default stays, because waits are the measured quantity most tied to Erik's q
 
 | Number | Value | Saturation headway s | Lost time s | Standing spacing m | Lane end wait p50 / p90 s | Minor road flow veh/h | Collisions |
 |---|---:|---:|---:|---:|---|---:|---:|
-| default |  | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
-| b_approach | 0.9 | 2.53 | 0.81 | 6.70 | 24 / 63 | 360 | 0 |
-| b_approach | 1.6 | 2.24 | 1.95 | 6.32 | 28 / 74 | 342 | 0 |
-| tau_approach | 1.5 | 2.29 | 1.73 | 5.72 | 22 / 66 | 348 | 0 |
-| tau_approach | 3.0 | 2.59 | 1.37 | 7.14 | 26 / 65 | 366 | 0 |
-| overshoot | 0.7 | 2.38 | 1.02 | 6.15 | 28 / 59 | 357 | 0 |
-| overshoot | 2.1 | 2.32 | 2.36 | 6.43 | 22 / 62 | 366 | 0 |
-| standing | 0.2 | 2.33 | 1.31 | 6.58 | 24 / 57 | 375 | 0 |
-| standing | 1.0 | 2.53 | 1.67 | 5.67 | 27 / 68 | 333 | 0 |
-| see | 15 | 2.37 | 1.45 | 6.51 | 26 / 63 | 324 | 0 |
-| see | 60 | 2.37 | 1.45 | 6.51 | 26 / 63 | 318 | 0 |
-| lc_slope | 0.42 | 2.37 | 1.45 | 6.51 | 24 / 58 | 354 | 0 |
-| lc_slope | 1.73 | 2.37 | 1.45 | 6.51 | 23 / 60 | 354 | 0 |
-| stop_s0 | 0.5 | 2.37 | 1.36 | 6.51 | 24 / 65 | 336 | 0 |
-| stop_s0 | 2.0 | 2.37 | 1.60 | 6.54 | 20 / 61 | 351 | 0 |
-| comfort | 1.0 | 2.37 | 1.45 | 6.51 | 23 / 60 | 336 | 0 |
-| comfort | 2.5 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
-| turn_min | 4 | 2.37 | 1.45 | 6.51 | 26 / 63 | 327 | 0 |
-| turn_min | 8 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
-| t_miss | 60 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
-| t_miss | 240 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
-| gap_junction | 0.5 | 2.37 | 1.45 | 6.51 | 26 / 63 | 375 | 0 |
-| gap_junction | 1.0 | 2.37 | 1.45 | 6.51 | 26 / 63 | 273 | 0 |
-| gap_roundabout | 1.0 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
-| gap_roundabout | 2.5 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
-| stub | 5 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
-| stub | 30 | 2.37 | 1.45 | 6.51 | 26 / 63 | 354 | 0 |
+| default |  | 2.37 | 1.45 | 6.51 | 22 / 56 | 354 | 0 |
+| b_approach | 0.9 | 2.53 | 0.81 | 6.70 | 26 / 57 | 360 | 0 |
+| b_approach | 1.6 | 2.24 | 1.95 | 6.32 | 24 / 62 | 342 | 0 |
+| tau_approach | 1.5 | 2.29 | 1.73 | 5.72 | 20 / 50 | 348 | 0 |
+| tau_approach | 3.0 | 2.59 | 1.37 | 7.14 | 25 / 62 | 366 | 0 |
+| overshoot | 0.7 | 2.38 | 1.02 | 6.15 | 24 / 62 | 357 | 0 |
+| overshoot | 2.1 | 2.32 | 2.36 | 6.43 | 24 / 53 | 366 | 0 |
+| standing | 0.2 | 2.33 | 1.31 | 6.58 | 22 / 66 | 375 | 0 |
+| standing | 1.0 | 2.53 | 1.67 | 5.67 | 28 / 71 | 333 | 0 |
+| see | 15 | 2.37 | 1.45 | 6.51 | 22 / 56 | 324 | 0 |
+| see | 60 | 2.37 | 1.45 | 6.51 | 22 / 56 | 318 | 0 |
+| lc_slope | 0.42 | 2.37 | 1.45 | 6.51 | 24 / 60 | 354 | 0 |
+| lc_slope | 1.73 | 2.37 | 1.45 | 6.51 | 22 / 60 | 354 | 0 |
+| stop_s0 | 0.5 | 2.37 | 1.36 | 6.51 | 22 / 58 | 336 | 0 |
+| stop_s0 | 2.0 | 2.37 | 1.60 | 6.54 | 24 / 55 | 351 | 0 |
+| comfort | 1.0 | 2.37 | 1.45 | 6.51 | 26 / 62 | 336 | 0 |
+| comfort | 2.5 | 2.37 | 1.45 | 6.51 | 24 / 54 | 354 | 0 |
+| turn_min | 4 | 2.37 | 1.45 | 6.51 | 22 / 56 | 327 | 0 |
+| turn_min | 8 | 2.37 | 1.45 | 6.51 | 22 / 56 | 354 | 0 |
+| t_miss | 60 | 2.37 | 1.45 | 6.51 | 22 / 56 | 354 | 0 |
+| t_miss | 240 | 2.37 | 1.45 | 6.51 | 22 / 56 | 354 | 0 |
+| gap_junction | 0.5 | 2.37 | 1.45 | 6.51 | 22 / 56 | 375 | 0 |
+| gap_junction | 1.0 | 2.37 | 1.45 | 6.51 | 22 / 56 | 273 | 0 |
+| gap_roundabout | 1.0 | 2.37 | 1.45 | 6.51 | 22 / 56 | 354 | 0 |
+| gap_roundabout | 2.5 | 2.37 | 1.45 | 6.51 | 22 / 56 | 354 | 0 |
+| stub | 5 | 2.37 | 1.45 | 6.51 | 22 / 56 | 354 | 0 |
+| stub | 30 | 2.37 | 1.45 | 6.51 | 22 / 56 | 354 | 0 |
 
 Largest effects: `turn_min` and `gap_junction` on the minor road, `b_approach`, `tau_approach` and `standing` on lost time and spacing. `see` moves the minor road by about 10%, both ways down, so 30 m is not obviously right. `t_miss`, `gap_roundabout` and `stub` do not move these scenes at all, so their sensitivity is only known from cities, the roundabout scene and `stub_lane`.
 
 ## Cities
 
-**Stockholm on report 02's recipe: not run yet.** Net `truth/stockholm/factorial/n7_ramps.net.xml`, routes `v2_c4.rou.gz`, 60% demand, morning 06:00-10:00 and then the full day, in `truth/humans/city5/table.jsonl`. This is the run that tests the driver and not the demand. Everything below used demand since shown to be the top cause of lockup, so it says little about the driver.
+**Stockholm on report 02's recipe.** Net `truth/stockholm/factorial/n7_ramps.net.xml`, routes `v2_c4.rou.gz`, 60% demand, 06:00-10:00, dt 1. Results in `truth/humans/city5/`. GPU runs are marked; the rest ran on the homelab on software GPU with 6 approach slots per link in place of 8, because of llvmpipe's 128 MB binding limit, so small differences are not meaningful.
+
+| Driver, teleports | Arrived | Mean speed m/s | Inserted less arrived at 10:00 | Stuck over 300 s at 10:00 | Teleports |
+|---|---:|---:|---:|---:|---:|
+| SUMO copy, 120 s, ignore blockers 20 s | 193,579 | 11.59 | 8,693 | 0 | 669 (jam 104, yield 207, wrong lane 358) |
+| SUMO copy, none, ignore blockers 20 s | 124,596 | 5.68 | 66,565 | 60,975 | 0 |
+| SUMO copy, none | 119,745 | 5.52 | 70,903 | 65,548 | 0 |
+| Human, none, after the fixes below | 62,059 | 3.19 | 111,672 | 104,922 | 0 |
+| Human, none, before them (GPU) | 47,404 | 2.57 | 119,891 | 114,298 | 0 |
+| Physical Krauss, none (GPU) | 25,113 | 1.61 | 134,933 | 132,453 | 0 |
+| Human, 120 s, after the fixes | 147,803 | 5.13 | | 370 | 47,911 (jam 25,693, yield 19,123, wrong lane 3,095) |
+
+**Does this demand lock without teleports for any driver? Yes, for all three here.** The SUMO copy, the driver the recipe was built on, reaches 0.55 m/s and 92% stuck by 10:00 with teleports off. Its 11.6 m/s depends on removing 669 cars in four hours, 0.3% of those inserted; 358 of them were in a wrong lane. So "a Stockholm that does not lock up" means one that does not lock up as long as teleports clear its seeds. Ignoring junction blockers does not save it.
+
+**Is it also these drivers? Yes.** With the same 120 s rule the human needs 72 times the teleports of the SUMO copy and arrives 24% fewer. Without teleports it gets half the arrivals. After one hour it has 3,383 stuck against 1,281. Queue discharge explains some of this, at 1,782 per green hour through against 1,990 (software GPU, sigma 0.5, dt 1; right turn 1,449 against 1,424, left not measured). It does not obviously explain 19,123 yield teleports against 207, and give-way gaps are the next suspect. The contacts in the human 120 s run, 82,619 incidents with 17,408 on the same lane, show that teleport reinsertion was never fitted to physical mode, so that run's details are not to be leaned on.
+
+**Where and when it starts: not a lone seed.** Stuck heads start waiting from about 06:02, with almost nobody on the road, in many places at once, then grow and join. This table is the human before the fixes on the GPU, and counts a lane once its head has waited 300 s:
+
+| By | Stuck lanes | Cars on them | Separate areas (400 m cells), human | Largest, lanes | Same, Krauss |
+|---|---:|---:|---:|---|---:|
+| 06:10 | 9 | 41 | 4 | 4 | 10 |
+| 06:15 | 35 | 184 | 13 | 8 | 30 |
+| 06:25 | 194 | 1,636 | 21 | 28 | 53 |
+| 06:40 | 475 | 4,704 | 30 | 60 | 53 |
+| 07:10 | 1,260 | 14,846 | 28 | 285 | 40 |
+| 08:00 | 4,222 | 50,793 | 19 | 3,364 | 24 |
+
+The list holds at most 5,000 lanes, so the late rows undercount. Spread over the map like this, removing one blockage would not save the city; each kind of seed has to go.
+
+**The first heads, and what they wait for.** Read with `--debug-lane` on a 25 minute run. Picture: `truth/humans/seed/first_seed_0614.png`.
+
+| First stuck | Head | Waits for | Whose | State |
+|---|---|---|---|---|
+| 06:02, (22770,16512), both physical drivers | on `:1734187027_4_0`, about to enter the cluster | The arbiter denies a zone held by a car behind it in the same chain, which itself waits for this one. The left turn is built from two 0.2 m edges through a separate node beside the cluster | net and physics arbiter | **open**, physics agent's code |
+| 06:02, (11725,17414), both | `24699166#0_0`, 2.7 m edge between two parts of one junction | Its own rear, still on the junction lane it now needs clear | arbiter | **fixed**, `zone_foe_is_self` |
+| 06:03, human only | `636586780_0`, then `5376746#0_0`, `44674278_0` | Nothing it can reach: a new route answered seconds late overwrote the route of a car that had driven on | my rerouting | **fixed** |
+| 06:00, human only, without the miss rule | `1039698245_1`, 8.5 m lane, wants lane 0 | Lane change refused: the offset stop left it at 4.91 m, and the physics asks for a 5 m body wholly on the lane first | my stop point against the physics rule | **fixed** |
+| 06:05, both | `458964198_0`, `577190494#5_1`, lanes with no way on | Same, or a lane change that needs 15 m in Krauss | net, rule | fixed for humans, open for Krauss |
+
+The SUMO copy has its own seeds at some of the same places, such as `43054916_0`, and wrong-lane heads such as `804598780_1`, waiting since about 06:05. Without the miss rule the human has 958 stuck after 15 minutes against 245 with it, on the same build.
+
+Effect of the fixes, first hour, GPU before and software GPU after: stuck 7,006 → 3,383. Arrived 18,445 by 06:57 before, 23,070 by 07:00 after. Whole morning: arrived +31%, stuck −8%. With the arbiter off as well, 2,700 stuck, at the price of 1,708 contacts against 910, of which junction crossing 6 → 122. So the arbiter's zones make about a fifth of the first hour's stuck cars, and "next lane or right of way" still holds 8,466 of the heads at 10:00. Most of those are probably downstream queues by then, not seeds; I did not count them one by one.
+
+How often the demand sets these traps: 34,219 of 790,967 vehicles (4.3%) have a route through a short edge where the lanes it arrives on do not lead on, and 83,604 (10.6%) a U-turn on the same road. Of the 74,599 road edges in this net, 1,661 are under 1 m and 4,374 under 7 m. Report 02 kept the turnarounds on purpose.
+
+**The "other" contacts: net geometry, not driving.** "Other" means two cars on two different road edges, neither just entering. 99.1% of 19,403 such incidents in the fixed human morning are between lanes whose centre lines come within 1.8 m of each other, a car's width, so any two cars there overlap whatever they do. Across the 287 lane pairs the median closest distance is 1.04 m. 68% of the incidents are one pair of roads, `1156274841` and `747364395` at (13798,26155), which come within 0.2 m and stay within 1.8 m for 28-38 m before their shared node; the top 5 pairs hold 78%.
+
+An incident is counted per pair of cars, so it grows with a queue on one lane times the stream passing it. That is why it rose from 2,007 to 9,055 between Krauss and the human: the human moves 2.6 times the vehicle kilometres (333,044 against 127,826), and Krauss freezes and stops making new pairs. It is also why the rate climbs through the morning, on the fixed driver from 3.9 per 1,000 km in the first hour to 41.9 over the morning, which is 19,403 incidents on 462,669 km. That queue times stream reading fits the counts but was not tested on its own. Fixing it means correcting these lane shapes or having the detector know them; I changed neither, so **the total contact count overstates real collisions by about ten to one**.
+
+The rest are not explained away: same lane 253, neighbour lane 868, lane start 962, up from 173, 661, 510 before the fixes, with more traffic moved. These remain to be read. Zero collisions is not achieved.
+
+One stall stays unexplained: a software GPU run of the fixed driver on the PC stopped progressing at t = 23,135 with one worker thread busy. The same code passed that time on the homelab, three times, so it is not reproduced. Rule-off runs and the full day (`hu-v2b`) were withdrawn as poor use of the queue on a scenario that locks.
 
 **Dropped at the orchestrator's request, because full-demand gridlock swamps a one-rule difference:** Berlin morning `humans`, `no-courtesy`, `no-offset`, `no-miss`, `no-anticipate`, `no-gate`, `no-yellow`, `no-shrink`, `tmiss30`, `tmiss240`, `coop0`, `coop1.0`, `comply1.0`; `berlin-day`; Stockholm's second sweep on the fixed driver; the two U-turn demand variants; the trace runs on the fixed driver. Requeue only on demand that does not lock.
 
 So **how many of the 9,930 "waiting for a gap" cases vanish in the Berlin day is not answered.**
 
-Earlier driver, before the stub fix, dt 1, teleports off:
+Old demand, earlier driver, before the stub fix, dt 1, teleports off:
 
 | | Inserted | Arrived | Stuck: jam, yield, gap | Stuck at end | Contacts | Mu/s |
 |---|---:|---:|---|---:|---:|---:|

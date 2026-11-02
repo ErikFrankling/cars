@@ -33,6 +33,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Lane change duration, quintic, per-driver lognormal | ADAPTED | Report 05 fit on 36,000 events; profile against constant speed. Runs faster if the lane is running out | - |
 | Steering limit 45° at a crawl | INVENTED | Lets a queue-bound car nose in. With 12° or 25° wrong-lane waits rose several-fold on signal approaches; no measurement | `lc_slope` |
 | Offset stop points at a lane end: 5 m, 12 m on every second lane | ESTABLISHED | Handbok för kapacitetsanalys med simulering, p. 106 (Trafikverket). Kept on the lane with no way on: on a short lane the point would otherwise lie back in the junction | `stop_base`, `stop_offset`, off with `--human-off offset` |
+| A stop point on a short lane leaves the whole body on it, as the physics' lane change rule requires | ADAPTED | Consequence of that rule; without it cars stood 0.1 m short of being allowed to change, for good | - |
 | Removed: side-by-side swap, forced yield at 90 s, the wait term, the pair hash | | Report 15 rows 17, 18, 20, 21 | - |
 
 ## Missed turns
@@ -42,7 +43,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Give up the turn, carry on in the lane, new route; counted as lost | ESTABLISHED | Aimsun Lost Inside and Outside, TfL | off with `--human-off miss` |
 | Time at standstill, per-driver draw | ADAPTED | Aimsun's per-vehicle give-way time | |
 | Mean 120 s, 0.5-1.5 × per driver | INVENTED | No source; sensitivity swept in cities | `t_miss` |
-| Nobody waits on a lane shorter than 15 m, the route is given up on reaching its end | INVENTED | 11,015 of 82,709 lanes in Stockholm and 4,722 of 84,546 in Berlin are under 15 m, most of them stubs between two junctions, where no one can change lanes. Waiting there blocks the junction behind | `stub` |
+| Nobody waits on a lane shorter than 7 m, the route is given up on reaching its end | INVENTED | Length of a car plus 2 m, too short to change lanes on. 15 m made cars lost who could have changed lane; 11,015 of 82,709 lanes in Stockholm are under 15 m. Waiting there blocks the junction behind | `stub` |
 
 ## Junctions and signals (`step.wgsl`)
 
@@ -57,6 +58,12 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Lowest corner speed 8 m/s, on the shape limit and up to twice the lane limit | INVENTED | netconvert's corners give 2 to 4 m/s under the driver curve rule. 8 puts the roundabout's critical gap and follow-up on the Swiss 2.95 and 3.0 s at 300 veh/h per arm, right turns at 1,449 and left at 1,569 per green hour against TRVMB's 1,700. On a lane radius of 5 m it asks 12.8 m/s² of the shape, which the lane's drawn shape overstates; this shows in QA as lateral findings | `turn_min` |
 | Sees a give-way line from 30 m | INVENTED | SUMO's 9 m makes every car slow to walking pace with no one coming | constant |
 | Exit-clear compliance 90% | ESTABLISHED | Vissim percentage, physics branch | `exit_comply` |
+
+## Physics rules touched
+
+| Rule or number | Class | Source and what changed | Parameter |
+|---|---|---|---|
+| A body whose rear still stands on a foe lane does not wait for itself in the arbiter | ADAPTED | Correction of the arbiter on `t3/1c6fee50`, applies to every physical driver. Needed where a route leaves a junction over an edge shorter than the car | - |
 
 ## Sweden (`--region sweden`)
 
