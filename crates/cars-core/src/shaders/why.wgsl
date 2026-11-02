@@ -27,7 +27,9 @@ const K_BRAKE: u32 = 17u;
 const K_POWER: u32 = 18u;
 const K_COMMITTED: u32 = 19u;
 const K_CJ: u32 = 20u;
+const K_ABREAST: u32 = 21u;
 
+var<private> wy_abreast: bool = false;
 var<private> wy_on: bool = false;
 var<private> wy_i: u32 = 0u;
 var<private> wy_v: f32 = 1e30;
@@ -228,6 +230,9 @@ fn why_final(v_safe: f32, v_next: f32, cj: bool) {
     if (cj) {
         dec = K_CJ;
         why_set(K_CJ, v_next);
+    } else if (wy_abreast && v_next <= v_safe + tol) {
+        dec = K_ABREAST;
+        why_set(K_ABREAST, v_next);
     } else if (v_next > v_safe + tol) {
         if (v_next <= fin_min + tol) {
             dec = K_BRAKE;

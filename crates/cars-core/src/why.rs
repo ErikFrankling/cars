@@ -15,9 +15,9 @@ pub const BLAME_LANE: u32 = 0x8000_0000;
 pub const BLAME_LINK: u32 = 0x4000_0000;
 
 /// Names of the decider and limit kinds, in the order of `K_*` in why.wgsl.
-pub const KINDS: [&str; 21] = [
+pub const KINDS: [&str; 22] = [
     "none", "accel", "free", "next_limit", "curve", "leader", "leader_ahead", "tail", "signal", "yield", "exit_full", "junction", "lane_end", "arrival", "lane_change", "zipper",
-    "dawdle", "brake_limit", "power", "committed", "coordinator",
+    "dawdle", "brake_limit", "power", "committed", "coordinator", "abreast",
 ];
 pub const CLOSED: [&str; 4] = ["", "red", "stop_sign", "foe"];
 
@@ -140,6 +140,7 @@ const PROBES: &[Probe] = &[
     every("walk_links|exec", "v_safe = it.v_wait;", "v_safe = it.v_wait; wy_src = j * 2u + 1u;"),
     p("walk_links", "(*e).flags |= F_DENIED;", "(*e).flags |= F_DENIED; wy_full = links[it.link].to_lane;"),
     every("walk_links|exec", "v_safe = it.v_pass;", "v_safe = it.v_pass; wy_src = j * 2u;"),
+    p("exec", "v_safe = min(v_safe, f32(bound) / 1024.0 - 0.002);", "v_safe = min(v_safe, f32(bound) / 1024.0 - 0.002); wy_abreast = (e.flags & F_ABREAST) != 0u;"),
     p("exec", "v_safe = min(v_safe, v_zipper);", "v_safe = min(v_safe, v_zipper); wy_zip = v_zipper;"),
     p("exec", "v_next = lc_patch_speed(v_next, e, vmax_here);", "wy_pre = v_next; v_next = lc_patch_speed(v_next, e, vmax_here); wy_post = v_next;"),
     every("exec", "e.speed = v_next;", "why_final(v_safe, v_next, cj_controlled(e)); e.speed = v_next;"),

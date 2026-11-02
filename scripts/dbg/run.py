@@ -18,13 +18,14 @@ WHY = np.dtype([
     ('right_gap', '<f4'), ('right_follow_gap', '<f4'), ('left_gap', '<f4'), ('left_follow_gap', '<f4'),
     ('right_leader', '<u4'), ('right_follower', '<u4'), ('left_leader', '<u4'), ('left_follower', '<u4'), ('limits', '<u2', 22)])
 KINDS = ['none', 'accel', 'free', 'next_limit', 'curve', 'leader', 'leader_ahead', 'tail', 'signal', 'yield', 'exit_full', 'junction', 'lane_end', 'arrival',
-         'lane_change', 'zipper', 'dawdle', 'brake_limit', 'power', 'committed', 'coordinator']
+         'lane_change', 'zipper', 'dawdle', 'brake_limit', 'power', 'committed', 'coordinator', 'abreast']
 K = {n: i for i, n in enumerate(KINDS)}
 PLAIN = {
     'none': 'no plan this step', 'accel': 'acceleration limit', 'free': 'free speed on this lane', 'next_limit': 'lower limit on the next road', 'curve': 'junction lane speed (curve)',
     'leader': 'leader on this lane', 'leader_ahead': 'leader on a lane ahead', 'tail': 'tail of a car still hanging on a lane ahead', 'signal': 'signal (red or yellow)',
     'yield': 'stopping for a link it may not take yet', 'exit_full': 'no room past the junction', 'junction': 'car inside the junction', 'lane_end': 'end of lane, route needs another lane',
     'arrival': 'arriving at its destination', 'lane_change': 'lane change speed request', 'zipper': 'zipper merge', 'dawdle': 'driver imperfection (dawdle)',
+    'abreast': 'falling behind the car alongside: each wants the other\'s lane',
     'brake_limit': 'brake limit: wanted to slow more', 'power': 'engine or power limit', 'committed': 'committed past the point of stopping', 'coordinator': 'junction coordinator',
 }
 CLOSED = ['', 'red', 'stop_sign', 'foe']

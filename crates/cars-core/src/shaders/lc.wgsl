@@ -1151,6 +1151,20 @@ fn ph_lc_road(e: Veh, dest: u32) -> f32 {
     return remaining + continuation_length(links[k].to_lane, e.route_i + 1u, e.route_end);
 }
 
+// Two cars abreast, each wanting the other's lane. Nobody can go until one is ahead, so whoever is further on
+// keeps going and the other falls behind: -1 falls behind, 1 goes first, 0 not this case.
+fn ph_abreast(n: LcNeighbors, wants_my_lane: u32) -> i32 {
+    if (n.leader != NONE && n.gap < 0.0) {
+        let o = cur[n.leader].lc_own;
+        if ((o & wants_my_lane) != 0u && (o & LCA_URGENT) != 0u) { return -1; }
+    }
+    if (n.follower != NONE && n.f_gap < 0.0) {
+        let o = cur[n.follower].lc_own;
+        if ((o & wants_my_lane) != 0u && (o & LCA_URGENT) != 0u) { return 1; }
+    }
+    return 0;
+}
+
 fn lc_evaluate(i: u32) {
     let e = cur[i];
     if ((e.flags & (F_REMOVED | F_SHADOW)) != 0u || is_internal(e.lane)) { return; }
@@ -1187,6 +1201,7 @@ fn lc_evaluate(i: u32) {
     var state_r = 0u;
     var state_l = 0u;
     var chosen = 0;
+    var abreast = 0;
     let index = i32(lanes[e.lane].index);
     if (index > 0) {
         let dest = ed.first_lane + u32(index - 1);
@@ -1198,7 +1213,10 @@ fn lc_evaluate(i: u32) {
             state_r = wants_change(-1, e, own, n, b, dest, i);
             if (b == 0u && (state_r & LCA_WANTS) != 0u && unsafe_link_ahead(e, dest, i)) { state_r |= LCA_BLOCK_LEADER; }
             if ((state_r & LCA_RIGHT) != 0u && (state_r & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) == 0u) { chosen = -1; }
-            else if ((state_r & LCA_RIGHT) != 0u && (state_r & LCA_URGENT) != 0u) { hold_follower_for_blocked(e, n); }
+            else if ((state_r & LCA_RIGHT) != 0u && (state_r & LCA_URGENT) != 0u) {
+                hold_follower_for_blocked(e, n);
+                if (mu > 0.0) { abreast = ph_abreast(n, LCA_LEFT); }
+            }
         }
     }
     if (chosen == 0 && index + 1 < i32(ed.lane_count)) {
@@ -1211,7 +1229,10 @@ fn lc_evaluate(i: u32) {
             state_l = wants_change(1, e, own, n, b, dest, i);
             if (b == 0u && (state_l & LCA_WANTS) != 0u && unsafe_link_ahead(e, dest, i)) { state_l |= LCA_BLOCK_LEADER; }
             if ((state_l & LCA_LEFT) != 0u && (state_l & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) == 0u) { chosen = 1; }
-            else if ((state_l & LCA_LEFT) != 0u && (state_l & LCA_URGENT) != 0u) { hold_follower_for_blocked(e, n); }
+            else if ((state_l & LCA_LEFT) != 0u && (state_l & LCA_URGENT) != 0u) {
+                hold_follower_for_blocked(e, n);
+                if (mu > 0.0 && abreast == 0) { abreast = ph_abreast(n, LCA_RIGHT); }
+            }
         }
     }
     if (mu > 0.0 && chosen != 0 && !ph_lc_room(e, u32(i32(e.lane) + chosen))) {
@@ -1230,6 +1251,16 @@ fn lc_evaluate(i: u32) {
     cur[i].lc_own = state;
     cur[i].left_space = lc_left_space;
     cur[i].blocker = lc_blocker;
+    if (mu > 0.0) {
+        cur[i].flags &= ~F_ABREAST;
+        if (chosen == 0 && abreast < 0) {
+            cur[i].flags |= F_ABREAST;
+            atomicMin(&hard_limit[e.trip], u32(max(e.speed - P.abreast_b * dt, 0.0) * 1024.0) + 2u);
+        } else if (chosen == 0 && abreast > 0) {
+            cur[i].blocker = 0.0;
+            atomicStore(&advice[e.trip], NONE);
+        }
+    }
     if (chosen == 0) { return; }
     let urgent = (state & LCA_URGENT) != 0u;
     let dest = u32(i32(e.lane) + chosen);

@@ -61,7 +61,8 @@ pub struct GpuParams {
     pub lc_patience: f32,
     /// Spread between drivers of the gap they keep: sigma of a lognormal around 1.
     pub gap_spread: f32,
-    pub pad_d: f32,
+    /// How hard the one of two cars abreast slows to fall behind the other, m/s2.
+    pub abreast_b: f32,
 }
 
 #[repr(C)]
@@ -830,7 +831,7 @@ impl World {
             vis_floor: cfg.tune("vis_floor", 30.0),
             lc_patience: cfg.tune("lc_patience", 10.0),
             gap_spread: cfg.tune("gap_spread", 0.3),
-            pad_d: 0.0,
+            abreast_b: cfg.tune("abreast_b", 2.5),
         };
         w
     }
