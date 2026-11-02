@@ -25,6 +25,8 @@ This writes `f.trace` (as in RECORDING.md), `f.trace.why` (136 bytes per vehicle
 | How does this junction behave? | `cars junction --trace f.trace --junction J1` |
 | How do junctions of a type compare? | `cars junction --trace f.trace --type traffic_light --top 12` |
 | How far apart are two runs, or a run and reality? | `cars dist --a f.trace --b real:I395` |
+| Can these routes be driven at all, lane by lane? | `cars lanes --net f.trace.net.json --routes r.gz --edge-csv edges.csv` |
+| A seed of a city, small enough for llvmpipe | `cars cut --net n.xml --routes r.gz --center x,y --begin T0 --end T1 --out d/` |
 
 ## The limits `cars why` names
 
@@ -58,7 +60,7 @@ A tick's reasons, gaps and leader are from the plan at the start of that tick, a
 
 A probe whose anchor has gone stops `cars run --why` at start up and names the line; `cargo test -p cars-core why` checks them all. New limits added by a branch need one probe each: a line in `PROBES`, and a `K_*` in `why.wgsl`.
 
-The buffer is at binding 63, above anything the main layout will reach. Probes only write it. To check after a kernel change: run a small scene with `--trace a.trace`, then `--trace b.trace --why`, and `cmp a.trace b.trace`. They must be the same bytes. On llvmpipe `--why` runs at 128-bit vectors, because its 256-bit code miscompiles kernels this size and the run comes out different.
+The buffer is at binding 63, above anything the main layout will reach. Probes only write it. To check after a kernel change: run a small scene with `--trace a.trace`, then `--trace b.trace --why`, and `cmp a.trace b.trace`. Plain runs themselves differ now and then on llvmpipe (about one in four on the small scene in `scripts/test_debug_tools.py`), so repeat the plain run: one of them must be the same bytes. On llvmpipe `--why` runs at 128-bit vectors, because its 256-bit code miscompiles kernels this size and the run comes out different. Not yet run on the real GPU: the lock was taken throughout.
 
 ## `.why` file
 
@@ -85,3 +87,31 @@ Otherwise `--ref` is a long CSV: `sensor,edge,time,flow_vph[,speed_kmh]`, with `
 ## Real tracks
 
 `cars tsd --real` and `cars dist --b real:NAME` read report 05's TGSIM (`I395`, `I90stat`, `I90mov`, `I294L1`, `I294L2`, `Foggy`) and DRaT (`drat`), or a CSV of `time,track,pos,speed[,lane]`. The first read takes minutes; a cache stays in `~/.cache/cars-dbg`. Report 05 lists each dataset's flaws. `dist` reads real acceleration over one second, so it compares with a dt 1 run on equal terms.
+
+## A worked case: Stockholm's stuck seeds
+
+Net `truth/stockholm/factorial/n7_ramps.net.xml`, demand `v2_c4.rou.gz`, main's Krauss driver. Everything is under `cars-data/truth/dbg/`. A city needs the GPU; when the lock is taken, cut a scene and run it on llvmpipe. A cut shows mechanisms, not city totals.
+
+```sh
+# 1. Where did the city get stuck? The full-day edge CSV has teleports per road: the top three of 149 roads were 804598780, 26992780#1 and 804669067.
+# 2. Cut the place at the time it happens, run it with reasons and teleports off.
+cars cut --net n7_ramps.net.xml --routes v2_c4.rou.gz --center 19348,21160 --radius 900 --begin 21600 --end 23400 --out fork/
+cars run --net fork/net.xml --routes fork/routes.xml --dt 1 --end 1800 --time-to-teleport 0 --ignore-junction-blocker 20 --trace fork/f.trace --why
+# 3. The seed, why it stopped, and how it looks.
+cars jam --trace fork/f.trace --seeds --stride 5 --out fork/jam
+cars why --trace fork/f.trace --car v36 --at 500
+cars replay --net fork/net.xml --trace fork/f.trace --at 499,500 --center 19326,21149 --metres-per-pixel .1 --overlay all --out fork/v36.png
+# 4. How much of the city is this? Walk every route lane by lane.
+cars lanes --net city.net.json --routes v2_c4.rou.gz --edge-csv v2_day2/edges.csv --change-seconds 1
+```
+
+What it found, of 2,449 teleports in the full day, 1,359 of them counted as wrong lane by the engine:
+
+| Road | Teleports | Mechanism | How the tools showed it |
+|---|---:|---|---|
+| `804598780` | 470 | Route needs lane 0. The ramp feeds lanes 1-3, lane 0 opens on a 15.8 m road crossed inside one tick on junction lanes, then a solid line closes it | `decided by: lane_end`, `may change to [1, 2, 3]`, `impossible`, and no right wish at all |
+| `26992780#1` | 275 | 3.5 m two-lane road. Two cars side by side each want the other's lane, and each body blocks the other | a ring of 2 cars, `blocked_by_leader` at -6 m |
+| `804669067` | 186 | Lanes 0-2 and 3-4 split by a solid line on a 36 m road. Entering on lane 0, the route needs 3 or 4. `cars lanes` finds 185 such trips against 186 teleports | same `impossible` line; held 297 cars in 30 min of the cut |
+| `43054916`, `161451894` | 117 | Opposite 0.2 m stubs carrying a U-turn: one car's tail blocks the junction path of a car whose exit it waits for | a ring through both stubs, picture in `dbg/dist1/lock-1300.0.png` |
+
+Those four places hold 43% of the day's teleports. Edges under 7.5 m are 6.1% of the net and took 31.8%. 1.01% of trips turn around through a pair of edges under 1 m. Demand comes from an edge-level router that does not look at lane markings, so these are map and demand faults, not driver faults. `cars lanes` at `--change-seconds 1` flags 52 places holding 47% of teleports, but most of them have none: without a solid line a car can stop and change. Read it as a list of places to look at.

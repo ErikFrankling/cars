@@ -34,7 +34,7 @@ def from_trace(path, begin, end, net, stride, one_second=True):
         km += float(v.sum()) * step / 1000.0
         km_frames += float(v.sum()) * run.dt / 1000.0
         changes += int((flags_of(rec) & LANE_CHANGED != 0).sum())
-        if prev is not None:
+        if prev is not None and len(prev[0]) and len(trip):
             order = np.argsort(prev[0])
             at = np.searchsorted(prev[0][order], trip)
             at = np.minimum(at, len(order) - 1)
