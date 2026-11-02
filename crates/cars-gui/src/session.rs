@@ -281,6 +281,9 @@ impl Session {
         // As record.rs does: the state after step k is labelled (k-1)*dt, and pictures follow it.
         let step_for = |rel: f64, dt: f64| (rel / dt).ceil().max(0.0) as u64 + 1;
         let target = if want.is_finite() { step_for(want, self.dt).min(self.end_step) } else { self.end_step };
+        // Finish the frame just drawn first, or its time would look like simulation steps being
+        // slow and the batches would never grow.
+        gpu.wait();
         let t0 = Instant::now();
         let start = self.sim.step;
         while self.sim.step < target {

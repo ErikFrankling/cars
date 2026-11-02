@@ -134,6 +134,7 @@ pub struct Model {
     pub first_pace: Option<Pace>,
     pub force: bool,
     pub clip_overlay: overlay::Overlay,
+    pub last_tick: Instant,
 }
 
 #[derive(Default, Clone, Copy)]
@@ -210,11 +211,18 @@ impl Model {
         }
     }
 
-    fn tick_sim(&mut self, wall: f32, budget: f64) {
+    /// Move the simulation on for what real time has passed, for at most `budget` milliseconds.
+    fn tick_sim(&mut self, budget: f64) {
+        let wall = self.last_tick.elapsed().as_secs_f32().min(0.25);
+        self.last_tick = Instant::now();
         let gpu = self.gpu.clone();
         if let Some(s) = &mut self.session {
             s.advance(&gpu, wall, budget);
         }
+    }
+
+    fn sim_running(&self) -> bool {
+        self.session.as_ref().is_some_and(|s| s.pace != Pace::Paused || s.jump.is_some())
     }
 }
 
@@ -227,7 +235,6 @@ struct Running {
     egui_rend: egui_wgpu::Renderer,
     model: Model,
     last: Instant,
-    last_frame: Instant,
     started: Instant,
     fps_at: Instant,
     fps_frames: u32,
@@ -387,6 +394,7 @@ impl App {
             first_pace,
             force: self.args.force,
             clip_overlay: overlay::Overlay::default(),
+            last_tick: Instant::now(),
         };
         if let Some(s) = first {
             let d = model.draft.clone();
@@ -394,7 +402,7 @@ impl App {
         }
         let perf = self.args.perf_log.as_ref().and_then(|p| std::fs::OpenOptions::new().create(true).append(true).open(p).ok());
         let now = Instant::now();
-        Ok(Running { window, surface, config, ctx, egui_state, egui_rend, model, last: now, last_frame: now, started: now, fps_at: now, fps_frames: 0, perf, repaint_at: None })
+        Ok(Running { window, surface, config, ctx, egui_state, egui_rend, model, last: now, started: now, fps_at: now, fps_frames: 0, perf, repaint_at: None })
     }
 }
 
@@ -410,7 +418,6 @@ impl Running {
         let t_frame = Instant::now();
         let wall = t_frame.duration_since(self.last).as_secs_f32().min(0.25);
         self.last = t_frame;
-        self.last_frame = t_frame;
         let gpu = self.model.gpu.clone();
         self.model.poll_load();
         if let Ok(l) = self.model.device_lost.lock()
@@ -435,10 +442,9 @@ impl Running {
             self.model.vram = loader::vram();
         }
 
-        // The simulation gets most of a frame at full speed, never so much the window lags.
+        // The simulation also runs between frames, in about_to_wait, so this slice can stay small.
         let t = Instant::now();
-        let budget = 10.0;
-        self.model.tick_sim(wall, budget);
+        self.model.tick_sim(4.0);
         let sim_ms = t.elapsed().as_secs_f32() * 1000.0;
         let t = Instant::now();
         let mode = self.model.colour as u32;
@@ -615,8 +621,14 @@ impl Running {
             capture::save_png(pixels.clone(), w, h, capture::file_name(&s.scenario.id, s.clock(), "png"), m.capture_tx.clone());
         }
         if due_clip && let Some(r) = &mut m.recorder {
+            // Repeat a frame when frames come slower than the clip's rate, so it plays at true speed.
+            let now = s.started_clock();
+            let copies = if r.next_at == 0.0 { 1 } else { (((now - r.next_at) * 30.0).floor() as u32 + 1).min(5) };
+            for _ in 1..copies {
+                r.push(pixels.clone());
+            }
             r.push(pixels);
-            r.next_at = s.started_clock() + 1.0 / 30.0;
+            r.next_at = if r.next_at == 0.0 { now + 1.0 / 30.0 } else { (r.next_at + copies as f64 / 30.0).max(now) };
         }
     }
 }
@@ -678,15 +690,16 @@ impl ApplicationHandler for App {
         let Some(r) = &mut self.running else { return };
         if r.busy() {
             r.window.request_redraw();
-            // No frame callback comes while the window is hidden. The simulation carries on regardless.
-            if r.last_frame.elapsed() > Duration::from_millis(100) {
-                let wall = r.last.elapsed().as_secs_f32().min(0.25);
-                r.last = Instant::now();
+            // Frames come when the compositor asks, and not at all while the window is hidden. The
+            // simulation carries on between them, returning here often so input is never held up.
+            if r.model.sim_running() {
                 r.model.poll_load();
-                r.model.tick_sim(wall, 30.0);
-                r.last_frame = Instant::now();
+                r.model.tick_sim(6.0);
+                let flat_out = r.model.session.as_ref().is_some_and(|s| s.jump.is_some() || s.pace == Pace::AsFast);
+                event_loop.set_control_flow(if flat_out { ControlFlow::Poll } else { ControlFlow::WaitUntil(Instant::now() + Duration::from_millis(4)) });
+            } else {
+                event_loop.set_control_flow(ControlFlow::WaitUntil(Instant::now() + Duration::from_millis(16)));
             }
-            event_loop.set_control_flow(ControlFlow::WaitUntil(Instant::now() + Duration::from_millis(16)));
         } else if let Some(at) = r.repaint_at.filter(|at| *at < Instant::now() + Duration::from_secs(600)) {
             if at <= Instant::now() {
                 r.window.request_redraw();

@@ -470,14 +470,15 @@ fn selection_panel(ui: &mut Ui, m: &mut Model) {
                         Some((other, gap, speed)) => {
                             let leader = s.trip_names.get(other as usize).cloned().unwrap_or_else(|| other.to_string());
                             row(ui, "Leader", leader);
-                            row(ui, "Gap", format!("{gap:.1} m, it drives {:.0} km/h", speed * 3.6));
+                            row(ui, "Gap", format!("{gap:.1} m"));
+                            row(ui, "Its speed", format!("{:.0} km/h", speed * 3.6));
                         }
                         None => row(ui, "Leader", "none within 200 m".into()),
                     }
                     row(ui, "Route", format!("edge {} of {}", (route_i + 1).saturating_sub(s.world.trips.get(trip as usize).map_or(0, |x| x.route_start)), s.trip_route(trip).len()));
                 });
                 let ids: Vec<String> = s.world.routes.get(route_i as usize..route_end as usize).unwrap_or(&[]).iter().take(6).filter_map(|&e| s.net.edges.get(e as usize).map(|x| x.id.clone())).collect();
-                ui.label(RichText::new(format!("Next: {}", ids.join(" → "))).color(MUTED).size(11.0));
+                ui.label(RichText::new(format!("Next: {}", ids.join(", "))).color(MUTED).size(11.0));
             }
             ui.horizontal(|ui| {
                 let label = if s.following { "Stop following" } else { "Follow" };
@@ -1073,7 +1074,8 @@ pub fn build(root: &mut Ui, m: &mut Model, wall: f32) {
                     let who = if s.settings.human_only(&m.registry) {
                         "human-only".to_string()
                     } else {
-                        format!("{:.0}% automated, {}", s.settings.automated_share(&m.registry) * 100.0, s.settings.model.as_deref().unwrap_or(""))
+                        let name = s.settings.model.as_deref().and_then(|id| m.registry.model(id)).map_or("", |x| x.name.as_str());
+                        format!("{:.0}% automated, {name}", s.settings.automated_share(&m.registry) * 100.0)
                     };
                     ui.label(RichText::new(who).color(MUTED));
                     ui.separator();
@@ -1087,7 +1089,7 @@ pub fn build(root: &mut Ui, m: &mut Model, wall: f32) {
                 }
             });
         });
-        egui::Panel::left("left").default_size(270.0).size_range(220.0..=420.0).show(root, |ui| {
+        egui::Panel::left("left").exact_size(280.0).resizable(false).show(root, |ui| {
             ui.heading(RichText::new("Scenarios").size(15.0));
             let height = ui.available_height() * 0.48;
             egui::ScrollArea::vertical().id_salt("scenarios").max_height(height).auto_shrink([false, false]).show(ui, |ui| scenario_list(ui, m));
@@ -1095,7 +1097,7 @@ pub fn build(root: &mut Ui, m: &mut Model, wall: f32) {
             ui.heading(RichText::new("Variables").size(15.0));
             egui::ScrollArea::vertical().id_salt("variables").auto_shrink([false, false]).show(ui, |ui| variables(ui, m));
         });
-        egui::Panel::right("right").default_size(285.0).size_range(230.0..=420.0).show(root, |ui| {
+        egui::Panel::right("right").exact_size(285.0).resizable(false).show(root, |ui| {
             egui::ScrollArea::vertical().id_salt("right").show(ui, |ui| {
                 egui::CollapsingHeader::new("Selected").default_open(true).show(ui, |ui| selection_panel(ui, m));
                 egui::CollapsingHeader::new("Colours").default_open(true).show(ui, |ui| legend(ui, m));

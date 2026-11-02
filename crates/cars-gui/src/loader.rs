@@ -64,6 +64,7 @@ pub struct Request {
     pub settings: Settings,
     pub model_vtype: Option<String>,
     pub model_class: u32,
+    pub model_name: String,
     pub coordinated: bool,
     pub share: f32,
     pub force: bool,
@@ -87,6 +88,7 @@ impl Request {
             settings: settings.clone(),
             model_vtype: model.filter(|_| settings.automated_share(reg) > 0.0).map(|m| m.vtype.clone()),
             model_class,
+            model_name: model.map_or(String::new(), |m| m.name.clone()),
             coordinated: settings.coordinated(reg),
             share: settings.automated_share(reg),
             force,
@@ -395,7 +397,7 @@ fn run(r: Request, gpu: &Gpu, tx: &Sender<Message>, go: &Receiver<()>, progress:
         for i in 0..vtype_names.len() {
             let c = class_of(i);
             if used.contains(&(i as u32)) && !l.iter().any(|x| x.0 == c) {
-                l.push((c, match c { 0 => "human car".to_string(), 1 => "bus, lorry and others".to_string(), _ => "automated".to_string() }));
+                l.push((c, match c { 0 => "human car".to_string(), 1 => "bus, lorry and others".to_string(), _ => format!("automated: {}", r.model_name) }));
             }
         }
         l
