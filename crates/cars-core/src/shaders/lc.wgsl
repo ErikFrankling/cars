@@ -965,6 +965,8 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
             let room = neigh.leader_len + ty.min_gap;
             if (room <= potential) { lc_blocker = max(room, lc_blocker); }
         }
+        // Physical mode: a change can't start with the tail still on the lane before, so never hold a car back there.
+        if (mu > 0.0) { lc_blocker = min(lc_blocker, max(current_dist - ty.length - 1.5, 0.0)); }
         let lanes_left = f32(max(1, abs(best_offset)));
         let remaining = max(dt, lc_left_space / max(lc_look, EPS) / lanes_left / 2.0);
         let planned = inform_leader(e, neigh, blocked, my_lca, remaining, vmax, lane.speed);
@@ -1129,7 +1131,7 @@ fn ph_lc_room(e: Veh, dest: u32) -> bool {
     let road = ph_lc_road(e, dest);
     if (road < 0.0) {
         let left = lanes[e.lane].length - e.pos;
-        if (e.speed < 0.5 && left < 2.0) { return true; }
+        if (e.speed < 0.5) { return true; }
         return left >= w / 0.21256 && (w / ty.v_lat + 1.0) * e.speed <= left;
     }
     if ((w / ty.v_lat + 1.0) * e.speed <= road) { return true; }

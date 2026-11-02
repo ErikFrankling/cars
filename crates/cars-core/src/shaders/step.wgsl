@@ -1093,6 +1093,8 @@ fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f3
 var<private> fin_min: f32;
 var<private> fin_max: f32;
 
+const LC_PATIENCE: f32 = 10.0;
+
 // MSLCM_LC2013::_patchSpeed: what lane changing wants from the speed this step.
 fn lc_patch_speed(wanted: f32, e: Veh, vmax: f32) -> f32 {
     var mn = fin_min;
@@ -1116,7 +1118,8 @@ fn lc_patch_speed(wanted: f32, e: Veh, vmax: f32) -> f32 {
     if (adv != NONE) {
         // Stored rounded down, so compare with the rounding in mind.
         let v = f32(adv) / 1024.0;
-        if (v >= mn - 0.002 && v <= mx) {
+        // A driver holds back for someone's lane change for a while, not for good.
+        if (v >= mn - 0.002 && v <= mx && !(mu > 0.0 && e.wait > LC_PATIENCE)) {
             nv = min(max(v, mn), nv);
             got = true;
         }
