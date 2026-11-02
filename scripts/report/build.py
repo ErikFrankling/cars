@@ -194,33 +194,6 @@ B.append('<h4>Rendering costs the simulation nothing</h4><p>You asked for this d
 B.append(clip('berlin_zoom', 'From the whole city down to one roundabout', None))
 B.append(clips('stockholm_slussen', 'bologna_rush', 'render-samples__bologna', 'render-samples__ring'))
 
-# ---- Correct engine
-B.append(head('Is the engine correct?', 'It reproduces the reference simulator, including its flaws'))
-B.append('<p class="answer">Given identical inputs, it gives nearly identical cities to SUMO, with nothing fitted between them. That proves the engine. It says nothing about reality.</p>')
-B.append(chart('Mean trip duration in seconds, same inputs', 'Whole-city runs, SUMO 1.28 against cars on the GPU.', 'bars', ['Berlin|05:00-10:00', 'Mitte|24 h', 'Charlottenburg|24 h'], [('SUMO', 'old', [789.0, 414.3, 293.9]), ('cars', 'ours', [788.1, 414.3, 292.9])]))
-B.append(facts(
-    ('a', 'Road by road: vehicles per road match at r² 1.0000 in all three cities, mean speed at 0.986, 0.983 and 0.979.'),
-    ('a', 'Berlin morning, SUMO then cars: 95th percentile trip 1,882 and 1,883 s. Waiting 67.6 and 66.4 s. Time lost 181.2 and 179.2 s.'),
-    ('a', 'Thesis sweeps: speed error 0.08 to 0.80% on the ring, 0.19 to 0.36% on two signals, 0.25 to 2.78% on I-80, 2.98 to 7.34% on Bologna.'),
-    ('r', 'Known misses: CACC on I-80 has a 22.9% time loss error. Isolated junction tests reach 84 to 100% worst-case error with Krauss drivers and 161% with IDM. A tightly packed ring inserts 22 of 260 cars where SUMO inserts 260.'),
-    ('r', 'Berlin\'s evening departs from published SUMO after 17:00: 23,715 teleports over the day, against 2,090 published. Cause not found.'),
-))
-B.append(fig('report/figures/berlin_running.png', 'Vehicles on the road in Berlin: SUMO and cars lie on top of each other.'))
-B.append(fig('report/figures/berlin_edges.png', 'Road by road, counts and speeds against SUMO.'))
-B.append('<h3>Thirteen traffic phenomena appear by themselves</h3><p>All 13 scripted phenomena show up in both simulators, each by its own pass rule, without being programmed in. These are from the baseline drivers.</p>')
-B.append(table(['Phenomenon', 'cars', 'SUMO'], [
-    ['Phantom jam on a ring, cars stopped', '51.0%', '53.3%'],
-    ['One smooth driver calms it, speed swing', '2.76 to 0.023 m/s', '2.73 to 0.0005 m/s'],
-    ['One 20 s red, cars stopped', '15', '15'],
-    ['Motorway capacity, peak flow', '2,737 cars/h', '2,757 cars/h'],
-    ['Queue spillback blocks an exit', '1,680 s', '1,680 s'],
-    ['Gridlock: arrivals, keep-clear rule off / on', '144 / 322', '153 / 309'],
-    ['Grid loading, peak', '219 cars', '224 cars'],
-]))
-B.append(clip('phantom_jam', 'A phantom jam from nothing', 'A small disturbance grows into a stop-and-go wave circling a ring, with no obstacle anywhere.'))
-B.append(clips('one_av', 'capacity_drop', 'brake_wave', 'spillback', 'gridlock', 'signal_discharge', 'onramp_merge', 'mfd', 'freeway_fd', 'thesis_ring', 'i80_day'))
-B.append(note('Why this wasn\'t enough', 'These drivers are wrong in ways only real data shows. The baseline jam wave moves at 7.2 km/h where a real ring gives about 20. Its queue leaves a green light every 1.20 s where real drivers need 2.0 s. The capacity drop only appears with deliberately weak drivers. That is why the next chapters exist.', True))
-
 # ---- Trust
 B.append(head('Can you trust any traffic simulator?', 'What the field knows about itself'))
 B.append('<p class="answer">Less than the industry implies. Models get flows roughly right and queues badly wrong, and even reality barely passes the trade\'s own test.</p>')
@@ -587,6 +560,33 @@ B.append('<ol class="steps">'
          '<li><b>Everything is simulation.</b> No real vehicle is involved in any AV result. Position and clock error, pedestrians and buses aren\'t modelled.</li>'
          '<li><b>GPU queue.</b> One card, many agents: jobs wait over an hour, which is why some results ran on the CPU or are stale.</li></ol>')
 B.append('<p>Still needs you: Stockholm\'s signal plans, now the most valuable missing data. Also the Lastkajen and Trafikverket keys, tax passages per station from Transportstyrelsen, access to the regional demand models, and a Trafiklab key (all on your to-do list). And the choice of safety level for stalled cars.</p>')
+
+# ---- Correct engine
+B.append(head('Old SUMO copy: a regression check only', 'Not evidence of accuracy. SUMO is where we started, not the goal'))
+B.append('<p class="answer">SUMO is not the target. The reference is real traffic and real car physics. This chapter only shows that the old compatibility mode runs as designed, flaws included, and it says nothing about reality.</p>')
+B.append(chart('Mean trip duration in seconds, same inputs', 'Whole-city runs, SUMO 1.28 against cars on the GPU.', 'bars', ['Berlin|05:00-10:00', 'Mitte|24 h', 'Charlottenburg|24 h'], [('SUMO', 'old', [789.0, 414.3, 293.9]), ('cars', 'ours', [788.1, 414.3, 292.9])]))
+B.append(facts(
+    ('a', 'Road by road: vehicles per road match at r² 1.0000 in all three cities, mean speed at 0.986, 0.983 and 0.979.'),
+    ('a', 'Berlin morning, SUMO then cars: 95th percentile trip 1,882 and 1,883 s. Waiting 67.6 and 66.4 s. Time lost 181.2 and 179.2 s.'),
+    ('a', 'Thesis sweeps: speed error 0.08 to 0.80% on the ring, 0.19 to 0.36% on two signals, 0.25 to 2.78% on I-80, 2.98 to 7.34% on Bologna.'),
+    ('r', 'Known misses: CACC on I-80 has a 22.9% time loss error. Isolated junction tests reach 84 to 100% worst-case error with Krauss drivers and 161% with IDM. A tightly packed ring inserts 22 of 260 cars where SUMO inserts 260.'),
+    ('r', 'Berlin\'s evening departs from published SUMO after 17:00: 23,715 teleports over the day, against 2,090 published. Cause not found.'),
+))
+B.append(fig('report/figures/berlin_running.png', 'Vehicles on the road in Berlin: SUMO and cars lie on top of each other.'))
+B.append(fig('report/figures/berlin_edges.png', 'Road by road, counts and speeds against SUMO.'))
+B.append('<h3>Thirteen traffic phenomena appear by themselves</h3><p>All 13 scripted phenomena show up in both simulators, each by its own pass rule, without being programmed in. These are from the baseline drivers.</p>')
+B.append(table(['Phenomenon', 'cars', 'SUMO'], [
+    ['Phantom jam on a ring, cars stopped', '51.0%', '53.3%'],
+    ['One smooth driver calms it, speed swing', '2.76 to 0.023 m/s', '2.73 to 0.0005 m/s'],
+    ['One 20 s red, cars stopped', '15', '15'],
+    ['Motorway capacity, peak flow', '2,737 cars/h', '2,757 cars/h'],
+    ['Queue spillback blocks an exit', '1,680 s', '1,680 s'],
+    ['Gridlock: arrivals, keep-clear rule off / on', '144 / 322', '153 / 309'],
+    ['Grid loading, peak', '219 cars', '224 cars'],
+]))
+B.append(clip('phantom_jam', 'A phantom jam from nothing', 'A small disturbance grows into a stop-and-go wave circling a ring, with no obstacle anywhere.'))
+B.append(clips('one_av', 'capacity_drop', 'brake_wave', 'spillback', 'gridlock', 'signal_discharge', 'onramp_merge', 'mfd', 'freeway_fd', 'thesis_ring', 'i80_day'))
+B.append(note('Why this is not the goal', 'These drivers are wrong in ways only real data shows. The baseline jam wave moves at 7.2 km/h where a real ring gives about 20. Its queue leaves a green light every 1.20 s where real drivers need 2.0 s. The capacity drop only appears with deliberately weak drivers. That is why the next chapters exist.', True))
 
 B.append('</div>')
 BODY_MAIN = '\n'.join(B)

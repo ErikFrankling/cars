@@ -12,11 +12,14 @@ Binding. From Erik:
 3. **Every input is labelled** measured, estimated or invented, with its source. See `data-hunt/16-input-audit.md`.
 4. **Test on a real measured day, with data the model never saw.** Compare one simulated day against one real day, in the same units and with the same measuring method as the real data.
 
+5. **No magic numbers.** A car brakes, accelerates and corners like an average real car driven by an average real driver. Anything far from that, or past what a real car can do, is a bug. Matching another simulator is not evidence.
+
 ## What must match
 Thresholds come from `data-hunt/14-normal-day.md` and `15-how-to-match-reality.md`. The basic bar is report 04's: the simulation may differ from a real day by no more than one real day differs from another, and where it can't reach that, the gap is reported as a failure.
 
 | Check | Question |
 |---|---|
+| Physically real | Are acceleration, braking, jerk, cornering, lane-change and gap distributions, measured from the simulation's own output, close to real cars and drivers and inside physical limits? See `data-hunt/19-physical-realism.md` |
 | Nothing stuck | At normal demand, with teleports off, does the day finish with no gridlock? |
 | Day shape | Do hourly flows have the real morning peak, midday, evening peak and night? |
 | Volume | Do flows at real sensors match, site by site, and does total distance driven match? |
