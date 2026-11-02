@@ -3,7 +3,6 @@ use clap::{Parser, Subcommand};
 mod av;
 mod dbgnet;
 mod junctions;
-mod overlay;
 mod record;
 mod replay;
 mod report;

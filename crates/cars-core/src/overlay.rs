@@ -1,5 +1,5 @@
 //! Debug drawing on finished frames: text, the HUD, and what the engine thinks of each vehicle.
-use cars_core::{
+use crate::{
     Gpu,
     net::Net,
     render::{Camera, Instance, Renderer},
@@ -45,6 +45,16 @@ const FONT: [[u8; 5]; 95] = [
     [0x44,0x64,0x54,0x4c,0x44],[0,8,0x36,0x41,0],[0,0,0x7f,0,0],[0,0x41,0x36,8,0],[0x10,8,8,0x10,8],
 ];
 
+/// What overlays draw on: a finished frame, or a live window.
+pub trait Paint {
+    fn size(&self) -> (i32, i32);
+    fn line(&mut self, a: [f32; 2], b: [f32; 2], width: f32, c: [u8; 3], alpha: f32);
+    fn ring(&mut self, center: [f32; 2], radius: f32, width: f32, c: [u8; 3], alpha: f32);
+    fn rect(&mut self, x: i32, y: i32, w: i32, h: i32, c: [u8; 3], a: f32);
+    fn text(&mut self, x: i32, y: i32, s: &str, scale: i32, c: [u8; 3]);
+    fn label(&mut self, x: i32, y: i32, s: &str, scale: i32, c: [u8; 3]);
+}
+
 pub struct Canvas<'a> {
     pub px: &'a mut [u8],
     pub w: i32,
@@ -60,7 +70,12 @@ impl Canvas<'_> {
             self.px[k + i] = (self.px[k + i] as f32 * (1.0 - a) + c[i] as f32 * a) as u8;
         }
     }
-    pub fn line(&mut self, a: [f32; 2], b: [f32; 2], width: f32, c: [u8; 3], alpha: f32) {
+}
+impl Paint for Canvas<'_> {
+    fn size(&self) -> (i32, i32) {
+        (self.w, self.h)
+    }
+    fn line(&mut self, a: [f32; 2], b: [f32; 2], width: f32, c: [u8; 3], alpha: f32) {
         let r = width * 0.5 + 1.0;
         let (x0, x1) = ((a[0].min(b[0]) - r).floor() as i32, (a[0].max(b[0]) + r).ceil() as i32);
         let (y0, y1) = ((a[1].min(b[1]) - r).floor() as i32, (a[1].max(b[1]) + r).ceil() as i32);
@@ -81,7 +96,7 @@ impl Canvas<'_> {
             }
         }
     }
-    pub fn ring(&mut self, center: [f32; 2], radius: f32, width: f32, c: [u8; 3], alpha: f32) {
+    fn ring(&mut self, center: [f32; 2], radius: f32, width: f32, c: [u8; 3], alpha: f32) {
         let r = radius + width;
         for y in (center[1] - r).floor() as i32..=(center[1] + r).ceil() as i32 {
             for x in (center[0] - r).floor() as i32..=(center[0] + r).ceil() as i32 {
@@ -93,14 +108,14 @@ impl Canvas<'_> {
             }
         }
     }
-    pub fn rect(&mut self, x: i32, y: i32, w: i32, h: i32, c: [u8; 3], a: f32) {
+    fn rect(&mut self, x: i32, y: i32, w: i32, h: i32, c: [u8; 3], a: f32) {
         for yy in y..y + h {
             for xx in x..x + w {
                 self.put(xx, yy, c, a);
             }
         }
     }
-    pub fn text(&mut self, x: i32, y: i32, s: &str, scale: i32, c: [u8; 3]) {
+    fn text(&mut self, x: i32, y: i32, s: &str, scale: i32, c: [u8; 3]) {
         for (i, ch) in s.chars().enumerate() {
             let code = ch as usize;
             let glyph = if (32..127).contains(&code) { FONT[code - 32] } else { FONT[31] };
@@ -114,7 +129,7 @@ impl Canvas<'_> {
             }
         }
     }
-    pub fn label(&mut self, x: i32, y: i32, s: &str, scale: i32, c: [u8; 3]) {
+    fn label(&mut self, x: i32, y: i32, s: &str, scale: i32, c: [u8; 3]) {
         let w = s.chars().count() as i32 * 6 * scale + 2 * scale;
         self.rect(x - scale, y - scale, w, 9 * scale, [8, 8, 10], 0.62);
         self.text(x, y, s, scale, c);
@@ -178,7 +193,7 @@ impl Snapshot {
                 // Whatever the auditor saw in a box counts as a collision on the frame.
                 let seen: Vec<u32> = sim.read(g, &cj.events, 1);
                 self.collisions += seen[0];
-                let js: Vec<cars_core::coord::GpuCjJunction> = sim.read(g, &cj.junctions, (cj.junctions.size() / std::mem::size_of::<cars_core::coord::GpuCjJunction>() as u64).max(1));
+                let js: Vec<crate::coord::GpuCjJunction> = sim.read(g, &cj.junctions, (cj.junctions.size() / std::mem::size_of::<crate::coord::GpuCjJunction>() as u64).max(1));
                 self.cj_phase = js.iter().map(|j| j.phase).collect();
             }
         }
@@ -282,6 +297,12 @@ pub struct Overlay {
     pub first_collisions: u32,
     pub first_arrived: u32,
     brake: BrakeTotals,
+    /// Set by a live window, which reads and empties `log`.
+    pub keep_log: bool,
+    pub log: Vec<(f32, &'static str, [f32; 2])>,
+    /// Draw no more than this many vehicles, nearest the buffer's start.
+    pub max_shown: Option<usize>,
+    pub truncated: bool,
 }
 
 /// Running totals for the `brake` overlay: what every car on an approach has thrown away so far.
@@ -318,7 +339,7 @@ fn rectangles_touch(a: &Instance, b: &Instance) -> bool {
 const NAVY: [u8; 3] = [18, 26, 44];
 
 /// A point on a movement's path, in network metres, straight beyond either end.
-fn coord_point(cw: &cars_core::coord::CoordWorld, mi: u32, s: f32) -> [f32; 2] {
+fn coord_point(cw: &crate::coord::CoordWorld, mi: u32, s: f32) -> [f32; 2] {
     let m = &cw.links[mi as usize];
     let pts = &cw.path[m.path_start as usize..(m.path_start + m.path_n) as usize];
     let spacing = m.path_len / (m.path_n - 1).max(1) as f32;
@@ -328,11 +349,17 @@ fn coord_point(cw: &cars_core::coord::CoordWorld, mi: u32, s: f32) -> [f32; 2] {
 }
 
 impl Overlay {
+    fn log_event(&mut self, time: f32, name: &'static str, at: [f32; 2]) {
+        if self.keep_log {
+            self.log.push((time, name, at));
+        }
+    }
     /// Grants, planned paths and slots, and who is talking to the junction.
     #[allow(clippy::too_many_arguments)]
     /// Brake lights on every car, red over 1 m/s2 and bright over 2.5, and the running totals.
-    fn draw_brake(&mut self, c: &mut Canvas, at: &dyn Fn([f32; 2]) -> [f32; 2], world: &World, snap: &Snapshot, shown: &[usize], mpp: f32) {
+    fn draw_brake(&mut self, c: &mut dyn Paint, at: &dyn Fn([f32; 2]) -> [f32; 2], world: &World, snap: &Snapshot, shown: &[usize], mpp: f32) {
         let Some(cw) = world.coord.as_ref() else { return };
+        let (cw_px, _) = c.size();
         for v in snap.vs.iter() {
             if v.flags & F_REMOVED != 0 || v.replica != 0 || v.lane == world.params.dummy_lane {
                 continue;
@@ -378,7 +405,7 @@ impl Overlay {
         }
         let t = &self.brake;
         let n = t.cars.max(1) as f32;
-        let (x, y) = (c.w - 500, if c.w < 1400 { 84 } else { 18 });
+        let (x, y) = (cw_px - 500, if cw_px < 1400 { 84 } else { 18 });
         c.rect(x - 10, y - 8, 490, 78, NAVY, 0.72);
         c.text(x, y, &format!("stops {}   hard brakes {}", t.stops, t.hard), 2, if t.hard > 0 { [255, 170, 150] } else { WHITE });
         c.text(x, y + 22, &format!("speed thrown away {:.0} m/s  ({:.1} per car)", t.lost, t.lost / n), 2, WHITE);
@@ -386,8 +413,8 @@ impl Overlay {
     }
 
     /// Each car's broadcast arrival to the millisecond beside it, and the slot chart filling up from far out.
-    fn draw_arrivals(&mut self, c: &mut Canvas, at: &dyn Fn([f32; 2]) -> [f32; 2], world: &World, snap: &Snapshot, shown: &[usize], time: f32) {
-        use cars_core::coord::{CJ_ADVISED, CJ_FIRM, CJ_PENDING, CJ_STATE_MASK};
+    fn draw_arrivals(&mut self, c: &mut dyn Paint, at: &dyn Fn([f32; 2]) -> [f32; 2], world: &World, snap: &Snapshot, shown: &[usize], time: f32) {
+        use crate::coord::{CJ_ADVISED, CJ_FIRM, CJ_PENDING, CJ_STATE_MASK};
         let Some(cw) = world.coord.as_ref() else { return };
         for &i in shown {
             let v = &snap.vs[i];
@@ -404,8 +431,9 @@ impl Overlay {
         // Rows are approach lanes, the axis runs from now to 30 s ahead.
         let horizon = 30.0f32;
         let rows = cw.apps.len().min(16) as i32;
-        let (w, row_h) = (c.w - 160, 12);
-        let (x0, y0) = (120, c.h - 110 - rows * row_h);
+        let (cw_px, ch_px) = c.size();
+        let (w, row_h) = (cw_px - 160, 12);
+        let (x0, y0) = (120, ch_px - 110 - rows * row_h);
         c.rect(x0 - 100, y0 - 26, w + 120, rows * row_h + 40, NAVY, 0.8);
         c.text(x0 - 90, y0 - 20, "slots: when each car has said it reaches the line. amber: planned, green: firm", 1, WHITE);
         for s in (0..=30).step_by(5) {
@@ -441,8 +469,8 @@ impl Overlay {
         }
     }
 
-    fn draw_coord(&mut self, c: &mut Canvas, at: &dyn Fn([f32; 2]) -> [f32; 2], world: &World, snap: &Snapshot, shown: &[usize], time: f32, modes: &[String]) {
-        use cars_core::coord::{CJ_ADVISED, CJ_BOX, CJ_FIRM, CJ_PENDING, CJ_STATE_MASK};
+    fn draw_coord(&mut self, c: &mut dyn Paint, at: &dyn Fn([f32; 2]) -> [f32; 2], world: &World, snap: &Snapshot, shown: &[usize], time: f32, modes: &[String]) {
+        use crate::coord::{CJ_ADVISED, CJ_BOX, CJ_FIRM, CJ_PENDING, CJ_STATE_MASK};
         let Some(cw) = world.coord.as_ref() else { return };
         let on = |s: &str| modes.iter().any(|m| m == s || m == "all");
         let front = |i: usize| {
@@ -455,7 +483,7 @@ impl Overlay {
         // The signal baseline: its lamps are the coordinator's own phase, drawn as stop bars.
         if on("grants") {
             for (ji, j) in cw.junctions.iter().enumerate() {
-                if j.mode != cars_core::coord::MODE_SIGNAL {
+                if j.mode != crate::coord::MODE_SIGNAL {
                     continue;
                 }
                 let phase = snap.cj_phase.get(ji).copied().unwrap_or(0);
@@ -559,8 +587,9 @@ impl Overlay {
         }
         if on("grants") && !slots.is_empty() {
             slots.sort_by(|a, b| a.0.total_cmp(&b.0));
-            let w = (c.w / 3).min(300);
-            let (x0, y0) = (c.w - w - 30, 96);
+            let (cw_px, _) = c.size();
+            let w = (cw_px / 3).min(300);
+            let (x0, y0) = (cw_px - w - 30, 96);
             let horizon = 6.0;
             let rows = slots.len().min(16) as i32;
             c.rect(x0 - 8, y0 - 22, w + 16, rows * 11 + 30, NAVY, 0.72);
@@ -574,9 +603,10 @@ impl Overlay {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn draw(&mut self, c: &mut Canvas, cam: Camera, net: &Net, world: &World, snap: &Snapshot, time: f32, modes: &[String]) {
+    pub fn draw(&mut self, c: &mut dyn Paint, cam: Camera, net: &Net, world: &World, snap: &Snapshot, time: f32, modes: &[String]) {
         let on = |s: &str| modes.iter().any(|m| m == s || m == "all");
-        let (w, h) = (c.w as f32, c.h as f32);
+        let (cw_px, ch_px) = c.size();
+        let (w, h) = (cw_px as f32, ch_px as f32);
         let mpp = cam.metres_per_pixel;
         let at = |p: [f32; 2]| [w * 0.5 + (p[0] - cam.center[0]) / mpp, h * 0.5 - (p[1] - cam.center[1]) / mpp];
         let visible = |p: [f32; 2]| {
@@ -594,6 +624,7 @@ impl Overlay {
                     let name = if collided { "COLLISION" } else { "TELEPORT" };
                     eprintln!("event {time:.1} {name} at {:.1},{:.1}", p[0], p[1]);
                     self.flashes.push((p, time, name));
+                    self.log_event(time, name, p);
                 }
                 continue;
             }
@@ -606,6 +637,10 @@ impl Overlay {
             }
         }
         self.collisions = snap.collisions;
+        if let Some(limit) = self.max_shown {
+            self.truncated = shown.len() > limit;
+            shown.truncate(limit);
+        }
         let front = |i: usize| {
             let p = &snap.poses[i];
             [p.xy[0] + p.dir[0] * p.length * 0.5, p.xy[1] + p.dir[1] * p.length * 0.5]
@@ -725,6 +760,7 @@ impl Overlay {
                     let p = rear(k);
                     eprintln!("event {time:.1} GAP {gap:.2} at {:.1},{:.1}", p[0], p[1]);
                     self.flashes.push((p, time, "OVERLAP"));
+                    self.log_event(time, "OVERLAP", p);
                 }
             }
         }
@@ -741,6 +777,7 @@ impl Overlay {
                         let m = [(p[0] + q[0]) * 0.5, (p[1] + q[1]) * 0.5];
                         eprintln!("event {time:.1} BODY at {:.1},{:.1}", m[0], m[1]);
                         self.flashes.push((m, time, "OVERLAP"));
+                        self.log_event(time, "OVERLAP", m);
                     }
                 }
             }

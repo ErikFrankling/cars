@@ -18,4 +18,5 @@ pub mod xml;
 
 pub use gpu::{Checks, Gpu, GpuOptions};
 
+pub mod overlay;
 pub mod render;

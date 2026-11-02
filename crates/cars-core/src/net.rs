@@ -448,3 +448,63 @@ impl PendingConn {
         })
     }
 }
+
+/// A junction worth looking at: what kind it is and how big.
+#[derive(Clone, Debug)]
+pub struct JunctionRow {
+    pub kind: &'static str,
+    pub id: String,
+    pub x: f32,
+    pub y: f32,
+    pub lanes: usize,
+    pub links: usize,
+    pub incoming: Vec<u32>,
+    pub score: f64,
+}
+
+impl Net {
+    /// Every junction with something to see, largest first. `score` starts as the incoming lanes.
+    pub fn junction_rows(&self) -> Vec<JunctionRow> {
+        let mut incoming: FxHashMap<&str, Vec<u32>> = FxHashMap::default();
+        let mut outgoing: FxHashMap<&str, Vec<u32>> = FxHashMap::default();
+        for (i, e) in self.edges.iter().enumerate() {
+            if e.func == EdgeFunc::Normal {
+                incoming.entry(e.to.as_str()).or_default().push(i as u32);
+                outgoing.entry(e.from.as_str()).or_default().push(i as u32);
+            }
+        }
+        let roundabouts: rustc_hash::FxHashSet<u32> = self.roundabout_edges.iter().copied().collect();
+        let mut rows = Vec::new();
+        for j in &self.junctions {
+            let empty = Vec::new();
+            let inc = incoming.get(j.id.as_str()).unwrap_or(&empty);
+            let out = outgoing.get(j.id.as_str()).unwrap_or(&empty);
+            if inc.is_empty() || j.jtype == "internal" || j.jtype == "dead_end" {
+                continue;
+            }
+            let speed = inc.iter().chain(out).map(|&e| self.lanes[self.edges[e as usize].first_lane as usize].speed).fold(0.0, f32::max);
+            let contested = j.requests.iter().any(|r| r.foes.iter().any(|f| *f));
+            let kind = if inc.iter().any(|e| roundabouts.contains(e)) {
+                "roundabout"
+            } else if j.jtype.starts_with("traffic_light") {
+                "signal"
+            } else if j.jtype == "zipper" {
+                "zipper"
+            } else if speed >= 19.4 && ((inc.len() >= 2 && out.len() == 1) || (inc.len() == 1 && out.len() >= 2)) {
+                "ramp"
+            } else if j.jtype == "allway_stop" {
+                "allway"
+            } else if j.jtype.starts_with("right_before_left") {
+                "rbl"
+            } else if j.jtype.starts_with("priority") && contested {
+                "priority"
+            } else {
+                continue;
+            };
+            let lanes: usize = inc.iter().map(|&e| self.edges[e as usize].lane_count as usize).sum();
+            rows.push(JunctionRow { kind, id: j.id.clone(), x: j.x, y: j.y, lanes, links: j.requests.len(), incoming: inc.clone(), score: lanes as f64 });
+        }
+        rows.sort_by(|p, q| q.score.total_cmp(&p.score).then_with(|| p.id.cmp(&q.id)));
+        rows
+    }
+}

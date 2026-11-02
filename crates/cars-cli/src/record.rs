@@ -1,4 +1,4 @@
-use crate::overlay::{self, Canvas, Hud, Overlay, Snapshot};
+use cars_core::overlay::{self, Canvas, Hud, Overlay, Snapshot};
 use cars_core::{
     Gpu, GpuOptions,
     demand::Demand,

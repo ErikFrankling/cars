@@ -1,7 +1,7 @@
-struct Camera { center: vec2f, size: vec2f, mpp: f32, mode: u32, capacity:u32, time:f32, close:f32, blend:f32, step_time:f32, pad:f32 }
+struct Camera { center: vec2f, size: vec2f, mpp: f32, mode: u32, capacity:u32, time:f32, close:f32, blend:f32, step_time:f32, flags:u32, selected:u32, pad0:u32, pad1:u32, pad2:u32 }
 struct Range { start: u32, count: u32, length: f32, turn: u32 }
 struct Point { xy: vec2f, distance: f32, pad: f32 }
-struct RenderType { length: f32, width: f32, automated: f32, pad: f32 }
+struct RenderType { length: f32, width: f32, automated: f32, tint_class: f32 }
 struct Signal { xy: vec2f, dir: vec2f, tl: u32, index: u32, width: f32, turn: u32 }
 struct Instance { xy: vec2f, dir: vec2f, length: f32, width: f32, ratio: f32, alive: f32, detail: f32, seed: f32, pad: vec2f }
 struct History { prev_xy:vec2f, prev_dir:vec2f, cur_xy:vec2f, cur_dir:vec2f, drawn:vec2f, lat:f32, changed:f32, time:f32, lane:u32, valid:u32, pad:f32 }
@@ -21,6 +21,7 @@ struct History { prev_xy:vec2f, prev_dir:vec2f, cur_xy:vec2f, cur_dir:vec2f, dra
 @group(0) @binding(13) var<storage,read_write> history:array<History>;
 @group(0) @binding(14) var<storage,read> render_links:array<vec4u>;
 @group(0) @binding(15) var<storage,read> render_routes:array<u32>;
+@group(0) @binding(16) var<storage,read_write> selected:array<Veh>;
 const CHANGE_SECONDS: f32 = 3.0;
 fn lane_seg(lane:u32,pos:f32)->u32 {
  let r=ranges[lane];let d=clamp(pos/max(lanes[lane].length,0.001),0.0,1.0)*r.length;
@@ -108,6 +109,8 @@ fn prepare_signal(i:u32,si:u32) {
  var ratio=clamp(v.speed/max(l.speed,0.01),0.0,1.0);
  if(cam.mode==1u){ratio=select(0.15,0.85,rt.automated>0.5);}
  if(cam.mode==2u){ratio=1.0-clamp(v.wait/60.0,0.0,1.0);}
+ if(cam.mode==4u){ratio=rt.tint_class;}
+ if(cam.mode==5u){ratio=1.0-clamp(-v.acc/4.5,0.0,1.0);}
  var detail=select(0u,1u,v.acc < -0.5 || v.speed<0.1);
  if((v.lc_own&1u)!=0u){detail|=2u;}
  if((v.lc_own&2u)!=0u){detail|=4u;}
@@ -121,6 +124,15 @@ fn prepare_signal(i:u32,si:u32) {
  }
  instances[i]=Instance(xy,drawn_dir,body,rt.width,ratio,1.0,f32(detail),fract(f32(v.trip)*0.61803398),vec2f(0.0));
  atomicAdd(&stats[0],1u); atomicAdd(&stats[1],u32(max(v.speed,0.0)*100.0));
+ if(v.wait>120.0){atomicAdd(&stats[2],1u);}
+ if(v.speed<0.1){atomicAdd(&stats[3],1u);}
+ if(v.acc< -1.0){atomicAdd(&stats[4],1u);}
+ if(v.trip==cam.selected){
+  selected[0]=v;
+  atomicStore(&stats[5],i+1u);
+  atomicStore(&stats[6],bitcast<u32>(xy.x));atomicStore(&stats[7],bitcast<u32>(xy.y));
+  atomicStore(&stats[8],bitcast<u32>(drawn_dir.x));atomicStore(&stats[9],bitcast<u32>(drawn_dir.y));
+ }
 }
 fn clip(xy:vec2f)->vec4f { return vec4f((xy-cam.center)/(cam.size*cam.mpp)*2.0,0.0,1.0); }
 struct Out { @builtin(position) pos: vec4f, @location(0) uv:vec2f, @location(1) color:vec3f, @location(2) alpha:f32, @location(3) halfsize:vec2f }
@@ -130,19 +142,48 @@ fn palette(t:f32)->vec3f {
  if(t<0.8){return mix(vec3f(1.0,0.82,0.16),vec3f(0.04,0.8,0.77),(t-0.5)/0.3);}
  return mix(vec3f(0.04,0.8,0.77),vec3f(0.64,0.94,1.0),(t-0.8)*5.0);
 }
+fn car_tint(ratio:f32)->vec3f {
+ if(cam.mode==4u){
+  switch u32(ratio+0.5) {
+   case 0u {return vec3f(0.95,0.70,0.32);}
+   case 1u {return vec3f(0.72,0.72,0.78);}
+   case 2u {return vec3f(0.20,0.85,0.95);}
+   case 3u {return vec3f(0.30,0.55,1.00);}
+   case 4u {return vec3f(0.60,0.35,1.00);}
+   case 5u {return vec3f(0.20,0.90,0.40);}
+   case 6u {return vec3f(1.00,0.30,0.75);}
+   default {return vec3f(0.95,0.95,0.30);}
+  }
+ }
+ if(cam.mode==5u){
+  if(ratio>0.97){return vec3f(0.30,0.36,0.44);}
+  return mix(vec3f(1.0,0.03,0.03),vec3f(1.0,0.72,0.10),ratio);
+ }
+ return palette(ratio);
+}
+@vertex fn road_seg(@builtin(vertex_index) vid:u32,@location(0) a:vec2f,@location(1) b:vec2f,@location(2) width:f32,@location(3) tint:f32)->Out {
+ var o:Out; let w=max(width,cam.mpp*0.7); let d=b-a;
+ let n=vec2f(-d.y,d.x)/max(length(d),0.0001);
+ let side=select(-1.0,1.0,vid==2u||vid==3u||vid==5u);
+ let p=select(a,b,vid==1u||vid==4u||vid==5u);
+ o.pos=clip(p+n*side*w*0.5);
+ o.uv=vec2f(0.0); o.color=vec3f(0.025,0.042,0.065)*tint; o.alpha=clamp(width/w,0.22,1.0); o.halfsize=vec2f(1.0); return o;
+}
 @vertex fn road(@location(0) xy:vec2f,@location(1) normal:vec2f,@location(2) width:f32,@location(3) tint:f32)->Out {
  var o:Out; let w=max(width,cam.mpp*0.7); o.pos=clip(xy+normal*w*0.5);
  o.uv=vec2f(0.0); o.color=vec3f(0.025,0.042,0.065)*tint; o.alpha=clamp(width/w,0.22,1.0); o.halfsize=vec2f(1.0); return o;
 }
 @fragment fn road_frag(o:Out)->@location(0) vec4f { return vec4f(o.color*o.alpha,1.0); }
-@vertex fn car(@builtin(vertex_index) vid:u32,@location(0) xy:vec2f,@location(1) dir:vec2f,@location(2) body:f32,@location(4) ratio:f32,@location(5) alive:f32)->Out {
+@vertex fn car(@builtin(vertex_index) vid:u32,@location(0) xy:vec2f,@location(1) dir:vec2f,@location(2) body:f32,@location(4) ratio:f32,@location(5) alive:f32,@location(6) detail:f32)->Out {
  let q=vec2f(f32((vid<<1u)&2u),f32(vid&2u))*2.0-1.0;
  let signal=alive>1.5;
  let h=max(select(vec2f(body,1.8),vec2f(0.8),signal)*0.5,vec2f(cam.mpp*2.5));
  let offset=q*h; var o:Out; o.pos=clip(xy+dir*offset.x+vec2f(-dir.y,dir.x)*offset.y);
  if(alive<0.5 || (signal && cam.mpp>2.0)){o.pos=vec4f(4.0,4.0,0.0,1.0);}
  var c=ratio; if(signal){c=select(select(0.0,0.45,ratio==1.0),0.8,ratio==2.0||ratio==3.0);}
- o.uv=q; o.color=palette(c); o.alpha=clamp(cam.mpp/1.5,0.0,1.0); o.halfsize=h/cam.mpp; return o;
+ o.uv=q; o.color=select(palette(c),car_tint(ratio),!signal); o.alpha=clamp(cam.mpp/1.5,0.0,1.0); o.halfsize=h/cam.mpp;
+ if(!signal && (cam.flags&1u)!=0u && (u32(detail)&1u)!=0u){o.color=vec3f(1.0,0.05,0.03);}
+ return o;
 }
 @fragment fn car_frag(o:Out)->@location(0) vec4f {
  let p=abs(o.uv)*o.halfsize; let radius=max(0.6,min(o.halfsize.x,o.halfsize.y)*0.4); let edge=length(max(p-(o.halfsize-vec2f(radius)),vec2f(0.0)))-radius;
@@ -190,7 +231,7 @@ struct CloseCar { @builtin(position) pos: vec4f, @location(0) p:vec2f, @location
  let h=half_body+vec2f(1.0);
  let p=q*h;
  o.pos=clip(xy+dir*p.x+n*p.y); o.p=p; o.half_body=half_body;
- o.color=select(palette(ratio),paint(seed),cam.mode==3u);
+ o.color=select(car_tint(ratio),paint(seed),cam.mode==3u);
  o.detail=u32(detail);
  let sun=vec2f(0.32,-0.42);
  o.shadow=vec2f(dot(sun,dir),dot(sun,n)); o.scale=1.0;
