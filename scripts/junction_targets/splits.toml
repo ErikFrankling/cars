@@ -1,0 +1,43 @@
+# Report 25. Written before any driving data of these sets was read. Held-out rows carry no values anywhere in this repo.
+# Rule: sha256(name + "cars-bench-v1") as an integer, mod 100, under 30 is held out. For pNEUMA days, the lowest of the four.
+# The benchmark's locked.toml outranks this file: anything there stays closed.
+
+[opendd]
+tune = ["rdb1", "rdb5", "rdb6", "rdb7"]
+heldout = ["rdb2", "rdb3", "rdb4"]   # zips on disk, only the maps were opened, to count ring lanes
+note = "All seven rings look single-lane in the map or in the tracks"
+
+[swiss]
+tune = ["F1", "F2"]
+heldout = ["L1"]                     # report 22. Report 05 already printed 2.72 s and 2.33 s, so it is a weak hold-out
+
+[dlr_ut]
+tune = "all signal groups but sid 7"
+heldout = ["sid7"]                   # report 22, locked.toml
+
+[pneuma]
+tune_drones = ["d1", "d2", "d4", "d5", "d7", "d9", "d10"]
+heldout_drones = ["d3", "d6", "d8"]  # never downloaded
+tune_days = ["20181024", "20181030", "20181101"]
+heldout_days = ["20181029"]          # never downloaded
+skipped = ["dX"]                     # same area as d10
+
+[locked_by_benchmark]
+helsinki = "never downloaded here; an 8 MB sample from report 20 stays unread"
+songdo = "never downloaded here; a 22 MB sample stays unread"
+pully = "report 22 section 9; one sample file was read by report 20"
+tumdot = "report 22 section 9; not downloaded"
+
+[ngsim]
+tune = ["lankershim", "peachtree"]
+heldout = []
+note = "Both are in report 05's fit, and neither has a second day"
+
+[tgsim]
+tune = ["foggy", "I90stat", "I90mov", "I294L1", "I395"]
+heldout = []
+
+[drat]
+tune = ["all"]
+heldout = []
+note = "One site. Cannot be split by site, split by period is too thin"
