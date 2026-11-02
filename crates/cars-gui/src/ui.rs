@@ -729,6 +729,15 @@ fn map(ui: &mut Ui, m: &mut Model, wall: f32) {
             )
         });
         let speed = if shift { 2400.0 } else { 800.0 };
+        // A quick tap can start and end inside one frame, so it counts as a short nudge.
+        let (tap_x, tap_y) = ui.input(|i| {
+            let tap = |a: Key, b: Key| i.events.iter().any(|e| matches!(e, egui::Event::Key { key, pressed: true, repeat: false, .. } if *key == a || *key == b));
+            (tap(Key::D, Key::ArrowRight) as i32 - tap(Key::A, Key::ArrowLeft) as i32, tap(Key::W, Key::ArrowUp) as i32 - tap(Key::S, Key::ArrowDown) as i32)
+        });
+        if tap_x != 0 || tap_y != 0 {
+            s.following = false;
+            s.flyer.fly(tap_x as f32 * speed, tap_y as f32 * speed, 0.06);
+        }
         if keys[0] {
             vx -= speed;
         }
