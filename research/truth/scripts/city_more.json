@@ -1,0 +1,16 @@
+[
+ ["stockholm-features","https://openstreetgs.stockholm.se/geoservice/api/wfs?service=WFS&version=1.1.0&request=GetFeature&typeName=od_gis:Trafikflode_Motorfordon&maxFeatures=3&outputFormat=application/json"],
+ ["berlin-list","https://mdhopendata.blob.core.windows.net/verkehrsdetektion/?restype=container&comp=list&maxresults=40"],
+ ["berlin-data","https://mdhopendata.blob.core.windows.net/verkehrsdetektion/2015/alte_qualitaetssicherung/Fahrstreifendetektoren/det_val_hr_2015_01.csv.gz"],
+ ["madrid-api","https://datos.madrid.es/api/3/action/package_show?id=208627-0-transporte-ptomedida-historico"],
+ ["madrid-doc","https://datos.madrid.es/dataset/208627-0-transporte-ptomedida-historico/resource/208627-81-transporte-ptomedida-historico/download/208627-81-transporte-ptomedida-historico.pdf"],
+ ["paris-valid","https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/comptages-routiers-permanents/records?where=q%20is%20not%20null&limit=5"],
+ ["zurich-range","https://data.stadt-zuerich.ch/dataset/sid_dav_verkehrszaehlung_miv_od2031/download/sid_dav_verkehrszaehlung_miv_OD2031_2012.csv"],
+ ["finland-stations","https://tie.digitraffic.fi/api/tms/v1/stations"],
+ ["finland-data","https://tie.digitraffic.fi/api/tms/v1/stations/1/data"],
+ ["finland-raw","https://tie.digitraffic.fi/api/tms/v1/history/raw/lamraw_101_24_1.csv"],
+ ["norway-explorer","https://www.trafikkdata.no/graphql"],
+ ["webtris-report","https://webtris.highwaysengland.co.uk/api/v1.0/reports/Daily?sites=1&start_date=01062024&end_date=01062024&page=1&page_size=10"],
+ ["pneuma-zenodo","https://zenodo.org/api/records/7426506"],
+ ["i24-www","https://www.i24motion.org/data"]
+]

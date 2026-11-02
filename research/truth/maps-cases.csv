@@ -1,0 +1,21 @@
+case,label,lat,lon,junction,jtype,in_v5,approach_edges,incoming_passenger_lanes,turn_only_lanes_base,radius_m,net_controllers,v5_controllers,real_installations,veh_signal_groups,nvdb_signal_yes_no_unknown,names
+1,Trafikplats Fredhäll (Essingeleden/Drottningholmsvägen),59.328592,18.008713,4405645705,priority,1,31097193#1 4969080#0,5,0,120,0,0,,,0/3/0,Fredhällspåfarten / Fredhällstunneln
+2,Trafikplats Kristineberg ramp merge,59.335837,18.009981,2745595522,priority,1,436900044,2,0,120,0,0,,,0/5/0,Kristinebergsavfarten
+3,Trafikplats Stora Essingen ramp terminal,59.322052,17.995994,206139553,priority,1,-1549899265#2 1549899265#0 804442617,4,2,100,0,0,,,0/1/1,Essingeavfarten / Essingeringen
+4,Trafikplats Lilla Essingen (Essinge Brogata),59.324988,18.004264,29020561,priority,1,-37793735#0 41575668#4,2,0,100,0,0,,,0/3/0,Essinge Brogata
+5,Trafikplats Nybohov merge,59.308828,18.008624,146927911,priority,1,653639362,4,0,100,0,0,,,0/0/2,Essingeleden
+6,Slussen north: Skeppsbron/Slussplan,59.321776,18.07424,cluster_11195455977_11195455978_11970884644_11970884646_#9more,traffic_light,1,1164697750#3 770895951 770895958#1,4,2,80,3,1,109 111,109:7 111:8,2/0/0,Skeppsbron / Slussbron / Slussplan
+7,Slussen south: Katarinavägen/Stadsgårdsleden,59.319327,18.072737,cluster_13285915162_13285915163_8046859151,traffic_light,1,-863743418#3 863743418#0,2,0,80,2,1,8808,8808:3,0/0/0,Katarinavägen
+8,Norrtull: Norrtullsavfarten/Uppsalavägen,59.351129,18.042448,cluster_12723906137_12723906139_12865276868_12865276871_#3more,traffic_light,1,1389906771 1389906774#0 795172788,4,1,90,2,1,5525,5525:0,5/0/0, / Norrtullsavfarten / Uppsalavägen
+9,Sveaplan,59.350218,18.050363,cluster_12723882194_12723898812_12726719633_6003359904,traffic_light,1,1374225547#0 1374225550#0 42105882#0,3,0,100,8,3,5535,5535:14,12/0/0,Cedersdalsgatan / Sveavägen
+10,Roslagstull roundabout,59.351593,18.056174,2453067331,priority,1,199929054#1 4492721,5,0,110,7,2,,,7/0/0,Norra länken / Roslagstull
+11,Fridhemsplan: Drottningholmsvägen/S:t Eriksgatan,59.332126,18.031201,cluster_1673767222_1673767225_1673767231_1673767233_#10more,traffic_light,1,154922251#1 176240973 2001527#2 41123416#1,8,1,60,3,1,3316,3316:1,2/2/0,Drottningholmsvägen / Sankt Eriksgatan
+12,S:t Eriksgatan/Fleminggatan,59.334478,18.032525,cluster_119698_1673767356_1673767360_1673767364_#8more,traffic_light,1,154922250#1 179695931#1 41123422#1 41506833#1,11,0,60,5,1,3301,3301:4,1/0/0,Fleminggatan / Sankt Eriksgatan
+13,Lindhagensplan roundabout,59.331363,18.017359,208343357,priority,1,19876367 19876482,2,0,140,3,1,3322,3322:0,8/1/0,Drottningholmsvägen / Mariebergsavfarten
+14,Västerbroplan (city timing trial site),59.328237,18.022217,21760826,traffic_light,1,28274855#2 299988378#2,5,0,140,8,2,3302 3342,3302:7 3342:3,5/0/0,Västerbron / Västerbroplan
+15,Gullmarsplan west arm (Johanneshovsvägen signals),59.299067,18.078818,cluster_6018434024_6018434039,traffic_light,1,27317538#0,2,0,150,3,1,1054 1080,1054:2 1080:2,0/6/0,Johanneshovsvägen
+16,Johanneshovsavfarten ramp signal,59.292504,18.085426,4880682303,traffic_light,1,40009150#0 821376956,2,0,60,1,1,1055,1055:2,0/0/0, / Johanneshovsavfarten
+17,Trafikplats Kungens Kurva north merge,59.278788,17.918935,1593635928,priority,1,1225004484 311316957,5,0,120,0,0,,,0/2/0,Skansbergskopplet / Södertäljevägen
+18,Trafikplats Kungens Kurva south merge,59.269352,17.910784,119751,priority,1,253168249,4,1,120,0,0,,,0/1/0,Södertäljevägen
+19,Hornstull: Hornsgatan/Långholmsgatan,59.315237,18.034306,cluster_12184692946_12184692947_159868_1645783034_#9more,traffic_light,1,1243253622#1 41527705#1 72609226#0,10,4,70,3,1,2207,2207:8,2/0/0,Hornsgatan / Långholmsgatan
+20,Tegelbacken: Vasagatan/Tegelbacken,59.328562,18.061181,cluster_12957251835_13910476913_13910476914_13910476916_#12more,traffic_light,1,1410166377#1 167514878#0 176356751#1,4,1,70,3,1,4403,4403:11,0/10/0,Tegelbacken / Vasagatan

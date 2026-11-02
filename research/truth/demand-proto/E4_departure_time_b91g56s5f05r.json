@@ -1,0 +1,212 @@
+{
+ "alpha": 1.0,
+ "beta": 0.91,
+ "gamma": 0.56,
+ "shift_s": 300.0,
+ "rows": [
+  {
+   "scale": 2.0,
+   "trips": 48000,
+   "before": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 267.4744922775689,
+    "p95_tt_s": 667.490338810319,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 10240.0,
+    "fail": null,
+    "max_insert_wait_s": 112.74205283191623
+   },
+   "route_only": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 222.19084644423558,
+    "p95_tt_s": 461.7694002775979,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 10240.0,
+    "fail": null,
+    "max_insert_wait_s": 16.15243811381879
+   },
+   "after": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 229.2199541593056,
+    "p95_tt_s": 485.20344975704154,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 10785.0,
+    "fail": null,
+    "max_insert_wait_s": 70.13610116125164
+   },
+   "sched_route_only": 567.8577079991816,
+   "dep_hist_before": [
+    1066,
+    2750,
+    6354,
+    9928,
+    11334,
+    8942,
+    4988,
+    1986,
+    532,
+    107,
+    12,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dep_hist_after": [
+    544,
+    1629,
+    4621,
+    8781,
+    11543,
+    10039,
+    6325,
+    3230,
+    1008,
+    238,
+    38,
+    4,
+    0,
+    0,
+    0,
+    0
+   ],
+   "share_moved": 0.9997083333333333,
+   "mean_abs_shift_min": 6.425001136977818,
+   "share_within_15min": 1.0,
+   "share_at_window_edge": 0.0,
+   "peak_dep_before": 11334,
+   "peak_dep_after": 11543,
+   "sched_before": 590.1859558806207,
+   "sched_after": 261.51385559473675,
+   "trace": [
+    {
+     "iter": 0,
+     "gap": 0.2186591236346888,
+     "shifted": 76,
+     "mean_tt": 265.5146109675804,
+     "unfinished": 0,
+     "sched_cost": 303.2151606062276
+    },
+    {
+     "iter": 1,
+     "gap": 0.21274988167628442,
+     "shifted": 118,
+     "mean_tt": 257.9416735291191,
+     "unfinished": 0,
+     "sched_cost": 299.27888463990354
+    },
+    {
+     "iter": 2,
+     "gap": 0.14187693096818685,
+     "shifted": 96,
+     "mean_tt": 240.53369390925533,
+     "unfinished": 0,
+     "sched_cost": 277.92293726734096
+    },
+    {
+     "iter": 3,
+     "gap": 0.11087109060575943,
+     "shifted": 80,
+     "mean_tt": 232.01025044782355,
+     "unfinished": 0,
+     "sched_cost": 266.54291558211776
+    },
+    {
+     "iter": 4,
+     "gap": 0.10709183465663279,
+     "shifted": 76,
+     "mean_tt": 231.10725865092593,
+     "unfinished": 0,
+     "sched_cost": 264.80234145803934
+    },
+    {
+     "iter": 5,
+     "gap": 0.12627672407397297,
+     "shifted": 90,
+     "mean_tt": 232.68601038978716,
+     "unfinished": 0,
+     "sched_cost": 268.06693736071577
+    },
+    {
+     "iter": 6,
+     "gap": 0.11299240618742724,
+     "shifted": 75,
+     "mean_tt": 232.38698885328944,
+     "unfinished": 0,
+     "sched_cost": 265.05546453510374
+    },
+    {
+     "iter": 7,
+     "gap": 0.12059832328999034,
+     "shifted": 73,
+     "mean_tt": 234.6063849656584,
+     "unfinished": 0,
+     "sched_cost": 270.4654638896404
+    },
+    {
+     "iter": 8,
+     "gap": 0.10384027166646603,
+     "shifted": 59,
+     "mean_tt": 229.8927342932207,
+     "unfinished": 0,
+     "sched_cost": 263.0821749889252
+    },
+    {
+     "iter": 9,
+     "gap": 0.11036732879144345,
+     "shifted": 58,
+     "mean_tt": 232.22409638398707,
+     "unfinished": 0,
+     "sched_cost": 265.7784953302308
+    },
+    {
+     "iter": 10,
+     "gap": 0.11579221019690326,
+     "shifted": 76,
+     "mean_tt": 231.45355783136705,
+     "unfinished": 0,
+     "sched_cost": 266.1369464421224
+    },
+    {
+     "iter": 11,
+     "gap": 0.10359852531668155,
+     "shifted": 54,
+     "mean_tt": 228.95309530963635,
+     "unfinished": 0,
+     "sched_cost": 261.0065871707166
+    },
+    {
+     "iter": 12,
+     "gap": 0.11741845844389673,
+     "shifted": 71,
+     "mean_tt": 229.98870234489814,
+     "unfinished": 0,
+     "sched_cost": 264.32055020361094
+    },
+    {
+     "iter": 13,
+     "gap": 0.1138363596766482,
+     "shifted": 69,
+     "mean_tt": 230.71520224927485,
+     "unfinished": 0,
+     "sched_cost": 265.1620370041494
+    },
+    {
+     "iter": 14,
+     "gap": 0.09785548799208649,
+     "shifted": 66,
+     "mean_tt": 225.10891601623652,
+     "unfinished": 0,
+     "sched_cost": 256.3437621931804
+    }
+   ]
+  }
+ ]
+}

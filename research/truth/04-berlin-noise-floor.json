@@ -1,0 +1,293 @@
+{
+ "source": "/home/erikf/projects/personal/cars-data/berlin-detectors/detektoren_2024_09.tgz",
+ "rows": 574632,
+ "detector_files": 485,
+ "completeness_ge75": {
+  "lane": {
+   "units": 347,
+   "pairs": 26190,
+   "dates": [
+    "2024-09-10",
+    "2024-09-26"
+   ],
+   "median_abs_pct": 8.73,
+   "p95_abs_pct": 56.22,
+   "median_geh": 1.64,
+   "p95_geh": 8.054,
+   "share_geh_lt5": 0.8849,
+   "share_geh_lt3": 0.7422,
+   "share_tag_flow_band": 0.9086,
+   "units_over_85pct_geh5": 0.7176,
+   "network_hour_share_geh5_p05_median_p95": [
+    0.8363,
+    0.8838,
+    0.9313
+   ],
+   "by_flow": [
+    {
+     "flow_lo": 50,
+     "flow_hi": 200,
+     "pairs": 4196,
+     "median_abs_pct": 18.33,
+     "p95_abs_pct": 103.4,
+     "share_geh_lt5": 0.8077,
+     "median_geh": 2.057
+    },
+    {
+     "flow_lo": 200,
+     "flow_hi": 500,
+     "pairs": 15289,
+     "median_abs_pct": 8.36,
+     "p95_abs_pct": 38.27,
+     "share_geh_lt5": 0.9104,
+     "median_geh": 1.549
+    },
+    {
+     "flow_lo": 500,
+     "flow_hi": 1000,
+     "pairs": 5957,
+     "median_abs_pct": 6.26,
+     "p95_abs_pct": 27.03,
+     "share_geh_lt5": 0.9078,
+     "median_geh": 1.535
+    },
+    {
+     "flow_lo": 1000,
+     "flow_hi": 1500,
+     "pairs": 192,
+     "median_abs_pct": 6.63,
+     "p95_abs_pct": 34.39,
+     "share_geh_lt5": 0.776,
+     "median_geh": 2.347
+    },
+    {
+     "flow_lo": 1500,
+     "flow_hi": 5000,
+     "pairs": 92,
+     "median_abs_pct": 17.43,
+     "p95_abs_pct": 97.35,
+     "share_geh_lt5": 0.3913,
+     "median_geh": 8.515
+    }
+   ]
+  },
+  "site_all_lanes": {
+   "units": 171,
+   "pairs": 12554,
+   "dates": [
+    "2024-09-10",
+    "2024-09-26"
+   ],
+   "median_abs_pct": 6.3,
+   "p95_abs_pct": 39.33,
+   "median_geh": 1.644,
+   "p95_geh": 8.12,
+   "share_geh_lt5": 0.8823,
+   "share_geh_lt3": 0.7396,
+   "share_tag_flow_band": 0.8784,
+   "units_over_85pct_geh5": 0.7135,
+   "network_hour_share_geh5_p05_median_p95": [
+    0.8201,
+    0.8826,
+    0.9346
+   ],
+   "by_flow": [
+    {
+     "flow_lo": 50,
+     "flow_hi": 200,
+     "pairs": 708,
+     "median_abs_pct": 19.99,
+     "p95_abs_pct": 111.07,
+     "share_geh_lt5": 0.7655,
+     "median_geh": 2.258
+    },
+    {
+     "flow_lo": 200,
+     "flow_hi": 500,
+     "pairs": 2649,
+     "median_abs_pct": 8.42,
+     "p95_abs_pct": 47.31,
+     "share_geh_lt5": 0.886,
+     "median_geh": 1.57
+    },
+    {
+     "flow_lo": 500,
+     "flow_hi": 1000,
+     "pairs": 6061,
+     "median_abs_pct": 5.81,
+     "p95_abs_pct": 25.59,
+     "share_geh_lt5": 0.9104,
+     "median_geh": 1.566
+    },
+    {
+     "flow_lo": 1000,
+     "flow_hi": 1500,
+     "pairs": 2394,
+     "median_abs_pct": 4.67,
+     "p95_abs_pct": 22.97,
+     "share_geh_lt5": 0.8893,
+     "median_geh": 1.609
+    },
+    {
+     "flow_lo": 1500,
+     "flow_hi": 5000,
+     "pairs": 650,
+     "median_abs_pct": 5.57,
+     "p95_abs_pct": 40.78,
+     "share_geh_lt5": 0.7554,
+     "median_geh": 2.353
+    }
+   ]
+  },
+  "lane_max_hourly_p50_p95_p99_max": [
+   541.0,
+   948.4000000000001,
+   1561.2000000000048,
+   3303.0
+  ]
+ },
+ "completeness_ge75_hist_cor_ge05": {
+  "lane": {
+   "units": 343,
+   "pairs": 25024,
+   "dates": [
+    "2024-09-10",
+    "2024-09-26"
+   ],
+   "median_abs_pct": 8.46,
+   "p95_abs_pct": 47.59,
+   "median_geh": 1.593,
+   "p95_geh": 7.036,
+   "share_geh_lt5": 0.9007,
+   "share_geh_lt3": 0.758,
+   "share_tag_flow_band": 0.9193,
+   "units_over_85pct_geh5": 0.7347,
+   "network_hour_share_geh5_p05_median_p95": [
+    0.8542,
+    0.9013,
+    0.9456
+   ],
+   "by_flow": [
+    {
+     "flow_lo": 50,
+     "flow_hi": 200,
+     "pairs": 3854,
+     "median_abs_pct": 17.17,
+     "p95_abs_pct": 94.54,
+     "share_geh_lt5": 0.8332,
+     "median_geh": 1.907
+    },
+    {
+     "flow_lo": 200,
+     "flow_hi": 500,
+     "pairs": 14798,
+     "median_abs_pct": 8.24,
+     "p95_abs_pct": 35.36,
+     "share_geh_lt5": 0.9193,
+     "median_geh": 1.522
+    },
+    {
+     "flow_lo": 500,
+     "flow_hi": 1000,
+     "pairs": 5845,
+     "median_abs_pct": 6.2,
+     "p95_abs_pct": 25.73,
+     "share_geh_lt5": 0.9141,
+     "median_geh": 1.523
+    },
+    {
+     "flow_lo": 1000,
+     "flow_hi": 1500,
+     "pairs": 188,
+     "median_abs_pct": 6.41,
+     "p95_abs_pct": 33.62,
+     "share_geh_lt5": 0.7819,
+     "median_geh": 2.289
+    },
+    {
+     "flow_lo": 1500,
+     "flow_hi": 5000,
+     "pairs": 38,
+     "median_abs_pct": 8.9,
+     "p95_abs_pct": 29.29,
+     "share_geh_lt5": 0.5526,
+     "median_geh": 4.422
+    }
+   ]
+  },
+  "site_all_lanes": {
+   "units": 166,
+   "pairs": 11566,
+   "dates": [
+    "2024-09-10",
+    "2024-09-26"
+   ],
+   "median_abs_pct": 5.98,
+   "p95_abs_pct": 31.19,
+   "median_geh": 1.565,
+   "p95_geh": 6.748,
+   "share_geh_lt5": 0.9066,
+   "share_geh_lt3": 0.766,
+   "share_tag_flow_band": 0.8981,
+   "units_over_85pct_geh5": 0.759,
+   "network_hour_share_geh5_p05_median_p95": [
+    0.8494,
+    0.9062,
+    0.9524
+   ],
+   "by_flow": [
+    {
+     "flow_lo": 50,
+     "flow_hi": 200,
+     "pairs": 617,
+     "median_abs_pct": 18.35,
+     "p95_abs_pct": 97.96,
+     "share_geh_lt5": 0.8039,
+     "median_geh": 2.015
+    },
+    {
+     "flow_lo": 200,
+     "flow_hi": 500,
+     "pairs": 2391,
+     "median_abs_pct": 7.72,
+     "p95_abs_pct": 34.31,
+     "share_geh_lt5": 0.9243,
+     "median_geh": 1.459
+    },
+    {
+     "flow_lo": 500,
+     "flow_hi": 1000,
+     "pairs": 5756,
+     "median_abs_pct": 5.69,
+     "p95_abs_pct": 24.04,
+     "share_geh_lt5": 0.9199,
+     "median_geh": 1.528
+    },
+    {
+     "flow_lo": 1000,
+     "flow_hi": 1500,
+     "pairs": 2261,
+     "median_abs_pct": 4.57,
+     "p95_abs_pct": 19.15,
+     "share_geh_lt5": 0.9089,
+     "median_geh": 1.555
+    },
+    {
+     "flow_lo": 1500,
+     "flow_hi": 5000,
+     "pairs": 501,
+     "median_abs_pct": 5.0,
+     "p95_abs_pct": 19.78,
+     "share_geh_lt5": 0.8144,
+     "median_geh": 2.139
+    }
+   ]
+  },
+  "lane_max_hourly_p50_p95_p99_max": [
+   541.0,
+   942.9999999999993,
+   1564.6500000000015,
+   3303.0
+  ]
+ }
+}

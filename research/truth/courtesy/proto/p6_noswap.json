@@ -1,0 +1,29 @@
+{
+ "name": "p6_noswap",
+ "off": false,
+ "seed": 7,
+ "approach": 150,
+ "vph": 2000,
+ "spill": 1,
+ "cars": 411,
+ "unfinished": 117,
+ "wrong_time": {
+  "p50": 456.0,
+  "p90": 1196.0,
+  "p99": 1385.6,
+  "max": 1411.0
+ },
+ "stopped_wrong": {
+  "p90": 863.0,
+  "p99": 1032.1,
+  "max": 1154.0
+ },
+ "share_stopped_wrong": 0.582,
+ "wrong_lane_teleports": 0,
+ "missed_turns": 62,
+ "swaps": 0,
+ "collisions": 0,
+ "decel_over_limit": 197,
+ "requests": 74301,
+ "yields": 67053
+}

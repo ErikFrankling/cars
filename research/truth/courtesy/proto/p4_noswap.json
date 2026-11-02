@@ -1,0 +1,29 @@
+{
+ "name": "p4_noswap",
+ "off": false,
+ "seed": 7,
+ "approach": 60,
+ "vph": 1200,
+ "spill": 1,
+ "cars": 352,
+ "unfinished": 84,
+ "wrong_time": {
+  "p50": 346.5,
+  "p90": 882.6,
+  "p99": 1053.0,
+  "max": 1069.0
+ },
+ "stopped_wrong": {
+  "p90": 680.7,
+  "p99": 912.4300000000001,
+  "max": 930.0
+ },
+ "share_stopped_wrong": 0.54,
+ "wrong_lane_teleports": 0,
+ "missed_turns": 59,
+ "swaps": 0,
+ "collisions": 0,
+ "decel_over_limit": 134,
+ "requests": 36899,
+ "yields": 32445
+}

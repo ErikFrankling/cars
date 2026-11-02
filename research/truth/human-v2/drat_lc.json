@@ -1,0 +1,32 @@
+{
+ "source": "https://zenodo.org/records/20171110",
+ "tracks": 5278,
+ "events": 45,
+ "d1090": {
+  "n": 45,
+  "p05": 3.288,
+  "p25": 4.901,
+  "p50": 7.162,
+  "p75": 9.553,
+  "p95": 16.504,
+  "mean": 8.2,
+  "sd": 5.004
+ },
+ "width": {
+  "n": 45,
+  "p05": 2.747,
+  "p50": 3.671,
+  "p95": 4.447,
+  "mean": 3.671,
+  "sd": 0.534
+ },
+ "speed": {
+  "n": 45,
+  "p05": 3.669,
+  "p50": 7.977,
+  "p95": 13.225,
+  "mean": 8.348,
+  "sd": 2.888
+ },
+ "note": "both ends must be visible in a 140 m section, so long manoeuvres at speed are censored and the sample is biased toward short ones"
+}

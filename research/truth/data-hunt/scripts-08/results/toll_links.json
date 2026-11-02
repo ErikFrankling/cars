@@ -1,0 +1,11 @@
+{
+ "flow_S_msa.npz": 286824,
+ "flow_S_ff.npz": 263142,
+ "flow_S250_ff.npz": 264713,
+ "flow_G1_msa.npz": 430272,
+ "flow_G0_ff.npz": 482103,
+ "flow_W_ff.npz": 171033,
+ "flow_v8_full.npz": 237340,
+ "flow_v2_full.npz": 213708,
+ "flow_stockholm.npz": 172253
+}

@@ -1,0 +1,140 @@
+{
+ "passenger_edges": 75035,
+ "largest_scc_share": 0.99594,
+ "controllers_total": 457,
+ "controllers_in_municipality": 307,
+ "real_installations_city_register": 519,
+ "controllers_per_real_installation": 0.59,
+ "single_approach_controllers_total": 0,
+ "single_approach_in_municipality": 0,
+ "installations_with_0_1_2_3plus_controllers": [
+  238,
+  263,
+  17,
+  1
+ ],
+ "share_cycle_90": 1.0,
+ "share_offset_0": 1.0,
+ "cycle_min_max": [
+  90.0,
+  90.0
+ ],
+ "stranded_passenger_lanes": 502,
+ "stranded_on_signal_approaches": 13,
+ "edges_shorter_than_one_car_7_5m": 4593,
+ "of_which_signal_approach": 116,
+ "signal_approaches": 1562,
+ "signal_approaches_with_turn_only_lane": 156,
+ "edges_without_osm_lanes_tag": 63713,
+ "lane_count_vs_osm": {
+  "equal": 11195,
+  "net_more": 124,
+  "net_fewer": 3
+ },
+ "bus_lane_ok_vs_bad": [
+  0,
+  231
+ ],
+ "default_speed_75plus_urban_edges_municipality": 50,
+ "default_speed_examples": [
+  "-1122576402#1",
+  "-1192661578",
+  "-42315076",
+  "-82485411#2",
+  "-852623626#1"
+ ],
+ "right_before_left_with_secondary_or_higher_incoming": 63,
+ "junction_types": {
+  "priority": 22333,
+  "right_before_left": 10713,
+  "traffic_light": 488,
+  "dead_end": 95
+ },
+ "junctions_over_60m_across": 15,
+ "internal_lanes_over_60m": 82,
+ "internal_lanes": 218620,
+ "internal_turn_speed_kmh_median_p90": {
+  "r": [
+   23.5,
+   30.0
+  ],
+  "l": [
+   28.8,
+   30.5
+  ],
+  "t": [
+   13.1,
+   13.1
+  ],
+  "R": [
+   39.1,
+   56.8
+  ],
+  "L": [
+   30.0,
+   50.0
+  ]
+ },
+ "nvdb_forbidden_turns": {
+  "unmatched": 333,
+  "matched": 171,
+  "open_in_net": 124
+ },
+ "nvdb_forbidden_open_examples": [
+  [
+   "542554512",
+   "Norrlandsgatan",
+   "42277132",
+   "Mäster Samuelsgatan"
+  ],
+  [
+   "-411449793",
+   "Klara Norra Kyrkogata",
+   "88920324#0",
+   "Klarabergsgatan"
+  ],
+  [
+   "25555568",
+   "",
+   "-257319261",
+   "Huddinge stationsväg"
+  ],
+  [
+   "36933048#5",
+   "Bergslagsvägen",
+   "-37548499#5",
+   "Färjestadsvägen"
+  ],
+  [
+   "459163013#0",
+   "Klara Vattugränd",
+   "1112737482",
+   "Vasagatan"
+  ],
+  [
+   "1071324151#0",
+   "Huddinge stationsväg",
+   "31737869",
+   ""
+  ],
+  [
+   "-252922303",
+   "Patron Pehrs väg",
+   "62140866",
+   "Huddinge stationsväg"
+  ],
+  [
+   "1337695410#0",
+   "Valhallavägen",
+   "4425745#0",
+   "Sibyllegatan"
+  ]
+ ],
+ "movements_lost_vs_baseline": 8380,
+ "movements_gained_vs_baseline": 6762,
+ "edges_lost_vs_baseline": 2464,
+ "routes_total": 79013,
+ "routes_broken": 31026,
+ "vehicles_total": 2919242,
+ "vehicles_on_broken_routes": 1481124
+}

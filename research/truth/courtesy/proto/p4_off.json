@@ -1,0 +1,29 @@
+{
+ "name": "p4",
+ "off": true,
+ "seed": 7,
+ "approach": 60,
+ "vph": 1200,
+ "spill": 1,
+ "cars": 362,
+ "unfinished": 84,
+ "wrong_time": {
+  "p50": 212.5,
+  "p90": 1448.7000000000003,
+  "p99": 1816.6799999999998,
+  "max": 1822.0
+ },
+ "stopped_wrong": {
+  "p90": 1103.2000000000003,
+  "p99": 1539.34,
+  "max": 1555.0
+ },
+ "share_stopped_wrong": 0.409,
+ "wrong_lane_teleports": 50,
+ "missed_turns": 0,
+ "swaps": 0,
+ "collisions": 0,
+ "decel_over_limit": 117,
+ "requests": 0,
+ "yields": 0
+}

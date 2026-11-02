@@ -1,0 +1,20 @@
+{
+ "mitte/mitte.net.xml": {
+  "net": "mitte/mitte.net.xml",
+  "junctions": 265,
+  "both": 3173,
+  "geometry_only": 432,
+  "foes_only": 706,
+  "merge_pairs": 1616,
+  "diverge_pairs": 1374,
+  "crossing_pairs_per_junction_mean": 13.60377358490566,
+  "crossing_pairs_p99": 65.72000000000003,
+  "path_length_median": 27.307739606445406,
+  "path_length_p99": 71.51643357759845,
+  "through_tx_median": 1.055939524838013,
+  "through_tx_p10": 0.965946724262059,
+  "through_tx_p90": 1.5605042016806723,
+  "h_median": 1.303959683225342,
+  "share_tx_below_h": 0.8772222222222222
+ }
+}

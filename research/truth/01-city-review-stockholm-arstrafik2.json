@@ -1,0 +1,231 @@
+{
+ "features_named_cykel": 748,
+ "cykel_examples": [
+  [
+   "Tulegatan Sundbyberg 2018 ÅMVD Från Skogsbacken till cykelväg",
+   7700,
+   26
+  ],
+  [
+   "Tulegatan Sundbyberg 2018 ÅMVD Från Skogsbacken till cykelväg",
+   7700,
+   26
+  ]
+ ],
+ "unique_site_dir_year_motor": 39317,
+ "period_examples": [
+  [
+   "Nockebybron 2026 ÅMVD Totalt",
+   "2025-12-31Z",
+   "2026-12-20Z",
+   5
+  ],
+  [
+   "Enköpingsvägen 2026 ÅMVD Från Stadsgränsen till Hjulstamotet",
+   "2025-12-31Z",
+   "2026-12-20Z",
+   5
+  ],
+  [
+   "Enköpingsvägen 2026 ÅMVD Från Stadsgränsen till Hjulstamotet",
+   "2025-12-31Z",
+   "2026-12-20Z",
+   5
+  ]
+ ],
+ "per_end_year": {
+  "2019": {
+   "site_dir_records": 1561,
+   "directional_records": 1004,
+   "sites": 559,
+   "sites_both_dirs": 445,
+   "ge5d": 700,
+   "ge30d": 167,
+   "ge100d": 157,
+   "speed": 675,
+   "flow_ge5000": 325
+  },
+  "2021": {
+   "site_dir_records": 1366,
+   "directional_records": 882,
+   "sites": 489,
+   "sites_both_dirs": 393,
+   "ge5d": 643,
+   "ge30d": 150,
+   "ge100d": 136,
+   "speed": 672,
+   "flow_ge5000": 320
+  },
+  "2022": {
+   "site_dir_records": 1060,
+   "directional_records": 676,
+   "sites": 390,
+   "sites_both_dirs": 286,
+   "ge5d": 488,
+   "ge30d": 139,
+   "ge100d": 121,
+   "speed": 472,
+   "flow_ge5000": 241
+  },
+  "2023": {
+   "site_dir_records": 1146,
+   "directional_records": 734,
+   "sites": 420,
+   "sites_both_dirs": 314,
+   "ge5d": 534,
+   "ge30d": 113,
+   "ge100d": 99,
+   "speed": 504,
+   "flow_ge5000": 259
+  },
+  "2024": {
+   "site_dir_records": 1442,
+   "directional_records": 933,
+   "sites": 522,
+   "sites_both_dirs": 411,
+   "ge5d": 659,
+   "ge30d": 117,
+   "ge100d": 80,
+   "speed": 731,
+   "flow_ge5000": 312
+  },
+  "2025": {
+   "site_dir_records": 1418,
+   "directional_records": 912,
+   "sites": 509,
+   "sites_both_dirs": 403,
+   "ge5d": 681,
+   "ge30d": 108,
+   "ge100d": 103,
+   "speed": 686,
+   "flow_ge5000": 284
+  },
+  "2026": {
+   "site_dir_records": 1119,
+   "directional_records": 717,
+   "sites": 406,
+   "sites_both_dirs": 311,
+   "ge5d": 566,
+   "ge30d": 104,
+   "ge100d": 98,
+   "speed": 474,
+   "flow_ge5000": 223
+  }
+ },
+ "sites_2023_25_directional": 847,
+ "largest_flows": [
+  [
+   "Nynäsvägen 2025 ÅMVD Från Örbyleden/Tyresövägen till Tallkrogsmotet",
+   91600,
+   3,
+   null
+  ],
+  [
+   "Nynäsvägen 2025 ÅMVD Från Örbyleden/Tyresövägen till Tallkrogsmotet",
+   91600,
+   3,
+   null
+  ],
+  [
+   "Essingeleden genom Trafikplats Kristineberg 2025 ÅMVD Från Tpl Tomteboda till Tpl Fredhäll",
+   55100,
+   231,
+   null
+  ],
+  [
+   "Essingeleden genom Trafikplats Kristineberg 2025 ÅMVD Från Tpl Tomteboda till Tpl Fredhäll",
+   55100,
+   231,
+   null
+  ],
+  [
+   "Essingeleden genom Trafikplats Kristineberg 2024 ÅMVD Från Tpl Tomteboda till Tpl Fredhäll",
+   54800,
+   234,
+   null
+  ],
+  [
+   "Essingeleden genom Trafikplats Kristineberg 2024 ÅMVD Från Tpl Tomteboda till Tpl Fredhäll",
+   54800,
+   234,
+   null
+  ],
+  [
+   "Essingeleden genom Trafikplats Kristineberg 2025 ÅMVD Från Tpl Fredhäll till Tpl Tomteboda",
+   54800,
+   232,
+   null
+  ],
+  [
+   "Essingeleden genom Trafikplats Kristineberg 2023 ÅMVD Från Tpl Tomteboda till Tpl Fredhäll",
+   53700,
+   235,
+   null
+  ],
+  [
+   "Essingeleden genom Trafikplats Kristineberg 2023 ÅMVD Från Tpl Tomteboda till Tpl Fredhäll",
+   53700,
+   235,
+   null
+  ],
+  [
+   "Essingeleden genom Trafikplats Kristineberg 2023 ÅMVD Från Tpl Fredhäll till Tpl Tomteboda",
+   53400,
+   235,
+   null
+  ],
+  [
+   "Essingeleden genom Trafikplats Kristineberg 2024 ÅMVD Från Tpl Fredhäll till Tpl Tomteboda",
+   53300,
+   231,
+   null
+  ],
+  [
+   "Nynäsvägen 2024 ÅMVD Från Tallkrogsmotet till Örbyleden/Tyresövägen",
+   48400,
+   3,
+   null
+  ]
+ ],
+ "busy_max_hour_share_q10_50_90": [
+  0.074,
+  0.092,
+  0.116
+ ],
+ "hourly_sum_over_daily_median": 1.0,
+ "trafikflode_features": 16698,
+ "trafikflode_fields": [
+  "datamängd_skapad",
+  "datamängd_ändrad",
+  "företelsetyp",
+  "gatunamn",
+  "giltig_från",
+  "metod_för_datainsamling",
+  "metod_för_årstrafikberäkning",
+  "totalflöde_alla_riktningar",
+  "trafikandel_tunga_fordon",
+  "trafikflöde_06_18_fordon_tidperiod_alla_fordon",
+  "trafikflöde_06_18_fordon_tidperiod_lätta_fordon",
+  "trafikflöde_06_18_fordon_tidperiod_tunga_fordon",
+  "trafikflöde_18_22_fordon_tidperiod_alla_fordon",
+  "trafikflöde_18_22_fordon_tidperiod_lätta_fordon",
+  "trafikflöde_18_22_fordon_tidperiod_tunga_fordon",
+  "trafikflöde_22_06_fordon_tidperiod_alla_fordon",
+  "trafikflöde_22_06_fordon_tidperiod_lätta_fordon",
+  "trafikflöde_22_06_fordon_tidperiod_tunga_fordon",
+  "trafikflöde_alla_fordon",
+  "trafikflöde_lätta_fordon",
+  "trafikflöde_tunga_fordon",
+  "trafikslag",
+  "uppdaterad",
+  "version"
+ ],
+ "trafikflode_method": [
+  [
+   "Skattad trafik",
+   16698
+  ]
+ ],
+ "tf_has_nvdb_key": false,
+ "tf_flow_field": null
+}

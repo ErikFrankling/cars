@@ -1,0 +1,212 @@
+{
+ "alpha": 1.0,
+ "beta": 0.91,
+ "gamma": 0.56,
+ "shift_s": 300.0,
+ "rows": [
+  {
+   "scale": 2.25,
+   "trips": 54000,
+   "before": {
+    "unfinished": 10901,
+    "unfinished_share": 0.20187037037037037,
+    "mean_tt_s": 1500.5758850670416,
+    "p95_tt_s": 6857.622181764664,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 12025.0,
+    "fail": "gridlock_stall",
+    "max_insert_wait_s": 1024.2633437288969
+   },
+   "route_only": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 274.8759776596341,
+    "p95_tt_s": 651.9368803643354,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 10275.0,
+    "fail": null,
+    "max_insert_wait_s": 99.45239397671048
+   },
+   "after": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 500.5522509326618,
+    "p95_tt_s": 1842.1339638020816,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 10860.0,
+    "fail": null,
+    "max_insert_wait_s": 1919.2836835945363
+   },
+   "sched_route_only": 591.11527766036,
+   "dep_hist_before": [
+    1198,
+    3116,
+    7166,
+    11196,
+    12576,
+    10147,
+    5582,
+    2266,
+    611,
+    130,
+    11,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dep_hist_after": [
+    613,
+    1823,
+    5231,
+    10263,
+    13647,
+    11134,
+    6701,
+    3164,
+    1131,
+    257,
+    33,
+    3,
+    0,
+    0,
+    0,
+    0
+   ],
+   "share_moved": 0.9996851851851852,
+   "mean_abs_shift_min": 5.873274302983659,
+   "share_within_15min": 0.9993148148148148,
+   "share_at_window_edge": 0.0,
+   "peak_dep_before": 12576,
+   "peak_dep_after": 13647,
+   "sched_before": 2393.620042835117,
+   "sched_after": 657.0520427030588,
+   "trace": [
+    {
+     "iter": 0,
+     "gap": 0.5253339429493717,
+     "shifted": 355,
+     "mean_tt": 552.779221433361,
+     "unfinished": 0,
+     "sched_cost": 719.638659342415
+    },
+    {
+     "iter": 1,
+     "gap": 0.4938334500455894,
+     "shifted": 375,
+     "mean_tt": 586.8929423160279,
+     "unfinished": 0,
+     "sched_cost": 778.749912023573
+    },
+    {
+     "iter": 2,
+     "gap": 0.4685494014176638,
+     "shifted": 375,
+     "mean_tt": 586.3562273594516,
+     "unfinished": 0,
+     "sched_cost": 780.7724629581595
+    },
+    {
+     "iter": 3,
+     "gap": 0.45693592352823204,
+     "shifted": 344,
+     "mean_tt": 544.102293719756,
+     "unfinished": 0,
+     "sched_cost": 716.1572557988067
+    },
+    {
+     "iter": 4,
+     "gap": 0.4699363429910301,
+     "shifted": 319,
+     "mean_tt": 543.0064253076123,
+     "unfinished": 0,
+     "sched_cost": 716.5938731958481
+    },
+    {
+     "iter": 5,
+     "gap": 0.5170457041617474,
+     "shifted": 372,
+     "mean_tt": 782.0113049796497,
+     "unfinished": 2726,
+     "sched_cost": 1088.3385272860332
+    },
+    {
+     "iter": 6,
+     "gap": 0.6170818067264277,
+     "shifted": 554,
+     "mean_tt": 1804.908714510869,
+     "unfinished": 12627,
+     "sched_cost": 2685.247548183909
+    },
+    {
+     "iter": 7,
+     "gap": 0.43725957172939495,
+     "shifted": 321,
+     "mean_tt": 497.1075006156698,
+     "unfinished": 0,
+     "sched_cost": 646.4041459220359
+    },
+    {
+     "iter": 8,
+     "gap": 0.5110852568886916,
+     "shifted": 376,
+     "mean_tt": 575.3357249977538,
+     "unfinished": 0,
+     "sched_cost": 767.8004999750199
+    },
+    {
+     "iter": 9,
+     "gap": 0.4631151103465669,
+     "shifted": 340,
+     "mean_tt": 519.5859530879433,
+     "unfinished": 0,
+     "sched_cost": 681.4075082296754
+    },
+    {
+     "iter": 10,
+     "gap": 0.4212899667645057,
+     "shifted": 333,
+     "mean_tt": 490.8426408160296,
+     "unfinished": 0,
+     "sched_cost": 638.8127486301147
+    },
+    {
+     "iter": 11,
+     "gap": 0.4228025308259705,
+     "shifted": 318,
+     "mean_tt": 455.84994798568846,
+     "unfinished": 0,
+     "sched_cost": 585.8967013107739
+    },
+    {
+     "iter": 12,
+     "gap": 0.44513414628466036,
+     "shifted": 307,
+     "mean_tt": 484.5332632091652,
+     "unfinished": 0,
+     "sched_cost": 632.1598069274318
+    },
+    {
+     "iter": 13,
+     "gap": 0.4209937437109899,
+     "shifted": 298,
+     "mean_tt": 458.2643157471865,
+     "unfinished": 0,
+     "sched_cost": 589.106205419816
+    },
+    {
+     "iter": 14,
+     "gap": 0.44340897099393445,
+     "shifted": 326,
+     "mean_tt": 467.2624266302878,
+     "unfinished": 0,
+     "sched_cost": 605.2296247137214
+    }
+   ]
+  }
+ ]
+}

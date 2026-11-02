@@ -42,6 +42,8 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
     if ((e.flags & F_BEST_DIRTY) == 0u && !periodic) { return; }
     ty = types[e.vtype];
     dt = P.dt;
+    mu = P.mu;
+    cert_on = (P.safety & 1u) != 0u;
     let ed = edges[lanes[e.lane].edge];
     if (ed.lane_count > 16u) { return; }
     if (ed.lane_count == 1u) {
@@ -87,8 +89,7 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
             var fits = !has_next;
             if (has_next && a[k] > 0.0) {
                 for (var j = 0u; j < l.links_count; j++) {
-                    let lk = links[l.links_start + j];
-                    if (lk.to_edge == routes[ri + 1u] && (lanes[lk.to_lane].allow & ty.vclass) == ty.vclass) { fits = true; break; }
+                    if (links[l.links_start + j].to_edge == routes[ri + 1u] && link_usable(l.links_start + j)) { fits = true; break; }
                 }
             }
             if (fits) { ok |= 1u << k; }
@@ -134,7 +135,7 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
                         for (var j = 0u; j < l.links_count; j++) {
                             let c = l.links_start + j;
                             let lk = links[c];
-                            if (lk.to_edge != routes[ri + 1u] || (lanes[lk.to_lane].allow & ty.vclass) != ty.vclass) { continue; }
+                            if (lk.to_edge != routes[ri + 1u] || !link_usable(c)) { continue; }
                             let m = i32(min(lanes[lk.to_lane].index, 15u));
                             var better = bn < 0;
                             if (!better) {
@@ -179,7 +180,7 @@ fn lc_best(@builtin(global_invocation_id) id: vec3u) {
                     let l = lanes[edge.first_lane + k];
                     for (var j = 0u; j < l.links_count; j++) {
                         let lk = links[l.links_start + j];
-                        if (lk.to_edge != routes[ri + 1u]) { continue; }
+                        if (lk.to_edge != routes[ri + 1u] || !link_usable(l.links_start + j)) { continue; }
                         let m = min(lanes[lk.to_lane].index, 15u);
                         if (best_dist > abs(next_off[m])) {
                             best_dist = abs(next_off[m]);
@@ -293,16 +294,15 @@ fn lc_consider_follower(r: ptr<function, LcNeighbors>, k: u32, fp: f32, egoback:
 // MSLaneChanger::getRealLeader and getRealFollower.
 fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
     var r: LcNeighbors;
-    r.leader = NONE; r.follower = NONE; r.gap = 1e9; r.f_gap = 1e9; r.decel = ty.apparent;
+    r.leader = NONE; r.follower = NONE; r.gap = 1e9; r.f_gap = 1e9; r.decel = tail_b();
     r.leader_trip = NONE; r.leader_len = 5.0;
     if (lane_occupied(l)) {
         let s = seg[l];
         var lo = s.first;
         var hi = s.end;
         // Lower bound on position among entries still on this lane. Those that left wrapped around.
-        loop {
-            if (lo >= hi) { break; }
-            let mid = (lo + hi) / 2u;
+        for (var it = 0u; it < 33u && lo < hi; it++) {
+            let mid = lo + (hi - lo) / 2u;
             var k = mid;
             loop {
                 if (k >= hi || (cur[k].lane == l && (cur[k].flags & F_REMOVED) == 0u)) { break; }
@@ -326,7 +326,7 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
         }
         var k = lo;
         loop {
-            if (k == s.first) { break; }
+            if (k <= s.first) { break; }
             k--;
             let o = cur[k];
             if (k != ego && o.lane == l && (o.flags & F_REMOVED) == 0u && o.pos < pos) {
@@ -353,6 +353,27 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
             }
         }
     }
+    if (mu > 0.0) {
+        // Several vehicles can cross onto a lane in one step. The front-most is the other end of them.
+        let ef = atomicLoad(&ph_lane[(l) * 5u + 2u]);
+        if (ef != 0u) {
+            let k = ef & 0x3fffffu;
+            let o = cur[k];
+            if (k != ego && o.lane == l && (o.flags & F_REMOVED) == 0u) {
+                let ot = types[o.vtype];
+                let g = o.pos - ot.length - pos - ty.min_gap;
+                if (o.pos >= pos) {
+                    if (g < r.gap) {
+                        r.leader = k; r.gap = g; r.speed = o.speed; r.decel = ot.apparent; r.acc = o.acc;
+                        r.leader_trip = o.trip; r.leader_cacc = ot.model == MODEL_CACC;
+                        r.leader_wait = o.wait; r.leader_len = ot.length; r.leader_vtype = o.vtype; r.leader_own = o.lc_own; r.leader_sf = o.sf;
+                    }
+                } else {
+                    lc_consider_follower(&r, k, o.pos, egoback);
+                }
+            }
+        }
+    }
     // Followers still upstream of this lane, through the connections leading onto it.
     if (r.f_gap > 60.0 && pos < 120.0) {
         let la = lanes[l];
@@ -373,7 +394,7 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
                     let sg = seg[src];
                     var k = sg.end;
                     loop {
-                        if (k == sg.first) { break; }
+                        if (k <= sg.first) { break; }
                         k--;
                         if (k == ego || cur[k].lane != src || (cur[k].flags & F_REMOVED) != 0u) { continue; }
                         lc_consider_follower(&r, k, cur[k].pos - sl.length - offset, egoback);
@@ -390,9 +411,10 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
     let p = atomicLoad(&partial_occ[l]);
     if (p != NONE) {
         let g = unpack_back(p) - pos - ty.min_gap;
-        if (unpack_back(p) >= pos - 0.1 && g < r.gap) {
+        // Physical mode: a tail reaches to the end of the lane, so being past its back is no escape.
+        if ((unpack_back(p) >= pos - 0.1 || mu > 0.0) && g < r.gap) {
             r.leader_cacc = unpack_cacc(p);
-            r.gap = g; r.speed = unpack_speed(p); r.leader = NONE; r.leader_trip = NONE; r.acc = 0.0; r.decel = ty.apparent;
+            r.gap = g; r.speed = unpack_speed(p); r.leader = NONE; r.leader_trip = NONE; r.acc = 0.0; r.decel = tail_b();
         }
     }
     return r;
@@ -429,7 +451,7 @@ fn lc_leader_ahead(r: ptr<function, LcNeighbors>, l: u32, pos: f32, route_i: u32
             if (same_target && bd < 0.0) { bd += max(0.0, cf.foe_len_behind - cf.len_behind); }
             let g = dist_cross - ty.min_gap - bd - cf.foe_width;
             let v = unpack_speed(p);
-            let key = g + brake_gap(v, ty.apparent, 0.0);
+            let key = g + brake_gap(v, tail_b(), 0.0);
             if (key < best_key) {
                 best_key = key;
                 best = g;
@@ -439,7 +461,7 @@ fn lc_leader_ahead(r: ptr<function, LcNeighbors>, l: u32, pos: f32, route_i: u32
         if (best < 1e8) {
             (*r).gap = best;
             (*r).speed = best_speed;
-            (*r).decel = ty.apparent;
+            (*r).decel = tail_b();
             return;
         }
         if ((k.flags & L_HAS_VIA) == 0u) { ri += 1u; }
@@ -448,7 +470,7 @@ fn lc_leader_ahead(r: ptr<function, LcNeighbors>, l: u32, pos: f32, route_i: u32
         if (packed != NONE) {
             (*r).gap = seen + unpack_back(packed) - ty.min_gap;
             (*r).speed = unpack_speed(packed);
-            (*r).decel = ty.apparent;
+            (*r).decel = tail_b();
             (*r).leader_cacc = unpack_cacc(packed);
             return;
         }
@@ -532,6 +554,10 @@ fn lc_advice(trip: u32, speed: f32) { atomicMin(&advice[trip], u32(max(0.0, spee
 
 // CF::getSecureGap while changing lanes: a vehicle already braking may need less room.
 fn secure_gap_lc(v: f32, vl: f32, bl: f32, acc: f32, safety: f32, leader_cacc: bool) -> f32 {
+    // Physical mode: the driver's own gap law, at Vissim's 0.6 during a change. Hard limits are checked apart.
+    if (mu > 0.0 && ty.model == MODEL_KRAUSS) {
+        return max(0.0, ty.ph_tau * v + v * v / (2.0 * ty.decel) - vl * vl / (2.0 * ty.b_assume)) * P.lc_gap;
+    }
     var g: f32;
     switch ty.model {
         case MODEL_IDM: { g = idm_secure_gap(v, vl); }
@@ -723,18 +749,16 @@ fn lc_ahead_load(l: u32, pos: f32, ego: u32) -> u32 {
         first = s.first;
         var lo = s.first;
         var hi = s.end;
-        loop {
-            if (lo >= hi) { break; }
-            let mid = (lo + hi) / 2u;
+        for (var it = 0u; it < 33u && lo < hi; it++) {
+            let mid = lo + (hi - lo) / 2u;
             if (cur[mid].lane == l && (cur[mid].flags & F_REMOVED) == 0u) { lo = mid + 1u; }
             else { hi = mid; }
         }
         end = lo;
         lo = s.first;
         hi = end;
-        loop {
-            if (lo >= hi) { break; }
-            let mid = (lo + hi) / 2u;
+        for (var it = 0u; it < 33u && lo < hi; it++) {
+            let mid = lo + (hi - lo) / 2u;
             if (cur[mid].pos < pos) { lo = mid + 1u; } else { hi = mid; }
         }
         count = end - lo;
@@ -1051,6 +1075,12 @@ fn check_blocked(e: Veh, n: LcNeighbors) -> u32 {
             let need = secure_gap_lc(n.f_speed, e.speed, self_ty.apparent, n.f_acc, safety, self_ty.model == MODEL_CACC);
             ty = self_ty;
             if (n.f_gap < need * safety) { blocked |= LCA_BLOCK_FOLLOWER; }
+            if (mu > 0.0) {
+                ty = types[n.f_vtype];
+                let hard = ph_gap_required(n.f_speed, e.speed, self_ty.apparent, n.f_acc) - ty.min_gap;
+                ty = self_ty;
+                if (n.f_gap < hard) { blocked |= LCA_BLOCK_FOLLOWER; }
+            }
         }
     }
     if (n.gap < 1e8) {
@@ -1059,6 +1089,7 @@ fn check_blocked(e: Veh, n: LcNeighbors) -> u32 {
         } else {
             let need = secure_gap_lc(e.speed, n.speed, n.decel, e.acc, safety, n.leader_cacc);
             if (n.gap < need * safety) { blocked |= LCA_BLOCK_LEADER; }
+            if (mu > 0.0 && n.gap + ty.min_gap < ph_gap_required(e.speed, n.speed, n.decel, e.acc)) { blocked |= LCA_BLOCK_LEADER; }
         }
     }
     return blocked;
@@ -1081,16 +1112,58 @@ fn lc_decide_helpers(@builtin(global_invocation_id) id: vec3u) {
     lc_evaluate(i);
 }
 
+// A change takes forward travel: at 12 degrees, some 12 m to get a car's body off the old lane. The
+// leader on the old lane has to leave that much, as the body stays tied to it until then.
+fn ph_lc_path(e: Veh, own: LcNeighbors, n: LcNeighbors, dest: u32) -> bool {
+    if ((P.safety & 8u) == 0u) { return true; }
+    let half = 0.5 * (lanes[dest].width + ty.width);
+    let travel = half / 0.21256;
+    let t = half / ty.v_lat;
+    return own.gap >= 1e8 || own.gap + ty.min_gap + own.speed * t >= travel;
+}
+
+// Can this body start a lane change here, at this speed, with the time a change takes?
+fn ph_lc_room(e: Veh, dest: u32) -> bool {
+    if ((e.phys >> 30u) != 0u || (e.flags & F_HAS_SHADOW) != 0u || e.pos < min(ty.length, lanes[e.lane].length - 1.0)) { return false; }
+    let w = lanes[dest].width;
+    let road = ph_lc_road(e, dest);
+    if (road < 0.0) {
+        let left = lanes[e.lane].length - e.pos;
+        if (e.speed < 0.5 && left < 2.0) { return true; }
+        return left >= w / 0.21256 && (w / ty.v_lat + 1.0) * e.speed <= left;
+    }
+    if ((w / ty.v_lat + 1.0) * e.speed <= road) { return true; }
+    return (w / 1.0 + 1.0) * e.speed <= road;
+}
+
+// Road left for a change into `dest`. Sideways motion carries over lane ends as long as the route goes on from
+// `dest`. Negative when it does not, as a change that cannot finish before the lane ends would stop halfway for good.
+fn ph_lc_road(e: Veh, dest: u32) -> f32 {
+    let k = pick_link(dest, e.route_i, e.route_end);
+    let remaining = lanes[e.lane].length - e.pos;
+    if (k == NONE) {
+        if (e.route_i + 1u >= e.route_end) { return remaining; }
+        return -1.0;
+    }
+    if (P.lc_carry == 0u) { return remaining; }
+    return remaining + continuation_length(links[k].to_lane, e.route_i + 1u, e.route_end);
+}
+
 fn lc_evaluate(i: u32) {
     let e = cur[i];
-    if ((e.flags & F_REMOVED) != 0u || is_internal(e.lane)) { return; }
+    if ((e.flags & (F_REMOVED | F_SHADOW)) != 0u || is_internal(e.lane)) { return; }
     let ed = edges[lanes[e.lane].edge];
     if (ed.lane_count <= 1u) { return; }
     ty = types[e.vtype];
     dt = P.dt;
+    mu = P.mu;
+    cert_on = (P.safety & 1u) != 0u;
+    // A firm slot is for one movement from one lane; the fixed-lane models never change at all.
+    if (ty.model == MODEL_AV && (ty.lc_strategic < 0.0 || (e.cj_state & CJ_STATE_MASK) == CJ_FIRM || (e.cj_state & CJ_STATE_MASK) == CJ_PENDING)) { return; }
     ego_flags = e.flags;
     ego_acc = e.acc;
     mode_done = true;
+    ph_setup(e);
     // prepareStep: only a strategic wish survives to the next step.
     lc_own = 0u;
     if ((e.lc_own & LCA_STRATEGIC) != 0u) { lc_own = e.lc_own & LCA_WANTS; }
@@ -1118,7 +1191,8 @@ fn lc_evaluate(i: u32) {
         if ((lanes[dest].allow & ty.vclass) == ty.vclass && (lanes[e.lane].pad1 & ty.vclass) == ty.vclass) {
             var n = lc_neighbors(dest, e.pos, i, back);
             lc_leader_ahead(&n, dest, e.pos, e.route_i, e.route_end, e.speed);
-            let b = check_blocked(e, n);
+            var b = check_blocked(e, n);
+            if (mu > 0.0 && !ph_lc_path(e, own, n, dest)) { b |= LCA_BLOCK_LEADER; }
             state_r = wants_change(-1, e, own, n, b, dest, i);
             if (b == 0u && (state_r & LCA_WANTS) != 0u && unsafe_link_ahead(e, dest, i)) { state_r |= LCA_BLOCK_LEADER; }
             if ((state_r & LCA_RIGHT) != 0u && (state_r & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) == 0u) { chosen = -1; }
@@ -1130,12 +1204,17 @@ fn lc_evaluate(i: u32) {
         if ((lanes[dest].allow & ty.vclass) == ty.vclass && (lanes[e.lane].pad0 & ty.vclass) == ty.vclass) {
             var n = lc_neighbors(dest, e.pos, i, back);
             lc_leader_ahead(&n, dest, e.pos, e.route_i, e.route_end, e.speed);
-            let b = check_blocked(e, n);
+            var b = check_blocked(e, n);
+            if (mu > 0.0 && !ph_lc_path(e, own, n, dest)) { b |= LCA_BLOCK_LEADER; }
             state_l = wants_change(1, e, own, n, b, dest, i);
             if (b == 0u && (state_l & LCA_WANTS) != 0u && unsafe_link_ahead(e, dest, i)) { state_l |= LCA_BLOCK_LEADER; }
             if ((state_l & LCA_LEFT) != 0u && (state_l & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) == 0u) { chosen = 1; }
             else if ((state_l & LCA_LEFT) != 0u && (state_l & LCA_URGENT) != 0u) { hold_follower_for_blocked(e, n); }
         }
+    }
+    if (mu > 0.0 && chosen != 0 && !ph_lc_room(e, u32(i32(e.lane) + chosen))) {
+        chosen = 0;
+        atomicAdd(&C[C_LC_REFUSED_ROOM], 1u);
     }
     var state = lc_own & (LCA_AM_LEADER | LCA_AM_FOLLOWER | LCA_M_LEFT | LCA_M_RIGHT);
     if (chosen < 0) { state |= state_r; }
@@ -1153,7 +1232,9 @@ fn lc_evaluate(i: u32) {
     let urgent = (state & LCA_URGENT) != 0u;
     let dest = u32(i32(e.lane) + chosen);
     // Reserve the space from our rear to a little past our front, in 8 m cells.
-    let reach = ty.min_gap + 4.0;
+    var reach = ty.min_gap + 4.0;
+    // Physical mode: two changers side by side in one step must also respect each other's stopping gap.
+    if (mu > 0.0) { reach = max(reach, min(ph_gap_required(e.speed, 0.0, tail_b(), e.acc), 100.0)); }
     let first = u32(max(0.0, floor((e.pos - ty.length) / 8.0)));
     let count = min(16u, u32(ceil((e.pos + reach) / 8.0)) - first + 1u);
     // Bit 31 clear wins: urgent changes first, then a varying order so that nobody starves.
@@ -1172,6 +1253,27 @@ fn lc_commit(@builtin(global_invocation_id) id: vec3u) {
     let dest = u32(i32(cur[i].lane) + p.side);
     for (var k = 0u; k < p.count; k++) {
         if (atomicLoad(&claims[dest * 64u + (p.first + k) % 64u]) != p.priority) { return; }
+    }
+    if (P.mu > 0.0) {
+        // The body stays on the old lane too. Its image there is a second entry in the vehicle array.
+        let idx = G.n_active + atomicAdd(&C[C_NEW], 1u);
+        if (idx >= P.capacity) {
+            atomicSub(&C[C_NEW], 1u);
+            atomicAdd(&C[C_SHADOW_REFUSED], 1u);
+            return;
+        }
+        var shadow = cur[i];
+        shadow.flags = (shadow.flags & ~(F_LANE_CHANGED | F_HAS_SHADOW | F_LAT_FAST)) | F_SHADOW;
+        shadow.n_items = 0u;
+        cur[idx] = shadow;
+        atomicAdd(&C[C_SHADOWS], 1u);
+        let vt = types[cur[i].vtype];
+        let dir = select(2u, 1u, p.side > 0);
+        cur[i].phys = (cur[i].phys & 0xffffu) | (dir << 30u);
+        cur[i].flags |= F_HAS_SHADOW;
+        let w = lanes[dest].width;
+        ty = vt;
+        if ((w / vt.v_lat + 1.0) * cur[i].speed > ph_lc_road(cur[i], dest)) { cur[i].flags |= F_LAT_FAST; }
     }
     lc_plan[i].first = 0xffffffffu;
     cur[i].lane = dest;

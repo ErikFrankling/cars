@@ -1,0 +1,14 @@
+{
+  "melbourne_csv_members": 28,
+  "sampled_day_file": "VSDATA_20261016.csv",
+  "sampled_day_rows": 119691,
+  "sampled_day_sites_victoria": 4751,
+  "ndw_a10_tt": {
+    "id": "ABM01_A10_HRL_CP_S102",
+    "seconds": 184.1438,
+    "timestamp": "2026-10-31T21:57:00Z",
+    "equipment": "fcd",
+    "type": "reconstituted"
+  },
+  "total_stored_response_bytes": 230621047
+}

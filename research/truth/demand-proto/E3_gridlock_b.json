@@ -1,0 +1,270 @@
+{
+ "net": "12x12",
+ "base_trips": 24000,
+ "rows": [
+  {
+   "scale": 2.5,
+   "trips": 60000,
+   "freeflow_noteleport": {
+    "unfinished": 26519,
+    "unfinished_share": 0.44198333333333334,
+    "mean_tt_s": 3396.7210314605572,
+    "p95_tt_s": 8274.76246219495,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 11885.0,
+    "fail": "gridlock_stall",
+    "max_insert_wait_s": 3087.9665237113322
+   },
+   "freeflow_teleport300": {
+    "unfinished": 20887,
+    "unfinished_share": 0.3481166666666667,
+    "mean_tt_s": 6941.543614793891,
+    "p95_tt_s": 17847.921161053855,
+    "teleports": 7373,
+    "teleported_trips": 7231,
+    "end_s": 21600.0,
+    "fail": null,
+    "max_insert_wait_s": 17544.67770014019
+   },
+   "assigned_noteleport": {
+    "unfinished": 17910,
+    "unfinished_share": 0.2985,
+    "mean_tt_s": 2189.595198127224,
+    "p95_tt_s": 7303.572604344106,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 11925.0,
+    "fail": "gridlock_stall",
+    "max_insert_wait_s": 1577.1649109527443
+   },
+   "assigned_teleport300": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 1835.1757814605573,
+    "p95_tt_s": 9513.7141270097,
+    "teleports": 2985,
+    "teleported_trips": 2892,
+    "end_s": 18055.0,
+    "fail": null,
+    "max_insert_wait_s": 10981.003156127828
+   },
+   "assigned_gap": 0.3043722291197516,
+   "gap_trace": [
+    0.9002999722902324,
+    0.8470830388482313,
+    0.7401926026058927,
+    0.5674071950744374,
+    0.46649359486189207,
+    0.42313183261756104,
+    0.4056216033139941,
+    0.3869683493224432,
+    0.3606113583609365,
+    0.33508453063634774,
+    0.3222344373495381,
+    0.31779692089781497,
+    0.3171125131312194,
+    0.3084560409182844,
+    0.3043722291197516
+   ]
+  },
+  {
+   "scale": 2.75,
+   "trips": 66000,
+   "freeflow_noteleport": {
+    "unfinished": 34623,
+    "unfinished_share": 0.5245909090909091,
+    "mean_tt_s": 4079.1284097398934,
+    "p95_tt_s": 8739.835127184419,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 12135.0,
+    "fail": "gridlock_stall",
+    "max_insert_wait_s": 2900.815881081766
+   },
+   "freeflow_teleport300": {
+    "unfinished": 28858,
+    "unfinished_share": 0.43724242424242427,
+    "mean_tt_s": 8339.337349133835,
+    "p95_tt_s": 18111.730358003642,
+    "teleports": 9413,
+    "teleported_trips": 9211,
+    "end_s": 21600.0,
+    "fail": null,
+    "max_insert_wait_s": 17762.197137179817
+   },
+   "assigned_noteleport": {
+    "unfinished": 25950,
+    "unfinished_share": 0.3931818181818182,
+    "mean_tt_s": 2884.829849133833,
+    "p95_tt_s": 7766.643389959905,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 12050.0,
+    "fail": "gridlock_stall",
+    "max_insert_wait_s": 1670.1765852278386
+   },
+   "assigned_teleport300": {
+    "unfinished": 3517,
+    "unfinished_share": 0.05328787878787879,
+    "mean_tt_s": 4439.589849133833,
+    "p95_tt_s": 15497.944062369384,
+    "teleports": 10961,
+    "teleported_trips": 10074,
+    "end_s": 21600.0,
+    "fail": null,
+    "max_insert_wait_s": 15225.656517574345
+   },
+   "assigned_gap": 0.2507173809685768,
+   "gap_trace": [
+    0.9095486009287505,
+    0.8542600457563108,
+    0.7459662002319201,
+    0.5779467842914527,
+    0.4561638646834146,
+    0.40775424153591555,
+    0.3888508358946775,
+    0.3522361640575266,
+    0.3133904473825345,
+    0.2889760828378099,
+    0.2877873334482955,
+    0.27928118319526607,
+    0.27134269954504325,
+    0.2595058937465495,
+    0.2507173809685768
+   ]
+  },
+  {
+   "scale": 3.0,
+   "trips": 72000,
+   "freeflow_noteleport": {
+    "unfinished": 43073,
+    "unfinished_share": 0.5982361111111111,
+    "mean_tt_s": 4410.590856215733,
+    "p95_tt_s": 8575.110033847266,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 11800.0,
+    "fail": "gridlock_stall",
+    "max_insert_wait_s": 2393.2354594355206
+   },
+   "freeflow_teleport300": {
+    "unfinished": 38659,
+    "unfinished_share": 0.5369305555555556,
+    "mean_tt_s": 9742.09537010462,
+    "p95_tt_s": 18313.43622877973,
+    "teleports": 11636,
+    "teleported_trips": 11393,
+    "end_s": 21600.0,
+    "fail": null,
+    "max_insert_wait_s": 17874.615708339854
+   },
+   "assigned_noteleport": {
+    "unfinished": 38021,
+    "unfinished_share": 0.5280694444444445,
+    "mean_tt_s": 3782.5812728823994,
+    "p95_tt_s": 8039.348461720163,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 11885.0,
+    "fail": "gridlock_stall",
+    "max_insert_wait_s": 1270.6767087826424
+   },
+   "assigned_teleport300": {
+    "unfinished": 31546,
+    "unfinished_share": 0.4381388888888889,
+    "mean_tt_s": 8122.80738399351,
+    "p95_tt_s": 17584.396336920447,
+    "teleports": 22185,
+    "teleported_trips": 19812,
+    "end_s": 21600.0,
+    "fail": null,
+    "max_insert_wait_s": 16913.73663621843
+   },
+   "assigned_gap": 0.20046205852915464,
+   "gap_trace": [
+    0.9023998579056218,
+    0.8141222743701761,
+    0.6720990171181862,
+    0.5208218718351463,
+    0.4164491666997111,
+    0.360677503925745,
+    0.32574083355981986,
+    0.2978666942888209,
+    0.2606648360499949,
+    0.24861443194801755,
+    0.24444462850422546,
+    0.23616654066960618,
+    0.21706958861994863,
+    0.20523555840332208,
+    0.20046205852915464
+   ]
+  },
+  {
+   "scale": 3.5,
+   "trips": 84000,
+   "freeflow_noteleport": {
+    "unfinished": 56767,
+    "unfinished_share": 0.675797619047619,
+    "mean_tt_s": 5181.548002261247,
+    "p95_tt_s": 9050.031271339332,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 12065.0,
+    "fail": "gridlock_stall",
+    "max_insert_wait_s": 1605.5700238825616
+   },
+   "freeflow_teleport300": {
+    "unfinished": 51325,
+    "unfinished_share": 0.6110119047619048,
+    "mean_tt_s": 11037.442347499342,
+    "p95_tt_s": 18529.545279600574,
+    "teleports": 13226,
+    "teleported_trips": 12851,
+    "end_s": 21600.0,
+    "fail": null,
+    "max_insert_wait_s": 18369.428317312544
+   },
+   "assigned_noteleport": {
+    "unfinished": 50124,
+    "unfinished_share": 0.5967142857142858,
+    "mean_tt_s": 4065.383002261247,
+    "p95_tt_s": 7835.912283186973,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 11435.0,
+    "fail": "gridlock_stall",
+    "max_insert_wait_s": 1220.865356460935
+   },
+   "assigned_teleport300": {
+    "unfinished": 44461,
+    "unfinished_share": 0.5292976190476191,
+    "mean_tt_s": 9522.226157023151,
+    "p95_tt_s": 17877.427630027167,
+    "teleports": 24673,
+    "teleported_trips": 22328,
+    "end_s": 21600.0,
+    "fail": null,
+    "max_insert_wait_s": 17284.875972144502
+   },
+   "assigned_gap": 0.1614103354231552,
+   "gap_trace": [
+    0.8923375899662952,
+    0.7688405550357317,
+    0.6192109350416455,
+    0.4755796586377787,
+    0.36767789964039466,
+    0.30865811916586905,
+    0.26730928505928075,
+    0.24201161833966794,
+    0.21579260376654372,
+    0.20291546814269368,
+    0.19286698281340542,
+    0.18669412375842392,
+    0.1814840052255841,
+    0.1763310503353504,
+    0.1614103354231552
+   ]
+  }
+ ]
+}

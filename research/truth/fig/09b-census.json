@@ -1,0 +1,47 @@
+{
+ "best/berlin.net.xml": {
+  "junctions_with_requests": 28473,
+  "types": {
+   "right_before_left": 9878,
+   "priority": 15633,
+   "traffic_light": 2875,
+   "dead_end": 74,
+   "zipper": 87,
+   "internal": 10999
+  },
+  "links_mean": 5.685421276296843,
+  "links_p50": 6,
+  "links_p99": 14,
+  "links_max": 32,
+  "ordered_foe_pairs_mean": 16.659010290450603,
+  "ordered_foe_pairs_p50": 12,
+  "ordered_foe_pairs_p99": 79,
+  "ordered_foe_pairs_max": 396,
+  "total_links": 161881,
+  "total_pairs": 474332,
+  "connections": 161881,
+  "connections_with_via": 161881
+ },
+ "stockholm/stockholm.net.xml": {
+  "junctions_with_requests": 34790,
+  "types": {
+   "priority": 22194,
+   "traffic_light": 1922,
+   "right_before_left": 10674,
+   "dead_end": 95,
+   "internal": 19804
+  },
+  "links_mean": 5.79244035642426,
+  "links_p50": 4,
+  "links_p99": 16,
+  "links_max": 25,
+  "ordered_foe_pairs_mean": 16.683702213279677,
+  "ordered_foe_pairs_p50": 4,
+  "ordered_foe_pairs_p99": 84,
+  "ordered_foe_pairs_max": 212,
+  "total_links": 201519,
+  "total_pairs": 580426,
+  "connections": 201519,
+  "connections_with_via": 201519
+ }
+}

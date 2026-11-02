@@ -1,0 +1,72 @@
+{
+ "net": "12x12",
+ "base_trips": 24000,
+ "rows": [
+  {
+   "scale": 2.25,
+   "trips": 54000,
+   "freeflow_noteleport": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 1922.9121003888818,
+    "p95_tt_s": 6981.772974900767,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 14155.0,
+    "fail": null,
+    "max_insert_wait_s": 7625.3886564812565
+   },
+   "freeflow_teleport300": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 1834.0776559444373,
+    "p95_tt_s": 6516.420059988351,
+    "teleports": 1161,
+    "teleported_trips": 1154,
+    "end_s": 13800.0,
+    "fail": null,
+    "max_insert_wait_s": 7263.432689142583
+   },
+   "assigned_noteleport": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 431.93385964814104,
+    "p95_tt_s": 1481.4489429788644,
+    "teleports": 0,
+    "teleported_trips": 0,
+    "end_s": 10385.0,
+    "fail": null,
+    "max_insert_wait_s": 1370.0100105982337
+   },
+   "assigned_teleport300": {
+    "unfinished": 0,
+    "unfinished_share": 0.0,
+    "mean_tt_s": 430.89645224073365,
+    "p95_tt_s": 1472.4364633107805,
+    "teleports": 39,
+    "teleported_trips": 39,
+    "end_s": 10385.0,
+    "fail": null,
+    "max_insert_wait_s": 1370.0100105982337
+   },
+   "assigned_gap": 0.3161360341493259,
+   "gap_trace": [
+    0.8306191819383074,
+    0.7720007411176362,
+    0.6572260822271709,
+    0.5108975809698055,
+    0.4496716039624836,
+    0.453295160451326,
+    0.43984384147975664,
+    0.4348980263087129,
+    0.36778446323227076,
+    0.30481302710262254,
+    0.27127406765134393,
+    0.2564224968230065,
+    0.31099029849536797,
+    0.3278524741908979,
+    0.3161360341493259
+   ]
+  }
+ ]
+}

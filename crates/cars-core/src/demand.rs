@@ -7,7 +7,7 @@ use quick_xml::{
     Reader,
     events::{BytesStart, Event},
 };
-use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
+use rustc_hash::{FxHashMap, FxHasher};
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
@@ -17,6 +17,8 @@ pub enum CfModel {
     Idm,
     Acc,
     Cacc,
+    /// The automated car of research/truth/09, for coordinated junctions.
+    Av,
     Eidm,
 }
 #[derive(Clone, Debug)]
@@ -25,6 +27,8 @@ pub struct VType {
     pub vclass: u32,
     pub model: CfModel,
     pub length: f32,
+    /// Only for drawing: the engine has no vehicle width.
+    pub width: f32,
     pub min_gap: f32,
     pub accel: f32,
     pub decel: f32,
@@ -50,6 +54,52 @@ pub struct VType {
     pub glosa: bool,
     pub glosa_range: f32,
     pub params: FxHashMap<String, String>,
+}
+
+/// Swedish traffic by distance, 2025, Trafikanalys Korstrackor: cars, light trucks, heavy trucks, buses, motorcycles.
+/// Sizes are design values (report 19 fix 16): spacing in a queue stays at 7.5 m.
+const SWEDEN: [(&str, f64, f32, f32); 5] =
+    [("passenger", 0.81, 4.5, 3.0), ("delivery", 0.12, 5.5, 2.5), ("truck", 0.05, 7.1, 2.5), ("bus", 0.01, 12.0, 2.5), ("motorcycle", 0.01, 2.2, 2.5)];
+
+impl Demand {
+    /// Replaces the demand's vTypes by the Swedish fleet, by a hash of the trip. Whatever accel, decel, sigma, tau or
+    /// minGap the demand file carried goes with them: those came with no source. A route the class may not drive
+    /// keeps a car. Returns trips per class.
+    pub fn apply_sweden(&mut self, net: &crate::net::Net) -> Vec<(String, u64)> {
+        let base = self.vtypes.len() as u32;
+        for (name, _, length, gap) in SWEDEN {
+            let mut a = Attrs::default();
+            a.insert("id".into(), format!("sweden_{name}"));
+            a.insert("vClass".into(), name.into());
+            let mut t = VType::parse(&a);
+            t.length = length;
+            t.min_gap = gap;
+            self.vtypes.push(t);
+        }
+        let mut counts = vec![0u64; SWEDEN.len()];
+        for trip in &mut self.trips {
+            let u = (u64::from(trip.id).wrapping_add(7).wrapping_mul(0x9E3779B97F4A7C15) >> 32) as f64 / 4294967296.0;
+            let (mut k, mut sum) = (0, 0.0);
+            for (i, row) in SWEDEN.iter().enumerate() {
+                sum += row.1;
+                k = i;
+                if u < sum {
+                    break;
+                }
+            }
+            let bit = self.vtypes[base as usize + k].vclass;
+            let passable = self.routes[trip.route as usize].iter().all(|&e| {
+                let ed = &net.edges[e as usize];
+                (ed.first_lane..ed.first_lane + ed.lane_count).any(|l| net.lanes[l as usize].allow & bit == bit)
+            });
+            if !passable {
+                k = 0;
+            }
+            trip.vtype = base + k as u32;
+            counts[k] += 1;
+        }
+        SWEDEN.iter().zip(counts).map(|(r, c)| (r.0.to_string(), c)).collect()
+    }
 }
 
 impl VType {
@@ -95,6 +145,7 @@ impl VType {
             "ACC" => CfModel::Acc,
             "CACC" => CfModel::Cacc,
             "EIDM" => CfModel::Eidm,
+            "CarsAV" => CfModel::Av,
             _ => CfModel::Krauss,
         };
         let decel = num(a, "decel", decel);
@@ -103,6 +154,16 @@ impl VType {
             vclass: vclass_bit(class),
             model,
             length,
+            width: num(a, "width", match class {
+                "pedestrian" => 0.478,
+                "bicycle" | "scooter" => 0.65,
+                "moped" => 0.78,
+                "motorcycle" => 0.9,
+                "delivery" | "emergency" => 2.16,
+                "truck" | "tram" => 2.4,
+                "trailer" | "bus" | "coach" | "subway" | "rail_urban" | "rail" | "rail_electric" | "rail_fast" => 2.55,
+                _ => 1.8,
+            }),
             min_gap: gap,
             accel,
             decel,
@@ -229,6 +290,8 @@ pub struct Trip {
 pub struct DropCounts {
     pub unknown_edge: u64,
     pub unconnected: u64,
+    /// Connected only by connections or lanes the vehicle's class may not use.
+    pub banned_connection: u64,
     pub unknown_route: u64,
     pub unknown_vtype: u64,
     pub taz: u64,
@@ -450,19 +513,29 @@ impl Demand {
         for (index, request) in request_trips {
             d.trips[index].route = routed[request];
         }
-        let conns: FxHashSet<_> = net.conns.iter().map(|c| (c.from_edge, c.to_edge)).collect();
+        let mut conns: FxHashMap<(u32, u32), u32> = FxHashMap::default();
+        for c in &net.conns {
+            *conns.entry((c.from_edge, c.to_edge)).or_default() |= net.conn_allow(c);
+        }
         let valid: Vec<_> = d
             .routes
             .iter()
-            .map(|r| !r.is_empty() && r.windows(2).all(|w| conns.contains(&(w[0], w[1]))))
+            .map(|r| !r.is_empty() && r.windows(2).all(|w| conns.contains_key(&(w[0], w[1]))))
             .collect();
+        let mut legal = FxHashMap::default();
         d.trips.retain(|t| {
             if t.route == u32::MAX || !valid[t.route as usize] {
                 d.dropped.unconnected += 1;
-                false
-            } else {
-                true
+                return false;
             }
+            let class = d.vtypes[t.vtype as usize].vclass;
+            let ok = *legal.entry((t.route, class)).or_insert_with(|| {
+                d.routes[t.route as usize].windows(2).all(|w| conns[&(w[0], w[1])] & class == class)
+            });
+            if !ok {
+                d.dropped.banned_connection += 1;
+            }
+            ok
         });
         d.trips.sort_by(|a, b| a.depart.total_cmp(&b.depart));
         Ok(d)

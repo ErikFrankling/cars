@@ -1,0 +1,74 @@
+{
+ "matched_site_years": 509,
+ "unmatched_features": 146,
+ "ratio_measured_2024_25_over_estimate_q05_q25_q50_q75_q95": [
+  0.19,
+  0.752,
+  0.97,
+  1.192,
+  3.596
+ ],
+ "within_10pct": 0.261,
+ "off_gt_30pct": 0.389,
+ "sum_ratio": 0.873,
+ "estimate_update_years": [
+  [
+   "2016",
+   506
+  ],
+  [
+   "2021",
+   2
+  ],
+  [
+   "2020",
+   1
+  ]
+ ],
+ "ge5days_only_median": 0.978,
+ "korsning_features": 9447,
+ "korsning_signalreglering": [
+  [
+   "nej",
+   4565
+  ],
+  [
+   "okänt",
+   4134
+  ],
+  [
+   "ja",
+   748
+  ]
+ ],
+ "korsning_type": [
+  [
+   "enkel korsning",
+   4936
+  ],
+  [
+   "cirkulationsplats",
+   2261
+  ],
+  [
+   "kanaliserad korsning",
+   1093
+  ],
+  [
+   "Avfart/påfart",
+   1046
+  ],
+  [
+   "droppe",
+   69
+  ],
+  [
+   "trafikplats",
+   40
+  ],
+  [
+   "Spansk sväng",
+   2
+  ]
+ ]
+}

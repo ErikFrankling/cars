@@ -1,0 +1,1 @@
+<connections><connection from="up" to="merge" fromLane="0" toLane="0"/><connection from="up" to="merge" fromLane="1" toLane="1"/><connection from="merge" to="down" fromLane="1" toLane="0"/></connections>

@@ -1,0 +1,52 @@
+{
+ "name": "s2",
+ "main": 1100,
+ "ramp": 1000,
+ "neck": 5.0,
+ "sigma": 0.5,
+ "teleport_after": 120,
+ "ramp_cars": 230,
+ "never_merged": 0,
+ "wait": {
+  "p10": 14.0,
+  "p50": 23.0,
+  "p90": 60.0,
+  "p99": 84.0,
+  "max": 90.0
+ },
+ "passes": {
+  "0": 115,
+  "1": 84,
+  "2": 24,
+  "3": 7
+ },
+ "stopped": 0.8826086956521739,
+ "v_cross_p50": 0.035,
+ "rem_cross_p50": 29.730000000000004,
+ "main_between_ramp": {
+  "0": 330,
+  "1": 131,
+  "2": 28,
+  "3": 6,
+  "4": 2,
+  "5": 0,
+  "6": 2,
+  "7": 0
+ },
+ "over7": 0,
+ "rl_mean": 0.45090180360721444,
+ "flow_vph": 1956.0,
+ "teleports": {
+  "total": "0",
+  "jam": "0",
+  "yield": "0",
+  "wrongLane": "0"
+ },
+ "vehicles": {
+  "loaded": "1050",
+  "inserted": "1050",
+  "running": "116",
+  "waiting": "0"
+ },
+ "collisions": 0
+}

@@ -6,3 +6,9 @@
 .direnv
 __pycache__
 *.pyc
+
+# aerial imagery with licence limits
+research/truth/fig/maps07/
+research/truth/berlin-review/
+research/truth/berlin-snapshot/
+research/truth/*-link-capacity.csv

@@ -1,0 +1,412 @@
+edge,name,signalised,net_lanes,net_turn_only,osm_way,osm_lanes,osm_lanes_forward,osm_lanes_backward,osm_turn_tags,osm_oneway,osm_maxspeed,expected_turn_only,osm_selected
+-1052246502#0,Magelungsvägen,1,2,0,1052246502,3,1,2,"{""turn:lanes:backward"": ""through|right""}",,60,1,through|right
+-1052246502#1,Magelungsvägen,1,2,0,1052246502,3,1,2,"{""turn:lanes:backward"": ""through|right""}",,60,1,through|right
+-1153510111#2,Älvsjövägen,1,2,0,1153510111,3,1,2,"{""turn:lanes:backward"": ""left|through""}",,40,1,left|through
+-1259514204#1,Norr Mälarstrand,1,2,0,1259514204,3,1,2,"{""turn:lanes:backward"": ""left;through|right""}",,40,1,left;through|right
+-1259514216#3,Norr Mälarstrand,1,2,0,1259514216,3,1,2,"{""turn:lanes:backward"": ""left|through""}",,40,1,left|through
+-1290416658#1,Vasavägen,1,2,1,1290416658,3,1,2,"{""turn:lanes:backward"": ""left|right""}",,50,2,left|right
+-1337074702#2,Gamla Tyresövägen,1,2,0,1337074702,3,1,2,"{""turn:lanes:backward"": ""left|through;right""}",,40,1,left|through;right
+-1337074703#1,Gamla Tyresövägen,1,2,0,1337074703,3,1,2,"{""turn:lanes:backward"": ""left;through|right""}",,30,1,left;through|right
+-1337074703#2,Gamla Tyresövägen,1,2,0,1337074703,3,1,2,"{""turn:lanes:backward"": ""left;through|right""}",,30,1,left;through|right
+-1337074704#3,Sockenvägen,1,2,0,1337074704,3,1,2,"{""turn:lanes:backward"": ""through|right""}",,40,1,through|right
+-1337246972,Arenavägen,1,2,0,1337246972,3,1,2,"{""turn:lanes:backward"": ""through|right""}",,40,1,through|right
+-1339511507,Älvsjövägen,1,2,0,1339511507,3,1,2,"{""turn:lanes:backward"": ""left|through""}",,40,1,left|through
+-1340804513#2,Älvkällevägen,1,2,1,1340804513,3,1,2,"{""turn:lanes:backward"": ""left|right""}",,40,2,left|right
+-1389423046#2,Bromstensvägen,1,2,0,1389423046,4,,,"{""turn:lanes:backward"": ""left|through;right"", ""turn:lanes:forward"": ""left|through""}",,40,1,left|through;right
+-28984384#2,Norrviksvägen,1,2,1,28984384,3,1,2,"{""turn:lanes:backward"": ""left|right""}",,,2,left|right
+-312131828#1,Lejonvägen,1,2,0,312131828,3,1,2,"{""turn:lanes:backward"": ""through|right""}",,50,1,through|right
+-458916885#2,Kilabergsvägen,1,3,2,458916885,4,,3,"{""turn:lanes:backward"": ""left|right|right""}",,40,3,left|right|right
+-610272064#1,Palmfeltsvägen,1,2,1,610272064,3,,2,"{""turn:lanes:backward"": ""left|right""}",,40,2,left|right
+-688500952#1,Kvarnhagsvägen,1,1,0,688500952,2,1,1,"{""turn:lanes:backward"": ""left""}",,40,1,left
+100905132#1,Västerbroplan,1,2,0,100905132,2,,,"{""turn:lanes"": ""through|right""}",yes,40,1,through|right
+103047297#0,,1,3,0,103047297,3,,,"{""turn:lanes"": ""left|through|right""}",yes,40,2,left|through|right
+103047297#1,,1,3,1,103047297,3,,,"{""turn:lanes"": ""left|through|right""}",yes,40,2,left|through|right
+1056858017#0,Stockholmsvägen,1,2,0,1056858017,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+1060199809#0,Strömgatan,1,2,0,1060199809,3,2,1,"{""turn:lanes:forward"": ""through|right""}",,30,1,through|right
+1060199809#2,Strömgatan,1,2,0,1060199809,3,2,1,"{""turn:lanes:forward"": ""through|right""}",,30,1,through|right
+1062844587#0,Skeppsbron,1,3,0,1062844587,3,,,"{""turn:lanes"": ""none|left|through""}",yes,50,1,none|left|through
+107182115#0,,1,1,0,107182115,1,,,"{""turn:lanes"": ""right""}",yes,50,1,right
+107182120#0,,1,1,0,107182120,1,,,"{""turn:lanes"": ""left""}",yes,70,1,left
+107182120#1,,1,1,0,107182120,1,,,"{""turn:lanes"": ""left""}",yes,70,1,left
+1113023716#1,Folkungagatan,1,3,0,1113023716,3,,,"{""turn:lanes"": ""through|through|right""}",yes,50,1,through|through|right
+112319696#0,Värmdövägen,1,3,0,112319696,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+1135628444#1,Älvsjövägen,1,2,0,1135628444,3,2,1,"{""turn:lanes:forward"": ""through|right""}",,40,1,through|right
+1142050918#1,Magelungsvägen,1,2,0,1142050918,2,,,"{""turn:lanes"": ""left|through""}",yes,60,1,left|through
+1142050928#0,Magelungsvägen,1,2,0,1142050928,2,,,"{""turn:lanes"": ""left|through;right""}",yes,40,1,left|through;right
+1142050928#2,Magelungsvägen,1,2,0,1142050928,2,,,"{""turn:lanes"": ""left|through;right""}",yes,40,1,left|through;right
+1142103449#1,Torkel Knutssonsgatan,1,2,0,1142103449,3,2,1,"{""turn:lanes:forward"": ""left;through|right""}",,30,1,left;through|right
+1142103461#0,Älvsjövägen,1,3,0,1142103461,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+1153510110,Älvsjövägen,1,2,0,1153510110,3,2,1,"{""turn:lanes:forward"": ""through|right""}",,40,1,through|right
+1153510118#0,Älvsjövägen,1,3,0,1153510118,3,,,"{""turn:lanes"": ""left|through|through""}",yes,40,1,left|through|through
+1171009010#0,Tritonvägen,1,3,0,1171009010,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+1176264165#0,Skärholmsvägen,1,3,0,1176264165,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+1178443070,Örbyleden,1,4,1,1178443070,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+1178443071#0,Örbyleden,1,2,0,1178443071,2,,,"{""turn:lanes"": ""through|slight_right""}",yes,50,1,through|slight_right
+1178583796#0,Gudöbroleden,1,2,0,1178583796,2,,,"{""turn:lanes"": ""left|through""}",yes,50,1,left|through
+1178583796#1,Gudöbroleden,1,2,0,1178583796,2,,,"{""turn:lanes"": ""left|through""}",yes,50,1,left|through
+1190260128#0,Lidingövägen,1,3,0,1190260128,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+1190260128#1,Lidingövägen,1,3,0,1190260128,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+120309472#0,Gustavslundsvägen,1,2,0,120309472,2,,,"{""turn:lanes"": ""right|right""}",yes,50,2,right|right
+120358584#0,Åbyvägen,1,2,0,120358584,2,,,"{""turn:lanes"": ""left|left""}",yes,60,2,left|left
+120358584#1,Åbyvägen,1,2,0,120358584,2,,,"{""turn:lanes"": ""left|left""}",yes,60,2,left|left
+120395057#0,Vallgatan,1,1,0,120395057,1,,,"{""turn:lanes"": ""right""}",yes,50,1,right
+120395057#1,Vallgatan,1,1,0,120395057,1,,,"{""turn:lanes"": ""right""}",yes,50,1,right
+1214120719#0,Gamla Bromstensvägen,1,2,0,1214120719,2,,,"{""turn:lanes"": ""left|right""}",yes,40,2,left|right
+1214120719#1,Gamla Bromstensvägen,1,2,1,1214120719,2,,,"{""turn:lanes"": ""left|right""}",yes,40,2,left|right
+1214400486,Enebybergsvägen,1,3,0,1214400486,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+1214400494#0,Enebybergsvägen,1,2,0,1214400494,2,,,"{""turn:lanes"": ""left|left;through""}",yes,50,1,left|left;through
+1214647668,Edsbergsvägen,1,3,0,1214647668,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+121762746#0,Magelungsvägen,1,3,0,121762746,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+1218035422#0,Enebybergsvägen,1,2,0,1218035422,2,,,"{""turn:lanes"": ""left|through""}",yes,50,1,left|through
+1222997361,Enköpingsvägen,1,3,0,1222997361,3,,,"{""turn:lanes"": ""left|through|""}",yes,60,1,left|through|
+1222997367#0,Ursviksvägen,1,3,1,1222997367,3,,,"{""turn:lanes"": ""left|left|through""}",yes,40,2,left|left|through
+1222997368#1,Enköpingsvägen,1,3,0,1222997368,3,,,"{""turn:lanes"": ""left|through|right""}",yes,60,2,left|through|right
+123457689#0,Svartlösakopplet,1,2,0,123457689,2,,,"{""turn:lanes"": ""left|left;through;right""}",yes,60,1,left|left;through;right
+1243218614#0,Ringvägen,1,3,0,1243218614,3,,,"{""turn:lanes"": ""left|none|none""}",yes,50,1,left|none|none
+1243218616#1,Ringvägen,1,3,0,1243218616,3,,,"{""turn:lanes"": ""through|through|right""}",yes,50,1,through|through|right
+1243218618#1,Ringvägen,1,3,0,1243218618,3,,,"{""turn:lanes"": ""left|through|right""}",yes,50,2,left|through|right
+1243218618#2,Ringvägen,1,3,0,1243218618,3,,,"{""turn:lanes"": ""left|through|right""}",yes,50,2,left|through|right
+1243218624#0,Folkungagatan,1,2,0,1243218624,2,,,"{""turn:lanes"": ""left|right""}",yes,30,2,left|right
+1243218624#1,Folkungagatan,1,2,1,1243218624,2,,,"{""turn:lanes"": ""left|right""}",yes,30,2,left|right
+1243218627#0,Folkungagatan,1,3,0,1243218627,3,,,"{""turn:lanes"": ""left|right|right""}",yes,30,3,left|right|right
+1243218627#1,Folkungagatan,1,3,0,1243218627,3,,,"{""turn:lanes"": ""left|right|right""}",yes,30,3,left|right|right
+1243253622#0,Hornsgatan,1,4,0,1243253622,4,,,"{""turn:lanes"": ""left|left|through|right""}",yes,50,3,left|left|through|right
+1243253623#0,Hornsgatan,1,2,0,1243253623,2,,,"{""turn:lanes"": ""through|right""}",yes,30,1,through|right
+1243253623#1,Hornsgatan,1,2,0,1243253623,2,,,"{""turn:lanes"": ""through|right""}",yes,30,1,through|right
+1243253626#0,Hornsgatan,1,2,0,1243253626,2,,,"{""turn:lanes"": ""left|through;right""}",yes,30,1,left|through;right
+1243253626#1,Hornsgatan,1,2,0,1243253626,2,,,"{""turn:lanes"": ""left|through;right""}",yes,30,1,left|through;right
+1243253628#0,Hornsgatan,1,2,0,1243253628,2,,,"{""turn:lanes"": ""left|through""}",yes,30,1,left|through
+1243253631#2,Hornsgatan,1,2,0,1243253631,2,,,"{""turn:lanes"": ""through|right""}",yes,50,1,through|right
+1244910887#0,Magelungsvägen,1,3,0,1244910887,3,,,"{""turn:lanes"": ""left|through|right""}",yes,40,2,left|through|right
+1259514205#0,Norr Mälarstrand,1,2,0,1259514205,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+1259514210#0,Norr Mälarstrand,1,2,0,1259514210,2,,,"{""turn:lanes"": ""left|through;right""}",yes,40,1,left|through;right
+1272998916#0,Huddingevägen,1,3,0,1272998916,3,,,"{""turn:lanes"": ""through|through|right""}",yes,60,1,through|through|right
+1275505349#0,Sofielundsvägen,1,2,0,1275505349,2,,,"{""turn:lanes"": ""left|through;right""}",yes,40,1,left|through;right
+1275505350#0,Sofielundsvägen,1,3,0,1275505350,3,,,"{""turn:lanes"": ""left;through|through|right""}",yes,40,1,left;through|through|right
+1279745315#1,Mäster Samuelsgatan,1,1,0,1279745315,2,,,"{""turn:lanes:forward"": ""left|through;right""}",,30,1,left|through;right
+1282112470,Slottskajen,1,2,0,1282112470,2,,,"{""turn:lanes"": ""left|right""}",yes,30,2,left|right
+1282845695#0,Sofielundsvägen,1,2,0,1282845695,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+129633057#0,Spånga Kyrkväg,1,2,1,129633057,2,,,"{""turn:lanes"": ""left|right""}",yes,40,2,left|right
+1311870787#0,Viksjöleden,1,3,0,1311870787,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+1311870791#0,Viksjöleden,1,3,0,1311870791,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+1336953298#0,Hammarbybacken,1,3,1,1336953298,3,,,"{""turn:lanes"": ""left|through|right""}",yes,50,2,left|through|right
+1336953299#3,Olaus Magnus Väg,1,2,0,1336953299,2,,,"{""turn:lanes"": ""left|left;through;right""}",yes,50,1,left|left;through;right
+1336953302#0,Hammarbybacken,1,4,0,1336953302,4,,,"{""turn:lanes"": ""through|through|right|right""}",yes,50,2,through|through|right|right
+1336953302#1,Hammarbybacken,1,4,1,1336953302,4,,,"{""turn:lanes"": ""through|through|right|right""}",yes,50,2,through|through|right|right
+1336955958#0,Sockenvägen,1,2,0,1336955958,2,,,"{""turn:lanes"": ""through|right""}",yes,30,1,through|right
+1337074701#0,Sockenvägen,1,2,0,1337074701,4,2,2,"{""turn:lanes:backward"": ""left|through"", ""turn:lanes:forward"": ""left|through;right""}",,40,1,left|through;right
+1337246971#0,Arenavägen,1,2,0,1337246971,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+1337246974#0,Skärholmsvägen,1,3,0,1337246974,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+1337246977#1,Skärholmsvägen,1,3,0,1337246977,3,,,"{""turn:lanes"": ""through|through|right""}",yes,60,1,through|through|right
+1337263701#0,Strandvägen,1,3,1,1337263701,3,,,"{""turn:lanes"": ""left|left|through""}",yes,40,2,left|left|through
+1337695394#1,Valhallavägen,1,3,0,1337695394,3,,,"{""turn:lanes"": ""left|left;through|through;right""}",yes,40,1,left|left;through|through;right
+1337695400#1,Valhallavägen,1,2,0,1337695400,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+1337963909#1,Fleminggatan,1,2,0,1337963909,2,,,"{""turn:lanes"": ""left;through|right""}",yes,40,1,left;through|right
+1337963915,Narvavägen,1,2,0,1337963915,2,,,"{""turn:lanes"": ""through;right|right""}",yes,40,1,through;right|right
+1337996477#0,Huddingevägen,1,3,0,1337996477,3,,,"{""turn:lanes"": ""through|through|right""}",yes,60,1,through|through|right
+1337996479#0,Huddingevägen,1,4,1,1337996479,4,,,"{""turn:lanes"": ""left|left|through|through""}",yes,60,2,left|left|through|through
+1337996482#0,Huddingevägen,1,3,0,1337996482,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+1338326460#0,Sockenvägen,1,2,0,1338326460,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+1339003480#0,Solnavägen,1,3,0,1339003480,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+1339003480#2,Solnavägen,1,3,0,1339003480,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+1339178189#0,Sockenvägen,1,2,0,1339178189,2,,,"{""turn:lanes"": ""left|through|right""}",yes,40,2,left|through|right
+1339178191#0,Huddingevägen,1,3,0,1339178191,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+1339181745#0,Örbyleden,1,3,0,1339181745,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+1339181745#1,Örbyleden,1,3,0,1339181745,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+1339181747#0,Örbyleden,1,3,0,1339181747,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+1339181747#1,Örbyleden,1,3,0,1339181747,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+1339181753,Örbyleden,1,4,0,1339181753,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,40,2,left|through|through|right
+1339498323#0,Örbyleden,1,3,0,1339498323,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,70,1,left|through|through;right
+1339498323#1,Örbyleden,1,3,0,1339498323,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,70,1,left|through|through;right
+1339498324#0,Örbyleden,1,3,0,1339498324,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+1339498327#0,Örbyleden,1,3,0,1339498327,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,70,1,left|through|through;right
+1339498327#2,Örbyleden,1,3,0,1339498327,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,70,1,left|through|through;right
+1339511504#0,Magelungsvägen,1,3,0,1339511504,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+1339601556#0,Magelungsvägen,1,3,0,1339601556,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+1339601556#1,Magelungsvägen,1,3,0,1339601556,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+1339757804#1,Skärholmsvägen,1,3,0,1339757804,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+1339757805#2,Skärholmsvägen,1,4,1,1339757805,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,60,2,left|through|through|right
+1339757809#0,Lidingövägen,1,3,0,1339757809,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+1339757809#1,Lidingövägen,1,3,0,1339757809,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+1340235990#0,Norrbyvägen,1,3,0,1340235990,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+1340235990#2,Norrbyvägen,1,3,0,1340235990,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+1340235991#0,Ulvsundavägen,1,4,1,1340235991,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,40,2,left|through|through|right
+1340235995#1,Ulvsundavägen,1,4,1,1340235995,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,60,2,left|through|through|right
+1340235999#0,Köpsvängen,1,3,0,1340235999,3,,,"{""turn:lanes"": ""left|through|right""}",yes,30,2,left|through|right
+1340235999#2,Köpsvängen,1,3,0,1340235999,3,,,"{""turn:lanes"": ""left|through|right""}",yes,30,2,left|through|right
+1340236000#1,Ulvsundavägen,1,3,0,1340236000,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+1340236001#0,Ulvsundavägen,1,4,0,1340236001,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,60,2,left|through|through|right
+1340236001#2,Ulvsundavägen,1,4,1,1340236001,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,60,2,left|through|through|right
+1340241530#0,Ulvsundavägen,1,3,0,1340241530,3,,,"{""turn:lanes"": ""left|through|through""}",yes,40,1,left|through|through
+1340241530#1,Ulvsundavägen,1,3,0,1340241530,3,,,"{""turn:lanes"": ""left|through|through""}",yes,40,1,left|through|through
+1340287712#0,Huddingevägen,1,3,0,1340287712,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+1340631280,Folkungagatan,1,5,1,1340631280,5,,,"{""turn:lanes"": ""left|left|through|through|through""}",yes,50,2,left|left|through|through|through
+1340804516#0,Hammarbyvägen,1,2,1,1340804516,2,,,"{""turn:lanes"": ""left|left;right""}",yes,50,2,left|left;right
+1341005050#0,Magelungsvägen,1,3,0,1341005050,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+1342107779#0,Magelungsvägen,1,2,0,1342107779,3,2,1,"{""turn:lanes:forward"": ""left|through""}",,60,1,left|through
+1342107781#0,Magelungsvägen,1,2,0,1342107781,2,,,"{""turn:lanes"": ""left|through""}",yes,60,1,left|through
+1342749867#0,Skärholmsvägen,1,2,0,1342749867,2,,,"{""turn:lanes"": ""through|slight_right""}",yes,60,1,through|slight_right
+1342749873#0,Skärholmsvägen,1,3,0,1342749873,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+1342749873#2,Skärholmsvägen,1,3,0,1342749873,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+134464732#0,Folkungavägen,1,2,0,134464732,2,,,"{""turn:lanes"": ""left|through;right""}",yes,40,1,left|through;right
+134464732#1,Folkungavägen,1,2,0,134464732,2,,,"{""turn:lanes"": ""left|through;right""}",yes,40,1,left|through;right
+1389423043#0,Bromstensvägen,1,3,0,1389423043,4,3,1,"{""turn:lanes:forward"": ""left|through|right""}",,40,2,left|through|right
+1389423043#3,Bromstensvägen,1,3,0,1389423043,4,3,1,"{""turn:lanes:forward"": ""left|through|right""}",,40,2,left|through|right
+139190853#0,Karlavägen,1,2,0,139190853,2,,,"{""turn:lanes"": ""through|right""}",yes,40,1,through|right
+139190853#1,Karlavägen,1,2,0,139190853,2,,,"{""turn:lanes"": ""through|right""}",yes,40,1,through|right
+140726419,Götgatan,1,3,0,140726419,3,,,"{""turn:lanes"": ""none|through|right""}",yes,50,1,none|through|right
+1433771150,Huddingevägen,1,3,0,1433771150,3,,,"{""turn:lanes"": ""left|through|through""}",yes,70,1,left|through|through
+146243262#0,Skärholmsvägen,1,3,0,146243262,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+146532697#0,Ingemarsgatan,1,1,0,146532697,1,,,"{""turn:lanes"": ""right""}",yes,40,1,right
+146532697#2,Ingemarsgatan,1,1,0,146532697,1,,,"{""turn:lanes"": ""right""}",yes,40,1,right
+146789571#1,Ringvägen,1,3,0,146789571,3,,,"{""turn:lanes"": ""left|through|none""}",yes,50,1,left|through|none
+146789571#3,Ringvägen,1,3,0,146789571,3,,,"{""turn:lanes"": ""left|through|none""}",yes,50,1,left|through|none
+148000421#0,Ingemarsgatan,1,2,0,148000421,2,,,"{""turn:lanes"": ""left|left""}",yes,40,2,left|left
+148000421#2,Ingemarsgatan,1,2,0,148000421,2,,,"{""turn:lanes"": ""left|left""}",yes,40,2,left|left
+149521738#0,Hanstavägen,1,3,0,149521738,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+150851856#0,Älvsjövägen,1,3,0,150851856,3,,,"{""turn:lanes"": ""left|through|through""}",yes,40,1,left|through|through
+151083834#2,Ringvägen,1,3,0,151083834,3,,,"{""turn:lanes"": ""left;through|none|right""}",yes,30,1,left;through|none|right
+151083835#0,Ringvägen,1,4,0,151083835,4,,,"{""turn:lanes"": ""left|left|none|through;right""}",yes,30,2,left|left|none|through;right
+151884974#0,Hornsgatan,1,2,0,151884974,2,,,"{""turn:lanes"": ""through|right""}",yes,30,1,through|right
+151884974#1,Hornsgatan,1,2,0,151884974,2,,,"{""turn:lanes"": ""through|right""}",yes,30,1,through|right
+151884975#2,Hornsgatan,1,2,0,151884975,2,,,"{""turn:lanes"": ""through|right""}",yes,50,1,through|right
+152099178#0,Åbyvägen,1,2,0,152099178,2,,,"{""turn:lanes"": ""right|right""}",yes,60,2,right|right
+152258687#2,Ringvägen,1,3,0,152258687,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+154922250#1,Sankt Eriksgatan,1,3,0,154922250,3,,,"{""turn:lanes"": ""through|none|right""}",yes,40,1,through|none|right
+155580373#0,Lidingövägen,1,2,0,155580373,2,,,"{""turn:lanes"": ""left|left""}",yes,50,2,left|left
+155906876#0,Magelungsvägen,1,3,0,155906876,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+157437861#0,Hornsgatan,1,3,0,157437861,3,,,"{""turn:lanes"": ""through|through|right""}",yes,30,1,through|through|right
+157437861#1,Hornsgatan,1,3,0,157437861,3,,,"{""turn:lanes"": ""through|through|right""}",yes,30,1,through|through|right
+158718659#0,Tegelviksslingan,1,2,1,158718659,2,,,"{""turn:lanes"": ""left|left;right""}",yes,30,2,left|left;right
+161366798#1,Torsgatan,1,3,0,161366798,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+161533473#0,Åbyvägen,1,1,0,161533473,1,,,"{""turn:lanes"": ""left""}",yes,70,1,left
+161533478#0,Götalandsviadukten,1,1,0,161533478,1,,,"{""turn:lanes"": ""right""}",yes,50,1,right
+161533478#1,Götalandsviadukten,1,1,0,161533478,1,,,"{""turn:lanes"": ""right""}",yes,50,1,right
+162177597#0,Vasagatan,1,3,0,162177597,3,,,"{""turn:lanes"": ""left|through|through""}",yes,40,1,left|through|through
+162177597#2,Vasagatan,1,3,0,162177597,3,,,"{""turn:lanes"": ""left|through|through""}",yes,40,1,left|through|through
+16628222,Folkungagatan,1,3,1,16628222,3,,,"{""turn:lanes"": ""left|through|right""}",yes,30,2,left|through|right
+178204654#0,Hornsgatan,1,2,0,178204654,2,,,"{""turn:lanes"": ""left|through;right""}",yes,30,1,left|through;right
+179695931#0,Fleminggatan,1,3,0,179695931,3,,,"{""turn:lanes"": ""through|none|right""}",yes,40,1,through|none|right
+179695931#1,Fleminggatan,1,3,0,179695931,3,,,"{""turn:lanes"": ""through|none|right""}",yes,40,1,through|none|right
+190803736#0,Olof Palmes Gata,1,2,1,190803736,2,,,"{""turn:lanes"": ""left|right""}",yes,40,2,left|right
+19827767#0,Sockenvägen,1,2,0,19827767,2,,,"{""turn:lanes"": ""through|right""}",yes,40,1,through|right
+19828185#0,Sockenvägen,1,2,0,19828185,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+198659501#0,Magelungsvägen,1,2,0,198659501,2,,,"{""turn:lanes"": ""through|right""}",yes,50,1,through|right
+19876661#0,Drottningholmsvägen,1,3,0,19876661,3,,,"{""turn:lanes"": ""left|left|through;right""}",yes,40,2,left|left|through;right
+19876661#2,Drottningholmsvägen,1,3,1,19876661,3,,,"{""turn:lanes"": ""left|left|through;right""}",yes,40,2,left|left|through;right
+212085605#1,Slottskajen,1,2,1,212085605,2,,,"{""turn:lanes"": ""left|right""}",yes,30,2,left|right
+212456661#2,Sveavägen,1,3,0,212456661,3,,,"{""turn:lanes"": ""through|through|right""}",yes,40,1,through|through|right
+227047342#1,Glömstavägen,1,1,0,227047342,1,,,"{""turn:lanes"": ""right""}",yes,40,1,right
+23170876#0,Örbyleden,1,3,0,23170876,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+23170876#1,Örbyleden,1,3,0,23170876,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+233571098#0,Folkungavägen,1,3,0,233571098,3,,,"{""turn:lanes"": ""left|through|through""}",yes,40,1,left|through|through
+23512493#0,Frögatan,1,2,0,23512493,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+237991716#0,Ringvägen,1,3,0,237991716,3,,,"{""turn:lanes"": ""left|through|right""}",yes,50,2,left|through|right
+237991716#1,Ringvägen,1,3,0,237991716,3,,,"{""turn:lanes"": ""left|through|right""}",yes,50,2,left|through|right
+246439392#0,Torsgatan,1,3,0,246439392,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+246439392#1,Torsgatan,1,3,0,246439392,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+249421907#0,Sockenvägen,1,2,0,249421907,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+252271457#0,Vattenverksvägen,1,1,0,252271457,1,,,"{""turn:lanes"": ""right""}",yes,50,1,right
+269310409#0,Kellgrensgatan,1,4,0,269310409,4,,,"{""turn:lanes"": ""left|left|through|right""}",yes,50,3,left|left|through|right
+269310409#1,Kellgrensgatan,1,4,2,269310409,4,,,"{""turn:lanes"": ""left|left|through|right""}",yes,50,3,left|left|through|right
+270327158#0,Vallgatan,1,3,0,270327158,3,,,"{""turn:lanes"": ""left|left|left;through""}",yes,50,2,left|left|left;through
+278522909#0,Lidingövägen,1,4,1,278522909,4,,,"{""turn:lanes"": ""left|left|through|through""}",yes,50,2,left|left|through|through
+282543511#0,Kvarnbacksvägen,1,3,0,282543511,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+282543511#1,Kvarnbacksvägen,1,3,0,282543511,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+28274855#0,Västerbron,1,3,0,28274855,3,,,"{""turn:lanes"": ""left|through|none""}",yes,40,1,left|through|none
+28274855#2,Västerbron,1,3,0,28274855,3,,,"{""turn:lanes"": ""left|through|none""}",yes,40,1,left|through|none
+283013620#0,Enköpingsvägen,1,3,0,283013620,3,,,"{""turn:lanes"": ""through|through|right""}",yes,60,1,through|through|right
+283013627,Ursviksvägen,1,4,1,283013627,4,,,"{""turn:lanes"": ""left|left|through|right""}",yes,40,3,left|left|through|right
+28407369#0,Parkeringsvägen,1,2,1,28407369,2,,,"{""turn:lanes"": ""left|left""}",yes,50,2,left|left
+285873155#0,Jägmästargatan,1,2,0,285873155,2,,,"{""turn:lanes"": ""left;through|right""}",yes,30,1,left;through|right
+290848917#0,Lidingövägen,1,2,0,290848917,2,,,"{""turn:lanes"": ""left|left;through""}",yes,50,1,left|left;through
+291464493#0,Karlbergsvägen,1,4,0,291464493,4,,,"{""turn:lanes"": ""left|left|through|right""}",yes,40,3,left|left|through|right
+291464493#2,Karlbergsvägen,1,4,2,291464493,4,,,"{""turn:lanes"": ""left|left|through|right""}",yes,40,3,left|left|through|right
+291464526#0,Vasagatan,1,2,0,291464526,2,,,"{""turn:lanes"": ""through|right""}",yes,40,1,through|right
+298266718#0,Danderydsvägen,1,2,0,298266718,2,,,"{""turn:lanes"": ""left|through""}",yes,50,1,left|through
+299985119#1,Gjörwellsgatan,1,2,0,299985119,3,2,1,"{""turn:lanes:forward"": ""left|left;through;right""}",,30,1,left|left;through;right
+299985127#0,Rålambshovsleden,1,3,0,299985127,3,,,"{""turn:lanes"": ""left|through|through""}",yes,40,1,left|through|through
+30132025#0,,1,1,0,30132025,1,,,"{""turn:lanes"": ""right""}",yes,40,1,right
+30132025#1,,1,1,0,30132025,1,,,"{""turn:lanes"": ""right""}",yes,40,1,right
+30132025#2,,1,1,0,30132025,1,,,"{""turn:lanes"": ""right""}",yes,40,1,right
+304664959#0,Ulvsundavägen,1,4,1,304664959,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+311372773#0,,1,2,0,311372773,2,,,"{""turn:lanes"": ""left|through;right""}",yes,60,1,left|through;right
+313881454#0,Lejonvägen,1,2,0,313881454,3,2,1,"{""turn:lanes:forward"": ""left|through""}",,50,1,left|through
+315196051#0,Hjorthagsavfarten,1,1,0,315196051,1,,,"{""turn:lanes"": ""left""}",yes,50,1,left
+323585846#0,Skvaltans väg,1,3,0,323585846,3,,,"{""turn:lanes"": ""left|through|right""}",yes,50,2,left|through|right
+323585846#1,Skvaltans väg,1,3,1,323585846,3,,,"{""turn:lanes"": ""left|through|right""}",yes,50,2,left|through|right
+331779918#0,Södra Hamnvägen,1,2,0,331779918,2,,,"{""turn:lanes"": ""through|right""}",yes,40,1,through|right
+331779918#1,Södra Hamnvägen,1,2,0,331779918,2,,,"{""turn:lanes"": ""through|right""}",yes,40,1,through|right
+35583988#0,Vasagatan,1,2,0,35583988,2,,,"{""turn:lanes"": ""through|right""}",yes,40,1,through|right
+3566546#0,Torsgatan,1,1,0,3566546,1,,,"{""turn:lanes"": ""right""}",yes,40,1,right
+3566546#2,Torsgatan,1,1,0,3566546,1,,,"{""turn:lanes"": ""right""}",yes,40,1,right
+373696162#0,Skärholmsvägen,1,3,0,373696162,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+388606448#0,Folkungagatan,1,4,0,388606448,4,,,"{""turn:lanes"": ""left|through|through|through""}",yes,50,1,left|through|through|through
+388606451#0,Londonviadukten,1,3,0,388606451,3,,,"{""turn:lanes"": ""through|through|right""}",yes,50,1,through|through|right
+388606456#0,Värmdövägen,1,4,0,388606456,4,,,"{""turn:lanes"": ""left;through|through|through|right""}",yes,50,1,left;through|through|through|right
+39236693,Stadsgårdsleden,1,4,0,39236693,4,,,"{""turn:lanes"": ""left|through|through|through""}",yes,50,1,left|through|through|through
+40292864#0,Drottningholmsvägen,1,2,1,40292864,2,,,"{""turn:lanes"": ""left|left""}",yes,50,2,left|left
+40490923#0,Akallalänken,1,3,0,40490923,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+40490923#2,Akallalänken,1,3,0,40490923,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+4079648#0,Oxenstiernsgatan,1,2,1,4079648,2,,,"{""turn:lanes"": ""left|right""}",yes,40,2,left|right
+41018642#0,,1,2,0,41018642,2,,,"{""turn:lanes"": ""left|left;right""}",yes,50,2,left|left;right
+41123422#0,Sankt Eriksgatan,1,3,0,41123422,3,,,"{""turn:lanes"": ""through|through|right""}",yes,40,1,through|through|right
+41123422#1,Sankt Eriksgatan,1,3,0,41123422,3,,,"{""turn:lanes"": ""through|through|right""}",yes,40,1,through|through|right
+41510350#1,Valhallavägen,1,3,0,41510350,3,,,"{""turn:lanes"": ""through|through|right""}",yes,40,1,through|through|right
+41568952#1,Ringvägen,1,3,0,41568952,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+41574208#2,Vasagatan,1,2,0,41574208,2,,,"{""turn:lanes"": ""through|right""}",yes,40,1,through|right
+43054913#0,Värmdövägen,1,4,0,43054913,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+43054913#1,Värmdövägen,1,4,0,43054913,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+43160908#1,Alviksplan,1,2,0,43160908,2,,,"{""turn:lanes"": ""left|through""}",yes,50,1,left|through
+43997935#0,Avfart Trafikplats Frösunda,1,1,0,43997935,1,,,"{""turn:lanes"": ""left""}",yes,50,1,left
+4490202#0,Hamngatan,1,2,0,4490202,2,,,"{""turn:lanes"": ""through|right""}",yes,30,1,through|right
+456655411#0,Nybohovsbacken,1,2,0,456655411,2,,,"{""turn:lanes"": ""left|right""}",yes,40,2,left|right
+456854841,Årstabergsvägen,1,4,2,456854841,4,,,"{""turn:lanes"": ""left|left|right|right""}",yes,40,4,left|left|right|right
+458914941#0,Hägerstensvägen,1,3,0,458914941,3,,,"{""turn:lanes"": ""left|through|through""}",yes,40,1,left|through|through
+458964190#0,Åbyvägen,1,3,0,458964190,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+458964201#0,Årstabergsvägen,1,2,0,458964201,2,,,"{""turn:lanes"": ""left|through""}",yes,60,1,left|through
+458964202#0,Årstabergsvägen,1,2,0,458964202,2,,,"{""turn:lanes"": ""left|through""}",yes,60,1,left|through
+458964204#0,Årstabergsvägen,1,3,0,458964204,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+458964204#1,Årstabergsvägen,1,3,0,458964204,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+458964205#0,Årstabergsvägen,1,3,0,458964205,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+458964205#2,Årstabergsvägen,1,3,0,458964205,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+45902504#0,Vikdalsvägen,1,2,0,45902504,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+45902504#2,Vikdalsvägen,1,2,0,45902504,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+45902504#4,Vikdalsvägen,1,2,0,45902504,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+4718562#1,Stockholmsvägen,1,2,0,4718562,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+4741677#0,Örbyleden,1,3,0,4741677,3,,,"{""turn:lanes"": ""left|through|through""}",yes,40,1,left|through|through
+47982915#0,Kallhällsleden,1,2,0,47982915,2,,,"{""turn:lanes"": ""left|through""}",yes,50,1,left|through
+47982915#1,Kallhällsleden,1,2,0,47982915,2,,,"{""turn:lanes"": ""left|through""}",yes,50,1,left|through
+4801651#0,,1,2,0,4801651,2,,,"{""turn:lanes"": ""left|left;through""}",yes,60,1,left|left;through
+501714993#0,Frösundaleden,1,3,0,501714993,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+503316305#1,Frösundaleden,1,4,1,503316305,4,,,"{""turn:lanes"": ""left|left|through|through;right""}",yes,50,2,left|left|through|through;right
+503316306#0,Frösundaleden,1,4,0,503316306,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+503316306#2,Frösundaleden,1,4,1,503316306,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+515526714#0,Guldfjärdsplan,1,3,0,515526714,3,,,"{""turn:lanes"": ""left|through|through""}",yes,30,1,left|through|through
+551540032#0,Frösundaleden,1,4,0,551540032,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+551540032#1,Frösundaleden,1,4,0,551540032,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+56065991#0,Örbyleden,1,4,3,56065991,4,,,"{""turn:lanes"": ""left|left|right|right""}",yes,60,4,left|left|right|right
+56817476#0,Huddingevägen,1,3,0,56817476,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+570489141#0,Kolonnvägen,1,2,0,570489141,2,,,"{""turn:lanes"": ""left|left;through""}",yes,50,1,left|left;through
+577459648#1,Östbergavägen,1,2,0,577459648,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+609793170#0,Götgatan,1,1,0,609793170,1,,,"{""turn:lanes"": ""through|right""}",yes,30,1,through|right
+609793170#1,Götgatan,1,1,0,609793170,1,,,"{""turn:lanes"": ""through|right""}",yes,30,1,through|right
+6174454#0,,1,1,0,6174454,1,,,"{""turn:lanes"": ""left""}",yes,50,1,left
+621961424#0,Olaus Magnus Väg,1,2,0,621961424,2,,,"{""turn:lanes"": ""through;left|right""}",yes,50,1,through;left|right
+623904457#0,Magelungsvägen,1,3,0,623904457,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+623904459#0,Magelungsvägen,1,3,0,623904459,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+624726387#0,Lidingövägen,1,2,0,624726387,2,,,"{""turn:lanes"": ""right|right""}",yes,50,2,right|right
+624726390#2,Lidingövägen,1,3,0,624726390,3,,,"{""turn:lanes"": ""left|left;through|right""}",yes,50,2,left|left;through|right
+624726395#0,Lidingövägen,1,4,0,624726395,4,,,"{""turn:lanes"": ""left|left|through|through""}",yes,50,2,left|left|through|through
+636586775#0,Hjulstavägen,1,2,0,636586775,2,,,"{""turn:lanes"": ""left|through""}",yes,50,1,left|through
+636586782#0,Hjulstavägen,1,2,0,636586782,2,,,"{""turn:lanes"": ""left|through""}",yes,50,1,left|through
+636586783#0,Hjulstavägen,1,2,0,636586783,2,,,"{""turn:lanes"": ""left|through""}",yes,50,1,left|through
+659383325#0,Viksjöleden,1,3,0,659383325,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+659383328#0,Viksjöleden,1,3,0,659383328,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+672151501#0,Roslagsvägen,1,1,0,672151501,1,,,"{""turn:lanes"": ""left""}",yes,30,1,left
+672151501#1,Roslagsvägen,1,1,0,672151501,1,,,"{""turn:lanes"": ""left""}",yes,30,1,left
+672151501#2,Roslagsvägen,1,1,0,672151501,1,,,"{""turn:lanes"": ""left""}",yes,30,1,left
+682607995#0,Månskärsvägen,1,2,0,682607995,2,,,"{""turn:lanes"": ""left;through|right""}",yes,40,1,left;through|right
+682607995#1,Månskärsvägen,1,2,0,682607995,2,,,"{""turn:lanes"": ""left;through|right""}",yes,40,1,left;through|right
+688245109#0,Hallundavägen,1,3,0,688245109,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+688245109#1,Hallundavägen,1,3,0,688245109,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+688245115#0,Hallundavägen,1,3,0,688245115,3,,,"{""turn:lanes"": ""left|through|through""}",yes,40,1,left|through|through
+688500954#0,Kvarnhagsvägen,1,1,0,688500954,1,,,"{""turn:lanes"": ""right""}",yes,40,1,right
+688500956#0,Hågelbyleden,1,3,0,688500956,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+688500960#1,Tumbakopplet,1,2,1,688500960,2,,,"{""turn:lanes"": ""left|right""}",yes,50,2,left|right
+688500985#0,Kumla gårdsväg,1,3,0,688500985,3,,,"{""turn:lanes"": ""left|left|right""}",yes,50,3,left|left|right
+688500999#1,Kumla gårdsväg,1,1,0,688500999,1,,,"{""turn:lanes"": ""right|right""}",yes,50,2,right|right
+688500999#2,Kumla gårdsväg,1,1,0,688500999,1,,,"{""turn:lanes"": ""right|right""}",yes,50,2,right|right
+688501003#0,Albyvägen,1,2,1,688501003,2,,,"{""turn:lanes"": ""left|right""}",yes,40,2,left|right
+688501007#0,Hågelbyleden,1,3,0,688501007,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+688733374#0,Hågelbyleden,1,2,0,688733374,2,,,"{""turn:lanes"": ""left|through;right""}",yes,70,1,left|through;right
+688733380#0,Hågelbyleden,1,3,0,688733380,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,70,1,left|through|through;right
+688733380#1,Hågelbyleden,1,3,0,688733380,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,70,1,left|through|through;right
+688733384#0,Kumla gårdsväg,1,2,0,688733384,2,,,"{""turn:lanes"": ""left;through|right""}",yes,50,1,left;through|right
+693380560#1,Videgårdsvägen,1,2,1,693380560,2,,,"{""turn:lanes"": ""left|left;right""}",yes,60,2,left|left;right
+696507345#0,Uppsalavägen,1,3,0,696507345,3,,,"{""turn:lanes"": ""slight_left|through|through""}",yes,70,1,slight_left|through|through
+709683942#0,Frösundaleden,1,3,0,709683942,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+709683943#0,Frösundaleden,1,3,0,709683943,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+709683943#2,Frösundaleden,1,3,0,709683943,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+709683945#0,Frösundaleden,1,4,1,709683945,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+709684615#0,Frösundaleden,1,3,0,709684615,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+715443466#0,Videgårdsvägen,1,3,0,715443466,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+724589687#2,Per Hallströms Väg,1,2,0,724589687,2,,,"{""turn:lanes"": ""left;through|right""}",yes,50,1,left;through|right
+739526722#0,Olof Palmes Gata,1,2,0,739526722,2,,,"{""turn:lanes"": ""left;through|right""}",yes,40,1,left;through|right
+739526722#2,Olof Palmes Gata,1,2,0,739526722,2,,,"{""turn:lanes"": ""left;through|right""}",yes,40,1,left;through|right
+744152223#0,Söder Mälarstrand,1,2,0,744152223,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+749079351#0,Söder Mälarstrand,1,2,0,749079351,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+750458396#0,Karolinska vägen,1,2,0,750458396,2,,,"{""turn:lanes"": ""left|through;right""}",yes,40,1,left|through;right
+750458396#2,Karolinska vägen,1,2,0,750458396,2,,,"{""turn:lanes"": ""left|through;right""}",yes,40,1,left|through;right
+750458400#0,Tomtebodavägen,1,2,0,750458400,2,,,"{""turn:lanes"": ""left|through;right""}",yes,30,1,left|through;right
+750458400#2,Tomtebodavägen,1,2,0,750458400,2,,,"{""turn:lanes"": ""left|through;right""}",yes,30,1,left|through;right
+771769738,Frösundaleden,1,4,0,771769738,4,,,"{""turn:lanes"": ""left|left|through|through;right""}",yes,50,2,left|left|through|through;right
+772949926#0,Parkeringsvägen,1,1,0,772949926,1,,,"{""turn:lanes"": ""right""}",yes,50,1,right
+772949939#0,Åbyvägen,1,3,0,772949939,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+772949940#0,Åbyvägen,1,1,0,772949940,1,,,"{""turn:lanes"": ""right""}",yes,60,1,right
+772949964#1,Åbyvägen,1,3,0,772949964,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+772949970#0,Åbyvägen,1,3,0,772949970,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+772949971#0,Åbyvägen,1,3,0,772949971,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+773885884#0,Kungens Kurvaleden,1,3,0,773885884,3,,,"{""turn:lanes"": ""through|right|right""}",yes,60,2,through|right|right
+773885884#1,Kungens Kurvaleden,1,3,1,773885884,3,,,"{""turn:lanes"": ""through|right|right""}",yes,60,2,through|right|right
+773885885#0,Kungens Kurvaleden,1,3,0,773885885,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+773885885#1,Kungens Kurvaleden,1,3,0,773885885,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+773885891#0,Videgårdsvägen,1,3,0,773885891,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+773885894,Videgårdsvägen,1,3,0,773885894,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+773885927#0,Skärholmsvägen,1,3,0,773885927,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+773885927#1,Skärholmsvägen,1,3,0,773885927,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+777141998,Glömstavägen,1,2,1,777141998,3,2,1,"{""turn:lanes:forward"": ""left|left""}",,40,2,left|left
+777142024#0,Katrinebergsvägen,1,2,1,777142024,3,2,1,"{""turn:lanes:forward"": ""left|left;right""}",,60,2,left|left;right
+777142026#0,Glömstavägen,1,3,0,777142026,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+777142028#0,Glömstavägen,1,2,0,777142028,2,,,"{""turn:lanes"": ""left|through""}",yes,60,1,left|through
+777142047#0,Glömstavägen,1,3,0,777142047,3,,,"{""turn:lanes"": ""through|through|right""}",yes,60,1,through|through|right
+777142047#3,Glömstavägen,1,3,0,777142047,3,,,"{""turn:lanes"": ""through|through|right""}",yes,60,1,through|through|right
+788022973#0,Enebybergsvägen,1,2,0,788022973,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+8021477,Huddingevägen,1,3,0,8021477,3,,,"{""turn:lanes"": ""left|through|through""}",yes,70,1,left|through|through
+804574485#0,Roslagsvägen,1,4,0,804574485,4,,,"{""turn:lanes"": ""left|||right""}",yes,60,2,left|||right
+804574509#0,Roslagsvägen,1,4,0,804574509,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,60,2,left|through|through|right
+804574509#1,Roslagsvägen,1,4,1,804574509,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,60,2,left|through|through|right
+804598769,Enköpingsvägen,1,3,0,804598769,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+804669072#0,Frösundaleden,1,4,0,804669072,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+804669072#1,Frösundaleden,1,4,0,804669072,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+804669076#0,Frösundaleden,1,4,0,804669076,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+804669076#1,Frösundaleden,1,4,0,804669076,4,,,"{""turn:lanes"": ""left|through|through|right""}",yes,50,2,left|through|through|right
+804669079,Frösundaleden,1,3,0,804669079,3,,,"{""turn:lanes"": ""left|through|through""}",yes,50,1,left|through|through
+8117758#0,Huddingevägen,1,3,0,8117758,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,50,1,left|through|through;right
+815542259#0,Åstorpsringen,1,2,0,815542259,2,,,"{""turn:lanes"": ""through|right""}",yes,40,1,through|right
+815542261#0,Garagevägen,1,2,0,815542261,3,2,1,"{""turn:lanes:forward"": ""left|right""}",,30,2,left|right
+815542261#1,Garagevägen,1,2,1,815542261,3,2,1,"{""turn:lanes:forward"": ""left|right""}",,30,2,left|right
+823061086#0,Ågesta Broväg,1,2,0,823061086,2,,,"{""turn:lanes"": ""left|through;right""}",yes,40,1,left|through;right
+823061086#1,Ågesta Broväg,1,2,0,823061086,2,,,"{""turn:lanes"": ""left|through;right""}",yes,40,1,left|through;right
+823061088#0,Ågesta Broväg,1,2,0,823061088,2,,,"{""turn:lanes"": ""left|through;right""}",yes,40,1,left|through;right
+823061088#1,Ågesta Broväg,1,2,0,823061088,2,,,"{""turn:lanes"": ""left|through;right""}",yes,40,1,left|through;right
+825115065#1,Rosenlundsgatan,1,2,1,825115065,2,,,"{""turn:lanes"": ""left|right""}",yes,30,2,left|right
+828566355#0,Enköpingsvägen,1,3,0,828566355,3,,,"{""turn:lanes"": ""left|through|through""}",yes,60,1,left|through|through
+836036314#0,Tegnérgatan,1,1,0,836036314,1,,,"{""turn:lanes"": ""left""}",yes,30,1,left
+836036314#1,Tegnérgatan,1,1,0,836036314,1,,,"{""turn:lanes"": ""left""}",yes,30,1,left
+836036318#0,Barnhusbron,1,2,0,836036318,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+846143223#0,Frösundaleden,1,3,0,846143223,3,,,"{""turn:lanes"": ""through|through|right""}",yes,50,1,through|through|right
+846143223#2,Frösundaleden,1,3,0,846143223,3,,,"{""turn:lanes"": ""through|through|right""}",yes,50,1,through|through|right
+86498438#0,Personnevägen,1,2,0,86498438,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+865330750#0,Oxenstiernsgatan,1,2,0,865330750,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+865330750#3,Oxenstiernsgatan,1,2,0,865330750,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+884134678#0,,1,1,0,884134678,1,,,"{""turn:lanes"": ""right""}",yes,,1,right
+951438999#0,,1,1,0,951438999,1,,,"{""turn:lanes"": ""right""}",yes,40,1,right
+951439000#0,Sankt Eriksgatan,1,3,0,951439000,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+951439000#2,Sankt Eriksgatan,1,3,0,951439000,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+971365782#0,Enköpingsvägen,1,2,0,971365782,2,,,"{""turn:lanes"": ""left|through""}",yes,50,1,left|through
+971681652#0,Folkungavägen,1,3,1,971681652,3,,,"{""turn:lanes"": ""left|left|through""}",yes,40,2,left|left|through
+971681668#0,Enköpingsvägen,1,3,0,971681668,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,40,1,left|through|through;right
+971681683#0,Enköpingsvägen,1,3,1,971681683,3,,,"{""turn:lanes"": ""left|left|through""}",yes,40,2,left|left|through
+971681687,Enköpingsvägen,1,2,0,971681687,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
+972375157#0,Akallalänken,1,3,0,972375157,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+972375159#0,Akallalänken,1,3,0,972375159,3,,,"{""turn:lanes"": ""left|through|through;right""}",yes,60,1,left|through|through;right
+972375174#0,Norrviksvägen,1,2,0,972375174,2,,,"{""turn:lanes"": ""left|through""}",yes,60,1,left|through
+972375174#1,Norrviksvägen,1,2,0,972375174,2,,,"{""turn:lanes"": ""left|through""}",yes,60,1,left|through
+972375179#0,Norrviksvägen,1,2,0,972375179,2,,,"{""turn:lanes"": ""through|right""}",yes,60,1,through|right
+977427715#0,Torshamnsgatan,1,3,1,977427715,3,,,"{""turn:lanes"": ""left|left|through""}",yes,40,2,left|left|through
+979661324#0,Nettovägen,1,2,0,979661324,2,,,"{""turn:lanes"": ""left|through;right""}",yes,50,1,left|through;right
+979661328#0,Veddestavägen,1,2,0,979661328,2,,,"{""turn:lanes"": ""left|through""}",yes,50,1,left|through
+979661334#0,Järfällavägen,1,2,0,979661334,2,,,"{""turn:lanes"": ""left|through;right""}",yes,50,1,left|through;right
+979661334#1,Järfällavägen,1,2,0,979661334,2,,,"{""turn:lanes"": ""left|through;right""}",yes,50,1,left|through;right
+997221675#1,Karlsbodavägen,1,2,0,997221675,2,,,"{""turn:lanes"": ""left|through""}",yes,40,1,left|through
