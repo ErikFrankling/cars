@@ -17,6 +17,42 @@ impl Camera {
         }
     }
 }
+/// Far-away roads for a window: thinner meshes further out, cut into tiles so what is off screen
+/// is not drawn. Offscreen jobs use the single mesh instead.
+struct RoadLod {
+    from_mpp: f32,
+    buffer: wgpu::Buffer,
+    tiles: Vec<Tile>,
+    segments: u32,
+}
+struct Tile {
+    bbox: [f32; 4],
+    start: u32,
+    count: u32,
+}
+/// Drawing to a window surface instead of the readback texture.
+struct Present {
+    format: wgpu::TextureFormat,
+    pipeline: wgpu::RenderPipeline,
+    group: wgpu::BindGroup,
+}
+/// Numbers worked out with the poses. Cheap: no vehicle crosses to the CPU.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct FrameStats {
+    pub vehicles: u32,
+    pub mean_speed: f32,
+    /// Stood still for over two minutes.
+    pub stuck: u32,
+    pub halting: u32,
+    pub braking: u32,
+    /// Index in the vehicle buffer of the selected trip, if it is on the road.
+    pub selected_index: Option<u32>,
+    pub selected_xy: [f32; 2],
+    pub selected_dir: [f32; 2],
+}
+pub const STATS_WORDS: u64 = 16;
+/// Far cars show their brake lamps.
+pub const FLAG_FAR_BRAKE: u32 = 1;
 pub struct Renderer {
     render_links: wgpu::Buffer,
     render_routes: wgpu::Buffer,
@@ -53,9 +89,14 @@ pub struct Renderer {
     stride: u32,
     approaches: Vec<closeup::Approach>,
     meshes: Vec<CloseMesh>,
-    uniform: [u32; 12],
+    max_meshes: usize,
+    uniform: [u32; 16],
+    lods: Vec<RoadLod>,
+    present: Option<Present>,
+    selected: wgpu::Buffer,
+    road_seg: wgpu::RenderPipeline,
 }
-struct CloseMesh {
+pub struct CloseMesh {
     region: [f32; 4],
     buffer: wgpu::Buffer,
     count: u32,
@@ -78,6 +119,11 @@ pub struct Instance {
 const CLOSE_FROM: f32 = 0.6;
 const CLOSE_FULL: f32 = 0.35;
 const MAX_MESHES: usize = 12;
+/// How far the close-up style has faded in at this zoom.
+pub fn close_fade(mpp: f32) -> f32 {
+    let close = ((CLOSE_FROM - mpp) / (CLOSE_FROM - CLOSE_FULL)).clamp(0.0, 1.0);
+    close * close * (3.0 - 2.0 * close)
+}
 fn buffer(g: &Gpu, name: &str, data: &[u8], usage: wgpu::BufferUsages) -> wgpu::Buffer {
     let padded = vec![0; 256];
     g.device
@@ -86,6 +132,68 @@ fn buffer(g: &Gpu, name: &str, data: &[u8], usage: wgpu::BufferUsages) -> wgpu::
             contents: if data.is_empty() { &padded } else { data },
             usage,
         })
+}
+/// Keep only the points a polyline needs to stay within `tolerance` metres.
+fn simplify(shape: &[[f32; 2]], tolerance: f32) -> Vec<[f32; 2]> {
+    if shape.len() < 3 || tolerance <= 0.0 {
+        return shape.to_vec();
+    }
+    let mut keep = vec![false; shape.len()];
+    keep[0] = true;
+    keep[shape.len() - 1] = true;
+    let mut todo = vec![(0usize, shape.len() - 1)];
+    while let Some((a, b)) = todo.pop() {
+        let (p, q) = (shape[a], shape[b]);
+        let d = [q[0] - p[0], q[1] - p[1]];
+        let len = d[0].hypot(d[1]).max(1e-4);
+        let (mut worst, mut at) = (0.0f32, 0usize);
+        for (i, r) in shape.iter().enumerate().take(b).skip(a + 1) {
+            let e = ((r[0] - p[0]) * d[1] - (r[1] - p[1]) * d[0]).abs() / len;
+            if e > worst {
+                (worst, at) = (e, i);
+            }
+        }
+        if worst > tolerance {
+            keep[at] = true;
+            todo.push((a, at));
+            todo.push((at, b));
+        }
+    }
+    shape.iter().zip(&keep).filter(|(_, k)| **k).map(|(p, _)| *p).collect()
+}
+fn lod_mesh(g: &Gpu, from_mpp: f32, bounds: [f32; 4], mut segs: Vec<[f32; 6]>) -> RoadLod {
+    const GRID: f32 = 48.0;
+    let (sx, sy) = ((bounds[2] - bounds[0]).max(1.0) / GRID, (bounds[3] - bounds[1]).max(1.0) / GRID);
+    let cell = |s: &[f32; 6]| {
+        let x = (((s[0] + s[2]) * 0.5 - bounds[0]) / sx).clamp(0.0, GRID - 1.0) as u32;
+        let y = (((s[1] + s[3]) * 0.5 - bounds[1]) / sy).clamp(0.0, GRID - 1.0) as u32;
+        y * GRID as u32 + x
+    };
+    segs.sort_by_cached_key(cell);
+    let mut tiles: Vec<Tile> = Vec::new();
+    let mut last = u32::MAX;
+    for (i, s) in segs.iter().enumerate() {
+        let c = cell(s);
+        if c != last || tiles.is_empty() {
+            tiles.push(Tile { bbox: [f32::MAX, f32::MAX, f32::MIN, f32::MIN], start: i as u32, count: 0 });
+            last = c;
+        }
+        let t = tiles.last_mut().unwrap();
+        t.count += 1;
+        let m = s[4] * 0.5;
+        t.bbox = [t.bbox[0].min(s[0].min(s[2]) - m), t.bbox[1].min(s[1].min(s[3]) - m), t.bbox[2].max(s[0].max(s[2]) + m), t.bbox[3].max(s[1].max(s[3]) + m)];
+    }
+    RoadLod { from_mpp, segments: segs.len() as u32, buffer: buffer(g, "road lod", bytemuck::cast_slice(&segs), wgpu::BufferUsages::VERTEX), tiles }
+}
+/// Build the close-up road for a region, from any thread.
+pub fn build_close_mesh(g: &Gpu, net: &Net, approaches: &[closeup::Approach], region: [f32; 4]) -> CloseMesh {
+    let vertices = closeup::build(net, approaches, region);
+    CloseMesh { region, count: vertices.len() as u32, buffer: buffer(g, "close road", bytemuck::cast_slice(&vertices), wgpu::BufferUsages::VERTEX) }
+}
+impl CloseMesh {
+    pub fn bytes(&self) -> u64 {
+        self.buffer.size()
+    }
 }
 fn turn_bits(dir: u8) -> u32 {
     match dir {
@@ -258,7 +366,7 @@ impl Renderer {
         let camera = buffer(
             g,
             "camera",
-            &[0; 48],
+            &[0; 64],
             wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         );
         let ranges = buffer(g, "shape ranges", bytemuck::cast_slice(&ranges), storage);
@@ -274,7 +382,7 @@ impl Renderer {
             .zip(widths)
             .map(|(t, &body)| [t.length, body, if t.model >= 2 { 1.0 } else { 0.0 }, 0.0])
             .collect();
-        let types = buffer(g, "render types", bytemuck::cast_slice(&type_data), storage);
+        let types = buffer(g, "render types", bytemuck::cast_slice(&type_data), storage | wgpu::BufferUsages::COPY_DST);
         let instances = g.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("instances"),
             size: total.max(1) as u64 * 48,
@@ -284,7 +392,7 @@ impl Renderer {
         let stats = buffer(
             g,
             "render stats",
-            &[0; 8],
+            &[0; (STATS_WORDS * 4) as usize],
             storage | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
         );
         let road_count = roads.len() as u32;
@@ -385,6 +493,13 @@ impl Renderer {
                 })
         };
         let road = make("road", "road_frag", 24, wgpu::VertexStepMode::Vertex, &road_attrs, additive);
+        let road_seg = make("road_seg", "road_frag", 24, wgpu::VertexStepMode::Instance, &road_attrs, additive);
+        let selected = g.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("selected vehicle"),
+            size: std::mem::size_of::<crate::world::GpuVeh>() as u64,
+            usage: storage | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
         let car = make("car", "car_frag", 48, wgpu::VertexStepMode::Instance, &car_attrs, additive);
         let close_road = make("close_road", "close_road_frag", 32, wgpu::VertexStepMode::Vertex, &close_attrs, over);
         let close_car = make("close_car", "close_car_frag", 48, wgpu::VertexStepMode::Instance, &car_attrs, over);
@@ -511,13 +626,162 @@ impl Renderer {
             stride,
             approaches: closeup::approaches(net),
             meshes: Vec::new(),
-            uniform: [0; 12],
+            max_meshes: MAX_MESHES,
+            uniform: [0; 16],
+            lods: Vec::new(),
+            present: None,
+            selected,
+            road_seg,
         }
+    }
+    /// Build tiled far-away roads, for a camera that can go anywhere every frame. Needs `far_roads` off.
+    pub fn enable_lods(&mut self, g: &Gpu, net: &Net) {
+        let road_mask = crate::net::vclass_mask("passenger bus truck taxi delivery emergency motorcycle");
+        let tint_of = |speed: f32, internal: bool| if internal { 0.35 } else if speed > 25.0 { 1.5 } else { 1.0 };
+        let push = |out: &mut Vec<[f32; 6]>, shape: &[[f32; 2]], width: f32, tint: f32| {
+            for p in shape.windows(2) {
+                if (p[1][0] - p[0][0]).hypot(p[1][1] - p[0][1]) >= 0.001 {
+                    out.push([p[0][0], p[0][1], p[1][0], p[1][1], width, tint]);
+                }
+            }
+        };
+        let mut all = Vec::new();
+        for (i, l) in net.lanes.iter().enumerate() {
+            push(&mut all, &l.shape, l.width, tint_of(l.speed, net.is_internal_lane(i as u32)));
+        }
+        let mut lods = vec![lod_mesh(g, 0.0, net.bounds, all)];
+        // Further out, one strip for each road, losing detail and then the smallest streets.
+        for (from_mpp, tolerance, min_speed) in [(2.0, 1.5, 0.0), (8.0, 6.0, 0.0), (24.0, 18.0, 12.0)] {
+            let mut segs = Vec::new();
+            for e in net.edges.iter().filter(|e| e.func == crate::net::EdgeFunc::Normal) {
+                let lanes = &net.lanes[e.first_lane as usize..(e.first_lane + e.lane_count) as usize];
+                let width: f32 = lanes.iter().filter(|l| l.allow & road_mask != 0).map(|l| l.width).sum();
+                let Some(mid) = lanes.get(lanes.len() / 2).filter(|_| width > 0.0) else { continue };
+                if mid.speed < min_speed {
+                    continue;
+                }
+                push(&mut segs, &simplify(&mid.shape, tolerance), width, tint_of(mid.speed, false));
+            }
+            lods.push(lod_mesh(g, from_mpp, net.bounds, segs));
+        }
+        self.lods = lods;
+        self.max_meshes = 4;
+    }
+    /// Segments drawn at each level of detail, finest first.
+    pub fn lod_sizes(&self) -> Vec<u32> {
+        self.lods.iter().map(|l| l.segments).collect()
+    }
+    /// Colour classes for the vehicle type view, one per type.
+    pub fn set_type_classes(&self, g: &Gpu, classes: &[f32]) {
+        for (i, c) in classes.iter().enumerate() {
+            g.queue.write_buffer(&self.types, i as u64 * 16 + 12, bytemuck::bytes_of(c));
+        }
+    }
+    pub fn approaches(&self) -> Vec<closeup::Approach> {
+        self.approaches.clone()
+    }
+    /// Change the size of what is drawn. Everything sized by the frame is made again.
+    pub fn resize(&mut self, g: &Gpu, width: u32, height: u32) {
+        if (width, height) == (self.width, self.height) || width == 0 || height == 0 {
+            return;
+        }
+        let texture = |format, samples, usage| {
+            g.device.create_texture(&wgpu::TextureDescriptor {
+                label: None,
+                size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+                mip_level_count: 1,
+                sample_count: samples,
+                dimension: wgpu::TextureDimension::D2,
+                format,
+                usage,
+                view_formats: &[],
+            })
+        };
+        self.hdr = texture(wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING).create_view(&Default::default());
+        self.msaa = texture(wgpu::TextureFormat::Rgba16Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT).create_view(&Default::default());
+        self.output = texture(wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC);
+        self.tone_group = g.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &self.tone.get_bind_group_layout(0),
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&self.hdr) },
+                wgpu::BindGroupEntry { binding: 1, resource: self.camera.as_entire_binding() },
+            ],
+        });
+        self.stride = (width * 4).next_multiple_of(256);
+        self.readback = g.device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: self.stride as u64 * height as u64,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            mapped_at_creation: false,
+        });
+        self.width = width;
+        self.height = height;
+        self.uniform[2] = (width as f32).to_bits();
+        self.uniform[3] = (height as f32).to_bits();
+        if let Some(format) = self.present.as_ref().map(|p| p.format) {
+            self.set_present_format(g, format);
+        }
+    }
+    /// Get ready to draw into a window with this surface format.
+    pub fn set_present_format(&mut self, g: &Gpu, format: wgpu::TextureFormat) {
+        let tm = g.shader("tone map", include_str!("shaders/tonemap.wgsl"));
+        let pipeline = g.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("tone map to window"),
+            layout: None,
+            vertex: wgpu::VertexState { module: &tm, entry_point: Some("vs"), compilation_options: Default::default(), buffers: &[] },
+            fragment: Some(wgpu::FragmentState { module: &tm, entry_point: Some("fs"), compilation_options: Default::default(), targets: &[Some(format.into())] }),
+            primitive: Default::default(),
+            depth_stencil: None,
+            multisample: Default::default(),
+            multiview_mask: None,
+            cache: None,
+        });
+        let group = g.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &pipeline.get_bind_group_layout(0),
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&self.hdr) },
+                wgpu::BindGroupEntry { binding: 1, resource: self.camera.as_entire_binding() },
+            ],
+        });
+        self.present = Some(Present { format, pipeline, group });
     }
     /// Work out every vehicle's pose for this frame. `blend` is how far the moment shown lies
     /// between the previous step and the current one.
     /// Returns the vehicle count and mean speed.
     pub fn prepare(&mut self, g: &Gpu, sim: &Sim, blend: f32, mode: u32) -> (u32, f32) {
+        self.dispatch(g, sim, blend, mode);
+        let stats = sim.read::<u32>(g, &self.stats, 2);
+        (
+            stats[0],
+            stats[1] as f32 / 100.0 / stats[0].max(1) as f32,
+        )
+    }
+    /// `prepare` for a live window: nothing waits. Read the numbers with `stats` when they are wanted.
+    pub fn prepare_live(&mut self, g: &Gpu, sim: &Sim, blend: f32, mode: u32, flags: u32, selected: Option<u32>) {
+        self.uniform[11] = flags;
+        self.uniform[12] = selected.unwrap_or(u32::MAX);
+        self.dispatch(g, sim, blend, mode);
+    }
+    pub fn stats(&self, g: &Gpu, sim: &Sim) -> FrameStats {
+        let s = sim.read::<u32>(g, &self.stats, STATS_WORDS);
+        FrameStats {
+            vehicles: s[0],
+            mean_speed: s[1] as f32 / 100.0 / s[0].max(1) as f32,
+            stuck: s[2],
+            halting: s[3],
+            braking: s[4],
+            selected_index: s[5].checked_sub(1),
+            selected_xy: [f32::from_bits(s[6]), f32::from_bits(s[7])],
+            selected_dir: [f32::from_bits(s[8]), f32::from_bits(s[9])],
+        }
+    }
+    /// The selected trip's vehicle, as `prepare_live` last saw it. Only valid when `stats` found it.
+    pub fn selected_vehicle(&self, g: &Gpu, sim: &Sim) -> crate::world::GpuVeh {
+        sim.read(g, &self.selected, 1)[0]
+    }
+    fn dispatch(&mut self, g: &Gpu, sim: &Sim, blend: f32, mode: u32) {
         self.uniform[2] = (self.width as f32).to_bits();
         self.uniform[3] = (self.height as f32).to_bits();
         self.uniform[4] = 1f32.to_bits();
@@ -545,6 +809,7 @@ impl Renderer {
             &self.history,
             &self.render_links,
             &self.render_routes,
+            &self.selected,
         ];
         let entries: Vec<_> = buffers
             .iter()
@@ -568,11 +833,6 @@ impl Renderer {
             p.dispatch_workgroups(self.total.max(1).div_ceil(64), 1, 1);
         }
         g.queue.submit([e.finish()]);
-        let stats = sim.read::<u32>(g, &self.stats, 2);
-        (
-            stats[0],
-            stats[1] as f32 / 100.0 / stats[0].max(1) as f32,
-        )
     }
     /// Poses worked out elsewhere, for a replay with no simulation behind it. `vehicles` must fit
     /// the capacity the renderer was built with.
@@ -645,52 +905,136 @@ impl Renderer {
         self.meshes.push(mesh);
         self.meshes.len() - 1
     }
-    /// Draw what `prepare` worked out through one camera.
-    pub fn draw(&mut self, g: &Gpu, net: &Net, cam: Camera) -> Vec<u8> {
-        let close = ((CLOSE_FROM - cam.metres_per_pixel) / (CLOSE_FROM - CLOSE_FULL)).clamp(0.0, 1.0);
-        let close = close * close * (3.0 - 2.0 * close);
+    /// The part of the net this camera sees.
+    fn view_box(&self, cam: Camera) -> [f32; 4] {
+        let half = [self.width as f32 * 0.5 * cam.metres_per_pixel, self.height as f32 * 0.5 * cam.metres_per_pixel];
+        [cam.center[0] - half[0], cam.center[1] - half[1], cam.center[0] + half[0], cam.center[1] + half[1]]
+    }
+    /// What a close-up mesh for this camera should cover, or None if it needs no mesh or has one.
+    pub fn close_mesh_wanted(&self, cam: Camera) -> Option<[f32; 4]> {
+        if close_fade(cam.metres_per_pixel) <= 0.0 {
+            return None;
+        }
+        let v = self.view_box(cam);
+        if self.meshes.iter().any(|m| m.region[0] <= v[0] && m.region[1] <= v[1] && m.region[2] >= v[2] && m.region[3] >= v[3]) {
+            return None;
+        }
+        let half = [(v[2] - v[0]) * 0.5, (v[3] - v[1]) * 0.5];
+        let m = [half[0] * 1.2 + 80.0, half[1] * 1.2 + 80.0];
+        Some([v[0] - m[0], v[1] - m[1], v[2] + m[0], v[3] + m[1]])
+    }
+    pub fn add_close_mesh(&mut self, mesh: CloseMesh) {
+        if self.meshes.len() >= self.max_meshes {
+            self.meshes.remove(0);
+        }
+        self.meshes.push(mesh);
+    }
+    fn set_view_uniform(&mut self, g: &Gpu, cam: Camera, close: f32) {
         self.uniform[0] = cam.center[0].to_bits();
         self.uniform[1] = cam.center[1].to_bits();
         self.uniform[4] = cam.metres_per_pixel.to_bits();
         self.uniform[8] = close.to_bits();
-        g.queue
-            .write_buffer(&self.camera, 0, bytemuck::cast_slice(&self.uniform));
-        let mesh = (close > 0.0).then(|| self.mesh(g, net, cam));
-        let mut e = g.device.create_command_encoder(&Default::default());
-        {
-            let mut p = e.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.msaa,
-                    resolve_target: Some(&self.hdr),
-                    depth_slice: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Discard,
-                    },
-                })],
-                ..Default::default()
-            });
-            p.set_bind_group(0, &self.draw_group, &[]);
-            if close < 1.0 {
+        g.queue.write_buffer(&self.camera, 0, bytemuck::cast_slice(&self.uniform));
+    }
+    fn record_scene(&self, e: &mut wgpu::CommandEncoder, cam: Camera, close: f32, mesh: Option<usize>, covered: bool) {
+        let mut p = e.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &self.msaa,
+                resolve_target: Some(&self.hdr),
+                depth_slice: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Discard,
+                },
+            })],
+            ..Default::default()
+        });
+        p.set_bind_group(0, &self.draw_group, &[]);
+        if close < 1.0 || !covered {
+            if self.lods.is_empty() {
                 p.set_pipeline(&self.road);
                 p.set_vertex_buffer(0, self.roads.slice(..));
                 p.draw(0..self.road_count, 0..1);
-                p.set_pipeline(&self.car);
-                p.set_vertex_buffer(0, self.instances.slice(..));
-                p.draw(0..3, 0..self.total);
+            } else {
+                let lod = self.lods.iter().rev().find(|l| cam.metres_per_pixel >= l.from_mpp).unwrap_or(&self.lods[0]);
+                let v = self.view_box(cam);
+                p.set_pipeline(&self.road_seg);
+                p.set_vertex_buffer(0, lod.buffer.slice(..));
+                let (mut start, mut end) = (0, 0);
+                for t in &lod.tiles {
+                    if t.bbox[0] > v[2] || t.bbox[1] > v[3] || t.bbox[2] < v[0] || t.bbox[3] < v[1] {
+                        continue;
+                    }
+                    if t.start != end {
+                        if end > start {
+                            p.draw(0..6, start..end);
+                        }
+                        start = t.start;
+                    }
+                    end = t.start + t.count;
+                }
+                if end > start {
+                    p.draw(0..6, start..end);
+                }
             }
-            if let Some(i) = mesh {
-                let m = &self.meshes[i];
-                p.set_pipeline(&self.close_road);
-                p.set_vertex_buffer(0, m.buffer.slice(..));
-                p.draw(0..m.count, 0..1);
-                p.set_vertex_buffer(0, self.instances.slice(..));
-                p.set_pipeline(&self.close_signal);
-                p.draw(0..6, self.capacity..self.total);
-                p.set_pipeline(&self.close_car);
-                p.draw(0..6, 0..self.capacity);
-            }
+            p.set_pipeline(&self.car);
+            p.set_vertex_buffer(0, self.instances.slice(..));
+            p.draw(0..3, 0..self.total);
         }
+        if let Some(i) = mesh {
+            let m = &self.meshes[i];
+            p.set_pipeline(&self.close_road);
+            p.set_vertex_buffer(0, m.buffer.slice(..));
+            p.draw(0..m.count, 0..1);
+            p.set_vertex_buffer(0, self.instances.slice(..));
+            p.set_pipeline(&self.close_signal);
+            p.draw(0..6, self.capacity..self.total);
+            p.set_pipeline(&self.close_car);
+            p.draw(0..6, 0..self.capacity);
+        }
+    }
+    /// Draw what `prepare_live` worked out into a window's frame. Uses the best close-up mesh there is;
+    /// where it does not reach yet, the far view shows through.
+    pub fn draw_live(&mut self, g: &Gpu, cam: Camera, e: &mut wgpu::CommandEncoder, target: &wgpu::TextureView, at: [u32; 2]) {
+        let close = close_fade(cam.metres_per_pixel);
+        self.uniform[13] = (at[0] as f32).to_bits();
+        self.uniform[14] = (at[1] as f32).to_bits();
+        self.set_view_uniform(g, cam, close);
+        let v = self.view_box(cam);
+        let overlap = |r: &[f32; 4]| ((r[2].min(v[2]) - r[0].max(v[0])).max(0.0)) * ((r[3].min(v[3]) - r[1].max(v[1])).max(0.0));
+        let (mut mesh, mut covered) = (None, false);
+        if close > 0.0 {
+            mesh = self.meshes.iter().enumerate().max_by(|a, b| overlap(&a.1.region).total_cmp(&overlap(&b.1.region))).map(|x| x.0);
+            covered = mesh.is_some_and(|i| {
+                let r = self.meshes[i].region;
+                r[0] <= v[0] && r[1] <= v[1] && r[2] >= v[2] && r[3] >= v[3]
+            });
+        }
+        self.record_scene(e, cam, close, mesh, covered);
+        let present = self.present.as_ref().expect("set_present_format first");
+        let mut p = e.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: target,
+                resolve_target: None,
+                depth_slice: None,
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store },
+            })],
+            ..Default::default()
+        });
+        p.set_viewport(at[0] as f32, at[1] as f32, self.width as f32, self.height as f32, 0.0, 1.0);
+        p.set_pipeline(&present.pipeline);
+        p.set_bind_group(0, &present.group, &[]);
+        p.draw(0..3, 0..1);
+    }
+    /// Draw what `prepare` worked out through one camera.
+    pub fn draw(&mut self, g: &Gpu, net: &Net, cam: Camera) -> Vec<u8> {
+        let close = close_fade(cam.metres_per_pixel);
+        self.uniform[13] = 0;
+        self.uniform[14] = 0;
+        self.set_view_uniform(g, cam, close);
+        let mesh = (close > 0.0).then(|| self.mesh(g, net, cam));
+        let mut e = g.device.create_command_encoder(&Default::default());
+        self.record_scene(&mut e, cam, close, mesh, true);
         let view = self.output.create_view(&Default::default());
         {
             let mut p = e.begin_render_pass(&wgpu::RenderPassDescriptor {

@@ -2,7 +2,6 @@
 use clap::{Parser, Subcommand};
 mod av;
 mod junctions;
-mod overlay;
 mod record;
 mod replay;
 mod run;

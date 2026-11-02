@@ -1,6 +1,6 @@
 //! Draw a trace: no simulation, no simulation buffers. Poses are worked out here, the way the
 //! `prepare` kernel does, and uploaded to the vertex stage each frame.
-use crate::overlay::Snapshot;
+use cars_core::overlay::Snapshot;
 use crate::record::{self, Common, Source};
 use crate::trace::{self, COLLISION, NO_LINK, NONE_LANE, Record, TELEPORT, Trace};
 use bytemuck::Zeroable;
