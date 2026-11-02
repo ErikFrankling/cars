@@ -1,0 +1,131 @@
+{
+ "records": 2961,
+ "hourly_share_all_sites_pct": [
+  0.76,
+  0.56,
+  0.4,
+  0.38,
+  0.5,
+  1.5,
+  4.21,
+  6.56,
+  7.1,
+  5.65,
+  5.31,
+  5.63,
+  6.06,
+  6.03,
+  6.56,
+  7.76,
+  8.13,
+  7.08,
+  5.55,
+  4.28,
+  3.48,
+  2.85,
+  2.19,
+  1.47
+ ],
+ "big_records": 1377,
+ "hourly_share_big_pct": [
+  0.76,
+  0.56,
+  0.4,
+  0.39,
+  0.52,
+  1.59,
+  4.41,
+  6.6,
+  7.0,
+  5.7,
+  5.35,
+  5.65,
+  6.1,
+  6.07,
+  6.61,
+  7.77,
+  8.01,
+  6.92,
+  5.43,
+  4.21,
+  3.44,
+  2.85,
+  2.19,
+  1.47
+ ],
+ "band_share_big_pct": {
+  "06-18": 76.2,
+  "18-22": 15.9,
+  "22-06": 7.9
+ },
+ "max_hour_share_q10_50_90": [
+  7.4,
+  9.1,
+  11.6
+ ],
+ "am_over_pm_peak_q10_50_90": [
+  0.51,
+  0.88,
+  1.44
+ ],
+ "heavy_share_records": 2547,
+ "heavy_share_q10_50_90_pct": [
+  0.0,
+  4.0,
+  8.0
+ ],
+ "heavy_share_vkm_weighted_pct": 3.83,
+ "speed_rows": 1456,
+ "speed_by_limit": {
+  "10": {
+   "n": 4,
+   "mean_of_mean": 23.8,
+   "median_of_mean": 24.0,
+   "mean_p85": 29,
+   "flow_weighted_mean": 26.7
+  },
+  "30": {
+   "n": 475,
+   "mean_of_mean": 27.4,
+   "median_of_mean": 27,
+   "mean_p85": 32.7,
+   "flow_weighted_mean": 31.5
+  },
+  "40": {
+   "n": 615,
+   "mean_of_mean": 35.2,
+   "median_of_mean": 35,
+   "mean_p85": 42.0,
+   "flow_weighted_mean": 36.2
+  },
+  "50": {
+   "n": 130,
+   "mean_of_mean": 42.3,
+   "median_of_mean": 41.0,
+   "mean_p85": 48.7,
+   "flow_weighted_mean": 47.8
+  },
+  "60": {
+   "n": 197,
+   "mean_of_mean": 52.4,
+   "median_of_mean": 50,
+   "mean_p85": 60.8,
+   "flow_weighted_mean": 53.6
+  },
+  "70": {
+   "n": 11,
+   "mean_of_mean": 55.1,
+   "median_of_mean": 50,
+   "mean_p85": 65.1,
+   "flow_weighted_mean": 54.5
+  },
+  "80": {
+   "n": 24,
+   "mean_of_mean": 67.7,
+   "median_of_mean": 67.0,
+   "mean_p85": 0,
+   "flow_weighted_mean": 67.8
+  }
+ },
+ "speed_null_records": 811
+}

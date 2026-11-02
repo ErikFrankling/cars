@@ -1,0 +1,1348 @@
+{
+ "days": [
+  "07.05.2019",
+  "14.05.2019",
+  "15.05.2019",
+  "16.05.2019",
+  "21.05.2019",
+  "22.05.2019",
+  "23.05.2019",
+  "28.05.2019"
+ ],
+ "sites": 239,
+ "classes": [
+  119,
+  117,
+  3
+ ],
+ "floor": {
+  "net_total_ratio_err": {
+   "p50": 0.009400801951038318,
+   "p90": 0.02255964552101175,
+   "max": 0.028026531392481457
+  },
+  "hour_share_rmse_pts": {
+   "p50": 0.09007140774385095,
+   "p90": 0.1256033168994855,
+   "max": 0.14411517268650761
+  },
+  "am_peak_err_h": {
+   "p50": 0.0,
+   "p90": 0.0,
+   "max": 0.0
+  },
+  "pm_peak_err_h": {
+   "p50": 0.0,
+   "p90": 1.0,
+   "max": 1.0
+  },
+  "site_hour_median_geh": {
+   "p50": 1.5346121268587807,
+   "p90": 1.7130886620876922,
+   "max": 1.8760075040450244
+  },
+  "site_hour_geh_ge5_share": {
+   "p50": 0.08326359832635982,
+   "p90": 0.11129707112970712,
+   "max": 0.13723849372384936
+  },
+  "site_hour_wape": {
+   "p50": 0.07325558841350696,
+   "p90": 0.08592244657389064,
+   "max": 0.09404992082308991
+  },
+  "site_day_mdape": {
+   "p50": 0.028488961361195435,
+   "p90": 0.036044398506968056,
+   "max": 0.04076584829607915
+  },
+  "site_day_p95ape": {
+   "p50": 0.22089383270139826,
+   "p90": 0.31736277762099774,
+   "max": 0.3844859461936812
+  },
+  "site_shape_median_tv": {
+   "p50": 0.029686622444835276,
+   "p90": 0.03129880675321081,
+   "max": 0.03301976339825828
+  },
+  "class_hour_speed_mae_kmh": {
+   "p50": 2.6250705055942243,
+   "p90": 4.769414380354908,
+   "max": 5.312046610889729
+  },
+  "class_hour_speed_max_kmh": {
+   "p50": 14.587230062751146,
+   "p90": 22.308314148786017,
+   "max": 23.287083097598803
+  },
+  "site_hour_speed_mae_kmh": {
+   "p50": 3.4031172203272,
+   "p90": 3.893110005118681,
+   "max": 3.952755905511811
+  },
+  "site_hour_speed_p95_kmh": {
+   "p50": 12.5,
+   "p90": 14.199999999999818,
+   "max": 15.0
+  },
+  "speed_dist_w1_am_kmh": {
+   "p50": 0.7813819095477386,
+   "p90": 1.6083040201005026,
+   "max": 2.1024874371859297
+  },
+  "speed_dist_w1_mid_kmh": {
+   "p50": 0.6435678391959796,
+   "p90": 0.9217336683417073,
+   "max": 1.0438190954773854
+  },
+  "speed_dist_w1_pm_kmh": {
+   "p50": 0.7246231155778882,
+   "p90": 1.3456155778894474,
+   "max": 1.8318844221105528
+  },
+  "dip_median_err": {
+   "p50": 0.058898364843551265,
+   "p90": 0.06681996502471549,
+   "max": 0.07066004552038074
+  },
+  "jam_sitehours_log_ratio": {
+   "p50": 0.0688657270811648,
+   "p90": 0.16408634338523836,
+   "max": 0.21372432939771813
+  },
+  "jam_fss_exact": {
+   "p50": 0.34218243556104333,
+   "p90": 0.38612536879117326,
+   "max": 0.4087665647298675
+  },
+  "jam_fss_1h": {
+   "p50": 0.22337379093456605,
+   "p90": 0.27929901263335966,
+   "max": 0.3014099494546423
+  },
+  "jam_fss_1h_1km": {
+   "p50": 0.13893968764215348,
+   "p90": 0.17524373141196303,
+   "max": 0.18793535209454804
+  },
+  "jam_onset_mae_h": {
+   "p50": 0.5844402277039848,
+   "p90": 0.6709558823529411,
+   "max": 0.7441860465116279
+  },
+  "jam_clear_mae_h": {
+   "p50": 0.7844645550527903,
+   "p90": 0.9246532156368222,
+   "max": 0.9911504424778761
+  },
+  "mfd_flow_nrmse": {
+   "p50": 0.017427913035833208,
+   "p90": 0.023546955622589422,
+   "max": 0.02624936567473322
+  },
+  "mfd_density_nrmse": {
+   "p50": 0.034893317838912974,
+   "p90": 0.06214192367009364,
+   "max": 0.07314500449997884
+  },
+  "mfd_peak_density_err": {
+   "p50": 0.02466968859135721,
+   "p90": 0.05690829210966131,
+   "max": 0.06759200820488309
+  }
+ },
+ "surrogate": {
+  "control: another real day": {
+   "net_total_ratio_err": 0.0035400572926775342,
+   "hour_share_rmse_pts": 0.08567085039141868,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 1.4321937228434591,
+   "site_hour_geh_ge5_share": 0.06722454672245468,
+   "site_hour_wape": 0.06728484443184107,
+   "site_day_mdape": 0.022435976381651256,
+   "site_day_p95ape": 0.15122526223276234,
+   "site_shape_median_tv": 0.02891826735604857,
+   "class_hour_speed_mae_kmh": 2.2091684640826528,
+   "class_hour_speed_max_kmh": 11.208177323227005,
+   "site_hour_speed_mae_kmh": 3.307622635181101,
+   "site_hour_speed_p95_kmh": 12.0,
+   "speed_dist_w1_am_kmh": 0.8598743718592967,
+   "speed_dist_w1_mid_kmh": 0.7031658291457292,
+   "speed_dist_w1_pm_kmh": 0.8199623115577883,
+   "dip_median_err": 0.05975872308506678,
+   "jam_sitehours_log_ratio": 0.07169780575655488,
+   "jam_fss_exact": 0.32361595789912795,
+   "jam_fss_1h": 0.19639316802323753,
+   "jam_fss_1h_1km": 0.11652470074351806,
+   "jam_onset_mae_h": 0.5714047714247634,
+   "jam_clear_mae_h": 0.7045573770491803,
+   "mfd_flow_nrmse": 0.01789530853439502,
+   "mfd_density_nrmse": 0.04405772787749497,
+   "mfd_peak_density_err": 0.04560214122012285
+  },
+  "flow x0.97": {
+   "net_total_ratio_err": 0.030972312812171,
+   "hour_share_rmse_pts": 0.08567085039141902,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 1.5723531676480773,
+   "site_hour_geh_ge5_share": 0.0707112970711297,
+   "site_hour_wape": 0.07057107992094894,
+   "site_day_mdape": 0.03683317010562845,
+   "site_day_p95ape": 0.14754921122305964,
+   "site_shape_median_tv": 0.02891826735604857,
+   "class_hour_speed_mae_kmh": 2.209168464082654,
+   "class_hour_speed_max_kmh": 11.208177323227005,
+   "site_hour_speed_mae_kmh": 3.307622635181101,
+   "site_hour_speed_p95_kmh": 12.0,
+   "speed_dist_w1_am_kmh": 0.8598743718592967,
+   "speed_dist_w1_mid_kmh": 0.7031658291457292,
+   "speed_dist_w1_pm_kmh": 0.8199623115577883,
+   "dip_median_err": 0.05975872308506678,
+   "jam_sitehours_log_ratio": 0.07169780575655488,
+   "jam_fss_exact": 0.32361595789912795,
+   "jam_fss_1h": 0.19639316802323753,
+   "jam_fss_1h_1km": 0.11652470074351806,
+   "jam_onset_mae_h": 0.5714047714247634,
+   "jam_clear_mae_h": 0.7045573770491803,
+   "mfd_flow_nrmse": 0.03315770575070855,
+   "mfd_density_nrmse": 0.047204845931086384,
+   "mfd_peak_density_err": 0.025490746999436986
+  },
+  "flow x0.95": {
+   "net_total_ratio_err": 0.05095226512532225,
+   "hour_share_rmse_pts": 0.08567085039141913,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 1.857375389707904,
+   "site_hour_geh_ge5_share": 0.08702928870292886,
+   "site_hour_wape": 0.07895644889294295,
+   "site_day_mdape": 0.05450882768706704,
+   "site_day_p95ape": 0.15557032583155797,
+   "site_shape_median_tv": 0.028918267356048563,
+   "class_hour_speed_mae_kmh": 2.209168464082653,
+   "class_hour_speed_max_kmh": 11.208177323227002,
+   "site_hour_speed_mae_kmh": 3.307622635181101,
+   "site_hour_speed_p95_kmh": 12.0,
+   "speed_dist_w1_am_kmh": 0.8598743718592967,
+   "speed_dist_w1_mid_kmh": 0.7031658291457292,
+   "speed_dist_w1_pm_kmh": 0.8199623115577883,
+   "dip_median_err": 0.05975872308506678,
+   "jam_sitehours_log_ratio": 0.07169780575655488,
+   "jam_fss_exact": 0.32361595789912795,
+   "jam_fss_1h": 0.19639316802323753,
+   "jam_fss_1h_1km": 0.11652470074351806,
+   "jam_onset_mae_h": 0.5714047714247634,
+   "jam_clear_mae_h": 0.7045573770491803,
+   "mfd_flow_nrmse": 0.05216635888904567,
+   "mfd_density_nrmse": 0.06311721804211333,
+   "mfd_peak_density_err": 0.028662388553253593
+  },
+  "flow x0.9": {
+   "net_total_ratio_err": 0.10090214590819985,
+   "hour_share_rmse_pts": 0.08567085039141828,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 2.975498120409293,
+   "site_hour_geh_ge5_share": 0.18772663877266388,
+   "site_hour_wape": 0.11541230019560408,
+   "site_day_mdape": 0.10285305131676584,
+   "site_day_p95ape": 0.175908057180102,
+   "site_shape_median_tv": 0.028918267356048553,
+   "class_hour_speed_mae_kmh": 2.2091684640826545,
+   "class_hour_speed_max_kmh": 11.208177323227005,
+   "site_hour_speed_mae_kmh": 3.307622635181101,
+   "site_hour_speed_p95_kmh": 12.0,
+   "speed_dist_w1_am_kmh": 0.8598743718592967,
+   "speed_dist_w1_mid_kmh": 0.7031658291457292,
+   "speed_dist_w1_pm_kmh": 0.8199623115577883,
+   "dip_median_err": 0.05975872308506678,
+   "jam_sitehours_log_ratio": 0.07169780575655488,
+   "jam_fss_exact": 0.32361595789912795,
+   "jam_fss_1h": 0.19639316802323753,
+   "jam_fss_1h_1km": 0.11652470074351806,
+   "jam_onset_mae_h": 0.5714047714247634,
+   "jam_clear_mae_h": 0.7045573770491803,
+   "mfd_flow_nrmse": 0.10167974631620522,
+   "mfd_density_nrmse": 0.10933523427463387,
+   "mfd_peak_density_err": 0.07978542073466088
+  },
+  "flow x0.8": {
+   "net_total_ratio_err": 0.20080190747395538,
+   "hour_share_rmse_pts": 0.0856708503914185,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 5.857145040282443,
+   "site_hour_geh_ge5_share": 0.6280334728033472,
+   "site_hour_wape": 0.20615846427397105,
+   "site_day_mdape": 0.20169976805927997,
+   "site_day_p95ape": 0.2579358074905439,
+   "site_shape_median_tv": 0.02891826735604856,
+   "class_hour_speed_mae_kmh": 2.209168464082653,
+   "class_hour_speed_max_kmh": 11.208177323227009,
+   "site_hour_speed_mae_kmh": 3.307622635181101,
+   "site_hour_speed_p95_kmh": 12.0,
+   "speed_dist_w1_am_kmh": 0.8598743718592967,
+   "speed_dist_w1_mid_kmh": 0.7031658291457292,
+   "speed_dist_w1_pm_kmh": 0.8199623115577883,
+   "dip_median_err": 0.05975872308506678,
+   "jam_sitehours_log_ratio": 0.07169780575655488,
+   "jam_fss_exact": 0.32361595789912795,
+   "jam_fss_1h": 0.19639316802323753,
+   "jam_fss_1h_1km": 0.11652470074351806,
+   "jam_onset_mae_h": 0.5714047714247634,
+   "jam_clear_mae_h": 0.7045573770491803,
+   "mfd_flow_nrmse": 0.20207321146916424,
+   "mfd_density_nrmse": 0.2082041351083893,
+   "mfd_peak_density_err": 0.18203148509747635
+  },
+  "flow x1.2": {
+   "net_total_ratio_err": 0.1987971387890668,
+   "hour_share_rmse_pts": 0.08567085039141858,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 5.280527636516826,
+   "site_hour_geh_ge5_share": 0.5440725244072524,
+   "site_hour_wape": 0.20772357015043813,
+   "site_day_mdape": 0.19927048997664532,
+   "site_day_p95ape": 0.34062973100924276,
+   "site_shape_median_tv": 0.028918267356048556,
+   "class_hour_speed_mae_kmh": 2.209168464082652,
+   "class_hour_speed_max_kmh": 11.208177323227012,
+   "site_hour_speed_mae_kmh": 3.307622635181101,
+   "site_hour_speed_p95_kmh": 12.0,
+   "speed_dist_w1_am_kmh": 0.8598743718592967,
+   "speed_dist_w1_mid_kmh": 0.7031658291457292,
+   "speed_dist_w1_pm_kmh": 0.8199623115577883,
+   "dip_median_err": 0.05975872308506678,
+   "jam_sitehours_log_ratio": 0.07169780575655488,
+   "jam_fss_exact": 0.32361595789912795,
+   "jam_fss_1h": 0.19639316802323753,
+   "jam_fss_1h_1km": 0.11652470074351806,
+   "jam_onset_mae_h": 0.5714047714247634,
+   "jam_clear_mae_h": 0.7045573770491803,
+   "mfd_flow_nrmse": 0.20223431481067222,
+   "mfd_density_nrmse": 0.20275795467356222,
+   "mfd_peak_density_err": 0.22695277235378564
+  },
+  "clock +1 h": {
+   "net_total_ratio_err": 0.0035400572926775342,
+   "hour_share_rmse_pts": 0.8065134166164689,
+   "am_peak_err_h": 1.0,
+   "pm_peak_err_h": 1.0,
+   "site_hour_median_geh": 2.974271132064335,
+   "site_hour_geh_ge5_share": 0.3085076708507671,
+   "site_hour_wape": 0.14399622237026144,
+   "site_day_mdape": 0.022435976381651256,
+   "site_day_p95ape": 0.15122526223276234,
+   "site_shape_median_tv": 0.06914551625616376,
+   "class_hour_speed_mae_kmh": 3.049424946314999,
+   "class_hour_speed_max_kmh": 13.981881503774488,
+   "site_hour_speed_mae_kmh": 4.034201329494051,
+   "site_hour_speed_p95_kmh": 14.0,
+   "speed_dist_w1_am_kmh": 3.08072864321608,
+   "speed_dist_w1_mid_kmh": 0.6550251256281405,
+   "speed_dist_w1_pm_kmh": 0.7357412060301503,
+   "dip_median_err": 0.06031877770239624,
+   "jam_sitehours_log_ratio": 0.0637129296213779,
+   "jam_fss_exact": 0.40682899864180544,
+   "jam_fss_1h": 0.23931783113383825,
+   "jam_fss_1h_1km": 0.14546616455901756,
+   "jam_onset_mae_h": 1.0487112713675213,
+   "jam_clear_mae_h": 0.9443519467213115,
+   "mfd_flow_nrmse": 0.13541968309371477,
+   "mfd_density_nrmse": 0.167825159513033,
+   "mfd_peak_density_err": 0.04560214122012285
+  },
+  "clock -1 h": {
+   "net_total_ratio_err": 0.0035400572926775342,
+   "hour_share_rmse_pts": 0.8125701645211625,
+   "am_peak_err_h": 1.0,
+   "pm_peak_err_h": 1.0,
+   "site_hour_median_geh": 2.8290403400611854,
+   "site_hour_geh_ge5_share": 0.2808926080892608,
+   "site_hour_wape": 0.12817812098113063,
+   "site_day_mdape": 0.022435976381651256,
+   "site_day_p95ape": 0.15122526223276234,
+   "site_shape_median_tv": 0.062167103999114084,
+   "class_hour_speed_mae_kmh": 3.311892987661235,
+   "class_hour_speed_max_kmh": 10.899982015291378,
+   "site_hour_speed_mae_kmh": 3.8963204094653276,
+   "site_hour_speed_p95_kmh": 13.649999999999864,
+   "speed_dist_w1_am_kmh": 0.7491206030150755,
+   "speed_dist_w1_mid_kmh": 0.9299497487437199,
+   "speed_dist_w1_pm_kmh": 0.6785427135678384,
+   "dip_median_err": 0.059762640769068766,
+   "jam_sitehours_log_ratio": 0.061991926654005006,
+   "jam_fss_exact": 0.40023682800054844,
+   "jam_fss_1h": 0.23685595732410453,
+   "jam_fss_1h_1km": 0.15188044325081895,
+   "jam_onset_mae_h": 0.7966607036374478,
+   "jam_clear_mae_h": 1.1112104949314252,
+   "mfd_flow_nrmse": 0.10714432688872702,
+   "mfd_density_nrmse": 0.15550391375684425,
+   "mfd_peak_density_err": 0.04560214122012285
+  },
+  "sites shuffled within class": {
+   "net_total_ratio_err": 0.0035400572926775342,
+   "hour_share_rmse_pts": 0.08567085039141868,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 13.995354005394788,
+   "site_hour_geh_ge5_share": 0.809344490934449,
+   "site_hour_wape": 0.5587318078098814,
+   "site_day_mdape": 0.47164657744725547,
+   "site_day_p95ape": 4.951287744228457,
+   "site_shape_median_tv": 0.0895749454712324,
+   "class_hour_speed_mae_kmh": 2.209168464082654,
+   "class_hour_speed_max_kmh": 11.208177323227012,
+   "site_hour_speed_mae_kmh": 9.19630562778621,
+   "site_hour_speed_p95_kmh": 26.674999999999955,
+   "speed_dist_w1_am_kmh": 0.8598743718592967,
+   "speed_dist_w1_mid_kmh": 0.7031658291457292,
+   "speed_dist_w1_pm_kmh": 0.8199623115577883,
+   "dip_median_err": 0.19536621807944557,
+   "jam_sitehours_log_ratio": 0.32484976676186705,
+   "jam_fss_exact": 0.7720963531956149,
+   "jam_fss_1h": 0.7232414591299361,
+   "jam_fss_1h_1km": 0.4943498870074255,
+   "jam_onset_mae_h": 1.1017943409247757,
+   "jam_clear_mae_h": 1.5300207039337472,
+   "mfd_flow_nrmse": 0.01789530853439502,
+   "mfd_density_nrmse": 0.04405772787749514,
+   "mfd_peak_density_err": 0.045602141220123404
+  },
+  "speeds shuffled within class": {
+   "net_total_ratio_err": 0.0035400572926775342,
+   "hour_share_rmse_pts": 0.08567085039141868,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 1.4321937228434591,
+   "site_hour_geh_ge5_share": 0.06722454672245468,
+   "site_hour_wape": 0.06728484443184107,
+   "site_day_mdape": 0.022435976381651256,
+   "site_day_p95ape": 0.15122526223276234,
+   "site_shape_median_tv": 0.02891826735604857,
+   "class_hour_speed_mae_kmh": 2.9666792647955633,
+   "class_hour_speed_max_kmh": 11.313921464241727,
+   "site_hour_speed_mae_kmh": 9.472697035466997,
+   "site_hour_speed_p95_kmh": 26.5,
+   "speed_dist_w1_am_kmh": 0.8598743718592967,
+   "speed_dist_w1_mid_kmh": 0.7031658291457292,
+   "speed_dist_w1_pm_kmh": 0.8199623115577883,
+   "dip_median_err": 0.20080768351603154,
+   "jam_sitehours_log_ratio": 0.30265365307294445,
+   "jam_fss_exact": 0.8156331182284291,
+   "jam_fss_1h": 0.7745922625561488,
+   "jam_fss_1h_1km": 0.5676774187584261,
+   "jam_onset_mae_h": 1.1098973849718636,
+   "jam_clear_mae_h": 1.429804924848097,
+   "mfd_flow_nrmse": 0.01789530853439502,
+   "mfd_density_nrmse": 0.06140402980570721,
+   "mfd_peak_density_err": 0.04623417266478569
+  },
+  "flat demand 06-20": {
+   "net_total_ratio_err": 0.0035400572926775342,
+   "hour_share_rmse_pts": 0.5967962022069413,
+   "am_peak_err_h": 2.0,
+   "pm_peak_err_h": 2.0,
+   "site_hour_median_geh": 3.285948936610378,
+   "site_hour_geh_ge5_share": 0.3485355648535565,
+   "site_hour_wape": 0.16326163457900777,
+   "site_day_mdape": 0.022435976381651256,
+   "site_day_p95ape": 0.15122526223276236,
+   "site_shape_median_tv": 0.08109928157230697,
+   "class_hour_speed_mae_kmh": 2.3668090969550475,
+   "class_hour_speed_max_kmh": 10.571953785458614,
+   "site_hour_speed_mae_kmh": 3.307622635181101,
+   "site_hour_speed_p95_kmh": 12.0,
+   "speed_dist_w1_am_kmh": 0.8598743718592967,
+   "speed_dist_w1_mid_kmh": 0.7031658291457292,
+   "speed_dist_w1_pm_kmh": 0.8199623115577883,
+   "dip_median_err": 0.05975872308506678,
+   "jam_sitehours_log_ratio": 0.07169780575655488,
+   "jam_fss_exact": 0.32361595789912795,
+   "jam_fss_1h": 0.19639316802323753,
+   "jam_fss_1h_1km": 0.11652470074351806,
+   "jam_onset_mae_h": 0.5714047714247634,
+   "jam_clear_mae_h": 0.7045573770491803,
+   "mfd_flow_nrmse": 0.13129572301434284,
+   "mfd_density_nrmse": 0.12107442120473719,
+   "mfd_peak_density_err": 0.08808565608461749
+  },
+  "no rush-hour dip": {
+   "net_total_ratio_err": 0.0035400572926775342,
+   "hour_share_rmse_pts": 0.08567085039141868,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 1.4321937228434591,
+   "site_hour_geh_ge5_share": 0.06722454672245468,
+   "site_hour_wape": 0.06728484443184107,
+   "site_day_mdape": 0.022435976381651256,
+   "site_day_p95ape": 0.15122526223276234,
+   "site_shape_median_tv": 0.02891826735604857,
+   "class_hour_speed_mae_kmh": 3.3672158219526063,
+   "class_hour_speed_max_kmh": 10.320068399619359,
+   "site_hour_speed_mae_kmh": 3.899302477769063,
+   "site_hour_speed_p95_kmh": 13.75,
+   "speed_dist_w1_am_kmh": 1.982261306532664,
+   "speed_dist_w1_mid_kmh": 0.8252010050251247,
+   "speed_dist_w1_pm_kmh": 2.56929648241206,
+   "dip_median_err": 0.2994131768471593,
+   "jam_sitehours_log_ratio": 0.27058391267772197,
+   "jam_fss_exact": 0.4754333803668615,
+   "jam_fss_1h": 0.3940292500717802,
+   "jam_fss_1h_1km": 0.27724308709151047,
+   "jam_onset_mae_h": 0.6359183673469389,
+   "jam_clear_mae_h": 1.224721706864564,
+   "mfd_flow_nrmse": 0.01789530853439502,
+   "mfd_density_nrmse": 0.09544882321539837,
+   "mfd_peak_density_err": 0.1455655505141043
+  },
+  "free flow all day": {
+   "net_total_ratio_err": 0.0035400572926775342,
+   "hour_share_rmse_pts": 0.08567085039141868,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 1.4321937228434591,
+   "site_hour_geh_ge5_share": 0.06722454672245468,
+   "site_hour_wape": 0.06728484443184107,
+   "site_day_mdape": 0.022435976381651256,
+   "site_day_p95ape": 0.15122526223276234,
+   "site_shape_median_tv": 0.02891826735604857,
+   "class_hour_speed_mae_kmh": 11.073094064710297,
+   "class_hour_speed_max_kmh": 19.00276074885149,
+   "site_hour_speed_mae_kmh": 7.942026396928083,
+   "site_hour_speed_p95_kmh": 24.049999999999997,
+   "speed_dist_w1_am_kmh": 9.206216080402012,
+   "speed_dist_w1_mid_kmh": 7.850517587939699,
+   "speed_dist_w1_pm_kmh": 9.61862311557789,
+   "dip_median_err": 0.2994131768471593,
+   "jam_sitehours_log_ratio": 4.921674114804901,
+   "jam_fss_exact": 0.9908759124087592,
+   "jam_fss_1h": 0.9880063965884862,
+   "jam_fss_1h_1km": 0.9910761920036744,
+   "jam_onset_mae_h": 2.0,
+   "jam_clear_mae_h": 0.75,
+   "mfd_flow_nrmse": 0.01789530853439502,
+   "mfd_density_nrmse": 0.233420722239597,
+   "mfd_peak_density_err": 0.28579088029821176
+  },
+  "speed x0.9": {
+   "net_total_ratio_err": 0.0035400572926775342,
+   "hour_share_rmse_pts": 0.08567085039141868,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 1.4321937228434591,
+   "site_hour_geh_ge5_share": 0.06722454672245468,
+   "site_hour_wape": 0.06728484443184107,
+   "site_day_mdape": 0.022435976381651256,
+   "site_day_p95ape": 0.15122526223276234,
+   "site_shape_median_tv": 0.02891826735604857,
+   "class_hour_speed_mae_kmh": 5.121303240738454,
+   "class_hour_speed_max_kmh": 13.853755675520876,
+   "site_hour_speed_mae_kmh": 5.473407644395984,
+   "site_hour_speed_p95_kmh": 12.95,
+   "speed_dist_w1_am_kmh": 3.6933542713567826,
+   "speed_dist_w1_mid_kmh": 4.341984924623114,
+   "speed_dist_w1_pm_kmh": 4.455773869346732,
+   "dip_median_err": 0.059758723085066794,
+   "jam_sitehours_log_ratio": 0.4905288969104403,
+   "jam_fss_exact": 0.39014669065501517,
+   "jam_fss_1h": 0.27576883728486185,
+   "jam_fss_1h_1km": 0.18997924042926984,
+   "jam_onset_mae_h": 0.6366591080876796,
+   "jam_clear_mae_h": 0.8659108087679517,
+   "mfd_flow_nrmse": 0.01789530853439502,
+   "mfd_density_nrmse": 0.11453482525231029,
+   "mfd_peak_density_err": 0.13606738180906097
+  },
+  "peaks clipped 15%, spread later": {
+   "net_total_ratio_err": 0.003659713908494455,
+   "hour_share_rmse_pts": 0.28907913145626685,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.5,
+   "site_hour_median_geh": 1.9965558004967283,
+   "site_hour_geh_ge5_share": 0.1616457461645746,
+   "site_hour_wape": 0.09919478989543692,
+   "site_day_mdape": 0.02226205441678923,
+   "site_day_p95ape": 0.15122526223276234,
+   "site_shape_median_tv": 0.04516909746832061,
+   "class_hour_speed_mae_kmh": 2.2223864100172404,
+   "class_hour_speed_max_kmh": 10.590396457356437,
+   "site_hour_speed_mae_kmh": 3.307622635181101,
+   "site_hour_speed_p95_kmh": 12.0,
+   "speed_dist_w1_am_kmh": 0.8598743718592967,
+   "speed_dist_w1_mid_kmh": 0.7031658291457292,
+   "speed_dist_w1_pm_kmh": 0.8199623115577883,
+   "dip_median_err": 0.05975872308506678,
+   "jam_sitehours_log_ratio": 0.07169780575655488,
+   "jam_fss_exact": 0.32361595789912795,
+   "jam_fss_1h": 0.19639316802323753,
+   "jam_fss_1h_1km": 0.11652470074351806,
+   "jam_onset_mae_h": 0.5714047714247634,
+   "jam_clear_mae_h": 0.7045573770491803,
+   "mfd_flow_nrmse": 0.0597848357157198,
+   "mfd_density_nrmse": 0.0619703745136532,
+   "mfd_peak_density_err": 0.022627664292901584
+  },
+  "jams clear 1 h late": {
+   "net_total_ratio_err": 0.0035400572926775342,
+   "hour_share_rmse_pts": 0.08567085039141868,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 1.4321937228434591,
+   "site_hour_geh_ge5_share": 0.06722454672245468,
+   "site_hour_wape": 0.06728484443184107,
+   "site_day_mdape": 0.022435976381651256,
+   "site_day_p95ape": 0.15122526223276234,
+   "site_shape_median_tv": 0.02891826735604857,
+   "class_hour_speed_mae_kmh": 2.5119923722644737,
+   "class_hour_speed_max_kmh": 11.68340450001125,
+   "site_hour_speed_mae_kmh": 3.5483172812261676,
+   "site_hour_speed_p95_kmh": 13.5,
+   "speed_dist_w1_am_kmh": 0.8011306532663314,
+   "speed_dist_w1_mid_kmh": 0.8827889447236185,
+   "speed_dist_w1_pm_kmh": 1.1454899497487445,
+   "dip_median_err": 0.059404417001277444,
+   "jam_sitehours_log_ratio": 0.2664991234677334,
+   "jam_fss_exact": 0.3409939441170263,
+   "jam_fss_1h": 0.2235830008413115,
+   "jam_fss_1h_1km": 0.13642089989858008,
+   "jam_onset_mae_h": 0.5870697674418605,
+   "jam_clear_mae_h": 0.9422695907631344,
+   "mfd_flow_nrmse": 0.01789530853439502,
+   "mfd_density_nrmse": 0.04629007550435763,
+   "mfd_peak_density_err": 0.038671071609330476
+  },
+  "fast roads -25%, slow roads compensate": {
+   "net_total_ratio_err": 0.0035400572926775342,
+   "hour_share_rmse_pts": 0.07663923802566773,
+   "am_peak_err_h": 0.0,
+   "pm_peak_err_h": 0.0,
+   "site_hour_median_geh": 7.818520597288494,
+   "site_hour_geh_ge5_share": 0.8128312412831241,
+   "site_hour_wape": 0.2854522675732094,
+   "site_day_mdape": 0.2721182137284669,
+   "site_day_p95ape": 0.4471728662129382,
+   "site_shape_median_tv": 0.028918267356048563,
+   "class_hour_speed_mae_kmh": 2.209168464082653,
+   "class_hour_speed_max_kmh": 11.208177323227009,
+   "site_hour_speed_mae_kmh": 3.307622635181101,
+   "site_hour_speed_p95_kmh": 12.0,
+   "speed_dist_w1_am_kmh": 0.8598743718592967,
+   "speed_dist_w1_mid_kmh": 0.7031658291457292,
+   "speed_dist_w1_pm_kmh": 0.8199623115577883,
+   "dip_median_err": 0.05975872308506678,
+   "jam_sitehours_log_ratio": 0.07169780575655488,
+   "jam_fss_exact": 0.32361595789912795,
+   "jam_fss_1h": 0.19639316802323753,
+   "jam_fss_1h_1km": 0.11652470074351806,
+   "jam_onset_mae_h": 0.5714047714247634,
+   "jam_clear_mae_h": 0.7045573770491803,
+   "mfd_flow_nrmse": 0.016562256098046353,
+   "mfd_density_nrmse": 0.054666737627839274,
+   "mfd_peak_density_err": 0.06166437948985071
+  }
+ },
+ "ensemble": {
+  "control: another real day": {
+   "crps_flow_norm": 0.04458767369977454,
+   "crps_speed_kmh": 2.087230429131206,
+   "rank_outer_share": 0.2781961878196188,
+   "rank_low": 0.12487215248721525,
+   "rank_high": 0.15332403533240355
+  },
+  "flow x0.97": {
+   "crps_flow_norm": 0.05081937820231116,
+   "crps_speed_kmh": 2.087230429131206,
+   "rank_outer_share": 0.3508135750813575,
+   "rank_low": 0.06517898651789865,
+   "rank_high": 0.28563458856345886
+  },
+  "flow x0.95": {
+   "crps_flow_norm": 0.059890979123904765,
+   "crps_speed_kmh": 2.087230429131206,
+   "rank_outer_share": 0.44146908414690844,
+   "rank_low": 0.044630404463040445,
+   "rank_high": 0.396838679683868
+  },
+  "flow x0.9": {
+   "crps_flow_norm": 0.09452818379159349,
+   "crps_speed_kmh": 2.087230429131206,
+   "rank_outer_share": 0.6707577870757787,
+   "rank_low": 0.02417480241748024,
+   "rank_high": 0.6465829846582984
+  },
+  "flow x0.8": {
+   "crps_flow_norm": 0.1858393824712813,
+   "crps_speed_kmh": 2.087230429131206,
+   "rank_outer_share": 0.889353788935379,
+   "rank_low": 0.013203161320316133,
+   "rank_high": 0.8761506276150628
+  },
+  "flow x1.2": {
+   "crps_flow_norm": 0.1690833781961911,
+   "crps_speed_kmh": 2.087230429131206,
+   "rank_outer_share": 0.7912598791259879,
+   "rank_low": 0.7863319386331938,
+   "rank_high": 0.004927940492794049
+  },
+  "clock +1 h": {
+   "crps_flow_norm": 0.1145858684403478,
+   "crps_speed_kmh": 2.7340942513686084,
+   "rank_outer_share": 0.5636448163644816,
+   "rank_low": 0.26703858670385866,
+   "rank_high": 0.29660622966062294
+  },
+  "clock -1 h": {
+   "crps_flow_norm": 0.10533337819189866,
+   "crps_speed_kmh": 2.718638696761829,
+   "rank_outer_share": 0.5540678754067876,
+   "rank_low": 0.21134356113435612,
+   "rank_high": 0.34272431427243144
+  },
+  "sites shuffled within class": {
+   "crps_flow_norm": 0.316799139796392,
+   "crps_speed_kmh": 5.58314595015133,
+   "rank_outer_share": 0.2501162250116225,
+   "rank_low": 0.1299860529986053,
+   "rank_high": 0.1201301720130172
+  },
+  "speeds shuffled within class": {
+   "crps_flow_norm": 0.04458767369977454,
+   "crps_speed_kmh": 5.458359187468571,
+   "rank_outer_share": 0.2781961878196188,
+   "rank_low": 0.12487215248721525,
+   "rank_high": 0.15332403533240355
+  },
+  "flat demand 06-20": {
+   "crps_flow_norm": 0.14966022037119428,
+   "crps_speed_kmh": 2.087230429131206,
+   "rank_outer_share": 0.7842863784286378,
+   "rank_low": 0.38261273826127384,
+   "rank_high": 0.401673640167364
+  },
+  "no rush-hour dip": {
+   "crps_flow_norm": 0.04458767369977454,
+   "crps_speed_kmh": 3.4439472860273814,
+   "rank_outer_share": 0.2781961878196188,
+   "rank_low": 0.12487215248721525,
+   "rank_high": 0.15332403533240355
+  },
+  "free flow all day": {
+   "crps_flow_norm": 0.04458767369977454,
+   "crps_speed_kmh": 7.391386066281465,
+   "rank_outer_share": 0.2781961878196188,
+   "rank_low": 0.12487215248721525,
+   "rank_high": 0.15332403533240355
+  },
+  "speed x0.9": {
+   "crps_flow_norm": 0.04458767369977454,
+   "crps_speed_kmh": 4.279566030038235,
+   "rank_outer_share": 0.2781961878196188,
+   "rank_low": 0.12487215248721525,
+   "rank_high": 0.15332403533240355
+  },
+  "peaks clipped 15%, spread later": {
+   "crps_flow_norm": 0.07695436753067554,
+   "crps_speed_kmh": 2.087230429131206,
+   "rank_outer_share": 0.4728963272896327,
+   "rank_low": 0.17721989772198976,
+   "rank_high": 0.29567642956764295
+  },
+  "jams clear 1 h late": {
+   "crps_flow_norm": 0.04458767369977454,
+   "crps_speed_kmh": 2.1867209366312776,
+   "rank_outer_share": 0.2781961878196188,
+   "rank_low": 0.12487215248721525,
+   "rank_high": 0.15332403533240355
+  },
+  "fast roads -25%, slow roads compensate": {
+   "crps_flow_norm": 0.2566342638919165,
+   "crps_speed_kmh": 2.087230429131206,
+   "rank_outer_share": 0.898186889818689,
+   "rank_low": 0.4281729428172943,
+   "rank_high": 0.4700139470013947
+  }
+ },
+ "flags": {
+  "control: another real day": [],
+  "flow x0.97": [
+   "net_total_ratio_err",
+   "site_day_mdape",
+   "mfd_flow_nrmse"
+  ],
+  "flow x0.95": [
+   "net_total_ratio_err",
+   "site_hour_median_geh",
+   "site_day_mdape",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse"
+  ],
+  "flow x0.9": [
+   "net_total_ratio_err",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "flow x0.8": [
+   "net_total_ratio_err",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "flow x1.2": [
+   "net_total_ratio_err",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "site_day_p95ape",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "clock +1 h": [
+   "hour_share_rmse_pts",
+   "am_peak_err_h",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_shape_median_tv",
+   "site_hour_speed_mae_kmh",
+   "speed_dist_w1_am_kmh",
+   "jam_fss_exact",
+   "jam_onset_mae_h",
+   "jam_clear_mae_h",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse"
+  ],
+  "clock -1 h": [
+   "hour_share_rmse_pts",
+   "am_peak_err_h",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_shape_median_tv",
+   "site_hour_speed_mae_kmh",
+   "speed_dist_w1_mid_kmh",
+   "jam_fss_exact",
+   "jam_onset_mae_h",
+   "jam_clear_mae_h",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse"
+  ],
+  "sites shuffled within class": [
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "site_day_p95ape",
+   "site_shape_median_tv",
+   "site_hour_speed_mae_kmh",
+   "site_hour_speed_p95_kmh",
+   "dip_median_err",
+   "jam_sitehours_log_ratio",
+   "jam_fss_exact",
+   "jam_fss_1h",
+   "jam_fss_1h_1km",
+   "jam_onset_mae_h",
+   "jam_clear_mae_h"
+  ],
+  "speeds shuffled within class": [
+   "site_hour_speed_mae_kmh",
+   "site_hour_speed_p95_kmh",
+   "dip_median_err",
+   "jam_sitehours_log_ratio",
+   "jam_fss_exact",
+   "jam_fss_1h",
+   "jam_fss_1h_1km",
+   "jam_onset_mae_h",
+   "jam_clear_mae_h"
+  ],
+  "flat demand 06-20": [
+   "hour_share_rmse_pts",
+   "am_peak_err_h",
+   "pm_peak_err_h",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_shape_median_tv",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "no rush-hour dip": [
+   "site_hour_speed_mae_kmh",
+   "speed_dist_w1_am_kmh",
+   "speed_dist_w1_pm_kmh",
+   "dip_median_err",
+   "jam_sitehours_log_ratio",
+   "jam_fss_exact",
+   "jam_fss_1h",
+   "jam_fss_1h_1km",
+   "jam_clear_mae_h",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "free flow all day": [
+   "class_hour_speed_mae_kmh",
+   "site_hour_speed_mae_kmh",
+   "site_hour_speed_p95_kmh",
+   "speed_dist_w1_am_kmh",
+   "speed_dist_w1_mid_kmh",
+   "speed_dist_w1_pm_kmh",
+   "dip_median_err",
+   "jam_sitehours_log_ratio",
+   "jam_fss_exact",
+   "jam_fss_1h",
+   "jam_fss_1h_1km",
+   "jam_onset_mae_h",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "speed x0.9": [
+   "class_hour_speed_mae_kmh",
+   "site_hour_speed_mae_kmh",
+   "speed_dist_w1_am_kmh",
+   "speed_dist_w1_mid_kmh",
+   "speed_dist_w1_pm_kmh",
+   "jam_sitehours_log_ratio",
+   "jam_fss_exact",
+   "jam_fss_1h_1km",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "peaks clipped 15%, spread later": [
+   "hour_share_rmse_pts",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_shape_median_tv",
+   "mfd_flow_nrmse"
+  ],
+  "jams clear 1 h late": [
+   "jam_sitehours_log_ratio",
+   "jam_clear_mae_h"
+  ],
+  "fast roads -25%, slow roads compensate": [
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "site_day_p95ape",
+   "mfd_peak_density_err"
+  ]
+ },
+ "flags_max": {
+  "control: another real day": [],
+  "flow x0.97": [
+   "net_total_ratio_err",
+   "mfd_flow_nrmse"
+  ],
+  "flow x0.95": [
+   "net_total_ratio_err",
+   "site_day_mdape",
+   "mfd_flow_nrmse"
+  ],
+  "flow x0.9": [
+   "net_total_ratio_err",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "flow x0.8": [
+   "net_total_ratio_err",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "flow x1.2": [
+   "net_total_ratio_err",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "clock +1 h": [
+   "hour_share_rmse_pts",
+   "am_peak_err_h",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_shape_median_tv",
+   "site_hour_speed_mae_kmh",
+   "speed_dist_w1_am_kmh",
+   "jam_onset_mae_h",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse"
+  ],
+  "clock -1 h": [
+   "hour_share_rmse_pts",
+   "am_peak_err_h",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_shape_median_tv",
+   "jam_onset_mae_h",
+   "jam_clear_mae_h",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse"
+  ],
+  "sites shuffled within class": [
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "site_day_p95ape",
+   "site_shape_median_tv",
+   "site_hour_speed_mae_kmh",
+   "site_hour_speed_p95_kmh",
+   "dip_median_err",
+   "jam_sitehours_log_ratio",
+   "jam_fss_exact",
+   "jam_fss_1h",
+   "jam_fss_1h_1km",
+   "jam_onset_mae_h",
+   "jam_clear_mae_h"
+  ],
+  "speeds shuffled within class": [
+   "site_hour_speed_mae_kmh",
+   "site_hour_speed_p95_kmh",
+   "dip_median_err",
+   "jam_sitehours_log_ratio",
+   "jam_fss_exact",
+   "jam_fss_1h",
+   "jam_fss_1h_1km",
+   "jam_onset_mae_h",
+   "jam_clear_mae_h"
+  ],
+  "flat demand 06-20": [
+   "hour_share_rmse_pts",
+   "am_peak_err_h",
+   "pm_peak_err_h",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_shape_median_tv",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "no rush-hour dip": [
+   "speed_dist_w1_pm_kmh",
+   "dip_median_err",
+   "jam_sitehours_log_ratio",
+   "jam_fss_exact",
+   "jam_fss_1h",
+   "jam_fss_1h_1km",
+   "jam_clear_mae_h",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "free flow all day": [
+   "class_hour_speed_mae_kmh",
+   "site_hour_speed_mae_kmh",
+   "site_hour_speed_p95_kmh",
+   "speed_dist_w1_am_kmh",
+   "speed_dist_w1_mid_kmh",
+   "speed_dist_w1_pm_kmh",
+   "dip_median_err",
+   "jam_sitehours_log_ratio",
+   "jam_fss_exact",
+   "jam_fss_1h",
+   "jam_fss_1h_1km",
+   "jam_onset_mae_h",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "speed x0.9": [
+   "site_hour_speed_mae_kmh",
+   "speed_dist_w1_am_kmh",
+   "speed_dist_w1_mid_kmh",
+   "speed_dist_w1_pm_kmh",
+   "jam_sitehours_log_ratio",
+   "jam_fss_1h_1km",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "peaks clipped 15%, spread later": [
+   "hour_share_rmse_pts",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_shape_median_tv",
+   "mfd_flow_nrmse"
+  ],
+  "jams clear 1 h late": [
+   "jam_sitehours_log_ratio"
+  ],
+  "fast roads -25%, slow roads compensate": [
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "site_day_p95ape"
+  ]
+ },
+ "flags_125max": {
+  "control: another real day": [],
+  "flow x0.97": [
+   "mfd_flow_nrmse"
+  ],
+  "flow x0.95": [
+   "net_total_ratio_err",
+   "site_day_mdape",
+   "mfd_flow_nrmse"
+  ],
+  "flow x0.9": [
+   "net_total_ratio_err",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_day_mdape",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse"
+  ],
+  "flow x0.8": [
+   "net_total_ratio_err",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "flow x1.2": [
+   "net_total_ratio_err",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "clock +1 h": [
+   "hour_share_rmse_pts",
+   "am_peak_err_h",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_shape_median_tv",
+   "speed_dist_w1_am_kmh",
+   "jam_onset_mae_h",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse"
+  ],
+  "clock -1 h": [
+   "hour_share_rmse_pts",
+   "am_peak_err_h",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_shape_median_tv",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse"
+  ],
+  "sites shuffled within class": [
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape",
+   "site_day_p95ape",
+   "site_shape_median_tv",
+   "site_hour_speed_mae_kmh",
+   "site_hour_speed_p95_kmh",
+   "dip_median_err",
+   "jam_sitehours_log_ratio",
+   "jam_fss_exact",
+   "jam_fss_1h",
+   "jam_fss_1h_1km",
+   "jam_onset_mae_h",
+   "jam_clear_mae_h"
+  ],
+  "speeds shuffled within class": [
+   "site_hour_speed_mae_kmh",
+   "site_hour_speed_p95_kmh",
+   "dip_median_err",
+   "jam_sitehours_log_ratio",
+   "jam_fss_exact",
+   "jam_fss_1h",
+   "jam_fss_1h_1km",
+   "jam_onset_mae_h",
+   "jam_clear_mae_h"
+  ],
+  "flat demand 06-20": [
+   "hour_share_rmse_pts",
+   "am_peak_err_h",
+   "pm_peak_err_h",
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_shape_median_tv",
+   "mfd_flow_nrmse",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "no rush-hour dip": [
+   "speed_dist_w1_pm_kmh",
+   "dip_median_err",
+   "jam_sitehours_log_ratio",
+   "jam_fss_1h",
+   "jam_fss_1h_1km",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "free flow all day": [
+   "class_hour_speed_mae_kmh",
+   "site_hour_speed_mae_kmh",
+   "site_hour_speed_p95_kmh",
+   "speed_dist_w1_am_kmh",
+   "speed_dist_w1_mid_kmh",
+   "speed_dist_w1_pm_kmh",
+   "dip_median_err",
+   "jam_sitehours_log_ratio",
+   "jam_fss_exact",
+   "jam_fss_1h",
+   "jam_fss_1h_1km",
+   "jam_onset_mae_h",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "speed x0.9": [
+   "site_hour_speed_mae_kmh",
+   "speed_dist_w1_am_kmh",
+   "speed_dist_w1_mid_kmh",
+   "speed_dist_w1_pm_kmh",
+   "jam_sitehours_log_ratio",
+   "mfd_density_nrmse",
+   "mfd_peak_density_err"
+  ],
+  "peaks clipped 15%, spread later": [
+   "hour_share_rmse_pts",
+   "site_shape_median_tv",
+   "mfd_flow_nrmse"
+  ],
+  "jams clear 1 h late": [],
+  "fast roads -25%, slow roads compensate": [
+   "site_hour_median_geh",
+   "site_hour_geh_ge5_share",
+   "site_hour_wape",
+   "site_day_mdape"
+  ]
+ },
+ "loo_false_alarms": {
+  "p90": {
+   "07.05.2019": [],
+   "14.05.2019": [
+    "pm_peak_err_h"
+   ],
+   "15.05.2019": [],
+   "16.05.2019": [
+    "site_day_mdape",
+    "class_hour_speed_mae_kmh",
+    "class_hour_speed_max_kmh",
+    "speed_dist_w1_mid_kmh",
+    "speed_dist_w1_pm_kmh",
+    "dip_median_err",
+    "jam_onset_mae_h"
+   ],
+   "21.05.2019": [],
+   "22.05.2019": [
+    "site_hour_geh_ge5_share",
+    "site_hour_wape",
+    "site_day_p95ape",
+    "speed_dist_w1_am_kmh",
+    "jam_sitehours_log_ratio",
+    "mfd_density_nrmse"
+   ],
+   "23.05.2019": [
+    "net_total_ratio_err",
+    "hour_share_rmse_pts",
+    "site_shape_median_tv",
+    "mfd_peak_density_err"
+   ],
+   "28.05.2019": []
+  },
+  "max": {
+   "07.05.2019": [],
+   "14.05.2019": [
+    "pm_peak_err_h"
+   ],
+   "15.05.2019": [],
+   "16.05.2019": [
+    "class_hour_speed_mae_kmh",
+    "class_hour_speed_max_kmh",
+    "speed_dist_w1_mid_kmh"
+   ],
+   "21.05.2019": [],
+   "22.05.2019": [
+    "site_hour_geh_ge5_share",
+    "site_hour_wape",
+    "speed_dist_w1_am_kmh",
+    "mfd_density_nrmse"
+   ],
+   "23.05.2019": [
+    "net_total_ratio_err"
+   ],
+   "28.05.2019": []
+  },
+  "1.25 p90": {
+   "07.05.2019": [],
+   "14.05.2019": [
+    "pm_peak_err_h"
+   ],
+   "15.05.2019": [],
+   "16.05.2019": [
+    "class_hour_speed_mae_kmh"
+   ],
+   "21.05.2019": [],
+   "22.05.2019": [
+    "speed_dist_w1_am_kmh",
+    "mfd_density_nrmse"
+   ],
+   "23.05.2019": [],
+   "28.05.2019": []
+  },
+  "1.25 max": {
+   "07.05.2019": [],
+   "14.05.2019": [
+    "pm_peak_err_h"
+   ],
+   "15.05.2019": [],
+   "16.05.2019": [
+    "class_hour_speed_mae_kmh"
+   ],
+   "21.05.2019": [],
+   "22.05.2019": [
+    "speed_dist_w1_am_kmh",
+    "mfd_density_nrmse"
+   ],
+   "23.05.2019": [],
+   "28.05.2019": []
+  }
+ }
+}
