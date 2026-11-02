@@ -27,10 +27,12 @@ def w1q(a, b):
     return float(np.abs(np.asarray(a) - np.asarray(b)).mean())
 
 
-def site_split(site, cls):
-    """sha256(site + "cars-bench-v1") per road class: 70% tuning, 30% locked."""
-    h = int(hashlib.sha256((site + 'cars-bench-v1').encode()).hexdigest()[:8], 16) / 2 ** 32
-    return 'tune' if h < .7 else 'locked'
+LOCKED = {x.strip() for x in open(HERE / 'splits/locked_sites.txt') if x.strip() and not x.startswith('#')}
+
+
+def site_split(site, cls=None):
+    """The freeze of report 23 is the one list, so that nobody reads a locked site by another rule."""
+    return 'locked' if site in LOCKED else 'tune'
 
 
 class Berlin:

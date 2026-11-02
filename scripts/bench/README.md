@@ -68,7 +68,7 @@ A metric given as a real band (M4, JS1 to JS6, JR, C3, C4) is scored as distance
 
 ## Held-out data
 
-`splits/locked.toml` lists the locked sets. Nothing there is downloaded before use. The bench reads only the tuning 70% of Berlin sites (`sha256(site + "cars-bench-v1")`) and all 8 May days.
+`splits/locked.toml` lists the locked sets. Nothing there is downloaded before use. The bench reads only Berlin's tuning sites, using the one list frozen by report 23 (`splits/locked_sites.txt`), and all 8 May days. An earlier dry run of the selftest and a wire test used a different hash and so read some of those sites in aggregate; no site-level number was looked at and no simulated score came from it.
 
 **15 May 2019 is not blind.** Report 12 read it while proposing it as the gate day, so it's tuning data like the other 7 days, and every score uses all 8 days. The blind tests are the unopened months.
 

@@ -123,12 +123,8 @@ def n0(edges_csv, trips_csv, hours=24):
     return cells
 
 
-def district_sites():
-    return [x['site'] for x in csv.DictReader(open(B19 / 'step0/sites.csv'))] if (B19 / 'step1/freeze.json').exists() else []
-
-
 def frozen_sites():
-    return json.loads((B19 / 'step1/freeze.json').read_text())['district_sites']
+    return json.loads((B19 / 'step1/freeze.json').read_text())['tuning_sites']
 
 
 def score_district(sensor_csvs, scale=1.0, edges=None, trips=None, B=None):
@@ -143,42 +139,49 @@ def score_district(sensor_csvs, scale=1.0, edges=None, trips=None, B=None):
     return M
 
 
-def evaluate(cfg, folder=None, gpu=False, factor='10', seeds=(1,), runs=None):
-    """The district. Either run it here, or score runs already made by the same commit. Demand factor 10 is the whole demand."""
-    folder = Path(folder or B19)
-    scale = {'01': .1, '05': .5, '10': 1.0}[factor]
-    paths = []
+def scenario():
+    return json.loads((B19 / 'scenario.json').read_text())
+
+
+def evaluate(cfg, gpu=False, factor='10', seeds=(1,), runs=None):
+    """The district, from scenario.json. Either run it here, or score runs already made. A 10% sample has its flows multiplied up, and V8 fails it: that's a map test, not the gate."""
+    sc = scenario()
+    fraction = {'01': .1, '05': .5, '10': 1.0}[factor]
     secs = 0.0
-    extras = dict(teleports=0, unfinished=[])
     if runs:
-        ds = [folder / 'runs' / r for r in runs]
+        ds = [B19 / 'runs' / r for r in runs]
     else:
         ds = []
+        routes = sc['routes'][{'01': '10pct', '05': '50pct', '10': '100pct'}[factor]]
         for seed in seeds:
             d = runner.STORE / 'work' / f"{cfg['name']}-berlin-f{factor}" / f's{seed}'
             d.mkdir(parents=True, exist_ok=True)
-            plan = dict(net=folder / 'district/net.net.xml', routes=folder / f'district/routes_f{factor}.rou.gz', end=93600, fcd=None, sensors=folder / 'district/sensors.csv', edge_interval=900, edges=True, extra=['--capacity', str(int(factor) * 4000 + 4000), '--trusted'])
+            plan = dict(net=sc['net'], routes=routes, end=93600, fcd=None, sensors=sc['sensors'], edge_interval=900, edges=True, extra=['--capacity', str(int(factor) * 4000 + 4000)])
             r = runner.launch(cfg, plan, d, seed, {}, plan['net'], dt=cfg['dt_network'], gpu=gpu)
             secs += r.secs
             ds.append(d)
+    extras = dict(teleports=0, unfinished=[])
+    paths = []
     for d in ds:
         paths.append(d / 'sensors.csv')
-        sm = d / ('summary.csv')
-        if sm.exists():
-            t = pd.read_csv(sm)
+        if (d / 'summary.csv').exists():
+            t = pd.read_csv(d / 'summary.csv')
             if len(t):
                 last = t.iloc[-1]
                 extras['teleports'] += int(last.teleports)
                 extras['unfinished'].append(float(last.running) / max(float(last.inserted), 1))
     edges = next((d / 'edges.csv' for d in ds if (d / 'edges.csv').exists()), None)
-    trips = next((d / 'trips.csv' for d in ds if (d / 'trips.csv').exists()), None)
-    M = score_district(paths, 1.0, edges, trips)
+    M = score_district(paths, 1 / fraction, edges, None)
     if extras['unfinished']:
         v = extras['unfinished']
         c = score.judge([[x] for x in v], .005)
         c.update(D=[[x] for x in v], value=round(float(np.median(v)), 5), note='running at the end of 26 h, of those inserted')
         M['V6'] = {'district_end': c}
-    M['_V8_scale'] = scale
+    for cells in M.values():
+        for c in cells.values():
+            if fraction < 1:
+                c['note'] = (c.get('note', '') + f' District at {int(fraction * 100)}% of demand, flows multiplied up: no congestion to speak of.').strip()
+    M['_V8_scale'] = fraction
     M['_V1_teleports'] = extras['teleports']
     M['_runs'] = [str(d) for d in ds]
     return M, secs

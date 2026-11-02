@@ -102,15 +102,20 @@ def cmd_run(a):
     berlin = None
     if a.berlin_factor or a.berlin_runs:
         import berlin as B
-        berlin, secs = B.evaluate(cfg, gpu=a.gpu, factor=a.berlin_factor or '10', runs=a.berlin_runs.split(',') if a.berlin_runs else None)
+        berlin, secs = B.evaluate(cfg, gpu=a.gpu, factor=a.berlin_factor or '01', runs=a.berlin_runs.split(',') if a.berlin_runs else None)
     M, seconds, seeds = suite.evaluate(cfg, a.mode == 'fast', gpu=a.gpu, only=only if not a.reuse else [], berlin=berlin, log=lambda s: print(s, flush=True))
     if a.reuse:
         old = load(a.reuse)
         if old['driver'] != a.driver or old['commit'] != cfg['commit']:
             raise SystemExit('--reuse needs a run of the same driver and commit')
         for i, m in old['metrics'].items():
-            if i in berlin or (not (berlin or {}).get(i) and m['status'] != 'NO DATA'):
-                M.setdefault(i, m['cells'])
+            if m['status'] == 'NO DATA':
+                continue
+            merged = dict(m['cells'])
+            for k, c in M.get(i, {}).items():
+                if k not in merged or merged[k]['status'] != 'FAIL':
+                    merged[k] = c
+            M[i] = merged
         seeds = old['seeds']
     res = suite.assemble(M, cfg, a.mode, seeds, seconds, suite.load_registry(), name=run_id, bench_commit=bench_commit())
     save(res)
