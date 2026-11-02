@@ -16,4 +16,5 @@ The GPU also drives Erik's desktop. Scale every experiment from small to big, ke
 
 No GPU kernel may use function-local arrays outside `lc_best`. Comments stay sparse.
 
+`scripts/bench/` is the benchmark of report 22: one command, one configuration, one scorecard, no total. `python3 -I scripts/bench/bench.py run --driver human --mode fast` for a code change, `selftest`, `knownbad`, `compare A B`, `reveal`; see its README. Dashboard: https://pc-5144.erikfrankling.duckdns.org/bench/.
 To find out why something happens, see `crates/cars-cli/DEBUGGING.md`: `cars run --trace f --why`, then `cars why`, `cars jam`, `cars tsd`, `cars junction`, `cars compare`, `cars dist`. Reasons are probes in `crates/cars-core/src/why.rs`, patched in only with `--why`; a new limit in a kernel needs one there.
