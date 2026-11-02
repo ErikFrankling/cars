@@ -510,7 +510,7 @@ pub struct HumanParams {
 
 impl Default for HumanParams {
     fn default() -> Self {
-        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 0.65, gap_roundabout: 1.5, t_scale: 0.7, s0_scale: 1.2, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.6, a_y: 2.2, free_table: 0.0, b_approach: 1.2, tau_approach: 2.0, overshoot: 1.4, standing: 0.5, see: 30.0, lc_slope: 1.0, stop_s0: 1.0, comfort: 1.5, stub: 7.0, w_s_near: 0.45, b_end: 2.5, tte0: 43.0, s_0: 0.4, s_t: -1.544, s_lag: 0.133, s_lead: 0.164, s_driver: 0.5, w_f: 0.756, t_f: 0.5, b_f: 3.0, w_s_neg: 0.12, w_s_pos: 0.25, k_c: 0.05, q_edge: 0.13, v_edge: 15.0, tau_a: 1.87, tau_sd: 1.44, gipps_b: 3.0, gipps_tau: 0.5, lead_far: -6.0, lag_far: -2.0 }
+        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 0.65, gap_roundabout: 1.5, t_scale: 0.7, s0_scale: 1.0, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.35, a_y: 2.2, free_table: 0.0, b_approach: 1.2, tau_approach: 2.0, overshoot: 1.4, standing: 0.5, see: 30.0, lc_slope: 1.0, stop_s0: 1.0, comfort: 1.5, stub: 7.0, w_s_near: 0.45, b_end: 2.5, tte0: 43.0, s_0: 0.4, s_t: -1.544, s_lag: 0.133, s_lead: 0.164, s_driver: 0.5, w_f: 0.756, t_f: 0.5, b_f: 3.0, w_s_neg: 0.12, w_s_pos: 0.25, k_c: 0.05, q_edge: 0.13, v_edge: 15.0, tau_a: 1.87, tau_sd: 1.44, gipps_b: 3.0, gipps_tau: 0.5, lead_far: -6.0, lag_far: -2.0 }
     }
 }
 

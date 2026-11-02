@@ -408,3 +408,36 @@ I-80's zone went from 66.5 m to the site's 54 m, which accounts for the lower fl
 **I-395 and A39 are used up as held-out sites for this rule set**, having been opened once for the frozen table. A final claim needs fresh sites, from `data-hunt/25-junction-targets.md`.
 
 ## Rounds after that
+
+The rounds below are on the merged physics base, human driver on, one seed, exact scene geometry. Real bands as in the table above. I-395 and A39 were not opened. Scope was two rounds on throughput and stopped-first, then stop.
+
+**Why flow was low, in two parts.**
+
+One lane with no merge, past a queue: 1,109 veh/h at a 9 m/s limit, 1,598 at 30 m/s, against a real 1,800-2,300 on motorways. This is the corner finding of the physics agent, 1,389 per green hour at 8.8 m/s, with its cause. T and s0 ask for about 42 m at 25 m/s, cars hold about 54. Report 05's k1 is so small that a car 5 m back accelerates at 0.055 m/s², and voids from a queue barely close. Raising k1 to 0.03 gave +6-8% and cost 9% on A39 replay, so it was dropped. Shortening T costs nothing on replay, because replay hardly pins it.
+
+| T scale | Sat headway, s | One lane at 9 m/s | At 30 m/s | A39 replay, m | I-294 replay, m | p5 time gap, s |
+|---|---|---|---|---|---|---|
+| 1.0 | 2.35 | 1,109 | 1,598 | 11.89 | 11.65 | 1.12 |
+| 0.85 | 2.28 | 1,138 | 1,714 | 11.61 | 11.37 | 1.11 |
+| 0.7 | 2.22 | 1,152 | 1,850 | 11.62 | 11.22 | 1.08 |
+
+At 9 m/s the slowest driver sets the lane, 7.4 m/s. The scene's limit was the mean of real speed past the end, so it was wrong: it is now the p90, 12 and 17 m/s.
+
+The second part is a loop at the lane end, seen in `cars why` at US-101. Ramp-lane cars do 4-5 m/s where real ones do 14. 95% of their ticks they have not decided to start, as time to the end is distance over speed and at 4 m/s it reads 50 s. So they roll to the end and stop, which queues and slows those behind, which delays their start in turn. Report 18's law was fitted on the body reaching the line and it asks for the intercept to be tuned in closed loop.
+
+| Round | Change | I-80 flow | Stopped | Rows | US-101 flow | Stopped | Rows |
+|---|---|---|---|---|---|---|---|
+| Base | Exact road, flows past the end | 1,080 | .85 | 8 of 17 | 1,216 | .48 | 7 of 17 |
+| r10 | Scene limit at p90 of real speed | 1,152 | .72 | 4 | 1,236 | .49 | 6 |
+| 1 | + T × 0.7 | 1,180 | .69 | 5 | 1,232 | .47 | 7 |
+| | + S0 −0.4 | 1,176 | .66 | 6 | 1,328 | .37 | 7 |
+| 2 | + S0 0.4 | **1,252** | **.49** | 4 | **1,468** | **.21** | **8** |
+| Real | | 1,344-1,435 | .18-.34 | | about 1,539 | 0-.02 | |
+
+Kept: T × 0.7, S0 0.4, scene limits. What it did not fix: I-80 still 7% short of the low end of real flow and stops at .49 against at most .34. Starting earlier also lowers overlap at the start there, .16 to .10 against a real .24-.40, and moves the body over the line to 32 m left against at most 17. So at I-80 the rows count fell from 5 to 4 while the two rows this round was for improved. That is a trade, not a clean gain.
+
+**Stopped there, per the two-round rule.** Not done from the earlier list: the 20° turn from a crawl (real heading at 1-4 m/s has p95 5-8°, simulated 11-15°, from the 45° steering allowance `lc_slope`, whose lower values made wrong-lane waits rise several-fold at signals), and rerunning the give-way gap test behind the 72 times more teleports (run4 lost). Report 18's follower rows also still fail.
+
+A one-token change inside `hu_target` (`0.85 *` in the gap term) made cars run off the end of their lane on llvmpipe at 128 bits, with `t_scale` giving the same effect cleanly. Kernel edits there need a sanity run; real-GPU confirmation of that edit is outstanding as the lock was busy.
+
+**After the first benchmark of those rounds** (`841a146`, 32 fails against 31 for the old human driver and 32 for main's physical driver), three more changes aimed at its regressions: launch needs the gap opened by 1 m (`JS5`: start wave 42 km/h, real 16-28), s0 scale 1.0 (`M4`, `JS2` turning), and `lc_safety` 0.35 (`JL1`: stopped in the source lane). With `lc_safety` at 0.35, US-101 reaches 1,532 veh/h with .065 stopped first and I-80 1,244 with .45, no contacts. Hard-braking requests go up, cert floor 11 to 32 at US-101.
