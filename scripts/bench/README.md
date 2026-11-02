@@ -78,6 +78,18 @@ A reveal needs a written reason and an approval only Erik can give: `bench.py ap
 
 `/bench/trust.json` next to the dashboard gives, per driver, the latest run's status per level and gate check. `crates/cars-gui/registry.toml`'s trust labels can read it. `matches_real_day` stays false until every gate check passes on held-out data.
 
+## State of the first baselines
+
+Copies are in `results/true-to-life/`. Fast mode, one seed, pinned to main d4a92cb9, physics 883f923c, human f69d6947. All 20 known-bad configurations are caught, by at least one named metric each (`power.md`). `selftest` passes.
+
+Not done yet:
+
+- **Full mode has not been run to the end on any driver**, so `M14` drift and `JO3` capacity drop have no score, and with one seed `U` and `S90` have no spread between seeds.
+- **Berlin district is scored on main only, at 10% of demand with flows multiplied up**, which `V8` fails by design. It reproduces report 23's WAPE and RMSN. Physics and human runs were stopped at about 30%. No 100% day exists.
+- `reveal` has no scorer: it refuses without spending anything. No locked set has been opened.
+- Known-bad cases 1 to 5 and 12 to 20 ran before the last metric additions and the switch to one locked site list. Cases 6 to 11 ran after the additions, before the switch. Their named metrics did not change.
+- Some named metrics stay quiet: M12 on case 4, M9 on case 6, V2 on case 8, JS1 on case 9, N14 and V6 on case 12, N4 on case 13, N10 on case 18.
+
 ## Known limits
 
 - Test scenes are generic geometry with real rates and real signal timings, not rebuilt places. A pass at level 2 on them is weaker than on a rebuilt junction.
