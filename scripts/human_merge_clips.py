@@ -17,6 +17,7 @@ import subprocess
 from pathlib import Path
 
 import human_merge as hm
+import physics_qa
 
 MG = os.environ.get('MG_DATA', '/home/erikf/projects/personal/cars-data/truth/merging-20261102')
 GALLERY = '/home/erikf/projects/personal/cars-data/videos/gallery/humans'
@@ -37,8 +38,19 @@ def scene(d, sc, begin, end):
     d.mkdir(parents=True, exist_ok=True)
     hm.build(d, sc)
     hm.routes(d, sc, end)
-    hm.run([hm.BIN, 'run', '--net', d / 'net.xml', '--routes', d / 'r.xml', '--dt', 0.1, '--end', end, '--seed', 1, '--report-json', d / 's.json', '--trace', d / 'sim.trace', '--trace-begin', begin, '--trace-end', end, '--time-to-teleport', 0, '--humans'])
+    hm.run([hm.BIN, 'run', '--net', d / 'net.xml', '--routes', d / 'r.xml', '--dt', 0.1, '--end', end, '--seed', 1, '--report-json', d / 's.json', '--trace', d / 'sim.trace', '--trace-begin', begin, '--trace-end', end, '--time-to-teleport', 0])
     shutil.copy(d / 'net.xml', d / 'sim.net.xml')
+    no_jumps(d / 'net.xml', d / 'sim.trace')
+
+
+def no_jumps(net, trace):
+    """A clip whose cars jump is not published."""
+    qa = Path(trace).with_suffix('.qa')
+    qa.mkdir(exist_ok=True)
+    s = physics_qa.screen_jumps(net, trace, qa, hm.BIN)
+    print(Path(trace).name, s, flush=True)
+    if s['jumps']:
+        raise SystemExit(f"{s['jumps']} jumps in {trace}: {qa}/screen_jumps.csv")
 
 
 def replay(net, trace, out, c, mpp, w, h, begin, end, title, speed=1.0):
@@ -65,7 +77,8 @@ def main():
         c = centre(net, 'merge_1')
     if 'i80' in a.what:
         hm.run(['python3', HERE / 'real_tracks_trace.py', '--cache', f'{MG}/cache/i-80', '--template', d / 'sim.trace', '--run', 0, '--begin', 70, '--end', 170, '--end-s', 204, '--old', 7, '--new', 6, '--out', d / 'real.trace'])
-        replay(net, d / 'real.trace', d / 'real.mp4', c, 0.14, 1400, 330, 70, 150, 'Real I-80, lanes 6 and 7 (no blinkers in the data)')
+        no_jumps(net, d / 'real.trace')
+        replay(net, d / 'real.trace', d / 'real.mp4', c, 0.14, 1400, 330, 70, 150, 'Real I-80 tracks (data has no blinkers)')
         replay(net, d / 'sim.trace', d / 'sim.mp4', c, 0.14, 1400, 330, 350, 430, 'Simulated human driver')
         hm.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', d / 'real.mp4', '-i', d / 'sim.mp4', '-filter_complex', 'vstack=inputs=2:shortest=1', '-c:v', 'libx264', '-crf', 20, '-pix_fmt', 'yuv420p', gal / 'merge_i80_real_vs_sim.mp4'])
         for t in (90, 110, 130):
@@ -74,7 +87,7 @@ def main():
             still(net, d / 'sim.trace', gal / f'merge_i80_sim_{t}.png', c, 0.14, 1400, 330, t)
     if 'close' in a.what:
         ce = centre(net, 'merge_1', 0.75)
-        replay(net, d / 'sim.trace', gal / 'merge_lane_drop_closeup.mp4', ce, 0.05, 1000, 420, 370, 400, 'Lane end, close up. Blinkers, brake lights, a car edging in', speed=0.5)
+        replay(net, d / 'sim.trace', gal / 'merge_lane_drop_closeup.mp4', ce, 0.05, 1000, 420, 370, 400, 'Lane end, close up', speed=0.5)
         for t in (375, 385, 395):
             still(net, d / 'sim.trace', gal / f'merge_lane_drop_{t}.png', ce, 0.05, 1000, 420, t)
     if 'drop' in a.what:

@@ -228,9 +228,13 @@ impl TraceSource<'_> {
                 continue;
             }
             let elapsed = step_time - h.time;
+            // From where the car really went: the offset alone jumps by a lane when its lane changes, with no motion.
+            let was = add(h.cur_xy, scale(perp(h.cur_dir), h.cur_lat));
+            let now = add(center, scale(perp(dir), r.lat()));
+            // A car turns over about half a second; the sideways rate can change within a step.
+            h.dlat += (dot(sub(now, was), perp(dir)) / elapsed.max(0.01) - h.dlat) * (1.0 - (-elapsed / 0.5).exp());
             h.prev_lat = h.cur_lat;
             h.cur_lat = r.lat();
-            h.dlat = (h.cur_lat - h.prev_lat) / elapsed.max(0.01);
             let traced_lat = h.prev_lat != 0.0 || h.cur_lat != 0.0;
             h.prev_xy = h.cur_xy;
             h.prev_dir = h.cur_dir;

@@ -41,7 +41,6 @@
 @group(0) @binding(19) var<storage, read_write> lane_free: array<LaneFree>;
 @group(0) @binding(35) var<storage, read_write> lc_plan: array<LcPlan>;
 // Five words per lane in physical mode: junction bid, length heading there, front-most entrant, widest body, reach.
-@group(0) @binding(30) var<storage, read_write> ph_lane: array<atomic<u32>>;
 @group(0) @binding(36) var<storage, read_write> mirror: array<Mirror>;
 @group(0) @binding(37) var<storage, read_write> energy: array<TripEnergy>;
 @group(0) @binding(38) var<storage, read_write> route_patch: array<vec2u>;
@@ -2069,14 +2068,6 @@ fn ph_account(e: ptr<function, Veh>, v0: f32, v1: f32, ds: f32) {
     energy[t].ke += ke;
     energy[t].dist += ds;
     if (v1 <= HALT_SPEED) { energy[t].idle_s += dt; } else { energy[t].moving_s += dt; }
-}
-
-fn ph_lateral_done(t: f32, w: f32, v_lat: f32) -> f32 {
-    let total = w / v_lat + 1.0;
-    if (t < 1.0) { return v_lat * (t * 0.5 - sin(3.14159265 * t) / 6.2831853); }
-    if (t <= total - 1.0) { return v_lat * (t - 0.5); }
-    let r = max(total - t, 0.0);
-    return w - v_lat * (r * 0.5 - sin(3.14159265 * r) / 6.2831853);
 }
 
 // Sideways progress of a lane change. Tied to forward motion, except at a crawl.

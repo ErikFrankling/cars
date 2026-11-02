@@ -69,7 +69,43 @@ def build(d, sc):
     (d / 'n.nod.xml').write_text(f'<nodes><node id="a" x="0" y="0"/><node id="r" x="{b - 500}" y="-60"/><node id="b" x="{b}" y="0"/><node id="c" x="{c}" y="0"/><node id="d" x="{c + 300}" y="0"/><node id="e" x="{c + 400}" y="0"/><node id="f" x="{c + 1000}" y="0"/></nodes>')
     (d / 'n.edg.xml').write_text(f'''<edges><edge id="up" from="a" to="b" numLanes="1" speed="{sc['v']}"/><edge id="on" from="r" to="b" numLanes="1" speed="{sc['von']}"/><edge id="merge" from="b" to="c" numLanes="2" speed="{sc['v']}"><lane index="0" speed="{sc.get('vramp', sc['von'] if sc['von'] > sc['v'] else sc['v'])}"/></edge><edge id="down" from="c" to="d" numLanes="1" speed="{sc['v']}"/><edge id="neck" from="d" to="e" numLanes="1" speed="{sc['neck']}"/><edge id="out" from="e" to="f" numLanes="1" speed="{sc['v']}"/></edges>''')
     (d / 'n.con.xml').write_text('<connections><connection from="up" to="merge" fromLane="0" toLane="1"/><connection from="on" to="merge" fromLane="0" toLane="0"/><connection from="merge" to="down" fromLane="1" toLane="0"/></connections>')
-    run(['netconvert', '-n', d / 'n.nod.xml', '-e', d / 'n.edg.xml', '-x', d / 'n.con.xml', '-o', d / 'net.xml', '--no-turnarounds', 'true'])
+    if sc.get('box'):
+        run(['netconvert', '-n', d / 'n.nod.xml', '-e', d / 'n.edg.xml', '-x', d / 'n.con.xml', '-o', d / 'net.xml', '--no-turnarounds', 'true'])
+        return
+    run(['netconvert', '-n', d / 'n.nod.xml', '-e', d / 'n.edg.xml', '-x', d / 'n.con.xml', '-o', d / 'net.xml', '--no-turnarounds', 'true', '--no-internal-links', 'true'])
+    exact_geometry(d / 'net.xml', sc)
+
+
+def exact_geometry(path, sc):
+    """netconvert cuts roads back around a junction box, and leaves the lengths disagreeing with the shapes. A real lane end
+    has no box: lanes abut, what is drawn is what is driven, and the lane that ends runs out into a taper. The ramp runs
+    alongside for its last 200 m, as the real lanes do, so a car can move across early there without leaving the road."""
+    text = path.read_text()
+    b, c = sc['up'], sc['up'] + sc['zone']
+    y = float(re.search(r'<lane id="up_0"[^>]*shape="[\d.]+,([\d.]+)', text).group(1))
+    w = W
+    x = {'up_0': [(0, y), (b, y)], 'on_0': [(b - 500, y - 60), (b - 200, y - w), (b, y - w)], 'merge_0': [(b, y - w), (c, y - w)], 'merge_1': [(b, y), (c, y)],
+         'down_0': [(c, y), (c + 300, y)], 'neck_0': [(c + 300, y), (c + 400, y)], 'out_0': [(c + 400, y), (c + 1000, y)]}
+
+    def lane(m):
+        pts = x[m.group(1)]
+        length = sum(np.hypot(p[0] - q[0], p[1] - q[1]) for p, q in zip(pts, pts[1:]))
+        shape = ' '.join(f'{p[0]:.2f},{p[1]:.2f}' for p in pts)
+        return re.sub(r'shape="[^"]*"', f'shape="{shape}"', re.sub(r'length="[^"]*"', f'length="{length:.2f}"', m.group(0)))
+
+    text = re.sub(r'<lane id="(\w+)"[^>]*/>', lane, text)
+    # Real centres finish crossing up to 28 m past the end at I-80 (report 18, p05).
+    taper = max(40.0, 3.0 * sc['v'])
+    shapes = {'a': [(0, y + w / 2), (0, y - w / 2)], 'r': [(b - 500, y - 60 + w / 2), (b - 500, y - 60 - w / 2)], 'b': [(b, y + w / 2), (b, y - 1.5 * w)],
+              'c': [(c, y + w / 2), (c, y - 1.5 * w), (c + taper, y - w / 2), (c + taper, y + w / 2)], 'd': [(c + 300, y + w / 2), (c + 300, y - w / 2)],
+              'e': [(c + 400, y + w / 2), (c + 400, y - w / 2)], 'f': [(c + 1000, y + w / 2), (c + 1000, y - w / 2)]}
+
+    def junction(m):
+        pts = shapes[m.group(1)]
+        return re.sub(r'shape="[^"]*"', 'shape="' + ' '.join(f'{p[0]:.2f},{p[1]:.2f}' for p in pts) + '"', m.group(0))
+
+    text = re.sub(r'<junction id="(\w+)"[^>]*>', junction, text)
+    path.write_text(text)
 
 
 def routes(d, sc, dur):
@@ -180,9 +216,10 @@ def main():
     p.add_argument('--dt', type=float, default=0.5)
     p.add_argument('--dur', type=int, default=1200)
     p.add_argument('--tag', default='base')
+    p.add_argument('--box', action='store_true', help="netconvert's junction boxes, to compare with the exact road")
     a = p.parse_args()
     for name in a.scenes:
-        sc = SCENES[name]
+        sc = dict(SCENES[name], box=a.box)
         work = Path(a.out) / a.tag / name
         work.mkdir(parents=True, exist_ok=True)
         build(work, sc)

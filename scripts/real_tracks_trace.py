@@ -5,8 +5,9 @@
         --old 7 --new 6 --out real.trace
 
 The template is a short trace of the scene, for its header and lane numbers. Only the merging lane and the lane it joins
-are drawn. Positions are aligned on the lane end, and sideways position is scaled to the scene's lane width, so the
-lane's narrowing at the real site shows as a car moving over. The data has no blinkers, so none are drawn.
+are drawn. Road position is kept to the metre, aligned on the lane end, and sideways position is scaled to the scene's lane
+width, so the lane's narrowing at the real site shows as a car moving over. Heading is worked out by `cars replay` from
+the sideways motion. The data has no blinkers, so none are drawn.
 """
 import argparse
 import json
@@ -35,6 +36,8 @@ def main():
     p.add_argument('--new', type=int, required=True)
     p.add_argument('--fps', type=float, default=5.0)
     p.add_argument('--width', type=float, default=3.2)
+    p.add_argument('--smooth', type=int, default=5, help='frames of the running mean of position, both ways. The tracks shake by more than a car moves in a frame')
+    p.add_argument('--alongside', type=float, default=200.0, help='metres before the zone where the scene has the lanes side by side')
     p.add_argument('--out', required=True)
     a = p.parse_args()
 
@@ -46,7 +49,9 @@ def main():
     d['time'] = (d['t'] - t0) / hz
     d = d[d.time.between(a.begin, a.end)]
     step = max(1, int(round(hz / a.fps)))
-    d = d[(d['t'] - t0) % step == 0]
+    d = d[(d['t'] - t0) % step == 0].sort_values(['id', 't'])
+    # An id can come back later, on a lane not drawn in between. Each unbroken stretch is one car.
+    d['id'] = d['id'].astype('i8') * 1000 + (d.groupby('id')['t'].diff() != step).groupby(d['id']).cumsum()
 
     cen = pd.read_csv(a.cache + '.centres.csv.gz')
     cen = cen[cen.r == a.run]
@@ -66,21 +71,23 @@ def main():
         net[m.group(1)] = float(m.group(2))
     L = net['merge_1']
 
+    # Everything in one road coordinate, and sideways in lanes from the lane that ends, so there is no lane to jump between:
+    # upstream of the zone the scene's lanes run alongside, and a car on the ending lane is drawn offset on the through lane.
+    d['s'] = d.groupby('id')['s'].transform(lambda v: v.rolling(a.smooth, center=True, min_periods=1).mean())
     s_m = d.s.values - a.end_s + L
-    old = d.lane.values == a.old
+    q = (d.lat.values - centre(a.old, d.s.values)) / (centre(a.new, d.s.values) - centre(a.old, d.s.values))
+    d['q'] = np.clip(q, -0.4, 1.4)
+    d['q'] = d.groupby('id')['q'].transform(lambda v: v.rolling(a.smooth, center=True, min_periods=1).mean())
+    off = (d.q.values - 1.0) * a.width
+    keep = s_m >= -a.alongside
+    d, s_m, off = d[keep], s_m[keep], off[keep]
+    order = [('up_0', -net['up_0'], 0.0), ('merge_1', 0.0, L), ('down_0', L, L + net['down_0']), ('neck_0', L + net['down_0'], L + net['down_0'] + net['neck_0']), ('out_0', L + net['down_0'] + net['neck_0'], 1e9)]
     lanes = np.empty(len(d), object)
     pos = np.zeros(len(d))
-    lanes[old] = np.where(s_m[old] >= 0, 'merge_0', 'on_0')
-    pos[old] = np.where(s_m[old] >= 0, s_m[old], net['on_0'] + s_m[old])
-    new = ~old
-    over = s_m - L
-    lanes[new] = np.where(s_m[new] < 0, 'up_0', np.where(over[new] < 0, 'merge_1', 'down_0'))
-    pos[new] = np.where(s_m[new] < 0, net['up_0'] + s_m[new], np.where(over[new] < 0, s_m[new], over[new]))
-    q = (d.lat.values - centre(a.old, d.s.values)) / (centre(a.new, d.s.values) - centre(a.old, d.s.values))
-    q = np.clip(q, -0.4, 1.4)
-    off = np.where(old, q * a.width, (q - 1.0) * a.width)
-    off = np.where(np.isin(lanes, ['merge_0', 'merge_1']), off, 0.0)
-    pos = np.maximum(pos, 0.0)
+    for lane, start, stop in order:
+        m = (s_m >= start) & (s_m < stop)
+        lanes[m] = lane
+        pos[m] = s_m[m] - start
 
     dt = step / hz
     head.update(dt=dt, sim_begin=float(d.time.min()), begin=float(d.time.min()), end=float(d.time.max()), stride=1)

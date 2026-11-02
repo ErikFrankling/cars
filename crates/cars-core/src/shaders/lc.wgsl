@@ -1253,7 +1253,8 @@ fn hu_merge_gate(e: Veh, n: LcNeighbors, dest: u32, i: u32) -> u32 {
 // B3: while waiting for the gap a slow car drifts towards the line, keeping clear of a car alongside. No sideways motion
 // at a stand.
 fn hu_edge(i: u32, e: Veh, side: f32) {
-    if ((P.hu_flags & HS_EDGE) == 0u) { return; }
+    // Once it has started over, the edge is part of the change and stays until the change ends.
+    if ((P.hu_flags & HS_EDGE) == 0u || (e.phys >> 30u) != 0u) { return; }
     let w = lanes[e.lane].width;
     var goal = 0.0;
     if (side != 0.0 && (cur[i].hu_state & HU_ENGAGED) != 0u && e.speed < P.hm_d.y) {

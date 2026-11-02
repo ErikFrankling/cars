@@ -771,8 +771,8 @@ def main():
     p.add_argument('--begin', type=float, help='with --trace, the first time to look at')
     p.add_argument('--end', type=float, help='with --trace, the last time to look at')
     p.add_argument('--out', required=True)
-    p.add_argument('--screen', action='store_true', help='with --trace, also check every drawn move against the speed, and exit non-zero on a jump')
-    p.add_argument('--cars', help='the binary for --screen. Default CARS_BIN, then target/release/cars')
+    p.add_argument('--no-screen', action='store_true', help='skip the check of every drawn move against the speed, which exits non-zero on a jump')
+    p.add_argument('--cars', help='the binary for the screen check. Default CARS_BIN, then target/release/cars')
     p.add_argument('--log', help='stderr of cars run, for its counters')
     p.add_argument('--top', type=int, default=20, help='rows in each table of the report')
     p.add_argument('--pair-limit', type=int, default=3_000_000)
@@ -780,7 +780,14 @@ def main():
     p.add_argument('--report', help='JSON from cars run --report-json')
     p.add_argument('--trips', help='CSV from cars run --trip-csv, for energy')
     p.add_argument('--other-fcd', help='FCD of the same scene at another dt, for Q11')
-    analyse(p.parse_args())
+    a = p.parse_args()
+    analyse(a)
+    if a.trace and not a.no_screen:
+        s = screen_jumps(a.net, a.trace, a.out, a.cars)
+        (Path(a.out) / 'screen.json').write_text(json.dumps(s, indent=1))
+        print('screen', json.dumps(s))
+        if s['jumps']:
+            raise SystemExit(f"{s['jumps']} jumps on screen: {a.out}/screen_jumps.csv")
 
 
 if __name__ == '__main__':
