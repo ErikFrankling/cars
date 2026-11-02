@@ -206,7 +206,7 @@ def main():
     if a.repair:
         rlog = []
         reopen = [tuple(x) for x in json.load(open(a.reopen))] if a.reopen else []
-        n = mt.repair(T, mt.read(DATA / 'district' / a.repair / 'net.net.xml'), reopen, rlog)
+        n = mt.repair(T, mt.read(DATA / 'district' / a.repair / 'net.net.xml'), reopen, rlog, mt.read_none_lanes(DATA / 'district' / a.netdir / 'lane_tags.csv'))
         pd.DataFrame(rlog).to_csv(out / f'repairs{a.tag}.csv', index=False)
         print(f'[{name}] repairs: {n} connections restored from {a.repair}, {len(reopen)} lanes reopened')
     mt.index_lanes(T)

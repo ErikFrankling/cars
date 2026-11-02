@@ -6,6 +6,7 @@ right before left the same with shorter gaps (weakly grounded, flagged); no foes
 Everything that depends on flows takes them as an argument. Labels: lanes ESTIMATED (OSM 2019), programs INVENTED.
 """
 import collections
+import csv
 import gzip
 import math
 import pickle
@@ -18,6 +19,7 @@ GAPS = {'right': (5.9, 3.0), 'cross': (6.5, 3.4), 'major_left': (5.5, 2.6), 'rbl
 MAIN = ('motorway', 'motorway_link', 'trunk', 'trunk_link', 'primary', 'primary_link', 'secondary', 'secondary_link', 'tertiary', 'tertiary_link')
 LOST_PER_STRETCH = 1.0  # G + 3 s yellow - 4 s lost, B 5.2
 SPACING = 7.5
+RAMPS = ('motorway_link', 'trunk_link', 'motorway', 'trunk')
 
 
 def car_ok(allow, disallow):
@@ -47,7 +49,7 @@ def siegloch(qp, tg, tf):
 
 def read(path, cache=True):
     path = Path(path)
-    pk = path.with_suffix('.movetable.pkl')
+    pk = path.with_suffix('.movetable2.pkl')
     if cache and pk.exists() and pk.stat().st_mtime > path.stat().st_mtime:
         return pickle.loads(pk.read_bytes())
     edges, conns, tl, junc = {}, [], {}, {}
@@ -140,6 +142,7 @@ def build(edges, conns, tl, junc):
     for c in cs:
         c['foe_m'] = sorted({index[(o['frm'], o['to'])] for o in c['foes']})
         c['foe_yield'] = sorted({index[(o['frm'], o['to'])] for o in c['foes'] if not o['ctrl'] and o['state'] not in ('M', 'O', 'o')})
+        c['merge'] = c['dir'] == 's' and bool(c['foes']) and all(o['to'] == c['to'] for o in c['foes'])
         c.pop('foes')
     mlist = [None] * len(moves)
     for m, l in moves.items():
@@ -150,7 +153,7 @@ def build(edges, conns, tl, junc):
     return dict(edges=edges, conns=cs, moves=mlist, index=index, tl=tl, junc=junc)
 
 
-def repair(T, base, reopen=(), log=None):
+def repair(T, base, reopen=(), log=None, none_lanes=None):
     """Table fixes on the lane-marked map, one named cause each.
     stranded: an open car lane with no connection left that had one before marking gets it back, as a copy of the movement's connection on a neighbouring lane
     (a lane tagged none has no arrow, and a target the tag names may not be on the map; neither closes the lane).
@@ -170,6 +173,24 @@ def repair(T, base, reopen=(), log=None):
     have = collections.defaultdict(set)
     for c in T['conns']:
         have[c['frm']].add(c['fl'])
+    # a lane the tag leaves as none has no arrow: it also serves the way straight on
+    if none_lanes:
+        through = {}
+        for m in T['moves']:
+            if m['dir'] == 's':
+                through.setdefault(m['frm'], m)
+        for e, lane in none_lanes:
+            m = through.get(e)
+            if m is None or lane in m['lanes'] or e not in edges or lane not in {l['i'] for l in edges[e]['car']}:
+                continue
+            c = dict(m['conns'][0])
+            c['fl'] = lane
+            T['conns'].append(c)
+            m['conns'].append(c)
+            m['lanes'] = sorted({x['fl'] for x in m['conns']})
+            have[e].add(lane)
+            if log is not None:
+                log.append(dict(edge=e, lane=lane, fix='none_lane_through', why=''))
     bb = collections.defaultdict(list)
     for c in base['conns']:
         bb[(c['frm'], c['fl'])].append(c)
@@ -191,6 +212,19 @@ def repair(T, base, reopen=(), log=None):
                 if log is not None:
                     log.append(dict(edge=e, lane=l['i'], fix='stranded', why=f"to {b['to']}"))
     return added
+
+
+def read_none_lanes(path):
+    """Lanes a turn:lanes tag marks none or empty, from step2_lanes.py's log."""
+    out = []
+    with open(path) as f:
+        for r in csv.DictReader(f):
+            if r['kind'] == 'turn' and r['applied'] == 'yes':
+                parts = r['tag'].split('|')
+                for i, p in enumerate(parts):
+                    if p.strip() in ('none', ''):
+                        out.append((r['edge'], len(parts) - 1 - i))
+    return out
 
 
 def _or(it):
@@ -249,6 +283,9 @@ def conn_capacity(c, edge, s, Q=None, green_s=None, qfloor=0.0, gw=1.0):
     st = c['state']
     if st in ('M', 'O', 'o') or not c['foe_m']:
         return vcap * f
+    if (edge['type'] in RAMPS and edge['v'] >= 11) or c.get('merge'):
+        # a ramp or a carriageway joining straight on zips in; Daganzo's merge: what the road below leaves, with a floor share, not a gap search (B 5.3)
+        return max(vcap * f - qp / 2, 0.4 * vcap)
     tg, tf = GAPS[gap_key(c, edge['type'])]
     cap = siegloch(max(qp, qfloor), tg, tf)
     return min(vcap * f, gw * cap)
