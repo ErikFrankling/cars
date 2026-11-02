@@ -138,6 +138,7 @@ const PROBES: &[Probe] = &[
     p("check_rewind", "items[base + j].v_pass = it.v_wait;", "why_rewind(base, j); items[base + j].v_pass = it.v_wait;"),
     p("exec", "var e = cur[i];", "var e = cur[i]; why_exec_begin(i);"),
     every("walk_links|exec", "v_safe = it.v_wait;", "v_safe = it.v_wait; wy_src = j * 2u + 1u;"),
+    p("walk_links", "(*e).flags |= F_DENIED;", "(*e).flags |= F_DENIED; wy_full = links[it.link].to_lane;"),
     every("walk_links|exec", "v_safe = it.v_pass;", "v_safe = it.v_pass; wy_src = j * 2u;"),
     p("exec", "v_safe = min(v_safe, v_zipper);", "v_safe = min(v_safe, v_zipper); wy_zip = v_zipper;"),
     p("exec", "v_next = lc_patch_speed(v_next, e, vmax_here);", "wy_pre = v_next; v_next = lc_patch_speed(v_next, e, vmax_here); wy_post = v_next;"),
