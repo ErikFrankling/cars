@@ -146,6 +146,9 @@ pub fn run(args: Args) {
     }
     let mut sim = if args.why { Sim::with_why(&gpu, &world) } else { Sim::new(&gpu, &world) }.expect("sim");
     sim.target_submit_ms = args.target_submit_ms;
+    if let (true, Some(p)) = (args.why, &args.trace) {
+        crate::dbgnet::write(std::path::Path::new(&format!("{}.net.json", p.display())), &args.net, &net, &world).expect("net sidecar");
+    }
     let in_box: Vec<bool> = net
         .lanes
         .iter()
@@ -155,9 +158,6 @@ pub fn run(args: Args) {
         })
         .collect();
     let widths: Vec<f32> = demand.vtypes.iter().map(|t| t.width).collect();
-    if let (true, Some(p)) = (args.why, &args.trace) {
-        crate::dbgnet::write(std::path::Path::new(&format!("{}.net.json", p.display())), &args.net, &net, &world).expect("net sidecar");
-    }
     let mut tracer = args.trace.as_ref().map(|p| {
         let options = crate::trace::Options { begin: args.trace_begin.unwrap_or(args.begin), end: args.trace_end.unwrap_or(args.end), stride: args.trace_stride, bbox: args.trace_bbox.clone() };
         crate::trace::Tracer::new(p, options, &net, &mut world, &demand, &widths, args.begin, args.time_to_teleport, &gpu).expect("trace")
