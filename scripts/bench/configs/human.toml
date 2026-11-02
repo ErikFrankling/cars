@@ -1,0 +1,10 @@
+# Branch t3/1b36c9cf: physical mode with the human driver.
+name = "human"
+branch = "t3/1b36c9cf"
+patch = "instrument/sensors-human.patch"
+kind = "physical"
+dt = 0.1
+dt_network = 1.0
+time_to_teleport = 0
+flags = ["--humans"]
+vtype = 'carFollowModel="Human"'

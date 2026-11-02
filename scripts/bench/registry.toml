@@ -1,0 +1,682 @@
+# Every metric of research/truth/data-hunt/22-what-true-to-life-means.md, section 7. Registered before any simulated score.
+bench_version = 2
+
+[[metric]]
+id = "V1"
+level = 0
+tag = "P"
+gate = "physical"
+name = "Teleports"
+plain = "Cars never vanish and reappear to clear a jam, even with teleporting off"
+
+[[metric]]
+id = "V2"
+level = 0
+tag = "P"
+gate = "physical"
+name = "Vehicle overlaps"
+plain = "Cars do not drive through each other"
+
+[[metric]]
+id = "V3"
+level = 0
+tag = "P"
+gate = "stuck"
+name = "Vehicles conserved"
+plain = "Every car that went in has either left or is still there"
+
+[[metric]]
+id = "V4"
+level = 0
+tag = "P"
+gate = "stuck"
+name = "Same seed, same answer"
+plain = "Running twice with the same seed gives the same bits"
+
+[[metric]]
+id = "V5"
+level = 0
+tag = "P"
+gate = "physical"
+name = "Step size does not change the result"
+plain = "Halving the time step moves results by under a quarter of real noise"
+
+[[metric]]
+id = "V6"
+level = 0
+tag = "P"
+gate = "stuck"
+name = "The day finishes"
+plain = "Almost no car is still unfinished after demand ends"
+
+[[metric]]
+id = "V7"
+level = 0
+tag = "P"
+gate = "stuck"
+name = "No queue to get in"
+plain = "Almost no car waits over 15 minutes to enter the road"
+
+[[metric]]
+id = "V8"
+level = 0
+tag = "P"
+gate = "volume"
+name = "No demand scaling to pass"
+plain = "Demand was not cut below 95% of the estimate to make things work"
+
+[[metric]]
+id = "M1"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Acceleration by speed"
+plain = "How hard cars speed up and slow down at each speed, against each real tracker"
+
+[[metric]]
+id = "M2"
+level = 1
+tag = "W"
+gate = "physical"
+name = "Jerk by speed"
+plain = "How abruptly acceleration changes, against each tracker on its own. Witness, never tuned on"
+
+[[metric]]
+id = "M3"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Time gap by speed"
+plain = "How close drivers follow, in seconds, against each real tracker"
+
+[[metric]]
+id = "M4"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Standstill spacing"
+plain = "How far apart cars stand in a queue"
+
+[[metric]]
+id = "M5"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Replay against a real leader"
+plain = "Given a real leader's speed for 30 s, does the follower match reality better than calibrated Krauss"
+
+[[metric]]
+id = "M6"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Waves down a chain of cars"
+plain = "How a real leader's speed swings pass down eight followers, and how fast"
+
+[[metric]]
+id = "M7"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Lane change shape"
+plain = "How long a change takes and how fast it moves sideways"
+
+[[metric]]
+id = "M8"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Lane changes per km"
+plain = "How often cars change lane"
+
+[[metric]]
+id = "M9"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Gaps accepted when changing lane"
+plain = "How small a gap drivers take, in congestion and in free flow"
+
+[[metric]]
+id = "M10"
+level = 1
+tag = "W"
+gate = "physical"
+name = "Recovery after a gap change"
+plain = "How drivers relax back after someone cuts in"
+
+[[metric]]
+id = "M11"
+level = 1
+tag = "D"
+gate = "physical"
+name = "Free speed"
+plain = "How fast cars go with nothing in the way. Reported only"
+
+[[metric]]
+id = "M12"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Physical limits"
+plain = "Nothing brakes or accelerates past what a real car can do"
+
+[[metric]]
+id = "M13"
+level = 1
+tag = "W"
+gate = "physical"
+name = "Stop-and-go waves"
+plain = "Do waves exist, with the real swing and period"
+
+[[metric]]
+id = "M14"
+level = 1
+tag = "P"
+gate = "stuck"
+name = "No drift over hours"
+plain = "Speed does not creep up or down over a long run at fixed demand"
+
+[[metric]]
+id = "M15"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Braking in a normal stop"
+plain = "How hard cars brake to a stop: the average, the hardest moment, the firmest stops (report 19)"
+
+[[metric]]
+id = "M16"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Time spent braking hard"
+plain = "Share of moving time braking over 2, 3 and 4.5 m/s2 (report 19)"
+
+[[metric]]
+id = "M17"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Launch from a stand"
+plain = "How hard cars pull away (report 19)"
+
+[[metric]]
+id = "M18"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Cornering"
+plain = "How hard cars go round a bend, sideways. Real drivers hold about 1.8 m/s2 at any radius (report 19)"
+
+[[metric]]
+id = "M19"
+level = 1
+tag = "W"
+gate = "physical"
+name = "Everyday jerk"
+plain = "How abruptly acceleration changes in everyday driving (report 19). Witness, never tuned on"
+
+[[metric]]
+id = "JS1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Signal: headway by queue position"
+plain = "Seconds between cars crossing the line after green, position by position"
+
+[[metric]]
+id = "JS2"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Signal: saturation flow"
+plain = "Cars per green hour out of a queue, at both time steps"
+
+[[metric]]
+id = "JS3"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Signal: lost time"
+plain = "Time lost by the first four cars"
+
+[[metric]]
+id = "JS4"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Signal: first car"
+plain = "When the first car starts and how it accelerates"
+
+[[metric]]
+id = "JS5"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Signal: start wave"
+plain = "How fast the start of motion travels back through a queue"
+
+[[metric]]
+id = "JS6"
+level = 2
+tag = "W"
+gate = "physical"
+name = "Signal: yellow"
+plain = "Who stops at yellow, and how hard they brake"
+
+[[metric]]
+id = "JS7"
+level = 2
+tag = "P"
+gate = "where_when"
+name = "Signal: delay per vehicle"
+plain = "The whole distribution of delay at a real signal"
+
+[[metric]]
+id = "JS8"
+level = 2
+tag = "D"
+gate = "where_when"
+name = "Signal: longest queue per cycle"
+plain = "Longest queue in each cycle. Reported only"
+
+[[metric]]
+id = "JP1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Give-way: critical gap"
+plain = "Smallest gap a driver takes at a give-way junction"
+
+[[metric]]
+id = "JP2"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Give-way: follow-up"
+plain = "Seconds between two cars using one gap"
+
+[[metric]]
+id = "JP3"
+level = 2
+tag = "P"
+gate = "where_when"
+name = "Give-way: delay on the minor road"
+plain = "Delay as major road flow rises"
+
+[[metric]]
+id = "JR1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Roundabout: critical gap"
+plain = "Smallest gap taken when entering"
+
+[[metric]]
+id = "JR2"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Roundabout: follow-up"
+plain = "Seconds between two cars entering in one gap"
+
+[[metric]]
+id = "JR3"
+level = 2
+tag = "W"
+gate = "volume"
+name = "Roundabout: entry against circulating flow"
+plain = "How entry capacity falls as the ring fills"
+
+[[metric]]
+id = "JR4"
+level = 2
+tag = "D"
+gate = "speed"
+name = "Roundabout: speed on the ring"
+plain = "Reported only"
+
+[[metric]]
+id = "JO1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "On-ramp: where merges happen"
+plain = "Where along the acceleration lane cars merge"
+
+[[metric]]
+id = "JO2"
+level = 2
+tag = "P"
+gate = "physical"
+name = "On-ramp: gaps at the merge"
+plain = "Gaps and speed difference at the merge"
+
+[[metric]]
+id = "JO3"
+level = 2
+tag = "P"
+gate = "volume"
+name = "On-ramp: capacity drop"
+plain = "How much flow falls once it breaks down"
+
+[[metric]]
+id = "JL1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Lane drop: where merges happen"
+plain = "Merge position against distance to the lane's end"
+
+[[metric]]
+id = "JL2"
+level = 2
+tag = "P"
+gate = "volume"
+name = "Lane drop: discharge per lane"
+plain = "Flow past the drop"
+
+[[metric]]
+id = "JZ1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Zipper merge"
+plain = "Use of the last third, and alternation"
+
+[[metric]]
+id = "JS9"
+level = 2
+tag = "P"
+gate = "speed"
+name = "Signal: speed inside the junction"
+plain = "How fast cars go through, by turn, unstopped (report 25)"
+
+[[metric]]
+id = "JR5"
+level = 2
+tag = "P"
+gate = "where_when"
+name = "Roundabout: stops and queues"
+plain = "Share stopping, delay, longest queue (report 25)"
+
+[[metric]]
+id = "JR6"
+level = 2
+tag = "W"
+gate = "physical"
+name = "Roundabout: margins on entry"
+plain = "How close entries are to ring cars (report 25)"
+
+[[metric]]
+id = "JP4"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Stop sign: full stops and rolling"
+plain = "Real drivers come to a full stop about one time in five (report 25, one site)"
+
+[[metric]]
+id = "JA1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "All-way stop"
+plain = "Full stops, stopped time, seconds between entries (report 25, one thin site)"
+
+[[metric]]
+id = "JB1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Right before left"
+plain = "Does the car from the right go first. No real site behaves this way yet (report 25)"
+
+[[metric]]
+id = "JF1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Off-ramp"
+plain = "Where and how fast cars leave (report 25, two sites)"
+
+[[metric]]
+id = "JW1"
+level = 2
+tag = "P"
+gate = "physical"
+name = "Weaving"
+plain = "Lane changes in a weave (report 25, one site)"
+
+[[metric]]
+id = "C1"
+level = 3
+tag = "P"
+gate = "travel_time"
+name = "Travel times"
+plain = "Time on real routes, hour by hour, against camera pairs"
+
+[[metric]]
+id = "C2"
+level = 3
+tag = "W"
+gate = "where_when"
+name = "Speed field"
+plain = "Where jams sit in space and time along a road"
+
+[[metric]]
+id = "C3"
+level = 3
+tag = "P"
+gate = "volume"
+name = "Motorway capacity"
+plain = "Sustained flow per lane, at both time steps"
+
+[[metric]]
+id = "C4"
+level = 3
+tag = "P"
+gate = "physical"
+name = "Wave speed"
+plain = "How fast jams travel backward"
+
+[[metric]]
+id = "C5"
+level = 3
+tag = "P"
+gate = "where_when"
+name = "Queues at named places"
+plain = "Right place, right hour"
+
+[[metric]]
+id = "C6"
+level = 3
+tag = "D"
+gate = "volume"
+name = "Flow split across lanes"
+plain = "Share of traffic per lane. Reported only"
+
+[[metric]]
+id = "N0"
+level = 4
+tag = "P"
+gate = "sanity"
+name = "Normal-day sanity"
+plain = "Is this a real city at all: report 14's bands"
+
+[[metric]]
+id = "N1"
+level = 4
+tag = "P"
+gate = "volume"
+name = "Network total"
+plain = "Total count on the sensors against a real day"
+
+[[metric]]
+id = "N2"
+level = 4
+tag = "P"
+gate = "volume"
+name = "Total distance"
+plain = "Vehicle-km against the official total"
+
+[[metric]]
+id = "N3"
+level = 4
+tag = "P"
+gate = "day_shape"
+name = "Day shape"
+plain = "Share of the day in each hour"
+
+[[metric]]
+id = "N4"
+level = 4
+tag = "P"
+gate = "day_shape"
+name = "Peak hours"
+plain = "Hour of the morning and evening peak"
+
+[[metric]]
+id = "N5"
+level = 4
+tag = "P"
+gate = "volume"
+name = "Flow, site by site (WAPE)"
+plain = "Hourly error at each sensor, in percent"
+
+[[metric]]
+id = "N6"
+level = 4
+tag = "P"
+gate = "volume"
+name = "Flow, site by site (RMSN)"
+plain = "Hourly error at each sensor, weighted to the big misses"
+
+[[metric]]
+id = "N7"
+level = 4
+tag = "D"
+gate = "volume"
+name = "GEH and R squared"
+plain = "The traditional scores. Reported only, never tuned on"
+
+[[metric]]
+id = "N8"
+level = 4
+tag = "P"
+gate = "volume"
+name = "Daily total per site"
+plain = "Each sensor's daily total"
+
+[[metric]]
+id = "N9"
+level = 4
+tag = "W"
+gate = "day_shape"
+name = "Day shape per site"
+plain = "Each sensor's own hourly shape"
+
+[[metric]]
+id = "N10"
+level = 4
+tag = "P"
+gate = "speed"
+name = "Speed by road class and hour"
+plain = "Are roads of each class as fast as they really are, each hour"
+
+[[metric]]
+id = "N11"
+level = 4
+tag = "P"
+gate = "speed"
+name = "Speed site by site"
+plain = "Each sensor's speed each hour"
+
+[[metric]]
+id = "N12"
+level = 4
+tag = "P"
+gate = "speed"
+name = "Speed distribution"
+plain = "The spread of speeds, morning, midday, evening"
+
+[[metric]]
+id = "N13"
+level = 4
+tag = "P"
+gate = "speed"
+name = "Rush-hour dip"
+plain = "How far speed falls at the worst hour"
+
+[[metric]]
+id = "N14"
+level = 4
+tag = "P"
+gate = "where_when"
+name = "Jam location"
+plain = "Are jams in the right place at the right hour"
+
+[[metric]]
+id = "N15"
+level = 4
+tag = "P"
+gate = "day_shape"
+name = "Spread between runs"
+plain = "Do seeds vary as much as real days do"
+
+[[metric]]
+id = "N16"
+level = 4
+tag = "P"
+gate = "where_when"
+name = "Jams caught and false alarms"
+plain = "Share of real jams found, share of simulated jams that were real"
+
+[[metric]]
+id = "N17"
+level = 4
+tag = "P"
+gate = "where_when"
+name = "Top bottlenecks"
+plain = "Share of the worst real places that are also worst here"
+
+[[metric]]
+id = "N18"
+level = 4
+tag = "W"
+gate = "where_when"
+name = "Jam onset and clearance"
+plain = "When jams start and end"
+
+[[metric]]
+id = "N19"
+level = 4
+tag = "W"
+gate = "network_curve"
+name = "Network curve"
+plain = "Flow and density through the day, at the sensors"
+
+[[metric]]
+id = "N20"
+level = 4
+tag = "W"
+gate = "trips"
+name = "Trip length and duration"
+plain = "Against travel surveys"
+
+[[metric]]
+id = "N21"
+level = 4
+tag = "W"
+gate = "trips"
+name = "Route shares"
+plain = "Between camera pairs"
+
+[[metric]]
+id = "N22"
+level = 4
+tag = "W"
+gate = "day_shape"
+name = "Weekend transfer"
+plain = "Same settings on a Sunday"

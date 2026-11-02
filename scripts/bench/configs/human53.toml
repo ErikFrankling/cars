@@ -1,0 +1,10 @@
+# Known-bad 8 only: the human driver with its acceleration noise raised to 0.53 m/s2.
+name = "human53"
+branch = "t3/1b36c9cf"
+patch = "instrument/known-bad-human-noise53.patch"
+kind = "physical"
+dt = 0.1
+dt_network = 1.0
+time_to_teleport = 0
+flags = ["--humans"]
+vtype = 'carFollowModel="Human"'

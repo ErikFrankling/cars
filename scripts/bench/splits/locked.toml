@@ -1,0 +1,78 @@
+# Registered before any simulated score. Nothing here may be downloaded or opened without an approved reveal.
+# Report 22, section 9. A look at the raw data spends the set.
+
+[set.berlin-2019-03]
+source = "Berlin detectors, March 2019, archive 2019/alte_qualitaetssicherung/Messquerschnitte/"
+kind = "day"
+on_disk = false
+
+[set.berlin-2019-06]
+source = "Berlin detectors, June 2019 before the school holidays"
+kind = "day"
+on_disk = false
+
+[set.berlin-2019-09]
+source = "Berlin detectors, September 2019, renewal"
+kind = "day"
+on_disk = false
+
+[set.berlin-2019-10]
+source = "Berlin detectors, October 2019, renewal"
+kind = "day"
+on_disk = false
+
+[set.berlin-sites-30pct]
+source = "30% of Berlin sites by sha256(site + cars-bench-v1), May 2019. On disk: the file holds them, the bench never reads them outside a reveal"
+kind = "site"
+on_disk = true
+
+[set.berlin-blind-stations]
+source = "The 24 stations more than 200 m from a v6.4 calibration link (report 12). The only blind flow result"
+kind = "site"
+on_disk = true
+
+[set.madrid-2021]
+source = "Madrid, autumn 2021. Outside the reveal budget until the final report"
+kind = "city"
+on_disk = true
+final_only = true
+
+[set.helsinki-trajectories]
+source = "Helsinki drones, levels 1 and 2"
+kind = "trajectories"
+on_disk = false
+
+[set.swiss-l1]
+source = "Swiss roundabout L1"
+kind = "junction"
+on_disk = true
+
+[set.dlrut-sid7]
+source = "DLR UT signal group sid 7. Excluded from every floor by floors.signal_queue"
+kind = "junction"
+on_disk = true
+
+[set.songdo-sessions]
+source = "Songdo sessions"
+kind = "junction"
+on_disk = false
+
+[set.opendd-rdb2-4]
+source = "OpenDD roundabouts rdb2, 3, 4. Zips on disk, only the maps were opened (report 25). Rows have no values"
+kind = "junction"
+on_disk = true
+
+[set.pneuma-heldout]
+source = "pNEUMA drones d3, d6, d8 and all of 29 Oct 2018. Never downloaded (report 25)"
+kind = "junction"
+on_disk = false
+
+[set.pully]
+source = "Pully drones. Never downloaded (report 22)"
+kind = "junction"
+on_disk = false
+
+[set.tumdot]
+source = "TUMDOT. Never downloaded (report 22)"
+kind = "junction"
+on_disk = false
