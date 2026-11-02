@@ -1,43 +1,38 @@
 # Status board
 
-The orchestrator keeps this current. Agents work on the top of the critical path. A thread whose work doesn't move a number here within two rounds gets stopped or redirected.
+The orchestrator keeps this current. Work follows the ladder in `PLAN.md`. No run without a line in `foundations/forecasts.csv`. Reference is reality or theory; SUMO and `--sumo-compat` count for nothing here.
 
 ## Goal
-Human-only traffic on the Berlin district (49 km²): teleports off, full demand, report 15's Credible thresholds on held-out sites. Reaching that is the milestone; everything else serves it or waits.
+Human-only traffic on the Berlin district (49 km²): no vehicle removal, full demand, report 15's Credible thresholds on held-out sites.
 
-## Numbers that count
-| Number | Now | Target |
+## Ladder
+| Rung | State | Number that says so |
 |---|---|---|
-| Berlin district, old driver, cars running at 07:30, 10% demand | 1,403, finishes | Done, the reference for "healthy" |
-| Same, 50% demand | 14,792 with one program per junction (healthy 7,015; SUMO on same inputs 22,515) | Near 7,015, no persistent queue |
-| Same, with assigned routes (`cars-assign`) | 13,691; assignment from a jam stalls, 38-55% unfinished; stepped run queued | Relative gap under 2%, no persistent queue |
-| Physical driver, cars running at 07:30, 10% / 50% | 2,948 / 31,955 | Same as healthy: 1,403 / 7,015 |
-| Human driver, cars running at 07:30, 10% | 11,088 | 1,403 |
-| Saturation flow 50 km/h, old / physical / human | 1,895 / 1,714 / 1,500 | 1,800-2,100 |
-| Motorway flow per lane, old / physical / human | 2,001 / 1,590 / 1,503 | 1,800-2,300 |
-| Give-way capacity against Siegloch, old driver | 57-66% of reference | Near 100% |
-| Berlin district, 100% demand | Stopped, 2.6 x at 06:30 | Finishes, under 0.5% unfinished |
-| Hourly flow GEH<5, tuning sites | 23% (10% day x10) | Credible 60%, real floor 93% |
-| Rush-hour dip, motorway, lowest / highest hour | 0.96 | Real 0.46 |
-| Jam hours caught / false alarms | 25% / 88% | Credible 60% / 40% |
-| Benchmark, fast mode, failures (human driver) | 31 fail, 16 at floor, 37 no data | Fails falling every round |
+| 1. Reality table | Running | Targets with a number, spread and source |
+| 2. Scenes | Running | Scenes passing, of about 40 |
+| 3. Movement table | Running | Site-hours with real flow over 1.1 × table capacity |
+| 4. Macro assignment | Next | RMSN, R², slope, GEH<5, class bias, rush-hour dip, jam list |
+| 5. Vehicles and forecast | Waits | Var/mean, now 0.82 / 2.97 / 5.63 at 10 / 50 / 100% |
+| 6. Micro district | Waits for 2, 4, 5 | Cars on road against forecast; hold p99 and max |
+| 7. Score | Waits | Gate |
 
-## Critical path
-1. Capacity in band for the physical driver, then human decisions on top of it. Until then the old driver is only the instrument for testing the map.
-2. Berlin 50%: base map with one program per junction, boundary test with a larger cut, seed junctions, turn and bus lanes.
-3. Routes on this map's lanes: 268-317 edges carry over 900 vehicles per lane per hour at full demand, traffic sits on roads smaller than in reality.
-4. 100% with teleports off.
-5. Open locked sites once. Then Madrid.
+## What is known, measured or computed
+| Fact | Value | Source |
+|---|---|---|
+| Movements over capacity on MATSim's routes, 100 / 50 / 30% | 311-365 / 11-20 / 0 | D §2.4 |
+| Major-road demand at peak against the real network's top | 245,200 against 262,000-318,000 veh-km/h | B §5.4 |
+| Cars on the road at 100%, from real speeds | 13,186 at 07-08 h, 15,114 at 08-09 h; recheck in rung 1 | B §5.1 |
+| Longest wait at a real lane end | 79 s, 0 of 610 failed | Report 14 |
+| Time for a held car to fill a median block | 78-157 s | C §3.4 |
+| Physical driver follow-up at give-way | 4.41 s against 3.0 | B §3 |
+| Human driver saturation | 1,500, now 1,800 after the launch fix B's formula points to | B §1, report 16 |
+| Physical driver saturation and motorway | 1,929; 1,732-1,891 across three runs | Physics rounds |
 
-## Not on the critical path, parked
-- Stockholm: back when data requests deliver. No more Stockholm runs.
-- Self-driving tiers, neural tiers, signal-free junctions: until the milestone.
-- Learned-driver prototype: after the milestone, per report 21.
-- Jinan: done as a congestion cross-check.
-- Signal generators: two rounds with no gain at 50%. Back when Hamburg gives real cycles and greens.
+## Open from the stopped runs
+Not in main: the human driver, `t3/1b36c9cf`, conflicts with the physical driver in seven files, and gets merged by scene results. `t3/c5547dcd` has the route agent's iteration files only. Rules committed but unproven: abreast (never fired), missed turns (15 m trigger misses 62% of lane-change root hours in older runs).
 
 ## Rules against rabbit holes
-- Fix a cause only if it moves a number above or a benchmark metric ranked in the worst gaps.
+- Fix a cause only on the lowest rung that shows it.
+- A miss against a forecast gets explained before anything else changes.
 - Two rounds with no gain on a problem: stop, write down what was tried, take the next item.
-- Merge to main often. One base, no long-lived branches.
-- At most 5 agents at once, because the PC can't take more.
+- Merge to main often. At most 3 agents while one Claude account is at its weekly limit (it resets 4 November, 16:00).

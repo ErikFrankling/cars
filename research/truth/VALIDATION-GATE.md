@@ -13,6 +13,8 @@ Binding. From Erik:
 4. **Test on a real measured day, with data the model never saw.** Compare one simulated day against one real day, in the same units and with the same measuring method as the real data.
 
 5. **No magic numbers.** A car brakes, accelerates and corners like an average real car driven by an average real driver. Anything far from that, or past what a real car can do, is a bug. Matching another simulator is not evidence.
+6. **Know the answer first.** No run without a written forecast, built up rung by rung as in `PLAN.md`.
+7. **No vehicle removal.** A driver who gives up a turn and carries on is real behaviour, allowed and counted per 1,000 trips. No published microscopic model has run a real network at full demand with no removal (`foundations/A`, `foundations/C`), so reaching this would be new.
 
 ## What must match
 Thresholds come from `data-hunt/14-normal-day.md` and `15-how-to-match-reality.md`. The basic bar is report 04's: the simulation may differ from a real day by no more than one real day differs from another, and where it can't reach that, the gap is reported as a failure.
