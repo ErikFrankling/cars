@@ -794,6 +794,8 @@ fn ph_stop_driver(gap_total: f32, v: f32, b: f32, tau: f32) -> f32 {
     if (gap_total <= v * tau * 0.5) { return min(fits, max(0.0, v - v * v / (2.0 * gap_total) * dt)); }
     let bt = b * tau * 0.5;
     let v1 = -bt + sqrt(bt * bt + b * (2.0 * gap_total - tau * v));
+    // The law has its reaction time in it already. Speeding up is limited by the engine and the driver's a_des, not again here.
+    if (v1 > v) { return min(fits, v1); }
     return min(fits, max(0.0, v + (v1 - v) * min(dt / tau, 1.0)));
 }
 
