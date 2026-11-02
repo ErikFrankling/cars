@@ -61,10 +61,13 @@ fn radius(a: [f32; 2], b: [f32; 2], c: [f32; 2]) -> f32 {
     if area2 < 1e-3 { 1e9 } else { ab * bc * ca / (2.0 * area2) }
 }
 
-/// Lateral acceleration drivers accept at a radius: Xu et al., capped at Bosetti's measured comfort.
-fn driver_lateral(r: f32, cap: f32) -> f32 {
-    (20.5 * r.powf(-0.46) - 0.35).min(cap)
-}
+/// Peak sideways acceleration a driver takes through a turn, median over drivers, m/s2. Report 19: 3,584 real turns in
+/// 4 cities, peak median 2.19, p95 3.53, p99 4.26, flat with radius. The kernel draws each driver's own.
+const LATERAL_MEDIAN: f32 = 2.2;
+/// No car drives a tighter line than its turning circle, whatever the map draws.
+const MIN_RADIUS: f32 = 5.0;
+/// Road polylines have kinks a car steers through; measured over 30 m, junction lanes over 10 m. Report 19 cause 2.
+const CHORD_ROAD: f32 = 30.0;
 
 pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
     net.lanes
@@ -82,7 +85,8 @@ pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
                 let g = l.z_rise / l.length;
                 p.gz = G * g * (1.0 - g * g / 2.0);
             }
-            let half = (CHORD / 2.0).min(geom / 2.0);
+            let internal = net.edges[l.edge as usize].func == EdgeFunc::Internal;
+            let half = (if internal { CHORD } else { CHORD_ROAD } / 2.0).min(geom / 2.0);
             if half < 0.5 {
                 return p;
             }
@@ -98,7 +102,8 @@ pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
                 if r >= STRAIGHT_RADIUS {
                     continue;
                 }
-                let v = (driver_lateral(r, lateral_cap) * r).sqrt();
+                let r = r.max(MIN_RADIUS);
+                let v = (LATERAL_MEDIAN * r).sqrt();
                 *lim = v;
                 *ra = r;
                 tightest = tightest.min(r);
@@ -117,7 +122,7 @@ pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
             while hi + 1 < n && limit[hi + 1] <= lowest * 1.2 {
                 hi += 1;
             }
-            p.curve_v = lowest;
+            p.curve_v = (lateral_cap * tightest).sqrt();
             p.sqrt_r = tightest.sqrt();
             p.s_curve = lo as f32 * scale;
             p.s_curve_end = (hi as f32 + 1.0) * scale;

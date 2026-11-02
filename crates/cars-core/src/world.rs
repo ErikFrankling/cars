@@ -54,7 +54,7 @@ pub struct GpuParams {
     /// A change may run on over the end of its lane. Off: it finishes first, and waits at the line if it must.
     pub lc_carry: u32,
     pub meter_n: u32,
-    pub pad: f32,
+    pub lateral_median: f32,
 }
 
 #[repr(C)]
@@ -599,8 +599,7 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.b_lo = num("phys.b_lo", if r.m_ref == 1650.0 { cfg.tune("car_b_lo", r.b_lo) } else { r.b_lo });
     g.b_hi = num("phys.b_hi", r.b_hi);
     g.t_r = num("phys.t_r", r.t_r);
-    // A type that asks for less than the measured driver keeps its own acceleration.
-    g.a0 = num("phys.a0", r.a0.min(t.accel));
+    g.a0 = num("phys.a0", r.a0);
     g.a1 = num("phys.a1", r.a1);
     g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
     g.v_lat = num("phys.v_lat", cfg.tune("v_lat", 0.6));
@@ -615,6 +614,17 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.b_assume = num("phys.b_assume", cfg.tune("leader_b", if t.model == CfModel::Krauss { 4.5 } else { g.decel }));
     // Leaders and tails are judged by their hardest possible stop.
     g.apparent = g.b_hi;
+}
+
+/// Mean free speed over the limit on Swedish municipal main streets, Sept 2018, VTI rapport 1001. Unchecked above 70 km/h.
+fn sweden_speed(limit: f32) -> f32 {
+    match (limit * 3.6).round() as u32 {
+        35..=44 => 0.98,
+        45..=54 => 0.90,
+        55..=64 => 0.85,
+        65..=74 => 0.89,
+        _ => 1.0,
+    }
 }
 
 /// Load and power of one vehicle, packed for `GpuVeh::phys`.
@@ -684,7 +694,7 @@ impl World {
             speed_trace: cfg.speed_trace.clone(),
             ..Default::default()
         };
-        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 4.0)), crate::physics::zones(net, &topo, cfg.tune("zone_distance", 2.6))));
+        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 4.3)), crate::physics::zones(net, &topo, cfg.tune("zone_distance", 2.6))));
         w.vtypes = demand.vtypes.iter().map(|t| gpu_vtype(t, cfg.dt)).collect();
         if cfg.mu > 0.0 {
             for (g, t) in w.vtypes.iter_mut().zip(&demand.vtypes) {
@@ -798,7 +808,7 @@ impl World {
             lc_crawl: cfg.tune("lc_crawl", 0.5),
             lc_carry: cfg.tune("lc_carry", 0.0) as u32,
             meter_n: cfg.meter_n,
-            pad: 0.0,
+            lateral_median: cfg.tune("lateral_median", 2.2),
         };
         w
     }
@@ -927,7 +937,7 @@ impl World {
             let incoming = topo.incoming[li].first().copied();
             self.lanes.push(GpuLane {
                 length: l.length,
-                speed: l.speed,
+                speed: if cfg.tune("free_speed_sweden", 0.0) > 0.0 { l.speed * sweden_speed(l.speed) } else { l.speed },
                 edge: l.edge + edge0,
                 links_start: links.first().copied().unwrap_or(0) + link0,
                 links_count: links.len() as u32,

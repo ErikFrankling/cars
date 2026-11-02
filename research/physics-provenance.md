@@ -13,8 +13,9 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Load and power drawn per vehicle | INVENTED ranges | Per-vehicle draws are universal in tools [vwm] [am]; the ranges are design values | table in `world.rs` |
 | Driver acceleration a = 2.02 − 0.125 v, floor 0.7 | ADAPTED | Long 2000 measured at signals; floor is ours | `phys.a0`, `a1`, `a_floor` |
 | Truck and bus a_des | ADAPTED | Yang 2016 measured for trucks; bus under Krašna's limit, design value | `phys.a0` |
-| Driver gap law, own braking b and assumed leader braking b̂ | ESTABLISHED | Gipps 1981, the core of Aimsun's model [am]; the ballistic form from SUMO's MSCFModel | model per vType |
-| τ 0.65 s, b 3.0, b̂ 4.5 m/s² | ADAPTED | Fitted to TRVMB's 1,900 and 1,700 together. τ 1.35 of report 11 reached 1,900 and lost half the turning flow. Gipps' own τ is 0.67 s. b is near Bosetti's measured braking | `tau`, `driver_b`, `leader_b` |
+| Driver gap law behind what moves, own braking b and assumed leader braking b̂ | ESTABLISHED | Gipps 1981, the core of Aimsun's model [am]; the ballistic form from SUMO's MSCFModel | model per vType |
+| Stopping for what stands, or where a slowing leader comes to rest: v = 1.2 d^0.6, assuming the leader slows at 1.3 | ADAPTED | Form ours, fitted to report 19's real stops: mean 1.32, peak 2.23, little change with speed. Replaces b = 3 in stops. Report 19 asked for b 1.3 with a bell peaking at 2.2; this is a stateless form of that | |
+| τ 0.65 s, b 3.0, b̂ 4.5 m/s² | ADAPTED, weak | Fitted to TRVMB's design flows 1,900 and 1,700. Report 19: a fit to design flow, not to braking. Now only behind moving leaders | `tau`, `driver_b`, `leader_b` |
 | Certificate: closed-form safe speed, brake ramp, min(b_F, b_L) | ADAPTED | Gipps core [am], RSS [rs]; ours adds the ramp and response inside the tick. 11 §5 | `certificate` |
 | Stop inside a step, release limit | ADAPTED | Consequence of ballistic plus ramp, 11 §5 | |
 | Margin 0.5 m in the certificate | ESTABLISHED | Vissim MinClear 0.5 m [vlc] | |
@@ -22,7 +23,9 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | t_r 0.30 / 0.45 / 0.47 s | ADAPTED | 0.45 regulatory, 0.47 one measured vehicle, 0.30 design | `phys.t_r` |
 | Surface friction table | ADAPTED | ADAC measured low bound; high bound design value. Global, not per lane | `--surface` |
 | Lateral limit 0.5 μ g, combined limit | ADAPTED | 11 I9, I10 | |
-| Driver curve speed, Xu fit, capped at 4 m/s² | ADAPTED | Xu et al.; cap from Bosetti's measured upper limit at low speed, in place of 11's 3 m/s², which cost turning capacity | `curve_cap` |
+| Driver corner speed: v = √(a_y R) on the tightest radius, each driver's a_y lognormal, median 2.2, σ 0.30, hard cap 4.3 | ESTABLISHED | Report 19: 3,584 real turns in 4 cities, peak median 2.19, p95 3.53, p99 4.26, flat with radius. Replaces Xu and the 4.0 cap, which was chosen for flow | `lateral_median`, `curve_cap` |
+| Radius never read below 5 m | ADAPTED | A modern car's turning circle, report 19. A geometry limit, not a speed floor | `physics.rs` |
+| Curvature over 30 m on roads, 10 m on junction lanes | ADAPTED | Report 19 cause 2: road polylines carry kinks a car steers through. On a real 10 m bend it reads wide: 5.4 m/s against the fix's 4.7 and a real 4.1 | `physics.rs` |
 | Tightest stretch 1.2 × lowest limit | INVENTED | How far around the tightest point the limit holds | sensitivity |
 | Never drive further this step than stopping next step leaves room for | INVENTED | Without it, a reaction time under dt overruns the gap. Binds only at low speed at dt 1 | |
 | Dawdling held for a whole second, per trip | INVENTED | Keeps σ's effect independent of dt, where SUMO's scales with dt (11 §6) | vType `sigma` |
@@ -56,13 +59,24 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Compliance value 90% for humans | INVENTED | No measurement found. Automated models 100% | `exit_comply` |
 | Roundabout entries always comply | INVENTED | Ring locks whole otherwise, seen in the fixture | |
 
+## Signals and fleet
+
+| Rule or number | Class | Source, and what changed | Switch |
+|---|---|---|---|
+| Yellow: stop if time to the line is over the driver's threshold, logistic 5.1 s, scale 0.54. Past 3 m/s² needed, go | ESTABLISHED | Report 05, 1,357 decisions at Braunschweig; report 19 fix 9 | |
+| Past the point of stopping when red comes, carry on | ADAPTED | Report 05 sees real red entries; the 3 m/s² is from the same rule | |
+| Fleet 81% car, 12% van, 5% truck, 1% bus, 1% motorcycle, by trip | ESTABLISHED share, ADAPTED use | Trafikanalys Körsträckor 2025, by distance. Heavy trucks not split into rigid and articulated: no count found | `--region sweden` |
+| Demand files' accel, decel, sigma, tau, minGap dropped | ESTABLISHED by audit | Thesis-era values with no source, report 19 fix 8. Under `--region` | |
+| Car 4.5 m + 3.0 m, van 5.5 m + 2.5 m | INVENTED | Design values; spacing stays 7.5 m. Report 19 fix 16. No registry data found | `--region sweden` |
+| Free speed over limit: 40: 0.98, 50: 0.90, 60: 0.85, 70: 0.89 | ESTABLISHED | VTI rapport 1001, mean of all traffic at mid-block, Sweden 2018. Sweden only | `--region sweden` |
+
 ## Lane changes
 
 | Rule or number | Class | Source, and what changed | Switch |
 |---|---|---|---|
 | LC2013 decisions | ESTABLISHED | SUMO [lc], kept. Its known deadlock remains [st] | |
 | Finite duration, 0.6 m/s, 1 s ends | ESTABLISHED | SimMobility [sm], field 5-8 s [ld1] [ld2] [rm], 11 §4.2 | `phys.v_lat` |
-| 1.1 m/s when short of road | ADAPTED | 11; I11's bound | |
+| 1.0 m/s when short of road | ADAPTED | Report 19 fix 13: real p95 1.26, was 1.1 | |
 | Shadow on the old lane | ADAPTED | SUMO shadow lane [sf]; ours is a sorted clone, limit read in the same step | |
 | Below 0.5 m/s a change goes on at its own 0.6 m/s, whatever the forward speed | ADAPTED | SUMO's lcMaxSpeedLatStanding exists for this; report 11's I11 forbids it. Held to the 12° limit a car in a crawling queue stays across two lanes, which was the main cause of city lockup: on a 2 km cut of the recipe net (seeds 1-6) a mean 2,130 of 3,001 trips arrived with the limit and 2,880 without, on the priority fixture at dt 0.1, 16 against 253. Any value from 0.5 to 2 m/s did. 0.5 is ours, the least that works | `lc_crawl` |
 | A change finishes before its lane ends, and waits at the line if it must | ADAPTED | Bodies crossing a junction half in another lane were 18 of the 50 sampled contacts on that cut. Report 05's human driver does the same. Costs some flow | `lc_carry` |

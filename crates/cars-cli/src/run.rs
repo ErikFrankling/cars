@@ -49,6 +49,9 @@ pub struct Args {
     /// Vehicle types and lanes as the kernel sees them, for physics_qa.py.
     #[arg(long)]
     phys_json: Option<PathBuf>,
+    /// Physical mode with a place's fleet and free speeds. `sweden`: report 19's mix, speeds by limit from VTI 1001.
+    #[arg(long)]
+    region: Option<String>,
     /// Keep this share of trips, for the low-demand check.
     #[arg(long, default_value_t = 1.0)]
     demand_fraction: f32,
@@ -164,10 +167,14 @@ pub fn run(args: Args) {
         demand.trips.retain(|t| (u64::from(t.id).wrapping_add(1).wrapping_mul(0x9E3779B97F4A7C15) >> 32) as f64 / 4294967296.0 < args.demand_fraction as f64);
         eprintln!("demand fraction {}: {} of {before} trips", args.demand_fraction, demand.trips.len());
     }
-    let tune: Vec<(String, f32)> = args.tune.iter().map(|t| {
+    let mut tune: Vec<(String, f32)> = args.tune.iter().map(|t| {
         let (k, v) = t.split_once('=').expect("--tune name=value");
         (k.to_string(), v.parse().expect("--tune name=value"))
     }).collect();
+    if args.region.as_deref() == Some("sweden") {
+        eprintln!("fleet: {:?}", demand.apply_sweden(&net));
+        tune.insert(0, ("free_speed_sweden".to_string(), 1.0));
+    }
     let speed_trace: Vec<f32> = args.speed_trace.as_ref().map(|p| {
         std::fs::read_to_string(p).expect("speed trace").lines().filter_map(|l| l.trim().parse().ok()).collect()
     }).unwrap_or_default();

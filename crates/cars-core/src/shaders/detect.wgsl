@@ -82,7 +82,7 @@ fn detect_pose(@builtin(global_invocation_id) id: vec3u) {
     var center = front - dir * t.length * 0.5;
     if ((v.phys >> 30u) != 0u) {
         var v_lat = t.v_lat;
-        if ((v.flags & F_LAT_FAST) != 0u) { v_lat = 1.1; }
+        if ((v.flags & F_LAT_FAST) != 0u) { v_lat = 1.0; }
         let w = lanes[v.lane].width;
         let done = ph_lateral_done(f32((v.phys >> 16u) & 0x3fffu) / 16383.0 * (w / v_lat + 1.0), w, v_lat);
         let side = select(1.0, -1.0, (v.phys >> 30u) == 1u);

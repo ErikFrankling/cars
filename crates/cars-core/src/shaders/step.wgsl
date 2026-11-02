@@ -101,11 +101,30 @@ fn ph_setup(e: Veh) {
     ph_gz = l.gz;
     ph_gz_lead = l.gz;
     ph_curved = select(1.0, 0.866, l.curve_v > 0.0);
+    // Each driver's own sideways acceleration in a turn: lognormal, median and spread from report 19.
+    let u = pcg(e.trip ^ 0x3c6ef372u);
+    let z = (f32(u & 255u) + f32((u >> 8u) & 255u) + f32((u >> 16u) & 255u) + f32(u >> 24u)) / 255.0 - 2.0;
+    ph_ay = P.lateral_median * exp(0.30 * z * 1.732);
 }
 
 fn ph_curve_limit(l: Lane) -> f32 {
     if (l.curve_v <= 0.0) { return 1e9; }
-    return min(l.curve_v, l.sqrt_r * sqrt(0.5 * mu * G_ACC));
+    return min(l.curve_v, l.sqrt_r * sqrt(min(ph_ay, 0.5 * mu * G_ACC)));
+}
+
+// Physical mode, at yellow: a driver stops if the line is further off than their own threshold, logistic in time to
+// the line, 5.1 s and scale 0.54 (report 05, 1,357 decisions). None asks over 3 m/s2 of themselves to stop.
+fn ph_yellow_go(trip: u32, seen: f32, v: f32) -> bool {
+    if (seen <= 0.0 || v * v / (2.0 * seen) > 3.0) { return true; }
+    let u = (f32(pcg(trip ^ 0x9e3779b9u) >> 8u) + 0.5) / 16777216.0;
+    return seen / max(v, 0.1) < 5.1 + 0.54 * log(u / (1.0 - u));
+}
+
+// Past the point of stopping at red a driver carries on, like the one who chose to go at yellow.
+fn ph_goes_through(state: u32, trip: u32, seen: f32, v: f32) -> bool {
+    if (mu <= 0.0) { return false; }
+    if (have_yellow(state)) { return ph_yellow_go(trip, seen, v); }
+    return have_red(state) && seen > 0.0 && v * v / (2.0 * seen) > 3.0;
 }
 
 fn link_state(l: u32) -> u32 {
@@ -653,7 +672,8 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
             break;
         }
         let lk = links[link];
-        let state = link_state(link);
+        var state = link_state(link);
+        if (ph_goes_through(state, ego.trip, seen, speed)) { state = CH_G; }
         let yellow_or_red = have_red(state) || have_yellow(state);
         var stop_decel = ty.decel;
         if (yellow_or_red) { stop_decel = max(min(P.tls_yellow_min_decel, ty.emergency), ty.decel); }
@@ -1228,7 +1248,8 @@ fn walk_links(e: ptr<function, Veh>, base: u32, n: u32, speed: f32, vmax_lane: f
                 break;
             }
             if (it.grant > 1u) { (*e).flags |= F_GRANTED; }
-            let state = link_state(it.link);
+            let through = ph_goes_through(link_state(it.link), (*e).trip, it.dist, speed);
+            let state = select(link_state(it.link), CH_G, through);
             let yellow = have_yellow(state);
             let can_brake = it.dist > brake_gap(speed, ty.decel, 0.0) || speed < ty.decel * dt;
             if (yellow && can_brake) {
@@ -1243,7 +1264,7 @@ fn walk_links(e: ptr<function, Veh>, base: u32, n: u32, speed: f32, vmax_lane: f
             if (can_brake) { imp = impat; }
             var my_wait = (*e).wait;
             if (((*e).flags & F_HAVE_STOPPED) != 0u) { my_wait = 1e9; }
-            let opened = yellow || link_opened(it.link, it.arrival, it.arr_speed, leave, ty.length, imp, ty.decel, my_wait, (*e).trip);
+            let opened = yellow || through || link_opened(it.link, it.arrival, it.arr_speed, leave, ty.length, imp, ty.decel, my_wait, (*e).trip);
             let k = links[it.link];
             let determined = it.dist <= k.visibility;
             if (opened && (state == CH_s || state == CH_w) && determined) { (*e).flags |= F_HAVE_STOPPED; }
@@ -1869,7 +1890,7 @@ fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32) {
     let p = (*e).phys;
     if ((p >> 30u) == 0u) { return; }
     var v_lat = ty.v_lat;
-    if (((*e).flags & F_LAT_FAST) != 0u) { v_lat = 1.1; }
+    if (((*e).flags & F_LAT_FAST) != 0u) { v_lat = 1.0; }
     let w = lanes[(*e).lane].width;
     let total = w / v_lat + 1.0;
     let vbar = 0.5 * (v0 + v1);

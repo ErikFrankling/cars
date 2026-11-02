@@ -98,7 +98,7 @@ struct Params {
     lc_crawl: f32,
     lc_carry: u32,
     meter_n: u32,
-    pad_z: f32,
+    lateral_median: f32,
 }
 
 struct Globals {
@@ -700,6 +700,7 @@ var<private> mu: f32;
 var<private> cert_on: bool;
 var<private> ph_gz: f32;
 var<private> ph_gz_lead: f32;
+var<private> ph_ay: f32;
 var<private> ph_load: f32;
 var<private> ph_power: f32;
 var<private> ph_curved: f32;
@@ -789,6 +790,17 @@ fn ph_stop_driver(gap_total: f32, v: f32, b: f32, tau: f32) -> f32 {
     let bt = b * tau * 0.5;
     let v1 = -bt + sqrt(bt * bt + b * (2.0 * gap_total - tau * v));
     return min(fits, max(0.0, v + (v1 - v) * min(dt / tau, 1.0)));
+}
+
+// How a driver stops for what stands still: report 19 has real stops at a mean 1.3 and a peak of 2.2 m/s2, hardest
+// early and fading out, with speed barely mattering. v = 1.2 d^0.6 gives that from 5 to 20 m/s. Late for it, the
+// driver brakes as hard as the remaining distance asks, and the steps of a coarse dt are spread over the approach.
+fn ph_stop_comfort(gap: f32, v: f32) -> f32 {
+    if (gap <= 0.1) { return 0.0; }
+    let v1 = 1.2 * pow(max(gap - v * dt, 0.0), 0.6);
+    let v2 = 1.2 * pow(max(gap - 0.5 * (v + v1) * dt, 0.0), 0.6);
+    let late = v - dt * max(2.2, 1.1 * v * v / (2.0 * gap));
+    return min(max(v2, late), max(gap - v * dt * 0.5, 0.0) / dt);
 }
 
 // The hardest the brakes allow by the end of this step. Below zero, the stop is inside the step.
@@ -1005,7 +1017,10 @@ fn av_stop_curve(d: f32, b: f32, tr: f32) -> f32 {
 // can sit here: nothing past this point depends on which one asked.
 fn follow_speed(v: f32, gap: f32, vp: f32, bp: f32, leader_cacc: bool, lane_vmax: f32, lane_limit: f32) -> f32 {
     if (mu > 0.0) {
-        return ph_limit(follow_driver(v, gap, vp, bp, leader_cacc, lane_vmax, lane_limit), ph_v_cert(gap + ty.min_gap, v, vp, bp, ego_acc));
+        var d = follow_driver(v, gap, vp, bp, leader_cacc, lane_vmax, lane_limit);
+        // Gipps behind what moves, and where a slowing leader would come to rest is stopped for as drivers stop.
+        if (vp < v && ty.model == MODEL_KRAUSS) { d = min(d, ph_stop_comfort(gap + vp * vp / 2.6, v)); }
+        return ph_limit(d, ph_v_cert(gap + ty.min_gap, v, vp, bp, ego_acc));
     }
     return follow_driver(v, gap, vp, bp, leader_cacc, lane_vmax, lane_limit);
 }
@@ -1043,7 +1058,7 @@ fn follow_driver(v: f32, gap: f32, vp: f32, bp: f32, leader_cacc: bool, lane_vma
 // CF::stopSpeed
 fn stop_speed(v: f32, gap: f32, decel: f32, relax: bool, lane_vmax: f32) -> f32 {
     if (mu > 0.0) {
-        var d = min(ph_stop_driver(gap, v, decel, ty.ph_tau), max_next_speed(v));
+        var d = min(ph_stop_comfort(gap, v), max_next_speed(v));
         if (ty.model == MODEL_IDM) { d = min(d, stop_driver_idm(v, gap, decel, lane_vmax)); }
         return ph_limit(d, ph_v_cert(gap, v, 0.0, 0.0, ego_acc));
     }

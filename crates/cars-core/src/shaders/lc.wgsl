@@ -1133,7 +1133,7 @@ fn ph_lc_room(e: Veh, dest: u32) -> bool {
         return left >= w / 0.21256 && (w / ty.v_lat + 1.0) * e.speed <= left;
     }
     if ((w / ty.v_lat + 1.0) * e.speed <= road) { return true; }
-    return (w / 1.1 + 1.0) * e.speed <= road;
+    return (w / 1.0 + 1.0) * e.speed <= road;
 }
 
 // Road left for a change into `dest`. Sideways motion carries over lane ends as long as the route goes on from

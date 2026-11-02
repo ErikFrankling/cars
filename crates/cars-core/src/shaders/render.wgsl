@@ -92,7 +92,7 @@ fn prepare_signal(i:u32,si:u32) {
   // Physical mode: the engine knows where the car is sideways.
   xy=b; yaw=0.0;
   if((v.phys>>30u)!=0u){
-   let w=l.width; var v_lat=rt.pad; if((v.flags&F_LAT_FAST)!=0u){v_lat=1.1;}
+   let w=l.width; var v_lat=rt.pad; if((v.flags&F_LAT_FAST)!=0u){v_lat=1.0;}
    let total=w/v_lat+1.0; let t=f32((v.phys>>16u)&0x3fffu)/16383.0*total;
    var done=v_lat*(t-0.5);
    if(t<1.0){done=v_lat*(t*0.5-sin(3.14159265*t)/6.2831853);}
