@@ -36,7 +36,7 @@ Each other normal day scored against the reference day with `metrics.score`. Med
 | Speed, site median abs, km/h | 2.000 | 2.000 |
 | Jam site-hours caught | 0.724 | 0.668 |
 | Jam false alarms | 0.328 | 0.428 |
-| Top bottlenecks shared | 0.750 | 0.750 |
+| Top bottlenecks shared | 0.800 | 0.750 |
 | Onset, AM, median abs min | 0.000 | 0.000 |
 | Clearance, PM, median abs min | 60.000 | 60.000 |
 | Network curve, peak flow err | 0.005 | 0.009 |
@@ -48,7 +48,7 @@ Each other normal day scored against the reference day with `metrics.score`. Med
 |---|---:|---:|
 | Hourly site RMSN, 07-18 | 0.090 | 0.144 |
 | Hourly site R2 | 0.961 | 0.898 |
-| Hourly slope | 0.967 | 1.001 |
+| Hourly slope | 0.966 | 1.001 |
 | Hourly GEH<5 | 0.938 | 0.875 |
 | Hourly WAPE | 0.064 | 0.087 |
 | Total, sites, ratio-1 | 0.016 | 0.028 |
@@ -59,7 +59,7 @@ Each other normal day scored against the reference day with `metrics.score`. Med
 | Top bottlenecks shared | 0.700 | 0.550 |
 | Onset, AM, median abs min | 0.000 | 60.000 |
 | Clearance, PM, median abs min | 60.000 | 60.000 |
-| Network curve, peak flow err | 0.002 | 0.010 |
+| Network curve, peak flow err | 0.002 | 0.013 |
 | Network curve, critical k err | -0.039 | 0.134 |
 
 ## district, against 2019-05-14
@@ -67,12 +67,12 @@ Each other normal day scored against the reference day with `metrics.score`. Med
 | Check | Median | Worst |
 |---|---:|---:|
 | Hourly site RMSN, 07-18 | 0.092 | 0.152 |
-| Hourly site R2 | 0.961 | 0.887 |
-| Hourly slope | 0.972 | 1.002 |
-| Hourly GEH<5 | 0.938 | 0.850 |
+| Hourly site R2 | 0.959 | 0.887 |
+| Hourly slope | 0.970 | 1.001 |
+| Hourly GEH<5 | 0.937 | 0.850 |
 | Hourly WAPE | 0.064 | 0.094 |
 | Total, sites, ratio-1 | 0.014 | 0.032 |
-| Day shape, mean abs share, points | 0.093 | 0.155 |
+| Day shape, mean abs share, points | 0.093 | 0.156 |
 | Speed, site median abs, km/h | 2.000 | 2.000 |
 | Jam site-hours caught | 0.709 | 0.576 |
 | Jam false alarms | 0.337 | 0.575 |
@@ -87,9 +87,9 @@ Each other normal day scored against the reference day with `metrics.score`. Med
 | Check | Median | Worst |
 |---|---:|---:|
 | Hourly site RMSN, 07-18 | 0.094 | 0.147 |
-| Hourly site R2 | 0.960 | 0.892 |
-| Hourly slope | 0.964 | 1.004 |
-| Hourly GEH<5 | 0.932 | 0.862 |
+| Hourly site R2 | 0.957 | 0.892 |
+| Hourly slope | 0.962 | 1.003 |
+| Hourly GEH<5 | 0.931 | 0.862 |
 | Hourly WAPE | 0.065 | 0.091 |
 | Total, sites, ratio-1 | 0.016 | 0.029 |
 | Day shape, mean abs share, points | 0.094 | 0.120 |
@@ -99,8 +99,8 @@ Each other normal day scored against the reference day with `metrics.score`. Med
 | Top bottlenecks shared | 0.800 | 0.600 |
 | Onset, AM, median abs min | 30.000 | 60.000 |
 | Clearance, PM, median abs min | 60.000 | 60.000 |
-| Network curve, peak flow err | 0.000 | 0.012 |
-| Network curve, critical k err | 0.026 | 0.230 |
+| Network curve, peak flow err | 0.003 | 0.018 |
+| Network curve, critical k err | 0.128 | 0.230 |
 
 ## district tuning sites, against 2019-05-14
 
@@ -108,8 +108,8 @@ Each other normal day scored against the reference day with `metrics.score`. Med
 |---|---:|---:|
 | Hourly site RMSN, 07-18 | 0.090 | 0.153 |
 | Hourly site R2 | 0.961 | 0.884 |
-| Hourly slope | 0.971 | 1.005 |
-| Hourly GEH<5 | 0.934 | 0.839 |
+| Hourly slope | 0.969 | 1.004 |
+| Hourly GEH<5 | 0.933 | 0.839 |
 | Hourly WAPE | 0.065 | 0.097 |
 | Total, sites, ratio-1 | 0.017 | 0.028 |
 | Day shape, mean abs share, points | 0.093 | 0.152 |
@@ -119,8 +119,8 @@ Each other normal day scored against the reference day with `metrics.score`. Med
 | Top bottlenecks shared | 0.750 | 0.600 |
 | Onset, AM, median abs min | 0.000 | 0.000 |
 | Clearance, PM, median abs min | 60.000 | 60.000 |
-| Network curve, peak flow err | -0.009 | 0.014 |
-| Network curve, critical k err | 0.124 | 0.206 |
+| Network curve, peak flow err | -0.009 | 0.026 |
+| Network curve, critical k err | 0.107 | 0.206 |
 
 ## district locked sites, against 2019-05-15
 
