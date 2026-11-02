@@ -100,9 +100,17 @@ pub struct Args {
     /// Steps between traced frames.
     #[arg(long, default_value_t = 1)]
     trace_stride: u32,
+    /// With --trace: also write per-step reasons to <trace>.why and the net to <trace>.net.json, for
+    /// `cars why`, `cars jam` and `cars junction`. Compiles probes into the kernels; off without it.
+    #[arg(long)]
+    why: bool,
 }
 
 pub fn run(args: Args) {
+    if args.why && std::env::var("CARS_ADAPTER").is_ok_and(|a| a.to_lowercase().contains("llvmpipe")) && std::env::var_os("LP_NATIVE_VECTOR_WIDTH").is_none() {
+        // Its 256-bit code miscompiles kernels this size. Set before the driver or any other thread starts.
+        unsafe { std::env::set_var("LP_NATIVE_VECTOR_WIDTH", "128") };
+    }
     let t = Instant::now();
     let mut net = Net::load(&args.net).expect("net");
     for a in &args.additional {
@@ -132,8 +140,15 @@ pub fn run(args: Args) {
     );
     let checks = if args.trusted { Checks::Trusted } else { Checks::Safe };
     let gpu = pollster::block_on(Gpu::headless(GpuOptions { adapter_name: Some(std::env::var("CARS_ADAPTER").unwrap_or("7900".into())), checks })).expect("gpu");
-    let mut sim = Sim::new(&gpu, &world).expect("sim");
+    if args.why && args.trace.is_none() {
+        eprintln!("--why needs --trace");
+        std::process::exit(2);
+    }
+    let mut sim = if args.why { Sim::with_why(&gpu, &world) } else { Sim::new(&gpu, &world) }.expect("sim");
     sim.target_submit_ms = args.target_submit_ms;
+    if let (true, Some(p)) = (args.why, &args.trace) {
+        crate::dbgnet::write(std::path::Path::new(&format!("{}.net.json", p.display())), &args.net, &net, &world).expect("net sidecar");
+    }
     let in_box: Vec<bool> = net
         .lanes
         .iter()

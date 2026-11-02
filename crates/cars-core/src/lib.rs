@@ -11,9 +11,11 @@ pub mod net;
 pub mod router;
 pub mod sim;
 pub mod topology;
+pub mod why;
 pub mod world;
 pub mod xml;
 
 pub use gpu::{Checks, Gpu, GpuOptions};
 
+pub mod overlay;
 pub mod render;

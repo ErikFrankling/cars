@@ -1,6 +1,6 @@
 //! Draw a trace: no simulation, no simulation buffers. Poses are worked out here, the way the
 //! `prepare` kernel does, and uploaded to the vertex stage each frame.
-use crate::overlay::Snapshot;
+use cars_core::overlay::Snapshot;
 use crate::record::{self, Common, Source};
 use crate::trace::{self, COLLISION, NO_LINK, NONE_LANE, Record, TELEPORT, Trace};
 use bytemuck::Zeroable;
@@ -515,7 +515,7 @@ pub fn run(mut r: Args) -> Result<(), Box<dyn std::error::Error>> {
         Err(format!("trip {id} is not in this trace"))
     })?;
     let gpu = pollster::block_on(Gpu::headless(GpuOptions {
-        adapter_name: Some("7900".into()),
+        adapter_name: Some(std::env::var("CARS_ADAPTER").unwrap_or("7900".into())),
         ..Default::default()
     }))?;
     let mut renderer = Renderer::new(&gpu, &world, &net, &widths, a.width, a.height, far_roads);

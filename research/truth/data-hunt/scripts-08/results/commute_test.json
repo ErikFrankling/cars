@@ -1,0 +1,196 @@
+{
+ "sysmo_all": {
+  "county_with_diag": {
+   "cpc": 0.933,
+   "spearman": 0.955,
+   "r2_log": 0.928,
+   "share_ratio": 0.761
+  },
+  "county_off_diag": {
+   "cpc": 0.914,
+   "spearman": 0.95,
+   "r2_log": 0.916,
+   "share_ratio": 0.82
+  },
+  "world_set_off_diag": {
+   "cpc": 0.92,
+   "spearman": 0.952,
+   "r2_log": 0.918,
+   "share_ratio": 0.824
+  },
+  "world_set_with_diag": {
+   "cpc": 0.935,
+   "spearman": 0.958,
+   "r2_log": 0.93,
+   "share_ratio": 0.761
+  }
+ },
+ "gravity_margins": {
+  "county_with_diag": {
+   "cpc": 0.837,
+   "spearman": 0.902,
+   "r2_log": 0.793,
+   "share_ratio": 1.047
+  },
+  "county_off_diag": {
+   "cpc": 0.876,
+   "spearman": 0.898,
+   "r2_log": 0.79,
+   "share_ratio": 1.358
+  },
+  "world_set_off_diag": {
+   "cpc": 0.878,
+   "spearman": 0.916,
+   "r2_log": 0.854,
+   "share_ratio": 1.359
+  },
+  "world_set_with_diag": {
+   "cpc": 0.836,
+   "spearman": 0.918,
+   "r2_log": 0.846,
+   "share_ratio": 1.043
+  }
+ },
+ "gravity_pop_only": {
+  "county_with_diag": {
+   "cpc": 0.828,
+   "spearman": 0.817,
+   "r2_log": 0.683,
+   "share_ratio": 1.651
+  },
+  "county_off_diag": {
+   "cpc": 0.777,
+   "spearman": 0.796,
+   "r2_log": 0.645,
+   "share_ratio": 1.803
+  },
+  "world_set_off_diag": {
+   "cpc": 0.792,
+   "spearman": 0.843,
+   "r2_log": 0.715,
+   "share_ratio": 1.876
+  },
+  "world_set_with_diag": {
+   "cpc": 0.834,
+   "spearman": 0.86,
+   "r2_log": 0.744,
+   "share_ratio": 1.657
+  }
+ },
+ "global_learned": {
+  "county_with_diag": {
+   "cpc": 0.443,
+   "spearman": 0.547,
+   "r2_log": 0.268,
+   "share_ratio": 0.535
+  },
+  "county_off_diag": {
+   "cpc": 0.615,
+   "spearman": 0.549,
+   "r2_log": 0.286,
+   "share_ratio": 1.008
+  },
+  "world_set_off_diag": {
+   "cpc": 0.646,
+   "spearman": 0.685,
+   "r2_log": 0.543,
+   "share_ratio": 1.088
+  },
+  "world_set_with_diag": {
+   "cpc": 0.468,
+   "spearman": 0.676,
+   "r2_log": 0.49,
+   "share_ratio": 0.581
+  }
+ },
+ "meta": {
+  "sysmo_car_share_of_workers_county": 0.32928395423812795,
+  "sysmo_workers_county": 900138.0,
+  "scb_workers_county": 1183416.0,
+  "world_total": 638160.0,
+  "world_set": [
+   "0114",
+   "0115",
+   "0117",
+   "0120",
+   "0123",
+   "0125",
+   "0126",
+   "0127",
+   "0128",
+   "0136",
+   "0138",
+   "0139",
+   "0160",
+   "0162",
+   "0163",
+   "0180",
+   "0182",
+   "0183",
+   "0184",
+   "0186",
+   "0187",
+   "0191",
+   "0192",
+   "0305"
+  ]
+ },
+ "top_to_stockholm": [
+  {
+   "k": "Stockholm",
+   "scb": 385081,
+   "sysmo": 293259,
+   "world": 40300,
+   "grav": 355670
+  },
+  {
+   "k": "Nacka",
+   "scb": 27129,
+   "sysmo": 23993,
+   "world": 31360,
+   "grav": 33107
+  },
+  {
+   "k": "Huddinge",
+   "scb": 26605,
+   "sysmo": 22779,
+   "world": 26379,
+   "grav": 34931
+  },
+  {
+   "k": "Solna",
+   "scb": 23529,
+   "sysmo": 20481,
+   "world": 4622,
+   "grav": 29326
+  },
+  {
+   "k": "Haninge",
+   "scb": 18194,
+   "sysmo": 14381,
+   "world": 15835,
+   "grav": 22411
+  },
+  {
+   "k": "Botkyrka",
+   "scb": 16681,
+   "sysmo": 14393,
+   "world": 19836,
+   "grav": 23470
+  },
+  {
+   "k": "J\u00e4rf\u00e4lla",
+   "scb": 16146,
+   "sysmo": 13185,
+   "world": 10345,
+   "grav": 21591
+  },
+  {
+   "k": "Sollentuna",
+   "scb": 15536,
+   "sysmo": 12702,
+   "world": 17247,
+   "grav": 19760
+  }
+ ]
+}
