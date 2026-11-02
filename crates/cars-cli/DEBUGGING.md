@@ -48,6 +48,8 @@ Each tick, `decided by` is the limit that set the car's speed, and `planned by` 
 | `committed` | past the point of stopping for a minor link |
 | `power` | the final speed step capped it below the plan |
 
+A tick's reasons, gaps and leader are from the plan at the start of that tick, and position, speed and acceleration are the result at its end. So a leader can show as already on the next lane, and a gap as what the car saw before moving.
+
 `lane change right: strategic urgent blocked_by_follower` is the wish and what stops it, with the gaps and cars on that side. `lost the space to another changer` means it chose to go and another car won the claim.
 
 ## How the reasons are exact, and stay out of the way

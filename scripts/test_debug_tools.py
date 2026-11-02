@@ -48,7 +48,7 @@ def main():
         assert (d / 'plain.trace').read_bytes() == (d / 'f.trace').read_bytes(), '--why changed the simulation'
         print('ok  --why leaves the trace byte for byte the same')
         run = Run(str(d / 'f.trace'))
-        checked = dict(leader=0, signal=0)
+        checked = dict(leader=0, signal=0, gone=0)
         for i in run.window(40, 200):
             rec, why = run.read(i)
             trips, lanes, pos, v = trips_of(rec), lanes_of(rec), pos_of(rec), speeds_of(rec)
@@ -56,14 +56,19 @@ def main():
             for k in range(len(rec)):
                 if why['decider'][k] == K['leader'] and why['blame'][k] < 0x40000000:
                     o = where.get(int(why['blame'][k]))
-                    assert o is not None and lanes[o] == lanes[k] and pos[o] > pos[k], 'leader blame is not the car ahead on the lane'
-                    checked['leader'] += 1
+                    # The plan is from the start of the tick and positions from its end, so a leader may have just left the lane.
+                    # Or arrived in this tick, and then it has no record.
+                    if o is None:
+                        checked['gone'] += 1
+                    elif lanes[o] == lanes[k]:
+                        assert pos[o] > pos[k], 'leader blame is behind the car it holds'
+                        checked['leader'] += 1
                 if why['decider'][k] == K['signal'] and why['first_link'][k] != 0xffffffff:
                     from dbg.run import link_state
                     assert link_state(run, i, why['first_link'][k]) in 'ryYu', 'held by a signal showing green'
                     checked['signal'] += 1
                 assert why['decider'][k] != K['dawdle'], 'dawdling reported as the decider'
-        assert checked['leader'] > 100 and checked['signal'] > 20, checked
+        assert checked['leader'] > 100 and checked['signal'] > 20 and checked['gone'] < 0.1 * checked['leader'], checked
         print('ok  reasons agree with positions and signal colours', checked)
         rec, why = run.read(run.frame_at(150))
         held = np.nonzero(speeds_of(rec) < 0.1)[0]
