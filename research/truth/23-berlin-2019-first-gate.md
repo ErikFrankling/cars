@@ -25,9 +25,10 @@ Every round is a line in `research/truth/berlin2019/rounds.csv`. The count is ca
 | 1 | Report 10's 12 m join, across signals | Krauss, 50% | Over 11,700 by 07:00 | | Worse |
 | 3 | Routes after 25 assignment iterations | Krauss, 50% | 13,691 | 23,196 | **−7%. Sensible routes don't hold it** |
 | 2 | Physics, now main's default, on m12 | Physics, 10% | 2,947 | 4,964 | Locks at 10%, where Krauss finishes |
-| 2 | Single rules off: arbiter, certificate, exit clear, zones, fleet of cars only, dt 0.5, faster lane changes, `lc_path` | Physics, 10% | 2,643–3,975 | 3,863–5,382 | **No rule alone frees it** |
+| 2 | Single rules off: arbiter, certificate, exit clear, zones, fleet of cars only, dt 0.5, faster lane changes, `lc_path` | Physics, 10% | 2,643–3,975 | 3,863–5,382 | **No rule alone frees it.** dt 0.5 reached only 07:00 before it stopped: 2,209, against 2,053 |
 | 4 | Merge rule fix | Physics, 10% | 2,919 | 4,366 | Small |
 | 4 | Fix of a car stopping itself half on a lane | Physics, 10% | 2,948 | 4,466 | Clears the night lock, not the morning |
+| 4 | Both fixes, second seed | Physics, 10% | 2,782 | 4,053 | Still 2 × healthy |
 | 4 | Both fixes | Physics, 50% | 31,955 | 43,034 | Was 37,728 and 47,641: −15% |
 | 4 | Human driver, branch head | Human, 10%, dt 1 | 11,088 | 14,851 | Far from running on a city at dt 1 |
 
@@ -39,7 +40,7 @@ Every round is a line in `research/truth/berlin2019/rounds.csv`. The count is ca
 1. **Merges asked for 12 s gaps, not 5 s.** Copied from SUMO, the waiter's impatience softens the foe's braking when it judges a merge, so a far foe counts as arriving fast. This is why isolated give-way capacity was low. Minor road capacity at major flows of 400, 800 and 1,200: 327, 194, 96 before and 474, 298, 159 now, against 736, 451, 277 from HBS. Still 57–66%.
 2. **A car stopped itself half on a lane.** A long vehicle needing a lane change stopped for it with its rear on the junction, and physics refuses a change until the rear is clear. So it waited for ever. That locked Ernst-Reuter-Platz from 00:30 with almost no traffic. Stuck over 300 s at 02:00: 11 before, 0 now.
 
-Also: my virtual loops wrote out of bounds for a vehicle with no lane, which stopped every car in trusted mode on the merged engine. That's fixed, and `scripts/bench/instrument/sensors-main.patch` now fits main's new edge counters. The gridlock report no longer crashes on a stale item. Physics at step 3 is now in band on saturation (1,870) and motorway (1,839), against 1,714 and 1,590 before.
+Also: my virtual loops wrote out of bounds for a vehicle with no lane, which stopped every car in trusted mode on the merged engine. That's fixed, and `scripts/bench/instrument/sensors-main.patch` now fits main's new edge counters. The gridlock report no longer crashes on a stale item. Physics at step 3 is now in band on saturation (1,870) and motorway (1,839), against 1,714 and 1,590 before. Its start wave, 28.6 km/h, is just over the 16–28 band, and capacity drop wasn't measurable in that scene. Step 3's exit still fails on give-way. The benchmark wasn't run on these rounds, because no driver finishes a day above 10%.
 
 **What stops 50% now.** Not signal capacity, routes, fleet, or the kernel alone, since SUMO jams too, with 22,515 at 07:30. Roots of the jam on assigned routes with Krauss, by vehicle-hours held: **a car stopped waiting to change lane 722**, give-way 476, signal 299, exit full 95. The worst cluster sits at Karl-Liebknecht-Straße, close to the cut's east edge, and I haven't ruled out a boundary artefact there. So the leading explanation is cars blocked abreast on short roads, then spillback through blocks of tiny storage. This is an explanation of what the tools show, not yet a proven cause: no test has removed it.
 
