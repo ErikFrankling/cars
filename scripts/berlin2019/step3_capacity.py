@@ -9,6 +9,7 @@ minor-road capacity. Numbers come from the same fcd and sensors a city run has. 
 import argparse
 import json
 import os
+import re
 import shlex
 import subprocess
 from pathlib import Path
@@ -95,14 +96,23 @@ def giveway(a, major, seed):
     d = Path(a.out) / f'give{major}_{seed}'
     d.mkdir(parents=True, exist_ok=True)
     nc(d, [('w', 0, 0, 'priority'), ('c', 500, 0, 'priority'), ('e', 1000, 0, 'priority'), ('s', 500, -500, 'priority')], [('we', 'w', 'c', 1, 13.89, 5), ('ce', 'c', 'e', 1, 13.89, 5), ('sc', 's', 'c', 1, 13.89, 1)])
-    fl = f'<flow id="m" type="car" begin="0" end="1800" vehsPerHour="{major}" departLane="0" departSpeed="max"><route edges="we ce"/></flow>' if major else ''
-    (d / 'r.xml').write_text(f'<routes>{CAR}{fl}<flow id="s" type="car" begin="0" end="1800" vehsPerHour="1800" departLane="0" departSpeed="max"><route edges="sc ce"/></flow></routes>')
+    # major road arrivals are random, as Siegloch's formula assumes: a flow with even gaps would admit a wrong number
+    rng = np.random.default_rng(100 + seed + major)
+    times, t = [], 0.0
+    while major and t < 1800:
+        t += 1.2 + rng.exponential(3600 / major - 1.2) if 3600 / major > 1.2 else 1.2
+        times.append(t)
+    fl = ''.join(f'<vehicle id="m{i}" type="car" depart="{x:.1f}" departLane="0" departSpeed="max"><route edges="we ce"/></vehicle>' for i, x in enumerate(times))
+    mins = ''.join(f'<vehicle id="s{i}" type="car" depart="{i * 2.0:.1f}" departLane="0" departSpeed="max"><route edges="sc ce"/></vehicle>' for i in range(900))
+    all_v = sorted(re.findall(r'<vehicle .*?</vehicle>', fl + mins), key=lambda v: float(re.search(r'depart="([^"]+)"', v)[1]))
+    (d / 'r.xml').write_text(f'<routes>{CAR}' + ''.join(all_v) + '</routes>')
     sim(d, a, 1800, d / 'r.xml', seed=seed, fcd=False)
     t = pd.read_csv(d / 'trips.csv')
     n = t[t.trip.str.startswith('s') & (t.arrival >= 600) & (t.arrival < 1800)]
     # Siegloch with HBS critical gap and follow-up for a right turn from the minor road, 5.9 and 3.0 s
     tc, tf = 5.9, 3.0
-    return dict(major=major, minor_capacity=len(n) * 3, siegloch=3600 / tf * np.exp(-major * (tc - tf / 2) / 3600))
+    m = t[t.trip.str.startswith('m') & (t.arrival >= 600) & (t.arrival < 1800)]
+    return dict(major=major, major_arrived_per_h=len(m) * 3, minor_capacity=len(n) * 3, siegloch=3600 / tf * np.exp(-major * (tc - tf / 2) / 3600))
 
 
 def main():
@@ -114,8 +124,10 @@ def main():
     p.add_argument('--seeds', type=int, default=3)
     a = p.parse_args()
     res = dict(cars=a.cars, flags=a.flags, dt=a.dt)
-    res['signal'] = [signal(a, k, s) for k in (30, 50) for s in range(a.seeds)]
-    res['lanedrop'] = [lanedrop(a, 100, s) for s in range(a.seeds)]
+    prev = Path(a.out, 'result.json')
+    old = json.loads(prev.read_text()) if prev.exists() else {}
+    res['signal'] = old.get('signal') or [signal(a, k, s) for k in (30, 50) for s in range(a.seeds)]
+    res['lanedrop'] = old.get('lanedrop') or [lanedrop(a, 100, s) for s in range(a.seeds)]
     res['giveway'] = [giveway(a, m, s) for m in (0, 400, 800, 1200) for s in range(2)]
     tab = pd.DataFrame(res['signal']).groupby('kmh').mean().round(2)
     print(tab.to_string())

@@ -32,6 +32,11 @@ def main():
     p.add_argument('--join-dist', type=float)
     p.add_argument('--tls', default='actuated')
     p.add_argument('--cycle', type=int)
+    p.add_argument('--contract', type=float, help='report 10: join across links whose built lanes are shorter than this, rebuild, repeat')
+    p.add_argument('--cluster-max', type=float, default=70.0)
+    p.add_argument('--per-node', action='store_true', help='report 10: one generated program per junction, not one over several')
+    p.add_argument('--radii', action='store_true', help="report 19's junction geometry flags")
+    p.add_argument('--smooth', action='store_true', help="report 19's polyline flags")
     a = p.parse_args()
     out = D / a.name
     out.mkdir(exist_ok=True)
@@ -135,6 +140,9 @@ def main():
                         changed += 1
             if not changed:
                 break
+    # listed roundabouts crash netconvert once their nodes are joined; guessing them gives the same priorities
+    for r in root.findall('roundabout'):
+        root.remove(r)
     tree.write(str(pfx) + '_fixed.edg.xml')
     # connections are recomputed on every touched edge and on those into it; everywhere else they stay
     con = etree.parse(str(pfx) + '.con.xml', etree.XMLParser(huge_tree=True, resolve_entities=False, no_network=True)).getroot()
@@ -158,14 +166,96 @@ def main():
         else:
             kept += 1
     etree.ElementTree(con).write(str(pfx) + '_fixed.con.xml')
-    cmd = ['netconvert', '-n', str(pfx) + '.nod.xml', '-e', str(pfx) + '_fixed.edg.xml', '-x', str(pfx) + '_fixed.con.xml', '-t', str(pfx) + '.typ.xml', '--no-internal-links', 'false', '--offset.disable-normalization', 'true', '--no-turnarounds', 'false', '--geometry.remove', 'true', '--tls.default-type', a.tls, '--output.original-names', 'false', '--remove-edges.isolated', 'true', '-o', str(out / 'net.net.xml')]
-    if a.join_dist:
-        cmd += ['--junctions.join', 'true', '--junctions.join-dist', str(a.join_dist)]
-    if a.cycle:
-        cmd += ['--tls.cycle.time', str(a.cycle)]
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    print(r.stderr[-600:] if r.returncode else '\n'.join(l for l in r.stderr.splitlines() if 'total messages' in l)[:1200])
-    r.check_returncode()
+    nod = etree.parse(str(pfx) + '.nod.xml', etree.XMLParser(huge_tree=True, resolve_entities=False, no_network=True))
+    if a.per_node:
+        n_shared = 0
+        for n in nod.getroot().findall('node'):
+            if n.get('tl') and n.get('tl') != n.get('id'):
+                n_shared += 1
+            n.attrib.pop('tl', None)
+        print('nodes taken out of shared controllers', n_shared)
+    xy = {n.get('id'): (float(n.get('x')), float(n.get('y'))) for n in nod.getroot().findall('node')}
+    parent = {k: k for k in xy}
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def build(tag):
+        r = nod.getroot()
+        for j in r.findall('join'):
+            r.remove(j)
+        groups = collections.defaultdict(list)
+        for k in xy:
+            groups[find(k)].append(k)
+        for g in groups.values():
+            if len(g) > 1:
+                etree.SubElement(r, 'join', nodes=' '.join(sorted(g)))
+        nod.write(str(pfx) + '_fixed.nod.xml')
+        # a joined junction loses the listed turns over the swallowed links, so it gets all its turns afresh
+        joined = {m for g in groups.values() if len(g) > 1 for m in g}
+        c2 = etree.fromstring(etree.tostring(con))
+        for c in list(c2):
+            if c.tag == 'connection' and c.get('from') in edges and edges[c.get('from')].get('to') in joined:
+                c2.remove(c)
+        etree.ElementTree(c2).write(str(pfx) + '_build.con.xml')
+        cmd = ['netconvert', '-n', str(pfx) + '_fixed.nod.xml', '-e', str(pfx) + '_fixed.edg.xml', '-x', str(pfx) + '_build.con.xml', '-t', str(pfx) + '.typ.xml', '--no-internal-links', 'false', '--offset.disable-normalization', 'true', '--no-turnarounds', 'false', '--geometry.remove', 'true', '--tls.default-type', a.tls, '--output.original-names', 'false', '--remove-edges.isolated', 'true', '--junctions.corner-detail', '5', '--roundabouts.guess', 'true', '-o', str(out / 'net.net.xml')]
+        if a.join_dist:
+            cmd += ['--junctions.join', 'true', '--junctions.join-dist', str(a.join_dist)]
+        if a.cycle:
+            cmd += ['--tls.cycle.time', str(a.cycle)]
+        if a.radii:
+            cmd += ['--default.junctions.radius', '10', '--junctions.small-radius', '8', '--junctions.limit-turn-speed', '2.5']
+        if a.smooth:
+            cmd += ['--geometry.min-radius', '12', '--geometry.min-radius.fix', 'true', '--geometry.max-angle', '30', '--geometry.max-angle.fix', 'true']
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        print(tag, r.stderr[-600:] if r.returncode else '\n'.join(l for l in r.stderr.splitlines() if 'total messages' in l)[:900])
+        r.check_returncode()
+
+    build('first pass')
+    for it in range(6 if a.contract else 0):
+        (out / 'net.pkl').unlink(missing_ok=True)
+        n = read_net(out / 'net.net.xml', out / 'net.pkl')
+        groups = collections.defaultdict(list)
+        for k in xy:
+            groups[find(k)].append(k)
+        node_of = {}
+        for k, g in groups.items():
+            for m in g:
+                node_of[m] = k
+        new = 0
+        for k, v in n['edges'].items():
+            cl = car_lanes(v)
+            if not cl or min(l['length'] for l in cl) >= a.contract:
+                continue
+            # ids of joined nodes are 'cluster_a_b...' : take any member known to us
+            def member(j):
+                if j in xy:
+                    return j
+                for m in re.split(r'_', j.replace('cluster_', '')):
+                    if m in xy:
+                        return m
+                return None
+            u, w = member(v['start']), member(v['end'])
+            if u is None or w is None:
+                continue
+            ru, rw = find(u), find(w)
+            if ru == rw:
+                continue
+            pts = np.array([xy[m] for m in groups[ru] + groups[rw]])
+            if np.linalg.norm(pts.max(axis=0) - pts.min(axis=0)) > a.cluster_max:
+                continue
+            parent[rw] = ru
+            groups[ru] += groups[rw]
+            groups[rw] = []
+            new += 1
+        print('contract pass', it, 'joins', new)
+        if not new:
+            break
+        build(f'pass {it}')
+    (out / 'net.pkl').unlink(missing_ok=True)
     pd.DataFrame(fixes, columns=['edge', 'why', 'change']).to_csv(out / 'fixes.csv', index=False)
     print('fixes', collections.Counter(re.sub(r'_short.*', '_short', f[1]) for f in fixes).most_common(), 'connections kept', kept, 'edges touched', len(touched), 'edges recomputed', len(redo))
     n = read_net(out / 'net.net.xml', out / 'net.pkl')

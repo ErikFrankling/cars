@@ -92,7 +92,8 @@ def edge_remap(cut):
             out[k] = best[1]
         else:
             lost.append(k)
-    print('edges merged away', len(out), 'not found', len(lost))
+    print('edges merged away', len(out), 'gone in a joined junction', len(lost))
+    out.update({k: None for k in lost})
     return out
 
 
@@ -135,7 +136,10 @@ def cut_demand(a):
         for line in f:
             log['legs_read'] += 1
             person, leg, mode, dep, trav, dist, links = line.rstrip('\n').split('\t')
-            raw = links.split()
+            # a link swallowed by a joined junction drops out; the check below reconnects its neighbours
+            raw = [l for l in links.split() if remap.get(l, l) is not None]
+            if not raw:
+                continue
             links = [remap.get(l, l) for l in raw]
             if not any(l in edges for l in links):
                 continue
@@ -214,7 +218,7 @@ def sensors():
     for site in freeze['district_sites']:
         r = s[s.site == site].iloc[0]
         edge = remap.get(r.edge, r.edge)
-        e = cut['edges'].get(edge)
+        e = cut['edges'].get(edge) if edge else None
         if e is None or not car_lanes(e):
             issues.append((site, r.edge, 'edge not in the cut net'))
             continue
