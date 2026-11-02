@@ -1388,12 +1388,16 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
     let in_front = f32(s.end - i - 1u) * need_own;
     let floor_v = ph_floor(v, e.acc);
     var chained = false;
-    for (var j = 0u; j < stop; j++) {
+    var chain_from = NONE;
+    for (var j = 0u; j < n; j++) {
+        // Past where the driver means to stop, unless that spot is one no body fits on.
+        if (j >= stop && !chained) { break; }
         let it = items[base + j];
         if (it.link == NONE) { break; }
         let k = links[it.link];
         let next = k.next_lane;
         if (!is_internal(next) || lanes[next].zone_count == 0u) {
+            if (!chained || !is_internal(next)) { chain_from = NONE; }
             chained = false;
             continue;
         }
@@ -1426,6 +1430,7 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
                 let to = k.to_lane;
                 if (lanes[to].length < need_own) {
                     chained = true;
+                    if (chain_from == NONE) { chain_from = j; }
                 } else {
                     chained = false;
                     var next_link = NONE;
@@ -1447,11 +1452,14 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
             }
         }
         if (!ok) {
+            // No room behind this one for a body: it stops at the line of the first junction, not inside it.
+            if (chain_from != NONE) { items[base + chain_from].grant = 1u; }
             items[base + j].grant = 1u;
             atomicAdd(&C[C_DENIED], 1u);
             break;
         }
         // Whoever started goes on: without this a car that won a gap loses it again before it reaches the line.
+        if (committed) { chain_from = NONE; }
         var rank = 3u;
         if (committed) { rank = 0u; } else if ((e.flags & F_GRANTED) != 0u && v > HALT_SPEED) { rank = 1u; } else if (have_priority(link_state(it.link))) { rank = 2u; }
         let hash = (pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u;
@@ -1500,6 +1508,19 @@ fn ph_grant(@builtin(global_invocation_id) id: vec3u) {
             if (zn.dist < reach && atomicLoad(&ph_lane[(zn.foe_lane) * 5u + 0u]) < bid) {
                 items[base + j].grant = 1u;
                 atomicAdd(&C[C_DENIED], 1u);
+                // Lost the second of two junctions joined by a lane too short to stop on: stop at the first line, or
+                // two losers each stand with a tail across the other's way.
+                let vt = types[cur[i].vtype];
+                for (var q = j; q > 0u; q--) {
+                    let fl = lanes[links[items[base + q].link].from_lane];
+                    let last_block = is_internal(links[items[base + q].link].from_lane) && !is_internal(links[fl.links_start].next_lane);
+                    if (fl.length >= vt.length + vt.min_gap && !last_block) { break; }
+                    let g = items[base + q - 1u].grant;
+                    if (g > 1u) {
+                        if ((g >> 30u) == 0u) { break; }
+                        items[base + q - 1u].grant = 1u;
+                    }
+                }
                 return;
             }
         }

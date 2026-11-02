@@ -88,8 +88,9 @@ fn detect_pose(@builtin(global_invocation_id) id: vec3u) {
         let side = select(1.0, -1.0, (v.phys >> 30u) == 1u);
         center += vec2f(-dir.y, dir.x) * side * (w - done);
     }
+    // On a lane narrower than the body the driver squeezes over: the fault is the lane width in the net.
     let c = cell_of(center);
-    poses[i] = Pose(center, dir, t.length * 0.5, t.width * 0.5, (u32(c.x + 32768) << 16u) | u32(c.y + 32768), 0u);
+    poses[i] = Pose(center, dir, t.length * 0.5, min(t.width, lanes[v.lane].width) * 0.5, (u32(c.x + 32768) << 16u) | u32(c.y + 32768), 0u);
     let h = grid_hash(c.x, c.y);
     grid_next[i] = atomicExchange(&grid_head[h], i);
 }
