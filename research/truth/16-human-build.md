@@ -276,3 +276,93 @@ Spacing / speed RMSE over 30 s on the same frozen windows ([replay_w99.json](hum
 | Wiedemann 99, Vissim defaults | 7.71 / 0.85 | 6.52 / 0.78 | 6.36 / 0.77 | 14.83 / 1.65 | 16.29 / 1.58 |
 
 Fit with a smaller search than report 05's (1,200 windows, 25 generations), so the incumbents had less search. W99 is deterministic here, from the published form with Vissim's parameter names.
+
+## Merging from report 18, and the audit in report 19
+
+Frozen build `86f2256` on the software GPU at 128-bit vectors, dt 0.5 unless stated, two seeds. Not yet run on the real GPU: see the end of this section. Clips are in `cars-data/videos/gallery/humans/merge_*`.
+
+**The driver does not yet merge like people. No site passes.** Contacts are zero at all four sites and nothing gridlocks, but the rows that describe the behaviour Erik asked about fail: cars stop too often, start moving over too rarely with a car alongside, and followers do not give way as measured.
+
+| Row of report 18 | I-80 real / sim | US-101 | I-395 held out | A39 held out |
+|---|---|---|---|---|
+| Body over the line, m left | -3..17 / **14.2** | 108..168 / 46.2 | 21..41 / 16.9 | 285..365 / **286** |
+| Stopped first | .18-.34 / .89 | 0-.02 / .40 | 0-.03 / .91 | 0-.01 / .06 |
+| Overlap at sideways start | .24-.40 / .09 | .07-.19 / .01 | .29-.51 / .06 | 0-.02 / **.01** |
+| Overlap at centre over line | 0-.08 / **0** | 0-.02 / **0** | .13-.32 / 0 | 0-.01 / **0** |
+| Lag p25 at start, m | .6-2.6 / 3.2 | 2-4 / 5.7 | 1.1-3.1 / 3.5 | |
+| Edge while overlapped p50, lanes | .03-.23 / 0 | -.1-.1 / **0** | .02-.22 / 0 | -.1-.1 / **0** |
+| Edge while overlapped p95, lanes | .22-.52 / **.28** | .04-.34 / **.21** | .24-.54 / **.25** | .06-.36 / 0 |
+| Gap ahead 5 s before | .11-.27 / .06 | .52-.72 / .07 | .01-.17 / **.05** | 0-.11 / **0** |
+| Gap behind 5 s before | .19-.35 / **.33** | 0-.14 / .25 | .32-.48 / **.35** | .14-.34 / .13 |
+| Alongside 5 s or more | .25-.41 / .83 | 0-.08 / **.07** | .18-.34 / .83 | 0-.03 / **.02** |
+| Locked share | .03-.11 / **.04** | 0-.01 / **0** | .01-.05 / **.03** | 0-.01 / **0** |
+| Overlapped in last 5 s | .36-.56 / .29 | .32-.52 / .13 | .35-.55 / .25 | 0-.03 / **.02** |
+| Excess accel -2..0 s | .09-.25 / .06 | -.57..-.27 / .34 | -.16..-.04 / .15 | .42-.62 / none |
+| Follower extra speed lost | .4-.6 / -.64 | .47-.77 / .03 | .02-.82 / -.97 | .11-.51 / -3.0 |
+| Follower extra responders | .126-.186 / .12 | .115-.195 / .10 | .05-.21 / **.10** | .03-.15 / -.14 |
+| Lag under 1 m at body over | .20-.48 / .04 | 0-.08 / **.01** | .14-.32 / .01 | 0-.01 / **0** |
+| **In band** | **5 of 16** | **6 of 16** | **5 of 16** | **9 of 15** |
+| Contacts | 0 | 0 | 0 | 0 |
+| Share of steps on the guard, limit 1% | .7% | 1.6% | .9% | 8.9% |
+
+I-395 and A39 were run once, on this build, with nothing tuned after. I-90 and I-294, also held out in report 18's spec, have no scene here and were not tested. Row 16's bands differ from report 18's table (4.7%, under 2%, 10.7%, 0.2%): its own pipeline gives 101 of 297 at I-80, 34%, so both sides now use the pipeline.
+
+**The largest miss is throughput.** Past the end of the lane at I-80, real traffic carries 1,344 and 1,435 veh/h in the two runs. The scene carries 858 at the measured demand, about 60%. So a queue fills the scene and most cars stop first, whatever the merge rules say. The scene and the rows cannot be compared fairly until this closes. Report 05's T of 1.3 s gives about 1,350 veh/h at 6 m/s before any merge, so part of this is the following law at low speed, as noted under capacity above.
+
+**Rules off, I-80, one seed.** No rule moves the table by much while the queue dominates. Edging and the start law move the rows they should. `tte` and `follow` off score one row more than everything on, so on this evidence neither has earned its place at this site. They stay on because report 18 measured them; this table does not confirm them.
+
+| Case | Body | Stopped | Overlap start | Alongside 5 s | Overlap last 5 s | Excess accel | Speed lost | Responders | Rows in band |
+|---|---|---|---|---|---|---|---|---|---|
+| All on | 14.2 | .89 | .09 | .83 | .29 | .06 | -.64 | .12 | 5 |
+| `tte` off | 17.0 | .88 | .08 | .83 | .29 | .05 | -.69 | .13 | 6 |
+| `start` off | 6.0 | .84 | 0 | .77 | .39 | -.17 | -.60 | .08 | 5 |
+| `edge` off | 11.6 | .88 | 0 | .81 | .23 | .09 | -1.28 | -.01 | 3 |
+| `follow` off | 12.6 | .91 | .08 | .83 | .26 | .11 | -.56 | .14 | 6 |
+| `match` off | 19.9 | .89 | .04 | .79 | .18 | .13 | -.29 | .12 | 4 |
+| `steer` off | 13.3 | .87 | .08 | .82 | .29 | -.07 | -.72 | .10 | 5 |
+
+**Sensitivity of the invented numbers, I-80, one seed.** `b_end` 1.5, 4 and `w_s_near` .25, .7 leave 5 rows in band. `s_driver` 0 gives 4, 1 gives 7, with overlap at start .07 and .16. `q_edge` .07 and .25 give 4 each, with overlap at start .05 and .19. A wider driver term helps most, and it has no source, so it stays at 0.5.
+
+**What changed after the first training runs, none of it on held-out data.**
+
+- The start law read today's gaps, but it was fitted on the body reaching the line. It now reads them τ s on.
+- Report 18's going-back rule was true whenever a car was level alongside, and cancelled nearly every edge. It is gone.
+- Followers answered only at 10% of a lane, which a third of drivers never reach. They now also answer a driver that has edged as far as it goes. Invented, in `HUMAN.md`.
+- Scenes had a target lane at 520 veh/h, 40 m apart, with nobody to be alongside. They now use the measured flow of both lanes at each site.
+- Sweeping the start law's intercept from -1.23 to 1.2 trades merge position against stops with no better total. It stays as fitted.
+
+**The audit.** Fixes that touch this driver, with what they measure now:
+
+| Fix | Measured | Target | |
+|---|---|---|---|
+| 1. Corner speed √(a_y R), road arcs, a_y median | 2.9 at R 10, 2.2 at R 20, 2.2 at R 50 m/s² | 2.2 | R 10 is over: a 30 m chord overstates that radius |
+| 1. Same, p95 | 4.7, 3.7, 3.6 | real 3.1 | Over. The cap of 4.3 acts on the driver draw, not on a car's actual speed |
+| 5. Softer stops | `gipps_b` 3.0, `gipps_tau` .5 | 3.0, .7 | .7 costs 9% on A39 replay, so .5 |
+| 7. Launch by class | `hu_amax` capped by class | | Not separately measured |
+| 10. Launch | Below 2 m/s, not 5. Queue headway 2.35 s at dt .1 | sat 1.8-2.2 | Miss. 5 m/s takes I-90 moving out of band for 2.30 s |
+| 12. Swedish free speed | Table in, `--region sweden` | within .03 | Not measured on a free road |
+| 13. Lateral cap | 1.3 m/s in the kernel. Real peak not measured on simulated tracks | under 1.3 | Not confirmed by measurement |
+| Yellow, dt .5 | Stops 1.5%, 0%, 41%, 75%, 100% at 0-3, 3-4, 4-5, 5-6, 6-8 s; half at 4.81 s, scale .45; brake p95 3.2 | 5.1, .54; 35% at 4-5, 75% at 5-6 | Holds |
+| Yellow, dt 1 | Stops 0%, 15%, 29%, 100%, 100%; half at 4.49 s, scale .29; brake p95 3.5 | same | 3-4 s over 5% on n=13, and it drifts |
+
+**Removing the corner floor costs capacity, as expected.** The floor was unphysical, and it was also what held these numbers on target, on netconvert's tight corners. Inside-corner speed is now 3.7 m/s right and 4.5 left, where the audit's real turns (radius p50 29.6 m) give about 8.
+
+| With `--region sweden`, dt .5 | With 8 m/s floor | Now | Target |
+|---|---|---|---|
+| Right turn, veh per green hour | 1,449 | 1,097 | 1,700 |
+| Left turn | 1,569 | 1,209 | 1,700 |
+| Through | | 1,770 | 1,900 |
+| Roundabout critical gap, s | 2.95 | 5.36 | 2.95 |
+| Roundabout follow-up, s | 3.0 | 5.0 | 3.0 |
+
+The audit's fixes 2 and 3, rebuilding junction geometry and smoothing roads, belong to the physics agent and should bring these back. Until then these are misses. `path_radius` is used only by this driver; Krauss's `driver_lateral` is untouched.
+
+**Replay, frozen build, dt .1.** I-395 5.69 / .63, I-90 run 6 4.18 / .59, I-90 moving 4.09 / .64, I-294 10.79 / 1.45, A39 11.70 / 1.08. All in band. p5 of time gaps 1.12 s against an upper band of 1.10, a small miss.
+
+**Small scenes.** A follower catching a slow leader keeps at least 6.68 m at dt .1, .5 and 1, hardest braking 2.96 m/s². All five deadlock scenes arrive in full with no contacts, though 1 of 2 and 2 of 3 cars in two of them give up their route to do so. `stub_lane` at dt 1: 140 of 140 arrive on 1, 3, 5, 8 m stubs with 0, 1, 2, 2 contacts: three at the lane start, one on the same lane. On a 22 m stub 114 of 140 arrive within 1,200 s, 7 lost, none stuck; before the merge rules it was 140.
+
+**Physics QA, I-80 and motorway traces.** No negative gaps and no junction overlaps. Hardest braking -8.3 and -6.0 m/s², p1 -1.1 and -2.4; 26 and 21 samples harder than the vehicle's type allows. No lateral samples over comfort at I-80, 46 on the motorway scene, none over 4 m/s². 13 over speed by 30% on the motorway scene. The lane-change rows in QA read the label jump of a whole lane, not motion.
+
+**A fault in the software GPU, not in the driver.** llvmpipe's default 256-bit vectors silently mix up vehicles in the plan kernel. A car with another in the same dispatch brakes to a stop at the end of its final road and stands there: `stub_lane` arrived 3 of 103. Debug output showed an item with no link and a request flag, which no code path writes. At 128 bits the same binary arrives 140 of 140. An earlier result in this work, followers driving through leaders with a min gap of -91 m, is very likely the same fault, but that is unproven: the rule that seemed to cause it was moved to the plan kernel first, and its old place was not retested at 128 bits. A follower catching a slow leader now passes at 128 bits and is a regression test. `cars` now sets the width itself for llvmpipe. **All merge measurements made before this was found are discarded.** Earlier software GPU numbers in this report were made on older kernels at 256 bits and were not all rerun; the city runs are on the real GPU.
+
+**How it looks.** By eye, frame by frame: queues stand on brake lights, blinkers flash front and rear on the side the car is merging towards, a head car noses in as room opens, and nobody overlaps. Three things look wrong to a driver. The sim is more crowded than the real panel, 11 km/h against 24, from the throughput miss. Cars mostly wait and then go, rather than rolling in beside someone. And a car starting from a crawl turns about 20° by eye, more than the real tracks show, because the sideways rate is capped but not tied to its speed at the start of a change. The real panel has no blinkers because the data has none. The two panels show different moments on the same road and scale.

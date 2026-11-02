@@ -32,15 +32,17 @@ def centre(net, lane, at=0.5):
 
 
 def scene(d, sc, begin, end):
+    if (d / 'sim.trace').exists():
+        return
     d.mkdir(parents=True, exist_ok=True)
     hm.build(d, sc)
     hm.routes(d, sc, end)
-    hm.run([hm.BIN, 'run', '--net', d / 'net.xml', '--routes', d / 'r.xml', '--dt', 0.1, '--end', end, '--seed', 1, '--report-json', d / 's.json', '--trace', d / 'sim.trace', '--trace-begin', begin, '--trace-end', end, '--time-to-teleport', 0])
+    hm.run([hm.BIN, 'run', '--net', d / 'net.xml', '--routes', d / 'r.xml', '--dt', 0.1, '--end', end, '--seed', 1, '--report-json', d / 's.json', '--trace', d / 'sim.trace', '--trace-begin', begin, '--trace-end', end, '--time-to-teleport', 0, '--humans'])
     shutil.copy(d / 'net.xml', d / 'sim.net.xml')
 
 
 def replay(net, trace, out, c, mpp, w, h, begin, end, title, speed=1.0):
-    hm.run([hm.BIN, 'replay', '--net', net, '--trace', trace, '--center', c, '--metres-per-pixel', mpp, '--width', w, '--height', h, '--begin', begin, '--end', end, '--speed', speed, '--fps', 25, '--title', title, '--out', out])
+    hm.run([hm.BIN, 'replay', '--net', net, '--trace', trace, '--center', c, '--metres-per-pixel', mpp, '--width', w, '--height', h, '--begin', begin, '--end', end, '--speed', speed, '--realtime', '--fps', 25, '--title', title, '--out', out])
 
 
 def still(net, trace, out, c, mpp, w, h, at):
@@ -72,17 +74,17 @@ def main():
             still(net, d / 'sim.trace', gal / f'merge_i80_sim_{t}.png', c, 0.14, 1400, 330, t)
     if 'close' in a.what:
         ce = centre(net, 'merge_1', 0.75)
-        replay(net, d / 'sim.trace', gal / 'merge_lane_drop_closeup.mp4', ce, 0.05, 1200, 500, 350, 410, 'Lane end, close up. Blinkers, brake lights, a car edging in', speed=0.5)
-        for t in (360, 375, 390):
-            still(net, d / 'sim.trace', gal / f'merge_lane_drop_{t}.png', ce, 0.05, 1200, 500, t)
+        replay(net, d / 'sim.trace', gal / 'merge_lane_drop_closeup.mp4', ce, 0.05, 1000, 420, 370, 400, 'Lane end, close up. Blinkers, brake lights, a car edging in', speed=0.5)
+        for t in (375, 385, 395):
+            still(net, d / 'sim.trace', gal / f'merge_lane_drop_{t}.png', ce, 0.05, 1000, 420, t)
     if 'drop' in a.what:
         d = out / 'drop'
         scene(d, DROP, 200, 330)
         net = d / 'net.xml'
         ce = centre(net, 'merge_1', 0.65)
-        replay(net, d / 'sim.trace', gal / 'merge_motorway_two_into_one.mp4', ce, 0.22, 1500, 300, 220, 300, 'Two lanes into one, 108 km/h limit')
-        for t in (240, 260, 280):
-            still(net, d / 'sim.trace', gal / f'merge_motorway_{t}.png', ce, 0.22, 1500, 300, t)
+        replay(net, d / 'sim.trace', gal / 'merge_motorway_two_into_one.mp4', ce, 0.22, 1400, 280, 240, 280, 'Two lanes into one, 108 km/h limit')
+        for t in (250, 265, 279):
+            still(net, d / 'sim.trace', gal / f'merge_motorway_{t}.png', ce, 0.22, 1400, 280, t)
     print('done')
 
 

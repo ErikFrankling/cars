@@ -10,4 +10,6 @@ The GPU also drives Erik's desktop. Scale every experiment from small to big, ke
 
 - `cars run --trace` writes trajectories and `cars replay` draws them with no simulation, so an incident stays in the run that had it. `cars record`, `cars shot` and `cars junctions` also look at intersections up close. `scripts/intersection_gallery.py`, `scripts/physics_qa.py` and `scripts/cars_trace.py` build on them; see `crates/cars-cli/RECORDING.md`.
 
+Off the GPU, `CARS_ADAPTER=llvmpipe` runs small scenes without the GPU lock. llvmpipe's default 256-bit vectors silently mix up vehicles in the plan kernel, so the binary sets `LP_NATIVE_VECTOR_WIDTH=128` itself; never override it to 256.
+
 No GPU kernel may use function-local arrays outside `lc_best`. Comments stay sparse.

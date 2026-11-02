@@ -13,7 +13,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | s0 median 2.8 m × 1.2 | ADAPTED | Report 05 median, scaled in closed loop to measured standing spacing | `s0_scale` |
 | Gipps limit behind a moving, slower leader: 3.0 m/s², 0.5 s, down to s0 | ADAPTED | Gipps 1981, as in Aimsun. Without it a queue forms with half the cars 1 m or less apart and braking to −8 m/s²: the closing rule above it trusts the leader to keep its speed. 3.0 is report 19 fix 5. That fix asks 0.7 s; 0.7 s lifts A39 replay by 9% and p5 of time gaps to 1.31 s, so 0.5 s is a choice, up from the first 0.4 | `gipps_b`, `gipps_tau` |
 | Top acceleration is the lower of 1.80 m/s² and the vehicle class's own | ESTABLISHED | Report 19 fix 7: Yang 2016, Krašna, physics' table | - |
-| Launch: below 2 m/s, leader pulling away, gap above s0 + T·v: accelerate as if free | ADAPTED | Report 19 fix 10 asks this below 5 m/s. Below 2 here, in the plan kernel, because of the bug in report 16's merging section: inside `hu_target` the rule made followers ignore leaders on llvmpipe, cause not found | - |
+| Launch: below 2 m/s, leader pulling away, gap above s0 + T·v: accelerate as if free | ADAPTED | Report 19 fix 10 asks this below 5 m/s if replay stays in band. At 5, I-90 moving goes to 4.34 m against at most 4.20, and queue flow only moves from 2.35 to 2.30 s. At 2 replay stays in band | - |
 | Guard is the physics certificate, with the leader assumed to brake no harder than the driver can | ADAPTED | Report 11 certificate; against SUMO's own settings report 05 asked for a lax guard. With leader braking at b_hi it held time gaps above 1.2 s at 34 m/s, against 0.8 s measured | - |
 | Desired speed = lane limit × speedFactor | ESTABLISHED | SUMO, TfL | - |
 | Swedish free speed by limit: 40: .98, 50: .90, 60: .85, 70: .89 of the limit | ESTABLISHED | Report 19 fix 12, VTI rapport 1001. Only with `--region sweden` | `free_table` |
@@ -47,12 +47,13 @@ Each rule off with `--human-off NAME`, each number with `--tune`. Fits are on I-
 | Rule or number | Class | Source and what changed | Parameter |
 |---|---|---|---|
 | B1. Urgency is time left to the lane end, remaining distance over speed, from 43 s | ADAPTED | LMRS form and t0, OpenTrafficSim; report 18 fit. A distance cannot work both at a crawl and at motorway speed. Waiting time stays out, report 14 | `--human-off tte`, `tte0` |
-| B2. Start decision: logit p = −1.23 − 1.544·tte/10 + .133·t_lag + .164·t_lead, per second | ADAPTED | Form from Lee and Choudhury, coefficients report 18. Replaces the shifted Lee gaps near the end. Physical floor stays separate | `--human-off start`, `s_0`, `s_t`, `s_lag`, `s_lead` |
+| B2. Start decision: logit p = −1.23 − 1.544·tte/10 + .133·t_lag + .164·t_lead, per second, on gaps as they will be τ s on | ADAPTED | Form from Lee and Choudhury, coefficients report 18. It was fitted on the body reaching the line, so it reads the gaps as they will be then, with the τ below. Reading today's gaps left sideways starts with a car alongside near zero. A sweep of the intercept from −1.23 to 1.2 on I-80 and US-101 found no better value, so it stays as fitted. Physical floor stays separate | `--human-off start`, `s_0`, `s_t`, `s_lag`, `s_lead` |
 | B2. Driver term in that decision, 0.5 × a normal draw | INVENTED | Report 18: Lee and Choudhury have a driver term, the size here has no source | `s_driver` |
 | B3. Edge: under 15 m/s, a driver wanting in drifts sideways without taking the target lane | ADAPTED | Report 18 section F, overlap at the start 32-41% at 4-7 m/s, 13% at 14, under 2% at 25-34. Ahmed's forced merge, Choudhury's anticipated gap | `--human-off edge`, `v_edge` |
 | B3. Edge size per driver: lognormal, median .13 of a lane, log-SD .65 | ADAPTED | Size measured in report 18, shape invented there | `q_edge` |
 | B3. Edge rate min(0.4, 0.5·v) m/s, keeps 0.2 m to a car alongside | INVENTED | The cap is report 18's, the rate is mine: no faster than a slow start of a real change, and none at standstill | constants |
 | B3. Commit on anticipated gaps, τ normal(1.87, 1.44) s clamped 0-4 | ADAPTED | Choudhury eq. 5.39 | `tau_a`, `tau_sd` |
+| B3. No going back while edging | ADAPTED | Report 18 measures at most 3% and asks for an abort if the anticipated gap falls below zero. That condition is true whenever a car alongside is level, the case edging is for, and it cancelled nearly every edge. The edge stays inside the lane, so nothing needs it | - |
 | B4. A car that wants in does not stop before it can merge: a car that has started noses up to the lane's last metre | ESTABLISHED | LMRS, OpenTrafficSim `Synchronization.PASSIVE` | - |
 | B4. Last stretch braked at up to 2.5 m/s² instead of the comfort stop | INVENTED | Sits inside real stops (report 19: mean 1.32, peak 2.23, p95 4.10). Sensitivity in report 16 | `b_end` |
 | B5. Speed match: 12% of the braking a target leader asks, 25% of the speed-up, ±0.8 m/s² | ADAPTED | LMRS and Aimsun name the mechanism with a minimum, which fits worse than ignoring the target lane at three of four sites. Weights report 18; 0.25 has no held-out test | `--human-off match`, `w_s_neg`, `w_s_pos` |
@@ -61,6 +62,7 @@ Each rule off with `--human-off NAME`, each number with `--tune`. Fits are on I-
 | B7. Follower brakes for a merger at .756 × driver × g_lag × g_closing of what following the merger asks, g_lag = clamp(.2 + lag/5, .2, 1), g_closing .5 above 3 m/s closing | ADAPTED | Vissim's cooperative braking, LMRS's relaxed following. Numbers fit and held out in report 18. Replaces `cooperation`, unused while this is on | `--human-off follow`, `w_f` |
 | B7. Driver term uniform 0.3-1.7 | INVENTED | Report 18: not measurable from anonymous tracks | constants |
 | B7. Starts .5 s after 10% of a lane sideways, or commit | ADAPTED | Report 18, measured 0-1.5 s | `t_f` |
+| B7. Or once a timid driver has edged as far as it goes | INVENTED | A third of drivers edge under 10% of a lane by B3's own spread, and would otherwise never be seen at all | - |
 | B7. Limited to 3 m/s² | ESTABLISHED | Vissim | `b_f` |
 | B8. Blinker: 60% before the start, 33% after, 7% never | ADAPTED | Jokhio, in report 18. Only drawn. Followers respond to sideways motion, no field evidence of a blinker-only yield | - |
 
