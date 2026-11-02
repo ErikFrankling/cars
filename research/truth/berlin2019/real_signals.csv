@@ -1,0 +1,28 @@
+city,source,day_type,hour,n_cycles,n_connections,n_lights,cycle_p10,cycle_p50,cycle_p90,within_connection_iqr_p50,green_share_p10,green_share_p50,green_share_p90,longest_green_per_light_p10,longest_green_per_light_p50,longest_green_per_light_p90,note
+Hamburg,measured 2026 report 26,weekday,0.0,89864.0,1018.0,44.0,60.0,75.0,76.0,0.0,0.12,0.28,0.56,0.462,0.687,0.838,
+Hamburg,measured 2026 report 26,weekday,1.0,115638.0,995.0,41.0,60.0,75.0,75.0,0.0,0.12,0.28,0.541,0.461,0.68,0.837,
+Hamburg,measured 2026 report 26,weekday,2.0,114175.0,982.0,39.0,60.0,75.0,75.0,0.0,0.12,0.28,0.533,0.451,0.652,0.854,
+Hamburg,measured 2026 report 26,weekday,3.0,112840.0,943.0,38.0,60.0,75.0,75.0,0.0,0.12,0.28,0.533,0.441,0.65,0.844,
+Hamburg,measured 2026 report 26,weekday,4.0,114051.0,999.0,41.0,60.0,75.0,76.0,0.0,0.12,0.28,0.547,0.461,0.717,0.861,
+Hamburg,measured 2026 report 26,weekday,5.0,107088.0,1045.0,46.0,60.0,90.0,95.0,0.0,0.12,0.3,0.598,0.478,0.686,0.807,
+Hamburg,measured 2026 report 26,weekday,6.0,120317.0,1091.0,49.0,60.0,90.0,94.0,0.0,0.117,0.3,0.6,0.476,0.645,0.815,
+Hamburg,measured 2026 report 26,weekday,7.0,128855.0,1105.0,49.0,60.0,90.0,95.0,0.0,0.112,0.3,0.604,0.476,0.622,0.771,
+Hamburg,measured 2026 report 26,weekday,8.0,133919.0,1116.0,49.0,60.0,90.0,93.0,0.0,0.111,0.3,0.606,0.469,0.622,0.773,
+Hamburg,measured 2026 report 26,weekday,9.0,133531.0,1117.0,49.0,60.0,90.0,94.0,0.0,0.111,0.3,0.607,0.467,0.622,0.771,
+Hamburg,measured 2026 report 26,weekday,10.0,133370.0,1120.0,49.0,60.0,90.0,95.0,0.0,0.111,0.294,0.6,0.475,0.622,0.768,
+Hamburg,measured 2026 report 26,weekday,11.0,134595.0,1118.0,49.0,60.0,90.0,95.0,0.0,0.112,0.297,0.6,0.474,0.622,0.778,
+Hamburg,measured 2026 report 26,weekday,12.0,137135.0,1119.0,49.0,60.0,90.0,94.0,0.0,0.113,0.295,0.6,0.473,0.614,0.758,
+Hamburg,measured 2026 report 26,weekday,13.0,135478.0,1120.0,49.0,60.0,90.0,95.0,0.0,0.12,0.297,0.606,0.473,0.622,0.738,
+Hamburg,measured 2026 report 26,weekday,14.0,135385.0,1119.0,49.0,60.0,90.0,95.0,0.0,0.121,0.293,0.604,0.457,0.622,0.758,
+Hamburg,measured 2026 report 26,weekday,15.0,137311.0,1120.0,49.0,60.0,90.0,94.0,0.0,0.122,0.297,0.602,0.454,0.622,0.736,
+Hamburg,measured 2026 report 26,weekday,16.0,136847.0,1120.0,49.0,60.0,90.0,94.0,0.0,0.122,0.294,0.6,0.448,0.618,0.756,
+Hamburg,measured 2026 report 26,weekday,17.0,137452.0,1119.0,49.0,60.0,90.0,93.0,0.0,0.122,0.295,0.6,0.454,0.614,0.736,
+Hamburg,measured 2026 report 26,weekday,18.0,135109.0,1119.0,49.0,60.0,90.0,94.0,0.0,0.119,0.294,0.604,0.438,0.622,0.738,
+Hamburg,measured 2026 report 26,weekday,19.0,131580.0,1116.0,49.0,60.0,90.0,95.0,0.0,0.115,0.296,0.604,0.473,0.622,0.767,
+Hamburg,measured 2026 report 26,weekday,20.0,129199.0,1115.0,49.0,60.0,90.0,95.0,0.5,0.117,0.293,0.6,0.478,0.611,0.812,
+Hamburg,measured 2026 report 26,weekday,21.0,140002.0,1113.0,49.0,64.0,75.0,86.0,1.0,0.12,0.28,0.569,0.463,0.615,0.828,
+Hamburg,measured 2026 report 26,weekday,22.0,136985.0,1113.0,49.0,60.0,75.0,82.0,0.0,0.12,0.28,0.564,0.465,0.612,0.835,
+Hamburg,measured 2026 report 26,weekday,23.0,128400.0,1087.0,47.0,60.0,75.0,80.0,0.0,0.12,0.28,0.56,0.464,0.653,0.833,
+Berlin,"Senate answer S19-12905, report 23",weekday,,,,,,90.0,,,,,,,,,"one corridor B1/B5, coordinated, published cycle. Which hours carry which cycle not read here"
+Berlin,"Senate answer S19-12905, report 23",weekday,,,,,,110.0,,,,,,,,,"one corridor B1/B5, coordinated, published cycle. Which hours carry which cycle not read here"
+Berlin,"Senate answer S19-12905, report 23",weekday,,,,,,100.0,,,,,,,,,"one corridor B1/B5, coordinated, published cycle. Which hours carry which cycle not read here"
