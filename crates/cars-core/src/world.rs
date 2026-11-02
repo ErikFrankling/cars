@@ -63,6 +63,12 @@ pub struct GpuParams {
     pub gap_spread: f32,
     /// How hard the one of two cars abreast slows to fall behind the other, m/s2.
     pub abreast_b: f32,
+    /// Mean seconds at the end of a lane with no way on before a driver goes past and looks for another way. 0 never.
+    pub miss_patience: f32,
+    /// On a lane shorter than this there is no waiting: a change can't fit.
+    pub miss_short: f32,
+    pub pad_e: f32,
+    pub pad_f: f32,
 }
 
 #[repr(C)]
@@ -400,6 +406,8 @@ pub const C_DENIED: usize = 23;
 pub const C_CONTACT: usize = 24;
 pub const C_CONTACT_KINDS: usize = 25;
 pub const C_LOST: usize = 34;
+pub const C_HU_REROUTE: usize = 35;
+pub const REROUTE_LOG: u64 = 65536;
 /// Contact kinds, as counted from `C_CONTACT_KINDS`.
 pub const CONTACT_NAMES: [&str; 9] = ["same lane", "neighbour lane", "junction crossing", "junction merge", "junction diverge", "lane start", "other", "crossed without grant", "lost on a wrong lane"];
 /// Kinds from here on are protocol breaches, not bodies touching.
@@ -433,6 +441,8 @@ pub struct SimConfig {
     pub detect_every: u32,
     /// Desired speed per step for scripted vehicles, for driving-cycle checks.
     pub speed_trace: Vec<f32>,
+    /// Room in the routes buffer for routes handed out during the run, in edges.
+    pub route_arena: u32,
     /// Physical parameters a sensitivity test wants to move. See `tune`.
     pub tune: Vec<(String, f32)>,
     /// Junctions run by the coordinator instead of SUMO's rules.
@@ -468,6 +478,7 @@ impl Default for SimConfig {
             mu: 0.0,
             detect_every: 0,
             speed_trace: Vec::new(),
+            route_arena: 0,
             tune: Vec::new(),
             coord: None,
             per_lane_queues: false,
@@ -495,6 +506,7 @@ pub struct World {
     pub conflicts: Vec<GpuConflict>,
     pub vtypes: Vec<GpuVType>,
     pub routes: Vec<u32>,
+    pub route_arena: u32,
     pub trips: Vec<GpuTrip>,
     /// Which demand trip each GPU trip came from.
     pub trip_source: Vec<u32>,
@@ -711,6 +723,7 @@ impl World {
         let mut w = World {
             bounds: net.bounds,
             speed_trace: cfg.speed_trace.clone(),
+            route_arena: cfg.route_arena,
             ..Default::default()
         };
         let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 4.3)), crate::physics::zones(net, topo, cfg.tune("zone_distance", 2.6))));
@@ -832,6 +845,10 @@ impl World {
             lc_patience: cfg.tune("lc_patience", 10.0),
             gap_spread: cfg.tune("gap_spread", 0.3),
             abreast_b: cfg.tune("abreast_b", 2.5),
+            miss_patience: if cfg.route_arena > 0 { cfg.tune("miss_patience", 60.0) } else { 0.0 },
+            miss_short: cfg.tune("miss_short", 15.0),
+            pad_e: 0.0,
+            pad_f: 0.0,
         };
         w
     }

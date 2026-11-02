@@ -28,6 +28,7 @@ const K_POWER: u32 = 18u;
 const K_COMMITTED: u32 = 19u;
 const K_CJ: u32 = 20u;
 const K_ABREAST: u32 = 21u;
+const K_MISSED: u32 = 22u;
 
 var<private> wy_abreast: bool = false;
 var<private> wy_on: bool = false;
@@ -230,6 +231,8 @@ fn why_final(v_safe: f32, v_next: f32, cj: bool) {
     if (cj) {
         dec = K_CJ;
         why_set(K_CJ, v_next);
+    } else if ((cur[wy_i].flags & F_REROUTE) != 0u && v_next <= v_safe + tol) {
+        dec = K_MISSED;
     } else if (wy_abreast && v_next <= v_safe + tol) {
         dec = K_ABREAST;
         why_set(K_ABREAST, v_next);

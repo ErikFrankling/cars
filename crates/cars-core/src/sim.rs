@@ -27,7 +27,7 @@ const MAIN_BINDINGS: &[bool] = &[
     /*24 partial*/ false, /*25 tail*/ false, /*26 entrant*/ false, /*27 trip_out*/ false,
     /*28 series*/ false, /*29 edge_acc*/ false, /*30 ph_lane*/ false, /*31 advice*/ false,
     /*32 queue_trips*/ true, /*33 claims*/ false, /*34 last_detect*/ false, /*35 lc_plan*/ false,
-    /*36 mirror*/ false, /*37 energy*/ false, /*38 hard_limit*/ false, /*39 zones*/ true,
+    /*36 mirror*/ false, /*37 energy*/ false, /*38 route_patch*/ false, /*39 zones*/ true,
     /*40 speed_trace*/ true, /*41 poses*/ false, /*42 grid_head*/ false, /*43 grid_next*/ false,
     /*44 shape_points*/ true, /*45 contacts*/ false,
 ];
@@ -95,6 +95,9 @@ pub struct Buffers {
     pub queues: wgpu::Buffer,
     pub items: wgpu::Buffer,
     pub routes: wgpu::Buffer,
+    pub route_patch: wgpu::Buffer,
+    /// Where routes handed out during the run begin in `routes`.
+    pub route_arena_at: u64,
     pub trips: wgpu::Buffer,
     pub queue_trips: wgpu::Buffer,
     /// What `Sim::reset` clears, to zero and to all ones.
@@ -209,7 +212,11 @@ impl Sim {
         let foes = init("foes", bytemuck::cast_slice(&world.foes), storage);
         let conflicts = init("conflicts", bytemuck::cast_slice(&world.conflicts), storage);
         let types = init("types", bytemuck::cast_slice(&world.vtypes), storage);
-        let routes = init("routes", bytemuck::cast_slice(&world.routes), storage);
+        // Routes handed out during the run go after the ones loaded, up to the arena's size.
+        let route_arena_at = world.routes.len() as u64;
+        let routes_bytes: Vec<u8> = bytemuck::cast_slice(&world.routes).iter().copied().chain(std::iter::repeat_n(0u8, world.route_arena as usize * 4)).collect();
+        let routes = init("routes", &routes_bytes, storage | wgpu::BufferUsages::COPY_DST);
+        drop(routes_bytes);
         let trips = init("trips", bytemuck::cast_slice(&world.trips), storage);
         let queues = init("queues", bytemuck::cast_slice(&world.queues), storage);
         let tls = init("tls", bytemuck::cast_slice(&world.tls), storage);
@@ -258,7 +265,7 @@ impl Sim {
         );
         let series = empty("series", p.n_samples as u64 * p.n_replicas as u64 * 16);
         let edge_acc = empty("edge_acc", p.n_edges as u64 * 32 + p.n_lanes as u64 * 16);
-        let advice_init = vec![0xffu8; p.n_trips as usize * 4];
+        let advice_init = vec![0xffu8; p.n_trips as usize * 4 * if p.mu > 0.0 { 2 } else { 1 }];
         let advice = init("advice", &advice_init, storage);
         let adv_flags = empty("adv_flags", p.n_trips as u64 * 4);
         let incoming_links = init("incoming_links", bytemuck::cast_slice(&world.incoming_links), storage);
@@ -272,8 +279,8 @@ impl Sim {
         let mirror = empty("mirror", when(physical, p.n_trips as u64 * MIRROR_BYTES));
         let energy = empty("energy", when(physical, p.n_trips as u64 * std::mem::size_of::<GpuTripEnergy>() as u64));
         let ph_lane = empty("ph_lane", when(physical, p.n_lanes as u64 * 20));
-        let hard_limit_init = vec![0xffu8; when(physical, p.n_trips as u64 * 4) as usize];
-        let hard_limit = init("hard_limit", &hard_limit_init, storage);
+        // Per trip the route waiting for it, then the log of requests.
+        let route_patch = init("route_patch", &vec![0u8; when(physical, (p.n_trips as u64 + 2 * crate::world::REROUTE_LOG) * 8) as usize], storage | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC);
         let zones = init("zones", bytemuck::cast_slice(&world.zones), storage);
         let speed_trace = init("speed_trace", bytemuck::cast_slice(&world.speed_trace), storage);
         let detecting = p.detect_every > 0;
@@ -357,7 +364,7 @@ impl Sim {
                 &trips, &queues, &tls, &phases, &states, prev, cur, &incoming_links, &adv_flags, &lane_free, &seg,
                 &items, &slots, &link_count, &partial, &tail, &entrant, &trip_out, &series, &edge_acc,
                 &ph_lane, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
-                &mirror, &energy, &hard_limit, &zones, &speed_trace,
+                &mirror, &energy, &route_patch, &zones, &speed_trace,
                 &poses, &grid_head, &grid_next, &shape_points, &contacts,
             ];
             let mut entries: Vec<_> = list
@@ -564,7 +571,7 @@ impl Sim {
             mirror.clone(), energy.clone(), ph_lane.clone(), poses.clone(), grid_head.clone(), grid_next.clone(), contacts.clone(),
         ];
         reset_zero.retain(|b| b.size() > 0);
-        let reset_ones = vec![slots.clone(), partial.clone(), tail.clone(), entrant.clone(), advice.clone(), claims.clone(), hard_limit.clone()];
+        let reset_ones = vec![slots.clone(), partial.clone(), tail.clone(), entrant.clone(), advice.clone(), claims.clone()];
         let coord = match (world.coord.as_ref(), coord_parts) {
             (Some(cw), Some((buffers, cj_layout, group))) => {
                 let module = gpu.shader("av_junction", &format!("{common}\n{route}\n{}", shader("av_junction.wgsl", AV_JUNCTION)));
@@ -635,6 +642,8 @@ impl Sim {
             queues,
             items,
             routes,
+            route_patch,
+            route_arena_at,
             trips,
             queue_trips,
             reset_zero,

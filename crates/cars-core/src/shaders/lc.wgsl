@@ -1255,7 +1255,7 @@ fn lc_evaluate(i: u32) {
         cur[i].flags &= ~F_ABREAST;
         if (chosen == 0 && abreast < 0) {
             cur[i].flags |= F_ABREAST;
-            atomicMin(&hard_limit[e.trip], u32(max(e.speed - P.abreast_b * dt, 0.0) * 1024.0) + 2u);
+            atomicMin(&advice[P.n_trips + e.trip], u32(max(e.speed - P.abreast_b * dt, 0.0) * 1024.0) + 2u);
         } else if (chosen == 0 && abreast > 0) {
             cur[i].blocker = 0.0;
             atomicStore(&advice[e.trip], NONE);

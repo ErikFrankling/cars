@@ -194,6 +194,7 @@ pub fn run(args: Args) {
         speed_trace: speed_trace.clone(),
         tune,
         time_to_teleport: args.time_to_teleport.unwrap_or(if args.sumo_compat { 300.0 } else { 0.0 }),
+        route_arena: if args.sumo_compat { 0 } else { 4_000_000 },
         ignore_blocker: args.ignore_junction_blocker,
         capacity: args.capacity,
         use_actuation: !args.static_tls,
@@ -246,6 +247,7 @@ pub fn run(args: Args) {
         report::write_phys_json(p, &net, &world, &demand).expect("phys json");
     }
     let heavy: Vec<bool> = demand.vtypes.iter().map(|t| matches!(cars_core::net::VCLASSES.get(t.vclass.trailing_zeros() as usize).copied(), Some("bus" | "coach" | "truck" | "trailer"))).collect();
+    let mut rerouter = (cfg.route_arena > 0).then(|| cars_core::reroute::Rerouter::new(&net, demand.vtypes.iter().map(|t| t.vclass), &sim));
     let mut tracer = args.trace.as_ref().map(|p| {
         let options = crate::trace::Options { begin: args.trace_begin.unwrap_or(args.begin), end: args.trace_end.unwrap_or(args.end), stride: args.trace_stride, bbox: args.trace_bbox.clone() };
         crate::trace::Tracer::new(p, options, &net, &mut world, &demand, &widths, args.begin, cfg.time_to_teleport, &gpu).expect("trace")
@@ -431,7 +433,7 @@ pub fn run(args: Args) {
             } else {
                 u64::MAX
             };
-            let mut chunk = (next - done).min(steps - done).min((60.0 / args.dt).ceil() as u64).min(until_debug);
+            let mut chunk = (next - done).min(steps - done).min((5.0 / args.dt).ceil() as u64).min(until_debug);
             let t_next = args.begin + (done + chunk) as f32 * args.dt;
             if let Some(&at) = args.diagnose_at.iter().find(|&&at| at > args.begin + done as f32 * args.dt && at <= t_next) {
                 chunk = ((at - args.begin) / args.dt) as u64 - done;
@@ -485,6 +487,9 @@ pub fn run(args: Args) {
         }
         if mu > 0.0 {
             physics.collect(&sim, &gpu, &net, &world, done);
+        }
+        if let Some(r) = rerouter.as_mut() {
+            r.service(&gpu, &sim, &world);
         }
         if done % interval == 0 || done >= steps {
             let begin = args.begin + ((done - 1) / interval * interval) as f32 * args.dt;
@@ -542,8 +547,16 @@ pub fn run(args: Args) {
     }
     eprintln!("time: encode {:.2}s, gpu submit+wait {:.2}s, total {wall:.2}s", sim.encode_ms / 1000.0, sim.gpu_ms / 1000.0);
     if mu > 0.0 {
-        let finished = physics.finish(&sim, &gpu, &net, &world, &heavy, &c, done, vehicle_updates as f64 / wall / 1e6, wall);
+        let mut finished = physics.finish(&sim, &gpu, &net, &world, &heavy, &c, done, vehicle_updates as f64 / wall / 1e6, wall);
         eprintln!("{}", finished.text);
+        if let Some(r) = &rerouter {
+            let missed = serde_json::json!({
+                "asked": c[cars_core::world::C_HU_REROUTE], "rerouted": r.patched, "sent_out": r.lost_outside, "no_way": r.failed, "cars": r.lost_cars(),
+                "per_1000_trips": 1000.0 * r.lost_cars() as f64 / (c[2] as f64).max(1.0), "arena_edges": r.arena_used(),
+            });
+            eprintln!("missed turns: {missed}");
+            finished.json["missed_turns"] = missed;
+        }
         if let Some(p) = &args.report_json {
             std::fs::write(p, serde_json::to_string_pretty(&finished.json).unwrap()).expect("report json");
         }

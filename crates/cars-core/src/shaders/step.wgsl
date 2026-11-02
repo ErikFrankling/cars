@@ -43,7 +43,7 @@
 @group(0) @binding(30) var<storage, read_write> ph_lane: array<atomic<u32>>;
 @group(0) @binding(36) var<storage, read_write> mirror: array<Mirror>;
 @group(0) @binding(37) var<storage, read_write> energy: array<TripEnergy>;
-@group(0) @binding(38) var<storage, read_write> hard_limit: array<atomic<u32>>;
+@group(0) @binding(38) var<storage, read_write> route_patch: array<vec2u>;
 @group(0) @binding(39) var<storage, read> zones: array<Zone>;
 @group(0) @binding(40) var<storage, read> speed_trace: array<f32>;
 @group(0) @binding(41) var<storage, read_write> poses: array<Pose>;
@@ -1398,7 +1398,7 @@ fn zones_ahead_bid(i: u32, e: Veh, claim: f32) {
         near = true;
         if (zone_taken(zn)) { hold = min(hold, ahead); }
     }
-    if (hold < 1e8) { atomicMin(&hard_limit[e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
+    if (hold < 1e8) { atomicMin(&advice[P.n_trips + e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
     if (near) {
         let bid = (1u << 30u) | ((pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u);
         atomicMin(&ph_lane[(e.lane) * 5u + 0u], bid);
@@ -1544,7 +1544,7 @@ fn ph_grant(@builtin(global_invocation_id) id: vec3u) {
             if (ahead <= 0.0 || ahead > claim || ahead < committed_at) { continue; }
             if (atomicLoad(&ph_lane[(zn.foe_lane) * 5u + 0u]) < bid) { hold = min(hold, ahead); }
         }
-        if (hold < 1e8) { atomicMin(&hard_limit[e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
+        if (hold < 1e8) { atomicMin(&advice[P.n_trips + e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
     }
     for (var j = 0u; j < n; j++) {
         let bid = items[base + j].grant;
@@ -1592,7 +1592,7 @@ fn shadow_plan(i: u32, s: Veh) {
     if (p != NONE) {
         limit = min(limit, follow_speed(s.speed, unpack_back(p) - s.pos - ty.min_gap, unpack_speed(p), tail_b(), false, vmax, la.speed));
     }
-    if (limit < 1e8) { atomicMin(&hard_limit[s.trip], u32(max(limit + 0.002, 0.0) * 1024.0)); }
+    if (limit < 1e8) { atomicMin(&advice[P.n_trips + s.trip], u32(max(limit + 0.002, 0.0) * 1024.0)); }
 }
 
 // A shadow follows its owner, and ends when the body has left its lane or the owner has left the edge.
@@ -1677,7 +1677,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
             let left = lanes[e.lane].length - e.pos;
             v_safe = min(v_safe, stop_speed(speed, max(left - 0.1, 0.0), ty.decel, true, 1e9));
         }
-        let bound = atomicExchange(&hard_limit[e.trip], NONE);
+        let bound = atomicExchange(&advice[P.n_trips + e.trip], NONE);
         if (bound != NONE) {
             v_safe = min(v_safe, f32(bound) / 1024.0 - 0.002);
             // Held back by a leader on the old lane: no claim on the link ahead until that clears.
@@ -1846,6 +1846,8 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         }
     }
 
+    if (P.miss_patience > 0.0) { ph_reroute(&e, n, base); }
+
     // Publish where the vehicle is for lane changing, insertion and next step's planning.
     let back = e.pos - ty.length;
     if (back < 0.0 && e.prev_lane != NONE) {
@@ -1946,6 +1948,36 @@ fn ph_mirror(e: ptr<function, Veh>, done: bool) {
     var state = lanes[(*e).lane].edge;
     if (done) { state |= 0x80000000u; }
     mirror[(*e).trip] = Mirror((*e).pos, (*e).speed, (*e).acc, state);
+}
+
+// At the end of a lane that does not go where the route goes, with nobody letting us across for a while: carry on,
+// and ask for a new route. Rust answers between short batches. On a lane too short to change on there is nothing to
+// wait for. Real drivers go past and find another way.
+fn ph_reroute(e: ptr<function, Veh>, n: u32, base: u32) {
+    if (((*e).flags & F_REROUTE) != 0u) {
+        let p = route_patch[(*e).trip];
+        if (p.x != 0u && p.x != NONE) {
+            // The answer takes seconds. A car that found its way on meanwhile keeps the route it is on.
+            if (routes[p.x] == lanes[(*e).lane].edge) {
+                (*e).route_i = p.x;
+                (*e).route_end = p.y;
+            }
+            (*e).flags = ((*e).flags & ~F_REROUTE) | F_BEST_DIRTY;
+            route_patch[(*e).trip] = vec2u(0u, 0u);
+        }
+        return;
+    }
+    if (is_internal((*e).lane) || n == 0u || (*e).phys >> 30u != 0u) { return; }
+    let it = items[base];
+    let la = lanes[(*e).lane];
+    if (la.length >= P.miss_short && (*e).wait < P.miss_patience * (0.5 + f32(pcg((*e).trip * 2654435761u ^ 11u) >> 8u) / 16777216.0)) { return; }
+    if (it.link != NONE || it.dist > 15.0 || la.links_count == 0u || (*e).route_i + 1u >= (*e).route_end) { return; }
+    if (have_red(link_state(la.links_start))) { return; }
+    let at = atomicAdd(&C[C_HU_REROUTE], 1u);
+    let slot = P.n_trips + (at % REROUTE_LOG) * 2u;
+    route_patch[slot] = vec2u((*e).trip, (*e).lane);
+    route_patch[slot + 1u] = vec2u(routes[(*e).route_end - 1u], ty.vclass);
+    (*e).flags |= F_REROUTE;
 }
 
 // MSVehicleTransfer: lift the vehicle off the road. It waits on the dummy lane, and moves along

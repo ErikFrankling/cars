@@ -45,6 +45,7 @@ Each tick, `decided by` is the limit that set the car's speed, and `planned by` 
 | `lane_end` | the route needs another lane; `lane change` says who blocks it |
 | `arrival`, `zipper`, `coordinator` | its destination, a zipper merge, `--cj` |
 | `abreast` | two cars side by side each want the other's lane: this one falls behind |
+| `missed_turn` | it could not get its lane and is waiting for another way |
 | `lane_change` | lane changing asked for this speed (it blocks, or it helps someone) |
 | `dawdle` | a value only, never the decider: the speed after driver noise took some off what the limit allowed |
 | `brake_limit` | wanted to slow more than the brakes allow; `planned by` is the reason it wanted to |

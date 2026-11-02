@@ -34,6 +34,7 @@ const F_SHADOW: u32 = 16384u;      // the old-lane image of a vehicle in a lane 
 const F_HAS_SHADOW: u32 = 32768u;
 const F_LAT_FAST: u32 = 65536u;    // this lane change runs at the raised lateral speed
 const F_DENIED: u32 = 131072u;     // held at a junction lane in the last step: not coming for now
+const F_REROUTE: u32 = 524288u;    // asked for a new route, waiting for route_patch
 const F_ABREAST: u32 = 8388608u;   // falling behind the car alongside: each wants the other's lane
 const F_GRANTED: u32 = 262144u;    // won a junction lane in the last step, and goes on holding it
 
@@ -49,6 +50,8 @@ const L_WATCHED: u32 = 1u << 16u;  // some other link yields to this one
 const L_COORD: u32 = 1u << 17u;    // at a coordinated junction
 
 // Conflict flags.
+const C_HU_REROUTE: u32 = 35u;
+const REROUTE_LOG: u32 = 65536u;
 const C_SAME_TARGET: u32 = 1u;
 const C_SAME_SOURCE: u32 = 2u;
 const C_CONT_LANE: u32 = 4u;
@@ -104,6 +107,10 @@ struct Params {
     lc_patience: f32,
     gap_spread: f32,
     abreast_b: f32,
+    miss_patience: f32,
+    miss_short: f32,
+    pad_e: f32,
+    pad_f: f32,
 }
 
 struct Globals {

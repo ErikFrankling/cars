@@ -9,6 +9,7 @@ pub mod gpu;
 pub mod metrics;
 pub mod net;
 pub mod physics;
+pub mod reroute;
 pub mod router;
 pub mod sim;
 pub mod topology;

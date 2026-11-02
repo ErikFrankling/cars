@@ -15,9 +15,9 @@ pub const BLAME_LANE: u32 = 0x8000_0000;
 pub const BLAME_LINK: u32 = 0x4000_0000;
 
 /// Names of the decider and limit kinds, in the order of `K_*` in why.wgsl.
-pub const KINDS: [&str; 22] = [
+pub const KINDS: [&str; 23] = [
     "none", "accel", "free", "next_limit", "curve", "leader", "leader_ahead", "tail", "signal", "yield", "exit_full", "junction", "lane_end", "arrival", "lane_change", "zipper",
-    "dawdle", "brake_limit", "power", "committed", "coordinator", "abreast",
+    "dawdle", "brake_limit", "power", "committed", "coordinator", "abreast", "missed_turn",
 ];
 pub const CLOSED: [&str; 4] = ["", "red", "stop_sign", "foe"];
 
