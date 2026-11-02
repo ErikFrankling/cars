@@ -781,10 +781,17 @@ impl World {
     /// Routes and trips of one replica.
     #[allow(clippy::too_many_arguments)]
     fn append_demand(&mut self, net: &Net, topo: &Topology, demand: &Demand, cfg: &SimConfig, rep: &Replica, ri: u32, edge0: u32) {
+        // Only routes a trip uses: assignment keeps alternatives in the arena that no vehicle follows today.
+        let mut used = vec![false; demand.routes.len()];
+        for t in &demand.trips {
+            used[t.route as usize] = true;
+        }
         let mut route_at = Vec::with_capacity(demand.routes.len());
-        for r in &demand.routes {
+        for (i, r) in demand.routes.iter().enumerate() {
             route_at.push(self.routes.len() as u32);
-            self.routes.extend(r.iter().map(|&e| e + edge0));
+            if used[i] {
+                self.routes.extend(r.iter().map(|&e| e + edge0));
+            }
         }
         let mut rng_state = rep.seed.wrapping_mul(0x2545F4914F6CDD1D) ^ (ri as u64 + 1);
         let mut by_edge: Vec<Vec<u32>> = vec![Vec::new(); net.edges.len()];
