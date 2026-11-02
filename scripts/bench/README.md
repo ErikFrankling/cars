@@ -23,7 +23,7 @@ python3 -I $B history
 python3 -I $B dashboard                    # /home/erikf/projects/personal/cars-data/report/bench/
 ```
 
-Drivers are `configs/*.toml`: `main` (main's default), `physics` (`t3/1c6fee50`), `human` (`t3/1b36c9cf`). `CARS_ADAPTER=llvmpipe` is the default so runs don't touch the desktop GPU; `--gpu` goes through `flock /tmp/cars-gpu.lock`. Long runs: `heavy --big -- scripts/d8/worker.sh ...`.
+Drivers are `configs/*.toml`: `main` (main's default), `physics` (`t3/1c6fee50`), `human` (`t3/1b36c9cf`). `CARS_ADAPTER=llvmpipe` is the default so runs don't touch the desktop GPU; `--gpu` goes through `flock /tmp/cars-gpu.lock`. Long runs on the homelab: `scripts/bench/homelab.sh human full`, which goes through `heavy --big -- scripts/d8/worker.sh`.
 
 ## Layout
 

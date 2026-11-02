@@ -34,6 +34,8 @@ SERVE = Path('/home/erikf/projects/personal/cars-data/report/bench')
 
 
 def bench_commit():
+    if os.environ.get('BENCH_COMMIT'):
+        return os.environ['BENCH_COMMIT']
     return subprocess.check_output(['git', '-C', str(HERE), 'rev-parse', 'HEAD'], text=True).strip()
 
 
