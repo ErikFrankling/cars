@@ -8,9 +8,9 @@ Human-only traffic on the Berlin district (49 km²): no vehicle removal, full de
 ## Ladder
 | Rung | State | Number that says so |
 |---|---|---|
-| 1. Reality table | Running | Targets with a number, spread and source |
+| 1. Reality table | **Done**, `foundations/R-reality-table.md` | 97 real jam places in the district; bands for cars on the road |
 | 2. Scenes and real tracks | Running | Scenes passing, of about 40 |
-| 3. Movement table | Running | Site-hours outside the two-way capacity test |
+| 3. Movement table | Running | Site-hours over the upper test; real jam heads with no matching capacity |
 | 4. Macro assignment | Next | RMSN, R², slope, GEH<5, class bias, rush-hour dip, jam list |
 | 5. Vehicles and forecast | Waits | Var/mean, now 0.82 / 2.97 / 5.63 at 10 / 50 / 100% |
 | 6. Corridor | Waits for 2, 5 | Real queue place, start, end, discharge |
@@ -23,7 +23,10 @@ Human-only traffic on the Berlin district (49 km²): no vehicle removal, full de
 | Movements over capacity on MATSim's routes, 100 / 50 / 30% | 311-365 / 11-20 / 0 | D §2.4 |
 | Top jam roots at 50%, two old-driver runs: on or next to an overload; on a signal approach under 50 m | 6-27%; 40-54% (chance 4%, 10%) | PLAN, `scripts/theory/seeds_vs_*.py` |
 | Major-road demand at peak against a regression on other cities | 245,200 against 262,000-318,000 veh-km/h, ±47% | B §5.4 |
-| Cars on the road at 100%, from real speeds on model vehicle-km | 13,186 at 07-08 h, 15,114 at 08-09 h; recheck in rung 1 | B §5.1 |
+| Cars on the road at 100%, real speeds on model vehicle-km | 12,800-16,100 at 07-08 h, 15,700-18,500 at 08-09 h, 18,500-21,800 at 16-17 h | R §4 |
+| Real saturation flow | 1,750, sweep 1,640-1,900; Berlin can't settle it | R §2 |
+| Hamburg close through pairs under 50 m | 77% linked, +2 s, overlap 0.65, 46% clear; our invented pairs clear as often | R §6 |
+| MATSim's morning against real counts | 0.77 at 06 h, 0.86 at 07 h, 0.98 at 08 h, 1.11-1.18 at 09-11 h | R §4 |
 | Longest wait at a real lane end | 79 s, 0 of 610 failed | Report 14 |
 | Time for a held car to fill a median block | 78-157 s | C §3.4 |
 | Physical driver follow-up at give-way | 4.41 s against 3.0 | B §3 |
