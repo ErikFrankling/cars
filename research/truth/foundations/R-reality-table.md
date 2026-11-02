@@ -50,3 +50,20 @@ Status: definitions only, committed before any table is computed. Results follow
 ### 6. Jam recovery
 
 Space-time clusters per day: jam intervals joined when the edge is the same or adjacent and the interval the same or next, at both thresholds. Duration and size (edge-intervals) distributions, with a tail exponent by maximum likelihood. On the same 15-minute bins any later run can use.
+
+### Added after the plan amendment of 890dfc5, before computing these
+
+**7. `real_signal_pairs.csv`, close-spaced signals (F048).** Hamburg, the 50 recorded lights, motor-vehicle connections only.
+- **Geometry.** Each connection in `static/` has three lines: the ingress lane starting at the stop line, the path through the junction, and the start of the egress. A pair (upstream `c`, downstream `d`) is one where `d`'s stop line lies within 4.5 m sideways of `c`'s path extended straight, heading within 35 degrees. **Link length** runs from where `c`'s egress starts to `d`'s stop line, the same thing as a map edge between junctions. Bands: under 30 m, 30-50 m, and 50-150 m as the control.
+- **Linked or not.** Same `trafficLightsID` means one controller. Otherwise linked when both run the same cycle in that hour (medians within 1 s) and the offset between green starts has an interquartile range of at most 5 s.
+- **Offset:** `d`'s green start minus `c`'s, modulo cycle.
+- **Overlap:** share of `c`'s green during which `d` is also green.
+- **Red feed:** seconds per cycle `c` is green while `d` is red. At 0.5 cars/s/lane that is the queue fed into the link.
+- **Clears:** `d` stays green at least link length plus stop-line gap at 8.3 m/s past `c`'s green end, or the red feed fits the link's storage (link / 7.5 m per lane).
+- **The rule** for Berlin is stated from the under-50 m bands against the control, with its spread. Hamburg's stand-in value is stated separately.
+
+**8. Queue certainty in `real_capacity.csv`.** The file is used both ways: real flow must fit under table capacity, and at queue-present hours real flow must reach 0.85 of it. Each highest-flow hour gets a grade. `A`: loop hourly speed under half of site free, and probes on the edge below half of `v_free` in at least 2 of the 4 intervals. `B`: loop under 0.7 of site free and probes below half in at least 1 interval. `C`: loop under 0.7 only, or no probes. `none`: loop at or above 0.7.
+
+**9. Cars on the road twice.** F043 is variants (a) to (d), on model vehicle-km. F046 uses real counts and speeds only: (e) SVZ 2019 veh-km on the count network with the real hourly share; and (f) Edie per road-km, `k = q/v` at each tuning site, averaged by class and multiplied by the map's directed km of that class in the box. Neither includes residential streets, since no count exists there. The difference is stated.
+
+**10. Corridor.** For B1/B5: real jam on the list, loops, probes, and whether place, start, end and discharge can be tested. Discharge can be tested only where a queue-present site sits on the corridor. If not, name a better corridor from the jam list by the same test.
