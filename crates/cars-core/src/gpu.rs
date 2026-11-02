@@ -32,9 +32,16 @@ impl Gpu {
     /// Headless setup, for benchmarks, recording and tests.
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn headless(opts: GpuOptions) -> Result<Self, String> {
+        // At its default 256 bits llvmpipe silently mixes up vehicles in the plan kernel: a car stops at the end of its
+        // road, or drives through a leader, whenever another car shares its dispatch. 128 bits does not. See report 16.
+        let chosen = std::env::var("CARS_ADAPTER").ok().or(opts.adapter_name);
+        if chosen.as_deref().is_some_and(|n| n.to_lowercase().contains("llvmpipe")) && std::env::var_os("LP_NATIVE_VECTOR_WIDTH").is_none() {
+            // Safety: set before any driver is loaded, while startup is still on one thread.
+            unsafe { std::env::set_var("LP_NATIVE_VECTOR_WIDTH", "128") };
+        }
         let instance = instance();
         // CARS_ADAPTER picks another device, such as llvmpipe for debugging small scenes off the GPU.
-        let adapter = match &std::env::var("CARS_ADAPTER").ok().or(opts.adapter_name) {
+        let adapter = match &chosen {
             Some(name) => {
                 let want = name.to_lowercase();
                 instance

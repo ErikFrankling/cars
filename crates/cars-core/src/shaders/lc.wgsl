@@ -1185,7 +1185,10 @@ fn hu_request(e: Veh, n: LcNeighbors, dir: u32) {
 // Report 18 B7: a follower does a share of the braking that following the merger would ask, less when very close or
 // closing fast, once it can see the body moving over. Nothing shows up before that, so no response to a blinker alone.
 fn hu_follower(e: Veh, n: LcNeighbors, ft: VType, dir: u32) {
-    if (abs(e.lc_edge) < 0.1 * lanes[e.lane].width) { return; }
+    // 10% of a lane, or as far as this driver goes: a timid edge that has stopped moving is as plain to see.
+    let w = lanes[e.lane].width;
+    let goal = min(P.hm_d.x * exp(0.65 * hu_normal(e.trip, 35u)) * w, max(w - ty.width - 0.2, 0.0));
+    if (abs(e.lc_edge) < min(0.1 * w, 0.95 * goal)) { return; }
     let lag = n.f_gap + ft.min_gap;
     let vf = n.f_speed;
     let self_ty = ty;
@@ -1214,9 +1217,13 @@ fn hu_merge_gate(e: Veh, n: LcNeighbors, dest: u32, i: u32) -> u32 {
     let ft = types[n.f_vtype];
     let lag = select(1e6, n.f_gap + ft.min_gap, has_f);
     let lead = select(1e6, n.gap + ty.min_gap, n.gap < 1e8);
+    let tau = clamp(P.hm_d.z + P.hm_d.w * hu_normal(e.trip, 33u), 0.0, 4.0);
+    let lag_a = lag + (e.speed - n.f_speed) * tau + 0.5 * (e.acc - n.f_acc) * tau * tau;
+    let lead_a = lead + (n.speed - e.speed) * tau + 0.5 * (n.acc - e.acc) * tau * tau;
     if (!engaged && wanted) {
-        let tlag = clamp(lag / max(n.f_speed, 1.0), -3.0, 8.0);
-        let tlead = clamp(lead / max(e.speed, 1.0), -3.0, 8.0);
+        // The law was fitted on the body reaching the line, so it reads the gaps as they will be by then.
+        let tlag = clamp(select(lag, lag_a, (P.hu_flags & HS_EDGE) != 0u) / max(n.f_speed, 1.0), -3.0, 8.0);
+        let tlead = clamp(select(lead, lead_a, (P.hu_flags & HS_EDGE) != 0u) / max(e.speed, 1.0), -3.0, 8.0);
         let d01 = clamp(h01(e.trip, 37u), 0.001, 0.999);
         let eta = P.hm_a.y + P.hm_b.y * log(d01 / (1.0 - d01)) + P.hm_a.z * hu_tte(e) / 10.0 + P.hm_a.w * tlag + P.hm_b.x * tlead;
         let p_step = 1.0 - pow(1.0 - 1.0 / (1.0 + exp(-eta)), dt);
@@ -1227,19 +1234,14 @@ fn hu_merge_gate(e: Veh, n: LcNeighbors, dest: u32, i: u32) -> u32 {
     }
     if (!engaged) { return LCA_BLOCK_LEADER; }
     var blocked = 0u;
-    let tau = clamp(P.hm_d.z + P.hm_d.w * hu_normal(e.trip, 33u), 0.0, 4.0);
     if (has_f) {
-        let lag_a = lag + (e.speed - n.f_speed) * tau + 0.5 * (e.acc - n.f_acc) * tau * tau;
         let self_ty = ty;
         ty = ft;
         let floor_lag = max(P.hu_e.z * ph_gap_required(n.f_speed, e.speed, min(self_ty.apparent, ty.b_lo), n.f_acc), S_MIN);
         ty = self_ty;
         if (lag < 0.0 || lag_a < floor_lag || (lag < 1.0 && e.speed < n.f_speed)) { blocked |= LCA_BLOCK_FOLLOWER; }
-        // Going back is rare, and only when the gap will not be there at all.
-        if (lag_a < 0.0 && abs(e.lc_edge) > 0.0) { cur[i].hu_state = cur[i].hu_state & ~HU_ENGAGED; }
     }
     if (n.gap < 1e8) {
-        let lead_a = lead + (n.speed - e.speed) * tau + 0.5 * (n.acc - e.acc) * tau * tau;
         let floor_lead = max(P.hu_e.z * ph_gap_required(e.speed, n.speed, min(n.decel, ty.b_lo), e.acc), S_MIN);
         if (lead < 0.0 || lead_a < floor_lead) { blocked |= LCA_BLOCK_LEADER; }
     }

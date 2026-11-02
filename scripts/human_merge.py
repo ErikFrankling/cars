@@ -21,14 +21,14 @@ ROOT = Path(__file__).resolve().parents[1]
 BIN = os.environ.get('CARS_BIN', str(ROOT / 'target/release/cars'))
 MG = Path(os.environ.get('MG_SCRIPTS', '/home/erikf/.t3/projects/cars/research/truth/scripts/merging'))
 W = 3.2
-# zone m, approach m, main veh/h, ramp veh/h, main limit, ramp limit, neck m/s, speed spread. Flows are set for the
-# measured lane speeds, by limit where the site was congested by something outside the scene: the model's queue flow is
-# under the real one (report 16, capacity), so real flows would jam it.
+# zone m, approach m, main veh/h, ramp veh/h, main limit, ramp limit, neck m/s, speed spread. Flows are the measured flow
+# of the target lane and the merging lane at the site. Where their sum is over the model's queue flow a queue forms and
+# both lanes crawl, as they did at the congested sites.
 SCENES = {
-    'i80': dict(zone=54, up=800, main=520, ramp=480, v=6, von=6, neck=6, dev=0.1),
-    'us101': dict(zone=216, up=800, main=850, ramp=250, v=12, von=17, vramp=17, neck=12, dev=0.1),
-    'i395': dict(zone=63, up=800, main=600, ramp=350, v=9, von=9, neck=9, dev=0.1),
-    'a39': dict(zone=400, up=1500, main=1200, ramp=300, v=36, von=22, neck=36, dev=0.18),
+    'i80': dict(zone=54, up=800, main=875, ramp=645, v=6, von=6, neck=6, dev=0.1),
+    'us101': dict(zone=216, up=800, main=1486, ramp=457, v=12, von=17, vramp=17, neck=12, dev=0.1),
+    'i395': dict(zone=63, up=800, main=1167, ramp=1031, v=9, von=9, neck=9, dev=0.1),
+    'a39': dict(zone=400, up=1500, main=337, ramp=144, v=36, von=22, neck=36, dev=0.18),
 }
 # Row: (name, key in the row dict, I-80, US-101, I-395, A39). A target is (low, high), or None.
 TARGETS = [
@@ -47,7 +47,8 @@ TARGETS = [
     ('10 excess accel -2..0 s', 'ex2', (.09, .25), (-.57, -.27), (-.16, -.04), (.42, .62)),
     ('13 follower extra speed lost', 'lost', (.4, .6), (.47, .77), (.02, .82), (.11, .51)),
     ('14 follower extra responders', 'resp', (.126, .186), (.115, .195), (.05, .21), (.03, .15)),
-    ('16 lag under 1 m at body over', 'lag1', (.027, .067), (0, .02), (.067, .147), (0, .005)),
+    # Report 18 gives 4.7%, under 2%, 10.7%, 0.2%. Its own pipeline gives these, 101 of 297 at I-80, so both sides use that.
+    ('16 lag under 1 m at body over', 'lag1', (.20, .48), (0, .08), (.14, .32), (0, .01)),
 ]
 COL = {'i80': 2, 'us101': 3, 'i395': 4, 'a39': 5}
 
@@ -138,7 +139,7 @@ def row_of(a, f):
                 stopped=a['location']['stopped_below_1'], ov_start=st.get('overlap_share'), ov_centre=ce.get('overlap_share'), lag25=st.get('lag', {}).get('p25'),
                 edge50=m['max_q_while_overlapping'].get('p50'), edge95=m['max_q_while_overlapping'].get('p95'), ahead=tg['gap_ahead'], behind=tg['gap_behind'],
                 ep5=par.get('share_ge5'), locked=par.get('locked_3s'), ov5=a['overlap_time_share_before_start']['must'].get('-5..0'), ex2=pre.get('-2..0', {}).get('excess'),
-                lost=(all_.get('lost_excess') or [None])[0], resp=(all_.get('responders_vs_20') or [None])[0], lag1=f.get('no_room_at_touch', {}).get('share'), lag_p05=lag_t.get('p05'))
+                lost=(all_.get('lost_excess') or [None])[0], resp=(all_.get('responders_vs_20') or [None])[0], lag1=f.get('no_room_at_touch', {}).get('lag_under_1', {}).get('n', 0) / max(to.get('n', 0), 1), lag_p05=lag_t.get('p05'))
 
 
 def show(scene, row, extra):

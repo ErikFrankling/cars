@@ -753,6 +753,34 @@ def event_study():
     record('event_study', out)
 
 
+def catch_slower():
+    """A follower catches a slow leader on a plain road. Software GPU faults have shown up here as driving through it."""
+    out = {}
+    d = workdir('catch')
+    netconvert(d, '<node id="a" x="0" y="0"/><node id="b" x="1500" y="0"/>', '<edge id="e" from="a" to="b" numLanes="1" speed="13.89"/>')
+    (d / 'r.xml').write_text(f'<routes>{VTYPE}<vType id="s" carFollowModel="Human" length="5" minGap="2.5" speedDev="0" maxSpeed="4.5"/><vehicle id="lead" type="s" depart="0" departSpeed="max"><route edges="e"/></vehicle><vehicle id="fol" type="h" depart="8" departSpeed="max"><route edges="e"/></vehicle></routes>')
+    for dt in (0.1, 0.5, 1.0):
+        rep, fc = cars(d, '--dt', dt, '--end', 300, '--seed', 1, tag=f'dt{dt}', interval=dt)
+        f = pd.read_csv(fc, usecols=['time', 'trip', 'pos', 'acc'], dtype={'trip': str})
+        m = f[f.trip == 'fol'].merge(f[f.trip == 'lead'], on='time', suffixes=('', '_l'))
+        out[dt] = dict(min_gap=float((m.pos_l - m.pos - 5).min()), hardest=float(m.acc.min()), collisions=rep['collision_incidents'])
+    record('catch_slower', out)
+
+
+def corner_speed():
+    """Speed through a right angle by radius, against sqrt(a_y R) with report 19's median a_y of 2.2 m/s2."""
+    out = {}
+    for r in (10, 20, 50):
+        d = workdir(f'corner{r}')
+        netconvert(d, f'<node id="a" x="-400" y="0"/><node id="j" x="0" y="0" type="priority" radius="{r}"/><node id="b" x="0" y="400"/>', '<edge id="i" from="a" to="j" numLanes="1" speed="27.8"/><edge id="o" from="j" to="b" numLanes="1" speed="27.8"/>', '--junctions.corner-detail', 12)
+        (d / 'r.xml').write_text(f'<routes><vType id="h" carFollowModel="Human" length="5" minGap="2.5" speedDev="0.1"/><route id="m" edges="i o"/><flow id="m" type="h" route="m" begin="0" end="600" period="15" departSpeed="max"/></routes>')
+        rep, fc = cars(d, '--dt', 0.1, '--end', 700, '--seed', 1, interval=0.5)
+        f = pd.read_csv(fc, usecols=['trip', 'lane', 'speed'], dtype={'trip': str, 'lane': str})
+        low = f[f.lane.str.startswith(':j')].groupby('trip').speed.min()
+        out[r] = dict(n=int(len(low)), v_p50=float(low.median()), v_p5=float(low.quantile(.05)), v_p95=float(low.quantile(.95)), a_y_p50=float(low.median() ** 2 / r), a_y_p95=float(low.quantile(.95) ** 2 / r), expected=float((2.2 * r) ** .5))
+    record('corner_speed', out)
+
+
 def stub_lane():
     """A road merging into a short two-lane edge, its turn only reachable from the other lane. Stockholm's and Berlin's nets hold thousands of such edges."""
     out = {}
