@@ -441,3 +441,49 @@ Kept: T × 0.7, S0 0.4, scene limits. What it did not fix: I-80 still 7% short o
 A one-token change inside `hu_target` (`0.85 *` in the gap term) made cars run off the end of their lane on llvmpipe at 128 bits, with `t_scale` giving the same effect cleanly. Kernel edits there need a sanity run; real-GPU confirmation of that edit is outstanding as the lock was busy.
 
 **After the first benchmark of those rounds** (`841a146`, 32 fails against 31 for the old human driver and 32 for main's physical driver), three more changes aimed at its regressions: launch needs the gap opened by 1 m (`JS5`: start wave 42 km/h, real 16-28), s0 scale 1.0 (`M4`, `JS2` turning), and `lc_safety` 0.35 (`JL1`: stopped in the source lane). With `lc_safety` at 0.35, US-101 reaches 1,532 veh/h with .065 stopped first and I-80 1,244 with .45, no contacts. Hard-braking requests go up, cert floor 11 to 32 at US-101.
+
+## Capacity on the fixed test
+
+`scripts/berlin2019/step3_capacity.py --flags=--humans --dt 1`, three seeds, on the merged base with Berlin's first gate. Measured earlier on this driver at f69d694 plus the merge rule: saturation 1,500, motorway 1,503 per lane.
+
+| | Before | `b1e793c` | Band |
+|---|---|---|---|
+| Saturation at 50 km/h, veh/h | 1,500 | **1,800** | 1,800-2,100 |
+| Saturation at 30 km/h | | 1,612 | |
+| Jam spacing, m | | 6.95, 7.53 | 6.5-8.2 |
+| Start wave at 50 km/h, km/h | | 21.8 | 16-28 |
+| Motorway, lane drop at 100 km/h, veh/h per lane | 1,503 | **1,220** | 1,800-2,300 |
+| Give-way minor road at 400, 800, 1,200 veh/h major | | 472, 224, 70 | Siegloch 736, 451, 277 |
+
+**Saturation is at the band's lower edge.** T had no effect at dt 1 (T × 0.6 stayed at 2.05 s). With the small gap gain, spacing is set by the acceleration phase: at k2 about 0.5 a follower pulling at 1.5 m/s² must stay about 3 m/s under its leader the whole way up, so its gap keeps opening for about 7 s. The launch rule at 7 m/s fixes that. 5 m/s gives 1,756, 10 m/s 1,946 but I-90 moving replay at 4.54 m against 4.20. At 7 m/s it is 4.30, 2% over, everything else in band.
+
+**Motorway missed, and is below the earlier number: two rounds with no gain, stopped.** The test's up_0 ends and up_1 goes on, so it is a lane change. Downstream is free. All pairs at the exit, main to main too, have mean headway about 2.6 s at 11 m/s, where equilibrium is about 1.6 s, and 71% of target-lane cars stop in the last 200 m. Tried, one at a time, one seed:
+
+| Change | Motorway veh/h per lane |
+|---|---|
+| Base | 1,221 |
+| `follow` off (falls back on the old courtesy) | 1,224 |
+| `match` off | 1,377 |
+| `anticipate` off | 1,413 |
+| `start` off | 1,401 |
+| `edge` off, which also stops followers yielding at all | 1,467 |
+| `edge` and `tte` off, launch to 10 m/s | 1,572 |
+| `w_f` 0, launch to 10 m/s | 1,461 |
+| `w_f` 0.3, launch to 10 m/s | 1,269 |
+| k1 0.03, 0.08, 0.2 | 1,188, 1,224, 1,203 |
+| `lc_safety` 0.6, 0.15 | 1,176, 1,245 |
+| T × 0.55 with `edge`, `match`, `anticipate` off | 1,422 |
+| Urgency from 15 or 8 s | 1,194 |
+
+So followers yielding costs most, and even removing it stays well under the band. One lane on its own carries 1,850 at T × 0.7. Physical is at 1,767 on the benchmark's version. The cause of the remaining gap is not found. The queue's stop-and-go (`M13` swing 7.5 against a floor of 2.5) is the best lead. A real driver asked to yield near a lane end doesn't brake for a merger alongside, so that was taken out as correct in itself: it took 1,025 to 1,212 on one seed.
+
+**Benchmark, fast, `b1e793c`:** 33 fail, 14 at floor. Old human driver (f69d694) 31 and 16, main's physical 32 and 13.
+
+| | Better than physical | Worse than physical |
+|---|---|---|
+| Status | `M6`, `M17`, `C4` to floor | `V5` (saturation at the two time steps), `M4`, `M13`, `JR5` |
+| z | `M3` 14.1 to 5.6, `JS1` 7.0 to 4.4, `JZ1` 5.4 to 2.5, `JL2` 4.7 to 3.2, `M10` 8.2 to 6.3 | `C3` 1.5 to 2.7, `JL1` 6.1 to 31.8 (stopped in the source lane .79 against a real under .04) |
+
+`V2` overlaps: 3 engine incidents in the four-way junction scene over 9,622 veh-km, 0 and 2 in the two runs before, 5 on main's physical. Against the old human driver, also worse: `JR2`, `JR4` (the corner floor, removed as asked), `JS5` (start wave 35.5 km/h on the benchmark's scene, 21.8 on the fixed test). `M8`: lane changes 0.84 per veh-km against a real 0.22-0.30, physical 0.11: the next item.
+
+**Merging does not change main's default driver.** Trips from main's physical driver are byte for byte the same on this branch on six scenes: road, signal, four-way, lane drop, give-way, curves. Golden: ALL OK.
