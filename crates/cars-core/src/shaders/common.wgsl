@@ -963,9 +963,10 @@ fn hu_target(v: f32, g: f32, vl: f32, v0: f32, s0: f32) -> f32 {
 }
 
 // Report 19 fix 10: pulling away, drivers use what the car has, not the gap feedback, once the gap has opened by about a
-// metre. Sooner, and the start of motion runs back through a queue at 42 km/h, against a real 16-28.
+// metre. Sooner, and the start of motion runs back through a queue at 42 km/h, against a real 16-28. With the feedback alone
+// a follower stays 3 m/s under its leader all the way up, and the gap keeps opening.
 fn hu_launch(v: f32, g: f32, vl: f32, v0: f32, s0: f32) -> f32 {
-    if (v >= 2.0 || vl <= v || g <= s0 + 1.0 + hu_t * v) { return 0.0; }
+    if (v >= 7.0 || vl <= v || g <= s0 + 1.0 + hu_t * v) { return 0.0; }
     return hu_next(v, hu_a_up(v, v0));
 }
 

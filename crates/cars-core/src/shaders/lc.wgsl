@@ -1192,6 +1192,8 @@ fn hu_follower(e: Veh, n: LcNeighbors, ft: VType, dir: u32) {
     let goal = min(P.hm_d.x * exp(0.65 * hu_normal(e.trip, 35u)) * w, max(w - ty.width - 0.2, 0.0));
     if (abs(e.lc_edge) < min(0.1 * w, 0.95 * goal)) { return; }
     let lag = n.f_gap + ft.min_gap;
+    // Alongside it is not behind the merger yet, and a car edging can wait there a long time.
+    if (lag <= 0.0) { return; }
     let vf = n.f_speed;
     let self_ty = ty;
     ty = ft;
