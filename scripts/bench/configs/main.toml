@@ -1,0 +1,10 @@
+# Main's default: Krauss, SUMO settings, instant lane changes.
+name = "main"
+branch = "main"
+patch = "instrument/sensors-main.patch"
+kind = "sumo"
+dt = 0.1
+dt_network = 1.0
+time_to_teleport = 0
+flags = []
+vtype = 'carFollowModel="Krauss"'

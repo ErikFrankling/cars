@@ -1,0 +1,10 @@
+# Report 22 section 9. 15 May 2019 was read while proposing it as the gate day, so it is tuning data: never call it blind.
+[tuning]
+berlin = ["2019-05-07", "2019-05-14", "2019-05-15", "2019-05-16", "2019-05-21", "2019-05-22", "2019-05-23", "2019-05-28"]
+note = "All 8 normal Tue-Thu days of May 2019. Scores use every day, so no single day is a target."
+
+[selection]
+berlin = "April 2019 before Easter: a small number of looks"
+
+[fit_rule]
+od_fit_hours = "00-13 only. 14-20 of tuning days was never an input to any fit"

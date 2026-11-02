@@ -1,0 +1,455 @@
+{
+ "sites": 265,
+ "rows": [
+  {
+   "name": "control: another real day",
+   "over": 0,
+   "network": [],
+   "fine": []
+  },
+  {
+   "name": "flow x0.97",
+   "over": 1,
+   "network": [
+    "N19.flow"
+   ],
+   "fine": []
+  },
+  {
+   "name": "flow x0.95",
+   "over": 3,
+   "network": [
+    "N1",
+    "N19.flow"
+   ],
+   "fine": [
+    "N8.med"
+   ]
+  },
+  {
+   "name": "flow x0.9",
+   "over": 8,
+   "network": [
+    "N1",
+    "N19.flow",
+    "N19.density",
+    "N19.peak"
+   ],
+   "fine": [
+    "N5",
+    "N7.geh",
+    "N7.geh5",
+    "N8.med"
+   ]
+  },
+  {
+   "name": "flow x0.8",
+   "over": 10,
+   "network": [
+    "N1",
+    "N19.flow",
+    "N19.density",
+    "N19.peak"
+   ],
+   "fine": [
+    "N5",
+    "N6",
+    "N7.geh",
+    "N7.geh5",
+    "N7.r2",
+    "N8.med"
+   ]
+  },
+  {
+   "name": "flow x1.2",
+   "over": 10,
+   "network": [
+    "N1",
+    "N19.flow",
+    "N19.density",
+    "N19.peak"
+   ],
+   "fine": [
+    "N5",
+    "N6",
+    "N7.geh",
+    "N7.geh5",
+    "N7.r2",
+    "N8.med"
+   ]
+  },
+  {
+   "name": "clock +1 h",
+   "over": 11,
+   "network": [
+    "N3",
+    "N12.am",
+    "N19.flow",
+    "N19.density"
+   ],
+   "fine": [
+    "N5",
+    "N6",
+    "N7.geh",
+    "N7.geh5",
+    "N7.r2",
+    "N9",
+    "N18.onset"
+   ]
+  },
+  {
+   "name": "clock -1 h",
+   "over": 8,
+   "network": [
+    "N3",
+    "N19.flow",
+    "N19.density"
+   ],
+   "fine": [
+    "N5",
+    "N7.geh",
+    "N7.geh5",
+    "N7.r2",
+    "N9"
+   ]
+  },
+  {
+   "name": "flat demand 06-20",
+   "over": 10,
+   "network": [
+    "N3",
+    "N19.flow",
+    "N19.density",
+    "N19.peak"
+   ],
+   "fine": [
+    "N5",
+    "N6",
+    "N7.geh",
+    "N7.geh5",
+    "N7.r2",
+    "N9"
+   ]
+  },
+  {
+   "name": "sites shuffled within class",
+   "over": 20,
+   "network": [],
+   "fine": [
+    "N5",
+    "N6",
+    "N7.geh",
+    "N7.geh5",
+    "N7.r2",
+    "N8.med",
+    "N8.p95",
+    "N9",
+    "N11.mean",
+    "N11.p95",
+    "N13",
+    "N14.exact",
+    "N14.1h",
+    "N14.1h1km",
+    "N16.log",
+    "N16.miss",
+    "N16.false",
+    "N17",
+    "N18.onset",
+    "N18.clear"
+   ]
+  },
+  {
+   "name": "speeds shuffled within class",
+   "over": 12,
+   "network": [],
+   "fine": [
+    "N11.mean",
+    "N11.p95",
+    "N13",
+    "N14.exact",
+    "N14.1h",
+    "N14.1h1km",
+    "N16.log",
+    "N16.miss",
+    "N16.false",
+    "N17",
+    "N18.onset",
+    "N18.clear"
+   ]
+  },
+  {
+   "name": "fast roads -25%, slow compensate",
+   "over": 7,
+   "network": [
+    "N19.density"
+   ],
+   "fine": [
+    "N5",
+    "N6",
+    "N7.geh",
+    "N7.geh5",
+    "N7.r2",
+    "N8.med"
+   ]
+  },
+  {
+   "name": "peaks clipped 15%, spread later",
+   "over": 4,
+   "network": [
+    "N3",
+    "N19.flow"
+   ],
+   "fine": [
+    "N7.geh5",
+    "N9"
+   ]
+  },
+  {
+   "name": "no rush-hour dip",
+   "over": 9,
+   "network": [
+    "N10.mean",
+    "N12.am",
+    "N12.pm",
+    "N19.density",
+    "N19.peak"
+   ],
+   "fine": [
+    "N13",
+    "N14.1h",
+    "N14.1h1km",
+    "N16.log"
+   ]
+  },
+  {
+   "name": "free flow all day",
+   "over": 17,
+   "network": [
+    "N10.mean",
+    "N10.max",
+    "N12.am",
+    "N12.mid",
+    "N12.pm",
+    "N19.density",
+    "N19.peak"
+   ],
+   "fine": [
+    "N11.mean",
+    "N11.p95",
+    "N13",
+    "N14.exact",
+    "N14.1h",
+    "N14.1h1km",
+    "N16.log",
+    "N16.miss",
+    "N16.false",
+    "N17"
+   ]
+  },
+  {
+   "name": "speed x0.9",
+   "over": 8,
+   "network": [
+    "N10.mean",
+    "N12.am",
+    "N12.mid",
+    "N12.pm",
+    "N19.density",
+    "N19.peak"
+   ],
+   "fine": [
+    "N11.mean",
+    "N16.log"
+   ]
+  },
+  {
+   "name": "jams clear 1 h late",
+   "over": 1,
+   "network": [],
+   "fine": [
+    "N16.log"
+   ]
+  }
+ ],
+ "checks": {
+  "control flags nothing": true,
+  "shuffled sites: no network metric notices, finer ones do": true,
+  "shuffled speeds: no network flow metric notices, jam metrics do": true,
+  "every other corruption is caught, except late clearance": true,
+  "leave-one-day-out: a real day trips at most 2 metrics at 1.25 x max... or says so": true
+ },
+ "false_alarms": {
+  "07.05.2019": 0,
+  "14.05.2019": 0,
+  "15.05.2019": 0,
+  "16.05.2019": 0,
+  "21.05.2019": 0,
+  "22.05.2019": 0,
+  "23.05.2019": 1,
+  "28.05.2019": 0
+ },
+ "floors": {
+  "N1": {
+   "F": 0.0263,
+   "p50": 0.0076
+  },
+  "N3": {
+   "F": 0.1365,
+   "p50": 0.0842
+  },
+  "N4.am": {
+   "F": 0.0,
+   "p50": 0.0
+  },
+  "N4.pm": {
+   "F": 1.0,
+   "p50": 0.0
+  },
+  "N5": {
+   "F": 0.0936,
+   "p50": 0.077
+  },
+  "N6": {
+   "F": 0.1615,
+   "p50": 0.1289
+  },
+  "N7.geh": {
+   "F": 1.8148,
+   "p50": 1.5621
+  },
+  "N7.geh5": {
+   "F": 0.1327,
+   "p50": 0.0944
+  },
+  "N7.r2": {
+   "F": 0.0881,
+   "p50": 0.0562
+  },
+  "N8.med": {
+   "F": 0.0405,
+   "p50": 0.0285
+  },
+  "N8.p95": {
+   "F": 0.376,
+   "p50": 0.2587
+  },
+  "N9": {
+   "F": 0.0323,
+   "p50": 0.0302
+  },
+  "N10.mean": {
+   "F": 2.1886,
+   "p50": 1.6464
+  },
+  "N10.max": {
+   "F": 9.8894,
+   "p50": 6.3499
+  },
+  "N11.mean": {
+   "F": 3.9961,
+   "p50": 3.4883
+  },
+  "N11.p95": {
+   "F": 15.0,
+   "p50": 12.5
+  },
+  "N12.am": {
+   "F": 1.6605,
+   "p50": 0.8377
+  },
+  "N12.mid": {
+   "F": 1.1014,
+   "p50": 0.687
+  },
+  "N12.pm": {
+   "F": 1.4462,
+   "p50": 0.6646
+  },
+  "N13": {
+   "F": 0.069,
+   "p50": 0.0582
+  },
+  "N14.exact": {
+   "F": 0.3963,
+   "p50": 0.3382
+  },
+  "N14.1h": {
+   "F": 0.2782,
+   "p50": 0.2157
+  },
+  "N14.1h1km": {
+   "F": 0.1712,
+   "p50": 0.1314
+  },
+  "N16.log": {
+   "F": 0.1525,
+   "p50": 0.0646
+  },
+  "N16.miss": {
+   "F": 0.4229,
+   "p50": 0.331
+  },
+  "N16.false": {
+   "F": 0.4152,
+   "p50": 0.3336
+  },
+  "N17": {
+   "F": 0.4545,
+   "p50": 0.3182
+  },
+  "N18.onset": {
+   "F": 0.7393,
+   "p50": 0.6065
+  },
+  "N18.clear": {
+   "F": 0.9304,
+   "p50": 0.769
+  },
+  "N19.flow": {
+   "F": 0.0234,
+   "p50": 0.0159
+  },
+  "N19.density": {
+   "F": 0.0664,
+   "p50": 0.0523
+  },
+  "N19.peak": {
+   "F": 0.0664,
+   "p50": 0.0261
+  }
+ },
+ "nulls": {
+  "N1": 0.5042,
+  "N3": 2.1825,
+  "N4.am": 3.0,
+  "N4.pm": 1.0,
+  "N5": 0.39,
+  "N6": 0.4986,
+  "N7.geh": 9.0643,
+  "N7.geh5": 0.7088,
+  "N7.r2": 0.8321,
+  "N8.med": 0.2817,
+  "N8.p95": 6.8954,
+  "N9": 0.0601,
+  "N10.mean": 3.3734,
+  "N10.max": 7.0227,
+  "N11.mean": 6.8742,
+  "N11.p95": 18.4525,
+  "N12.am": 4.3713,
+  "N12.mid": 4.8521,
+  "N12.pm": 5.1794,
+  "N13": 0.1301,
+  "N14.exact": 0.807,
+  "N14.1h": 0.7635,
+  "N14.1h1km": 0.6147,
+  "N16.log": 0.9099,
+  "N16.miss": 0.8652,
+  "N16.false": 0.6769,
+  "N17": 0.8182,
+  "N18.onset": 0.9335,
+  "N18.clear": 1.0981,
+  "N19.flow": 0.1578,
+  "N19.density": 0.1376,
+  "N19.peak": 0.169
+ }
+}

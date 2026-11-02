@@ -12,3 +12,5 @@ The GPU also drives Erik's desktop. Scale every experiment from small to big, ke
 - `cars run --trace` writes trajectories and `cars replay` draws them with no simulation, so an incident stays in the run that had it. `cars record`, `cars shot` and `cars junctions` also look at intersections up close. `scripts/intersection_gallery.py`, `scripts/physics_qa.py` and `scripts/cars_trace.py` build on them; see `crates/cars-cli/RECORDING.md`.
 
 No GPU kernel may use function-local arrays outside `lc_best`. Comments stay sparse.
+
+`scripts/bench/` is the benchmark of report 22: one command, one configuration, one scorecard, no total. `python3 -I scripts/bench/bench.py run --driver human --mode fast` for a code change, `selftest`, `knownbad`, `compare A B`, `reveal`; see its README. Dashboard: https://pc-5144.erikfrankling.duckdns.org/bench/.
