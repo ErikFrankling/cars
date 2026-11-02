@@ -66,7 +66,7 @@ fn radius(a: [f32; 2], b: [f32; 2], c: [f32; 2]) -> f32 {
 const LATERAL_MEDIAN: f32 = 2.2;
 /// No car drives a tighter line than its turning circle, whatever the map draws.
 const MIN_RADIUS: f32 = 5.0;
-/// Road polylines have kinks a car steers through; measured over 30 m, junction lanes over 10 m. Report 19 cause 2.
+/// Road polylines have kinks a car steers through, so curvature is measured over 30 m. Report 19 cause 2.
 const CHORD_ROAD: f32 = 30.0;
 
 pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
@@ -86,7 +86,9 @@ pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
                 p.gz = G * g * (1.0 - g * g / 2.0);
             }
             let internal = net.edges[l.edge as usize].func == EdgeFunc::Internal;
-            let half = (if internal { CHORD } else { CHORD_ROAD } / 2.0).min(geom / 2.0);
+            // netconvert draws a junction turn as a Bezier, far tighter at its apex than the line a car drives: a corner
+            // of 30 m radius reads 7 m over 10 m. Real turns are tightest at about half their whole radius, report 19.
+            let half = (if internal { CHORD.max(geom * 0.5) } else { CHORD_ROAD } / 2.0).min(geom / 2.0);
             if half < 0.5 {
                 return p;
             }

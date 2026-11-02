@@ -25,7 +25,7 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Lateral limit 0.5 μ g, combined limit | ADAPTED | 11 I9, I10 | |
 | Driver corner speed: v = √(a_y R) on the tightest radius, each driver's a_y lognormal, median 2.2, σ 0.30, hard cap 4.3 | ESTABLISHED | Report 19: 3,584 real turns in 4 cities, peak median 2.19, p95 3.53, p99 4.26, flat with radius. Replaces Xu and the 4.0 cap, which was chosen for flow | `lateral_median`, `curve_cap` |
 | Radius never read below 5 m | ADAPTED | A modern car's turning circle, report 19. A geometry limit, not a speed floor | `physics.rs` |
-| Curvature over 30 m on roads, 10 m on junction lanes | ADAPTED | Report 19 cause 2: road polylines carry kinks a car steers through. On a real 10 m bend it reads wide: 5.4 m/s against the fix's 4.7 and a real 4.1 | `physics.rs` |
+| Curvature over 30 m on roads, on junction lanes over half the lane and at least 10 m | ADAPTED | Report 19 cause 2: road polylines carry kinks a car steers through, and netconvert's Bezier turns are far tighter at the apex than the line a car drives: a 30 m corner read 7 m over 10 m, 3.9 m/s and 1,400 veh/h. Half the lane gives 6.7 m/s against a real 7.2. On a real 10 m road bend the 30 m window reads wide: 5.4 m/s against the fix's 4.7 and a real 4.1 | `physics.rs` |
 | Tightest stretch 1.2 × lowest limit | INVENTED | How far around the tightest point the limit holds | sensitivity |
 | Never drive further this step than stopping next step leaves room for | INVENTED | Without it, a reaction time under dt overruns the gap. Binds only at low speed at dt 1 | |
 | Dawdling held for a whole second, per trip | INVENTED | Keeps σ's effect independent of dt, where SUMO's scales with dt (11 §6) | vType `sigma` |
