@@ -170,7 +170,7 @@ impl Snapshot {
     pub fn index(&mut self) {
         self.by_lane.clear();
         for (i, v) in self.vs.iter().enumerate() {
-            if v.flags & (F_REMOVED | crate::report::F_SHADOW) == 0 && v.replica == 0 {
+            if v.flags & (F_REMOVED | crate::world::F_SHADOW) == 0 && v.replica == 0 {
                 self.by_lane.entry(v.lane).or_default().push(i);
             }
         }
@@ -628,7 +628,7 @@ impl Overlay {
                 }
                 continue;
             }
-            if v.flags & (F_REMOVED | crate::report::F_SHADOW) != 0 || v.replica != 0 || i >= snap.poses.len() || snap.poses[i].alive < 0.5 {
+            if v.flags & (F_REMOVED | crate::world::F_SHADOW) != 0 || v.replica != 0 || i >= snap.poses.len() || snap.poses[i].alive < 0.5 {
                 continue;
             }
             if visible(snap.poses[i].xy) {

@@ -385,6 +385,7 @@ pub const C_NO_BRAKE: usize = 17;
 pub const C_DEAD_END: usize = 18;
 pub const C_SHADOWS: usize = 19;
 pub const C_SHADOW_REFUSED: usize = 20;
+pub const F_SHADOW: u32 = 16384;
 pub const C_UNGRANTED: usize = 21;
 pub const C_LC_REFUSED_ROOM: usize = 22;
 pub const C_DENIED: usize = 23;
