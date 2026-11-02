@@ -1,0 +1,28 @@
+scene,id,quantity,forecast,measured,spread,tolerance,verdict,seeds,driver,dt
+L7,F007,"sringon: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,1.0
+C-S2,,perimeter 307.4; offered:in ring:flow 38:33.6:372 39:23.8:1055 40:24.0:1126 41:31.6:523 42:32.8:403,,0,,,info,,physical,1.0
+C-S2,,"most cars in the ring 38, fits 40",,0,,,info,,physical,1.0
+C-S2,F032,one hole: flow against w/perimeter,62.8,none,,20%,FAIL,"C-S2 arrivals 0-4, sim 1",physical,1.0
+C-S2,F032,full ring flow,0,none,,1,FAIL,"C-S2 arrivals 0-4, sim 1",physical,1.0
+L7,F007,"sringoff: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,1.0
+C-S2,,perimeter 307.4; offered:in ring:flow 38:33.6:372 39:23.8:1054 40:24.0:1126 41:31.6:523 42:32.8:403,,0,,,info,,physical,1.0
+C-S2,F079,N full with exit clear off (veh/h),0,none,,1,FAIL,"C-S2 arrivals 0-4, sim 1",physical,1.0
+L7,F007,"lc: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,1.0
+LC1,F021,mean wait to change q 900 v 10 dv 3 h 3.3 (s),32,14.2,11.9..16.3,<= 20%,pass,"LC1 arrivals 0-4, sim 1",physical,1.0
+LC1,F063,target cars passing a changer q 900 dv 3 (per s),0.075,0.149,0.142..0.155,10%,FAIL,"LC1 arrivals 0-4, sim 1",physical,1.0
+LC1,,"speed difference actually seen (m/s), forecast 3",,3.09,,,info,,physical,1.0
+LC2,F022,"share changed on the move, block 100 m",0.36,0.989,0.967..1,>= .1,pass,"LC2100 arrivals 0-4, sim 1",physical,1.0
+LC2,,"share changed only after stopping, block 100 m",,0.0109,,,info,,physical,1.0
+LC2,F022,"share changed on the move, block 300 m",0.74,1,1..1,>= .1,pass,"LC2300 arrivals 0-4, sim 1",physical,1.0
+LC2,,"share changed only after stopping, block 300 m",,0,,,info,,physical,1.0
+L7,F007,"lc2: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,1.0
+LC4,,two saturated lanes: no changes; a third change (veh/h),,"3032, 2184",,,info,,physical,1.0
+LC4,F025,capacity with lane changes eps .10 (share),0.91,0.72,0.703..0.739,5%,FAIL,"LC4b arrivals 0-4, sim 1",physical,1.0
+LC5,,saturated target lane alone (veh/h),,1615,,,info,,physical,1.0
+LC5,F026,void loss k 30 dv 5 flow 300 (share),0.039,-0.0578,-0.0698..-0.0368,25%,FAIL,"LC5 arrivals 0-4, sim 1",physical,1.0
+LC5,F064,void loss dv 10 over dv 5 (ratio),4,none,,25%,FAIL,"LC5 arrivals 0-4, sim 1",physical,1.0
+L7,F007,"net: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,1.0
+N5,F073,diverge exit capacity 300 beta .2 total (veh/h),1500,1115,890..1.3e+03,10%,FAIL,"N5a arrivals 0-4, sim 1",physical,1.0
+N5,F074,one lane with exit closed total (veh/h),0,0,0..0,30,pass,"N5b arrivals 0-4, sim 1",physical,1.0
+N5,F075,"3 lanes, other two lanes (veh/h)",3712,3428,3.42e+03..3.44e+03,10%,pass,"N5c arrivals 0-4, sim 1",physical,1.0
+N5,F075,"3 lanes, closed lane (veh/h)",0,0,0..0,30,pass,"N5c arrivals 0-4, sim 1",physical,1.0
