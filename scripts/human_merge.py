@@ -138,7 +138,7 @@ def row_of(a, f):
                 stopped=a['location']['stopped_below_1'], ov_start=st.get('overlap_share'), ov_centre=ce.get('overlap_share'), lag25=st.get('lag', {}).get('p25'),
                 edge50=m['max_q_while_overlapping'].get('p50'), edge95=m['max_q_while_overlapping'].get('p95'), ahead=tg['gap_ahead'], behind=tg['gap_behind'],
                 ep5=par.get('share_ge5'), locked=par.get('locked_3s'), ov5=a['overlap_time_share_before_start']['must'].get('-5..0'), ex2=pre.get('-2..0', {}).get('excess'),
-                lost=all_['lost_excess'][0], resp=all_['responders_vs_20'][0], lag1=f.get('no_room_at_touch', {}).get('share'), lag_p05=lag_t.get('p05'))
+                lost=(all_.get('lost_excess') or [None])[0], resp=(all_.get('responders_vs_20') or [None])[0], lag1=f.get('no_room_at_touch', {}).get('share'), lag_p05=lag_t.get('p05'))
 
 
 def show(scene, row, extra):

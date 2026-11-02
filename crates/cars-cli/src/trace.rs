@@ -421,7 +421,7 @@ impl Tracer {
         Slot {
             buffer: g.device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("trace staging"),
-                size: size + size / 4,
+                size: (size + size / 4).next_multiple_of(4),
                 usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
                 mapped_at_creation: false,
             }),
