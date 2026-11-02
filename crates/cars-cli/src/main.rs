@@ -5,6 +5,7 @@ mod dbgnet;
 mod junctions;
 mod record;
 mod replay;
+mod report;
 mod run;
 mod trace;
 #[derive(Parser)]

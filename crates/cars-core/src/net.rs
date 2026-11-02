@@ -76,6 +76,8 @@ pub struct Lane {
     pub change_left: u32,
     pub change_right: u32,
     pub shape: Vec<[f32; 2]>,
+    /// Height gained from start to end, where the net has heights.
+    pub z_rise: f32,
 }
 
 #[derive(Clone, Debug)]
@@ -306,6 +308,7 @@ impl Net {
             allow,
             change_left: attr(e, "changeLeft").map(|s| vclass_mask(&s)).unwrap_or(u32::MAX),
             change_right: attr(e, "changeRight").map(|s| vclass_mask(&s)).unwrap_or(u32::MAX),
+            z_rise: attr(e, "shape").map(|s| crate::xml::shape_rise(&s)).unwrap_or(0.0),
             shape: attr(e, "shape").map(|s| parse_shape(&s)).unwrap_or_default(),
         });
         self.edges[edge as usize].lane_count += 1;

@@ -17,5 +17,6 @@ rustc-hash.workspace = true
 rayon.workspace = true
 
 [dev-dependencies]
+naga = { version = "30", features = ["wgsl-in"] }
 serde_json.workspace = true
 pollster.workspace = true
