@@ -608,6 +608,8 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.v_lat = num("phys.v_lat", cfg.tune("v_lat", 0.6));
     g.width = t.width;
     g.ph_tau = num("phys.tau", cfg.tune("tau", 0.65));
+    // Krauss's 0.5 is inherited. 0.2 brings 50 km/h saturation into report 04's band, 1,846 against 1,714.
+    if t.sigma == 0.5 { g.sigma = 0.2; }
     g.sigma = cfg.tune("sigma", g.sigma);
     let automated = matches!(t.model, CfModel::Acc | CfModel::Cacc);
     g.exit_comply = num("phys.exit_comply", if automated { 1.0 } else { cfg.tune("exit_comply", 0.9) });
