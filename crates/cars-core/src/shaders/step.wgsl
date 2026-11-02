@@ -1216,6 +1216,7 @@ var<private> ex_rng: u32;
 // front, with the speed at that moment. Words per lane after the edges: position in bits (0 for none),
 // count, speed sum in cm/s, vehicles over 7.5 m. They only ever grow.
 fn sensor_pass(lane: u32, whole_lane: bool, before: f32, after: f32, v: f32, length: f32) {
+    if (lane >= P.n_lanes) { return; }
     let at = P.n_edges * 8u + lane * 4u;
     let bits = atomicLoad(&edge_acc[at]);
     if (bits == 0u) { return; }
