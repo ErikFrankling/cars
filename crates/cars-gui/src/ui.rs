@@ -315,6 +315,20 @@ fn variables(ui: &mut Ui, m: &mut Model) {
         ui.label("Seed");
         ui.add(egui::DragValue::new(&mut d.seed).speed(1.0));
         ui.end_row();
+        ui.label("Driver");
+        let before = d.driver.clone();
+        let name = registry.driver(&d.driver).map_or(d.driver.clone(), |x| x.name.clone());
+        ui.add_enabled_ui(!d.coordinated(&registry), |ui| {
+            egui::ComboBox::from_id_salt("driver").selected_text(name).width(150.0).show_ui(ui, |ui| {
+                for x in &registry.driver {
+                    ui.selectable_value(&mut d.driver, x.id.clone(), &x.name).on_hover_text(&x.description);
+                }
+            });
+        });
+        if d.driver != before {
+            d.teleports = !d.physical() && scenario.time_to_teleport > 0.0;
+        }
+        ui.end_row();
         ui.label("Teleports");
         ui.horizontal(|ui| {
             ui.checkbox(&mut d.teleports, "");
@@ -1078,6 +1092,8 @@ pub fn build(root: &mut Ui, m: &mut Model, wall: f32) {
             ui.horizontal(|ui| {
                 if let Some(s) = &m.session {
                     ui.label(RichText::new(&s.scenario.name).color(INK));
+                    ui.label(RichText::new(if s.settings.physical() { "Physical driver" } else { "SUMO copy" }).color(MUTED))
+                        .on_hover_text(m.registry.driver(&s.settings.driver).map_or("", |x| x.description.as_str()));
                     trust_chip(ui, s.scenario.trust, &s.scenario.trust_note);
                     ui.separator();
                     let who = if s.settings.human_only(&m.registry) {

@@ -31,6 +31,8 @@ impl Plan {
 pub struct Settings {
     pub demand_pct: f32,
     pub human_pct: f32,
+    /// What drives everything that is not automated: "physical", or "sumo" for the old driver.
+    pub driver: String,
     /// Model of the automated share. None is human-only, the default.
     pub model: Option<String>,
     pub dt: f32,
@@ -48,16 +50,20 @@ impl Settings {
         Self {
             demand_pct: 100.0,
             human_pct: 100.0,
+            driver: "physical".into(),
             model: None,
             dt: s.dt,
             seed: 0,
-            teleports: s.time_to_teleport > 0.0,
+            teleports: false,
             teleport_s: if s.time_to_teleport > 0.0 { s.time_to_teleport } else { 300.0 },
             junctions: Junctions::Normal,
             plan: Plan::Off,
             loss_pct: 0.0,
             level_b: false,
         }
+    }
+    pub fn physical(&self) -> bool {
+        self.driver != "sumo"
     }
     pub fn coordinated(&self, r: &Registry) -> bool {
         self.model.as_deref().and_then(|m| r.model(m)).is_some_and(|m| m.coordinated)
@@ -76,6 +82,8 @@ impl Settings {
     /// Keep what the choices imply consistent: signal-free needs the coordinated model.
     pub fn normalise(&mut self, r: &Registry) {
         if self.coordinated(r) {
+            // The coordinator runs on the old kernel.
+            self.driver = "sumo".into();
             if self.junctions == Junctions::Normal {
                 self.junctions = Junctions::SignalFree;
             }
@@ -96,11 +104,12 @@ impl Settings {
         };
         note(self.demand_pct == other.demand_pct, format!("demand {:.0}%", self.demand_pct));
         note(self.human_pct == other.human_pct, format!("humans {:.0}%", self.human_pct));
+        note(self.driver == other.driver, format!("driver {}", if self.physical() { "physical" } else { "SUMO copy" }));
         note(self.model == other.model, format!("model {}", self.model.as_deref().unwrap_or("none")));
         note(self.dt == other.dt, format!("step {} s", self.dt));
         note(self.seed == other.seed, format!("seed {}", self.seed));
         note(self.teleports == other.teleports, format!("teleports {}", if self.teleports { "on" } else { "off" }));
-        note(self.teleports && self.teleport_s == other.teleport_s, format!("teleport after {:.0} s", self.teleport_s));
+        note(!self.teleports || self.teleport_s == other.teleport_s, format!("teleport after {:.0} s", self.teleport_s));
         note(self.junctions == other.junctions, format!("junctions {:?}", self.junctions));
         note(self.plan == other.plan, format!("planning {}", self.plan.label()));
         note(self.loss_pct == other.loss_pct, format!("loss {:.0}%", self.loss_pct));
