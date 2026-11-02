@@ -65,6 +65,7 @@ def main():
     p.add_argument('--cycle', type=int)
     p.add_argument('--contract', type=float, help='report 10: join across links whose built lanes are shorter than this, rebuild, repeat')
     p.add_argument('--cluster-max', type=float, default=70.0)
+    p.add_argument('--contract-no-tls', action='store_true', help='never join across a signal: a joined signal ring lost its capacity at Ernst-Reuter-Platz')
     p.add_argument('--per-node', action='store_true', help='report 10: one generated program per junction, not one over several')
     p.add_argument('--radii', action='store_true', help="report 19's junction geometry flags")
     p.add_argument('--smooth', action='store_true', help="report 19's polyline flags")
@@ -216,7 +217,7 @@ def main():
             x = parent[x]
         return x
 
-    def build(tag):
+    def build(tag, final=False):
         r = nod.getroot()
         for j in r.findall('join'):
             r.remove(j)
@@ -233,7 +234,7 @@ def main():
         for c in list(c2):
             if c.tag == 'connection' and c.get('from') in edges and edges[c.get('from')].get('to') in joined:
                 c2.remove(c)
-        if a.lane_fix:
+        if a.lane_fix and final:
             add_lane_feeds(c2, a.lane_fix, fixes)
         if a.no_uturn:
             outs_of = collections.Counter(e.get('from') for e in edges.values())
@@ -259,7 +260,7 @@ def main():
         print(tag, r.stderr[-600:] if r.returncode else '\n'.join(l for l in r.stderr.splitlines() if 'total messages' in l)[:900])
         r.check_returncode()
 
-    build('first pass')
+    build('first pass', final=not a.contract and bool(a.lane_fix))
     for it in range(6 if a.contract else 0):
         (out / 'net.pkl').unlink(missing_ok=True)
         n = read_net(out / 'net.net.xml', out / 'net.pkl')
@@ -286,6 +287,8 @@ def main():
             u, w = member(v['start']), member(v['end'])
             if u is None or w is None:
                 continue
+            if a.contract_no_tls and 'traffic_light' in (n['junctions'].get(v['start'], ('',))[0], n['junctions'].get(v['end'], ('',))[0]):
+                continue
             ru, rw = find(u), find(w)
             if ru == rw:
                 continue
@@ -300,6 +303,8 @@ def main():
         if not new:
             break
         build(f'pass {it}')
+    if a.lane_fix and a.contract:
+        build('final', final=True)
     (out / 'net.pkl').unlink(missing_ok=True)
     pd.DataFrame(fixes, columns=['edge', 'why', 'change']).to_csv(out / 'fixes.csv', index=False)
     print('fixes', collections.Counter(re.sub(r'_short.*', '_short', f[1]) for f in fixes).most_common(), 'connections kept', kept, 'edges touched', len(touched), 'edges recomputed', len(redo))
