@@ -44,13 +44,12 @@
 @group(0) @binding(37) var<storage, read_write> energy: array<TripEnergy>;
 @group(0) @binding(38) var<storage, read_write> junction_bid: array<atomic<u32>>;
 @group(0) @binding(39) var<storage, read_write> inbound: array<atomic<u32>>;
-@group(0) @binding(40) var<storage, read_write> hard_limit: array<atomic<u32>>;
 @group(0) @binding(41) var<storage, read> zones: array<Zone>;
 @group(0) @binding(42) var<storage, read> speed_trace: array<f32>;
 @group(0) @binding(44) var<storage, read_write> poses: array<Pose>;
 @group(0) @binding(45) var<storage, read_write> grid_head: array<atomic<u32>>;
 @group(0) @binding(43) var<storage, read> shape_points: array<vec4f>;
-@group(0) @binding(46) var<storage, read_write> contacts: array<Contact>;
+@group(0) @binding(40) var<storage, read_write> contacts: array<Contact>;
 
 const C_NEW: u32 = 0u;
 const C_REMOVED: u32 = 1u;
@@ -1507,7 +1506,7 @@ fn zones_ahead_bid(i: u32, e: Veh, claim: f32) {
         near = true;
         if (zone_taken(zn)) { hold = min(hold, ahead); }
     }
-    if (hold < 1e8) { atomicMin(&hard_limit[e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
+    if (hold < 1e8) { atomicMin(&advice[P.n_trips + e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
     if (near) {
         let bid = (1u << 30u) | ((pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u);
         atomicMin(&junction_bid[e.lane], bid);
@@ -1633,7 +1632,7 @@ fn ph_grant(@builtin(global_invocation_id) id: vec3u) {
             if (ahead <= 0.0 || ahead > claim || ahead < committed_at) { continue; }
             if (atomicLoad(&junction_bid[zn.foe_lane]) < bid) { hold = min(hold, ahead); }
         }
-        if (hold < 1e8) { atomicMin(&hard_limit[e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
+        if (hold < 1e8) { atomicMin(&advice[P.n_trips + e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
     }
     for (var j = 0u; j < n; j++) {
         let bid = items[base + j].grant;
@@ -1668,7 +1667,7 @@ fn shadow_plan(i: u32, s: Veh) {
     if (p != NONE) {
         limit = min(limit, follow_speed(s.speed, unpack_back(p) - s.pos - ty.min_gap, unpack_speed(p), tail_b(), false, vmax, la.speed));
     }
-    if (limit < 1e8) { atomicMin(&hard_limit[s.trip], u32(max(limit + 0.002, 0.0) * 1024.0)); }
+    if (limit < 1e8) { atomicMin(&advice[P.n_trips + s.trip], u32(max(limit + 0.002, 0.0) * 1024.0)); }
 }
 
 // A shadow follows its owner, and ends when the body has left its lane or the owner has left the edge.
@@ -1749,7 +1748,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     var acc = (v_next - speed) / dt;
     let old_pos = e.pos;
     if (mu > 0.0) {
-        let bound = atomicExchange(&hard_limit[e.trip], NONE);
+        let bound = atomicExchange(&advice[P.n_trips + e.trip], NONE);
         if (bound != NONE) {
             v_safe = min(v_safe, f32(bound) / 1024.0 - 0.002);
             // Held back by a leader on the old lane: no claim on the link ahead until that clears.

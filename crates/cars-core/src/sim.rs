@@ -28,8 +28,8 @@ const MAIN_BINDINGS: &[bool] = &[
     /*28 series*/ false, /*29 edge_acc*/ false, /*30 route_patch*/ false, /*31 advice*/ false,
     /*32 queue_trips*/ true, /*33 claims*/ false, /*34 last_detect*/ false, /*35 lc_plan*/ false,
     /*36 mirror*/ false, /*37 energy*/ false, /*38 junction_bid*/ false, /*39 inbound*/ false,
-    /*40 hard_limit*/ false, /*41 zones*/ true, /*42 speed_trace*/ true, /*43 shape_points*/ true,
-    /*44 poses*/ false, /*45 grid_head*/ false, /*46 contacts*/ false,
+    /*40 contacts*/ false, /*41 zones*/ true, /*42 speed_trace*/ true, /*43 shape_points*/ true,
+    /*44 poses*/ false, /*45 grid_head*/ false,
 ];
 
 /// The coordinator's buffers and kernels, when any junction is coordinated.
@@ -261,7 +261,8 @@ impl Sim {
         );
         let series = empty("series", p.n_samples as u64 * p.n_replicas as u64 * 16);
         let edge_acc = empty("edge_acc", p.n_edges as u64 * 16);
-        let advice_init = vec![0xffu8; p.n_trips as usize * 4];
+        // Second half in physical mode: the hard limits, per trip. llvmpipe caps storage buffers per stage at 48.
+        let advice_init = vec![0xffu8; p.n_trips as usize * 4 * if p.mu > 0.0 { 2 } else { 1 }];
         let advice = init("advice", &advice_init, storage);
         let adv_flags = empty("adv_flags", p.n_trips as u64 * 4);
         let incoming_links = init("incoming_links", bytemuck::cast_slice(&world.incoming_links), storage);
@@ -279,8 +280,6 @@ impl Sim {
         let junction_bid = empty("junction_bid", when(physical, p.n_lanes as u64 * 4));
         // Per lane what is heading there, then the widest body on it, then how far bodies on it can reach.
         let inbound = empty("inbound", when(physical, p.n_lanes as u64 * 12));
-        let hard_limit_init = vec![0xffu8; when(physical, p.n_trips as u64 * 4) as usize];
-        let hard_limit = init("hard_limit", &hard_limit_init, storage);
         let zones = init("zones", bytemuck::cast_slice(&world.zones), storage);
         let speed_trace = init("speed_trace", bytemuck::cast_slice(&world.speed_trace), storage);
         let detecting = p.detect_every > 0;
@@ -364,8 +363,8 @@ impl Sim {
                 &trips, &queues, &tls, &phases, &states, prev, cur, &incoming_links, &adv_flags, &lane_free, &seg,
                 &items, &slots, &link_count, &partial, &tail, &entrant, &trip_out, &series, &edge_acc,
                 &route_patch, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
-                &mirror, &energy, &junction_bid, &inbound, &hard_limit, &zones, &speed_trace, &shape_points,
-                &poses, &grid_head, &contacts,
+                &mirror, &energy, &junction_bid, &inbound, &contacts, &zones, &speed_trace, &shape_points,
+                &poses, &grid_head,
             ];
             let mut entries: Vec<_> = list
                 .iter()

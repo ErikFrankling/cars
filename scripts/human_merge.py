@@ -21,12 +21,13 @@ ROOT = Path(__file__).resolve().parents[1]
 BIN = os.environ.get('CARS_BIN', str(ROOT / 'target/release/cars'))
 MG = Path(os.environ.get('MG_SCRIPTS', '/home/erikf/.t3/projects/cars/research/truth/scripts/merging'))
 W = 3.2
-# zone m, approach m, main veh/h, ramp veh/h, main limit, ramp limit, neck m/s, speed spread. Flows are the measured flow
-# of the target lane and the merging lane at the site. Where their sum is over the model's queue flow a queue forms and
-# both lanes crawl, as they did at the congested sites.
+# zone m, approach m, main veh/h, ramp veh/h, main limit, ramp limit, neck m/s, speed spread. Total demand is the flow
+# measured past the end of the lane, and ramp the flow of the merging lane. The target lane's own flow inside the zone
+# counts cars that have already merged, so it is not demand. The limit is the speed measured past the end, where the
+# real road runs free: any queue must come from the merge.
 SCENES = {
-    'i80': dict(zone=54, up=800, main=875, ramp=645, v=6, von=6, neck=6, dev=0.1),
-    'us101': dict(zone=216, up=800, main=1486, ramp=457, v=12, von=17, vramp=17, neck=12, dev=0.1),
+    'i80': dict(zone=54, up=800, main=745, ramp=645, v=9, von=9, neck=9, dev=0.1),
+    'us101': dict(zone=216, up=800, main=1080, ramp=457, v=12, von=17, vramp=17, neck=12, dev=0.1),
     'i395': dict(zone=63, up=800, main=1167, ramp=1031, v=9, von=9, neck=9, dev=0.1),
     'a39': dict(zone=400, up=1500, main=337, ramp=144, v=36, von=22, neck=36, dev=0.18),
 }
@@ -48,6 +49,8 @@ TARGETS = [
     ('13 follower extra speed lost', 'lost', (.4, .6), (.47, .77), (.02, .82), (.11, .51)),
     ('14 follower extra responders', 'resp', (.126, .186), (.115, .195), (.05, .21), (.03, .15)),
     # Report 18 gives 4.7%, under 2%, 10.7%, 0.2%. Its own pipeline gives these, 101 of 297 at I-80, so both sides use that.
+    # Past the end of the lane, per site's cache, this report's measure. I-80 1,344 and 1,435 veh/h in its two runs.
+    ('0 flow past the lane end, veh/h', 'flow', (1280, 1500), (1430, 1650), None, None),
     ('16 lag under 1 m at body over', 'lag1', (.20, .48), (0, .08), (.14, .32), (0, .01)),
 ]
 COL = {'i80': 2, 'us101': 3, 'i395': 4, 'a39': 5}
@@ -142,6 +145,16 @@ def row_of(a, f):
                 lost=(all_.get('lost_excess') or [None])[0], resp=(all_.get('responders_vs_20') or [None])[0], lag1=f.get('no_room_at_touch', {}).get('lag_under_1', {}).get('n', 0) / max(to.get('n', 0), 1), lag_p05=lag_t.get('p05'))
 
 
+def flow_past(fcs, dur):
+    """Veh/h reaching the road after the neck, once the scene has filled, over its whole demand."""
+    out = []
+    for fc in fcs:
+        d = pd.read_csv(fc, usecols=['time', 'trip', 'lane'], dtype={'trip': str, 'lane': str})
+        x = d[d['lane'] == 'out_0'].groupby('trip')['time'].min()
+        out.append(((x > 300) & (x <= dur)).sum() / (dur - 300) * 3600)
+    return float(np.mean(out))
+
+
 def show(scene, row, extra):
     print(f"\n== {scene}: {row['n']} must-change cars; wait p50 {row['wait50']}, p90 {row['wait90']}; {extra}")
     passed = total = 0
@@ -189,6 +202,7 @@ def main():
         to_cache(work, work / 'net.xml', fcs)
         an, fo = pipeline(work)
         row = row_of(an, fo)
+        row['flow'] = flow_past(fcs, a.dur)
         (work / 'row.json').write_text(json.dumps(row, indent=1, default=float))
         show(name, row, f'collisions {coll}, floor {floor}, guard {guard / max(steps, 1):.3%}')
 

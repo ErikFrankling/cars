@@ -704,6 +704,8 @@ fn inform_follower(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f3
     let v = n.f_speed;
     let gap = n.f_gap;
     let limit = lanes[e.lane].speed;
+    // Report 18: a follower does a share of what following the merger asks, never all of it. That is hu_follower.
+    if (hu_courteous(ft) && (P.hu_flags & HS_FOLLOW) != 0u) { return; }
     if ((blocked & LCA_BLOCK_FOLLOWER) != 0u) {
         // A human follower is not told. It sees the blinker and decides, in hu_request.
         if (hu_courteous(ft)) {
@@ -1386,7 +1388,9 @@ fn ph_lc_room(e: Veh, dest: u32) -> bool {
     if ((e.phys >> 30u) != 0u || (e.flags & F_HAS_SHADOW) != 0u || e.pos < min(ty.length, lanes[e.lane].length - 1.0)) { return false; }
     let w = lanes[dest].width;
     let road = ph_lc_road(e, dest);
-    if (ty.v_lat <= 0.0) { return 1.875 * w / 1.3 * e.speed <= lanes[e.lane].length - e.pos; }
+    // Report 18: real bodies reach the line about at the end, and the centre crosses after it. The rest of the move carries
+    // on along the lane it joins. Time to the line, on the quintic of ph_lateral: 0.22 of the way takes a third of the time.
+    if (ty.v_lat <= 0.0) { return 0.33 * 1.875 * max(w - abs(e.lc_edge), 0.0) / 1.3 * e.speed <= lanes[e.lane].length - e.pos; }
     if (road < 0.0) {
         let left = lanes[e.lane].length - e.pos;
         return left >= w / 0.21256 && (w / ty.v_lat + 1.0) * e.speed <= left;
