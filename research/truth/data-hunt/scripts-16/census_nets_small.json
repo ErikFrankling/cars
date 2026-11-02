@@ -1,0 +1,590 @@
+{
+ "nets": {
+  "lust": {
+   "edges": 5779,
+   "lanes": 8622,
+   "car_lanes": 8622,
+   "tls": 201,
+   "edges_under_7_5m": 57,
+   "lanes_with_z": 0,
+   "conn_allow": 0,
+   "conn_disallow": 0,
+   "junctions": {
+    "priority": 1791,
+    "traffic_light": 203,
+    "dead_end": 236,
+    "unregulated": 17
+   },
+   "tls_types": {
+    "actuated": 201
+   },
+   "cycle_top": [
+    [
+     82,
+     117
+    ],
+    [
+     96,
+     59
+    ],
+    [
+     68,
+     19
+    ],
+    [
+     130,
+     2
+    ],
+    [
+     34,
+     1
+    ],
+    [
+     178,
+     1
+    ]
+   ],
+   "pattern_top": [
+    [
+     "30-4-10-4-30-4",
+     115
+    ],
+    [
+     "30-4-10-4-30-4-10-4",
+     59
+    ],
+    [
+     "30-4-30-4",
+     19
+    ],
+    [
+     "30-4-10-4-30-4-10-4-30-4",
+     2
+    ]
+   ],
+   "green_limits_top": [],
+   "speed_kmh_lanes_top": [
+    [
+     50,
+     6885
+    ],
+    [
+     60,
+     1069
+    ],
+    [
+     130,
+     387
+    ],
+    [
+     70,
+     281
+    ]
+   ],
+   "type_top": [
+    [
+     "highway.residential",
+     3820
+    ],
+    [
+     "highway.primary",
+     692
+    ],
+    [
+     "highway.secondary",
+     633
+    ],
+    [
+     "highway.tertiary",
+     412
+    ],
+    [
+     "highway.motorway",
+     112
+    ],
+    [
+     "highway.motorway_link",
+     81
+    ],
+    [
+     "highway.secondary_link",
+     11
+    ],
+    [
+     "highway.primary.bridge",
+     6
+    ],
+    [
+     "none",
+     6
+    ],
+    [
+     "highway.primary_link",
+     5
+    ]
+   ]
+  },
+  "bologna": {
+   "edges": 267,
+   "lanes": 411,
+   "car_lanes": 377,
+   "closed_to_cars": 34,
+   "tls": 13,
+   "edges_under_7_5m": 18,
+   "lanes_with_z": 0,
+   "conn_allow": 0,
+   "conn_disallow": 0,
+   "junctions": {
+    "priority": 91,
+    "traffic_light": 29,
+    "dead_end": 38
+   },
+   "tls_types": {
+    "static": 13
+   },
+   "cycle_top": [
+    [
+     90,
+     13
+    ]
+   ],
+   "pattern_top": [
+    [
+     "38-3-6-3-37-3",
+     4
+    ],
+    [
+     "42-3-42-3",
+     2
+    ],
+    [
+     "17-3-17-3-6-3-1-17-3-17-3",
+     1
+    ],
+    [
+     "24-3-2-26-3-2-26-3-1",
+     1
+    ]
+   ],
+   "green_limits_top": [],
+   "speed_kmh_lanes_top": [
+    [
+     50,
+     409
+    ],
+    [
+     40,
+     2
+    ]
+   ],
+   "type_top": [
+    [
+     "none",
+     267
+    ]
+   ]
+  },
+  "i80": {
+   "edges": 38,
+   "lanes": 118,
+   "car_lanes": 118,
+   "edges_under_7_5m": 0,
+   "lanes_with_z": 0,
+   "conn_allow": 0,
+   "conn_disallow": 0,
+   "junctions": {
+    "dead_end": 15,
+    "priority": 24
+   },
+   "tls_types": {},
+   "cycle_top": [],
+   "pattern_top": [],
+   "green_limits_top": [],
+   "speed_kmh_lanes_top": [
+    [
+     121,
+     105
+    ],
+    [
+     89,
+     10
+    ],
+    [
+     72,
+     2
+    ],
+    [
+     56,
+     1
+    ]
+   ],
+   "type_top": [
+    [
+     "none",
+     38
+    ]
+   ]
+  },
+  "ring": {
+   "edges": 80,
+   "lanes": 80,
+   "car_lanes": 80,
+   "edges_under_7_5m": 0,
+   "lanes_with_z": 0,
+   "conn_allow": 0,
+   "conn_disallow": 0,
+   "junctions": {
+    "priority": 80
+   },
+   "tls_types": {},
+   "cycle_top": [],
+   "pattern_top": [],
+   "green_limits_top": [],
+   "speed_kmh_lanes_top": [
+    [
+     120,
+     80
+    ]
+   ],
+   "type_top": [
+    [
+     "none",
+     80
+    ]
+   ]
+  },
+  "glosa": {
+   "edges": 62,
+   "lanes": 62,
+   "car_lanes": 62,
+   "tls": 2,
+   "edges_under_7_5m": 0,
+   "lanes_with_z": 0,
+   "conn_allow": 0,
+   "conn_disallow": 0,
+   "junctions": {
+    "priority": 10,
+    "traffic_light": 2,
+    "dead_end": 14
+   },
+   "tls_types": {
+    "static": 2
+   },
+   "cycle_top": [
+    [
+     60,
+     2
+    ]
+   ],
+   "pattern_top": [
+    [
+     "27-3-27-3",
+     2
+    ]
+   ],
+   "green_limits_top": [],
+   "speed_kmh_lanes_top": [
+    [
+     60,
+     62
+    ]
+   ],
+   "type_top": [
+    [
+     "none",
+     62
+    ]
+   ]
+  },
+  "charlottenburg": {
+   "edges": 2859,
+   "lanes": 4044,
+   "car_lanes": 3891,
+   "closed_to_cars": 153,
+   "tls": 212,
+   "edges_under_7_5m": 82,
+   "lanes_with_z": 0,
+   "conn_allow": 0,
+   "conn_disallow": 0,
+   "junctions": {
+    "priority": 663,
+    "right_before_left": 277,
+    "zipper": 3,
+    "traffic_light": 245,
+    "dead_end": 64
+   },
+   "tls_types": {
+    "actuated": 212
+   },
+   "cycle_top": [
+    [
+     90,
+     203
+    ],
+    [
+     94,
+     3
+    ],
+    [
+     96,
+     2
+    ],
+    [
+     101,
+     1
+    ],
+    [
+     72,
+     1
+    ],
+    [
+     98,
+     1
+    ]
+   ],
+   "pattern_top": [
+    [
+     "42-3-42-3",
+     113
+    ],
+    [
+     "38-3-6-3-37-3",
+     34
+    ],
+    [
+     "33-3-6-3-33-3-6-3",
+     17
+    ],
+    [
+     "82-3-5",
+     11
+    ]
+   ],
+   "green_limits_top": [
+    [
+     "5-50",
+     505
+    ],
+    [
+     "5-25",
+     4
+    ],
+    [
+     "15-30",
+     2
+    ],
+    [
+     "15-50",
+     1
+    ]
+   ],
+   "speed_kmh_lanes_top": [
+    [
+     50,
+     2215
+    ],
+    [
+     30,
+     1797
+    ],
+    [
+     20,
+     21
+    ],
+    [
+     10,
+     8
+    ],
+    [
+     80,
+     3
+    ]
+   ],
+   "type_top": [
+    [
+     "highway.residential",
+     1525
+    ],
+    [
+     "highway.secondary",
+     815
+    ],
+    [
+     "highway.tertiary",
+     371
+    ],
+    [
+     "highway.primary",
+     128
+    ],
+    [
+     "highway.secondary_link",
+     7
+    ],
+    [
+     "highway.service",
+     5
+    ],
+    [
+     "highway.unclassified",
+     4
+    ],
+    [
+     "none",
+     1
+    ],
+    [
+     "highway.tertiary_link",
+     1
+    ],
+    [
+     "highway.motorway_link",
+     1
+    ]
+   ]
+  },
+  "mitte": {
+   "edges": 4222,
+   "lanes": 5712,
+   "car_lanes": 5711,
+   "closed_to_cars": 1,
+   "tls": 265,
+   "edges_under_7_5m": 124,
+   "lanes_with_z": 0,
+   "conn_allow": 0,
+   "conn_disallow": 4,
+   "junctions": {
+    "right_before_left": 472,
+    "priority": 934,
+    "traffic_light": 332,
+    "dead_end": 68
+   },
+   "tls_types": {
+    "actuated": 265
+   },
+   "cycle_top": [
+    [
+     90,
+     240
+    ],
+    [
+     94,
+     15
+    ],
+    [
+     98,
+     3
+    ],
+    [
+     96,
+     2
+    ],
+    [
+     92,
+     1
+    ],
+    [
+     70,
+     1
+    ]
+   ],
+   "pattern_top": [
+    [
+     "42-3-42-3",
+     103
+    ],
+    [
+     "38-3-6-3-37-3",
+     47
+    ],
+    [
+     "33-3-6-3-33-3-6-3",
+     26
+    ],
+    [
+     "82-3-5",
+     22
+    ]
+   ],
+   "green_limits_top": [
+    [
+     "5-50",
+     662
+    ],
+    [
+     "20-50",
+     4
+    ],
+    [
+     "5-15",
+     3
+    ],
+    [
+     "15-50",
+     3
+    ]
+   ],
+   "speed_kmh_lanes_top": [
+    [
+     50,
+     2836
+    ],
+    [
+     30,
+     2771
+    ],
+    [
+     10,
+     77
+    ],
+    [
+     20,
+     19
+    ],
+    [
+     5,
+     9
+    ]
+   ],
+   "type_top": [
+    [
+     "highway.residential",
+     2407
+    ],
+    [
+     "highway.secondary",
+     682
+    ],
+    [
+     "highway.tertiary",
+     613
+    ],
+    [
+     "highway.primary",
+     467
+    ],
+    [
+     "highway.unclassified",
+     21
+    ],
+    [
+     "highway.trunk",
+     16
+    ],
+    [
+     "highway.living_street",
+     12
+    ],
+    [
+     "highway.secondary_link",
+     3
+    ],
+    [
+     "highway.tertiary_link",
+     1
+    ]
+   ]
+  }
+ },
+ "routes": {}
+}

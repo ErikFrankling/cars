@@ -12,3 +12,5 @@ The GPU also drives Erik's desktop. Scale every experiment from small to big, ke
 - `cars run --trace` writes trajectories and `cars replay` draws them with no simulation, so an incident stays in the run that had it. `cars record`, `cars shot` and `cars junctions` also look at intersections up close. `scripts/intersection_gallery.py`, `scripts/physics_qa.py` and `scripts/cars_trace.py` build on them; see `crates/cars-cli/RECORDING.md`.
 
 No GPU kernel may use function-local arrays outside `lc_best`. Comments stay sparse.
+
+To find out why something happens, see `crates/cars-cli/DEBUGGING.md`: `cars run --trace f --why`, then `cars why`, `cars jam`, `cars tsd`, `cars junction`, `cars compare`, `cars dist`. Reasons are probes in `crates/cars-core/src/why.rs`, patched in only with `--why`; a new limit in a kernel needs one there.

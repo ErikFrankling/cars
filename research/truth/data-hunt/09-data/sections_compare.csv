@@ -1,0 +1,101 @@
+id,cls,name,edge,type,len,v5_fw,v5_fw_bus,v5_bw,v5_bw_bus,v5_sp,n7_fw,n7_fw_bus,n7_bw,n7_sp,n7_edge,osm_lanes,osm_dir_lanes,osm_oneway,osm_turn,osm_psv,osm_maxspeed,nvdb_width,nvdb_width_method,nvdb_speed,nvdb_bus,ltfr,ov_class,ov_oneway,ov_speed,ov_width,blind,pano,lon,lat
+S001,major,Klarastrandsleden,259323348,highway.trunk,207,1,0,2,0,50,1,0,2,50,259323348,1,1,yes,,,50,5.9,minimivärde,50,,förbud mot trafik med cykel x4,trunk,True,[50],,,0,18.050391,59.334007
+S002,major,Västra Kungsbrokopplet,20278946,highway.trunk_link,165,1,0,0,0,50,1,0,0,50,20278946,1,1,yes,,,50,4.5,minimivärde,50,,förbud mot trafik med cykel x3,trunk,True,[50],,,0,18.050696,59.333264
+S003,major,Värmdövägen,41781029,highway.primary,362,3,0,0,0,70,3,0,0,70,41781029,3,3,yes,,,70,10.7,minimivärde,70,,,primary,True,"[50, 70]",,3,0,18.105446,59.30942
+S004,major,Klarastrandsleden,27423360,highway.trunk,63,1,0,1,0,50,1,0,1,50,27423360,1,1,yes,,,50,7.8,minimivärde,50,,förbud mot trafik med cykel x3,trunk,True,[50],,,0,18.05429,59.329735
+S005,major,Klarastrandsleden,891331902,highway.trunk,212,1,0,2,0,50,1,0,2,50,891331902,1,1,yes,,,50,5.4,minimivärde,50,,förbud mot trafik med cykel x3,trunk,True,"[50, 60]",,2,0,18.048295,59.335214
+S006,major,Söderleden,14869719,highway.trunk,91,2,0,2,0,60,2,0,2,60,14869719,2,2,yes,,,60,8.4,minimivärde,60;70,,förbud mot trafik med cykel x1,trunk,True,[60],,2,1,18.075323,59.306626
+S007,major,Värmdövägen,453042608-AddedOffRampEdge,highway.primary,94,4,0,0,0,70,4,0,0,70,453042608,,,,,,,4.4,minimivärde,70,,,primary,True,[70],,3,0,18.106682,59.310529
+S008,major,Roslagsvägen,804574511#1,highway.primary,181,2,1,0,0,60,3,0,0,60,804574511#1,3,3,yes,,designated||,60,10.5,glest intervall,60,Körfält,körfält eller körbanax1,primary,True,[60],,3,0,18.053412,59.353145
+S009,major,Uppsalavägen,233761068#0-AddedOffRampEdge,highway.primary,94,4,0,0,0,70,5,0,0,70,233761068#0-AddedOffRampEdge,3,3,yes,,,70,,,,,,primary,True,[70],,2,6,18.04099,59.35203
+S010,major,Klarastrandsleden,189594622,highway.trunk,948,1,0,1,0,60,1,0,1,60,189594622,1,1,yes,,,60,4.7,minimivärde,60,,förbud mot trafik med cykel x1,trunk,True,"[50, 60]",,,0,18.039533,59.336709
+S011,major,,774654727,highway.primary_link,83,1,0,0,0,80,1,0,0,80,774654727,,,yes,,,,6,,50,,,primary,True,[],,,5,18.042585,59.351461
+S012,major,Klarastrandsleden,5173745,highway.trunk,247,2,0,1,0,50,2,0,1,50,5173745,2,2,yes,,,50,5.4,minimivärde,50,,förbud mot trafik med cykel x3,trunk,True,"[50, 60]",,2,0,18.048968,59.334846
+S013,major,Klarastrandsleden,891331899#0,highway.trunk,149,1,0,2,0,50,2,0,2,50,891331899#0,1,1,yes,,,50,10.4,,50,,förbud mot trafik med cykel x2,trunk,True,[50],,1,0,18.025888,59.343268
+S014,major,Klarastrandsleden,259323350,highway.trunk_link,57,1,0,1,0,50,1,0,1,50,259323350,1,1,yes,,,50,3.5,minimivärde,50,,förbud mot trafik med cykel x2,trunk,True,[50],,,0,18.054485,59.329703
+S015,major,Uppsalavägen,231058830,highway.primary,44,2,0,0,0,70,2,0,0,70,231058830,2,2,yes,through|through,,70,7,glest intervall,40;70,,,primary,True,[70],,1,0,18.03787,59.354763
+S016,secondary,Drottningholmsvägen,19876482,highway.secondary,63,1,0,0,0,50,1,0,0,50,19876482,1,1,yes,,,50,11.7,minimivärde,60,,,secondary,True,[50],,1,0,18.01665,59.331315
+S017,secondary,Solnavägen,41517364#0,highway.secondary,172,1,0,4,0,50,1,0,4,50,777029815,,,yes,,,50,7.4,minimivärde,50,,,secondary,True,[50],,,0,18.027075,59.34928
+S018,secondary,Ringvägen,233761082#1,highway.secondary,81,2,0,2,0,50,2,0,2,50,233761082#0,2,2,yes,,,50,6.9,minimivärde,40,Körfält,körfält eller körbanax4,secondary,True,[50],,,0,18.081175,59.308451
+S019,secondary,Drottningholmsvägen,31062849#2,highway.secondary,71,2,0,0,0,50,2,0,0,50,31062849#0,2,2,yes,,,50,6.3,minimivärde,60,,,secondary,True,[50],,,0,18.018505,59.331811
+S020,secondary,Ringvägen,151083831#2,highway.secondary,59,2,0,2,0,50,2,0,2,50,151083831#2,2,2,yes,,,50,15.9,minimivärde,40,Körfält,körfält eller körbanax2,secondary,True,[50],,1,0,18.065717,59.308324
+S021,secondary,Solnavägen,384552746#0,highway.secondary,55,2,0,2,0,30,2,0,2,30,384552746#0,2,2,yes,,,30,7.3,minimivärde,50,Körfält,körfält eller körbanax2,secondary,True,[30],,,0,18.030827,59.347377
+S022,secondary,Södra Hamnvägen,315249651#0,highway.secondary,48,2,0,2,0,40,2,0,2,40,315249651#0,2,2,yes,,,40,4,,40,,,secondary,True,[40],,,0,18.105203,59.349682
+S023,secondary,Sveavägen,135200003#3,highway.secondary,96,2,0,2,0,40,2,0,2,40,135200003#0,2,2,yes,,,40,6.7,minimivärde,40,,,secondary,True,[40],,1,0,18.057056,59.342285
+S024,secondary,Valhallavägen,521623482#3,highway.secondary,85,2,0,0,0,30,2,0,0,30,521623482#0,2,2,yes,,,30,9.4,minimivärde,30,Körfält,körfält eller körbanax1,secondary,True,"[30, 40]",,,9,18.071316,59.345345
+S025,secondary,Ekelundsvägen,196784532,highway.secondary,44,1,0,0,0,40,1,0,0,40,196784532,,,,,,40,11,minimivärde,40,,,secondary,False,[40],,2,0,18.005695,59.349627
+S026,secondary,Solnavägen,246482988#0,highway.secondary,82,4,0,1,0,50,4,0,1,50,246482988#0,4,4,yes,,,50,4.2,minimivärde,50,,,secondary,True,[50],,,0,18.025032,59.350345
+S027,secondary,Torsgatan,1281966917,highway.secondary,310,1,0,1,0,40,1,0,1,40,1281966917,2,2,,,,40,,,40,,,secondary,False,[40],,,0,18.042613,59.337272
+S028,secondary,Ekelundsvägen,223480392,highway.secondary,44,1,0,1,0,40,1,0,1,40,223480392,,,yes,,,40,7.4,minimivärde,40,,,secondary,True,[40],,2,0,18.005833,59.350046
+S029,secondary,Valhallavägen,1337695412#2,highway.secondary,49,1,1,0,0,40,2,0,0,40,1337695412#2,2,2,yes,,yes|designated,40,9.2,minimivärde,40,Körfält,körfält eller körbanax1,secondary,True,[40],,,16,18.09133,59.340815
+S030,secondary,Odengatan,135200001#3,highway.secondary,103,1,0,0,0,40,1,0,0,40,135200001#0,1,1,yes,,,40,7,minimivärde,40,Körfält,körfält eller körbanax2;påbjudet körfält eller körbax1,secondary,True,[40],,2,0,18.054028,59.343589
+S031,secondary,Drottningholmsvägen,41517901#1,highway.secondary,91,2,1,2,0,40,3,0,2,40,41517901#0,3,3,yes,,yes|yes|designated,40,9.8,minimivärde,40,,,secondary,True,[40],,,0,18.030788,59.332198
+S032,secondary,Lidingövägen,936895726#2,highway.secondary,46,2,0,2,0,40,2,0,2,40,936895726#0,2,2,yes,merge_to_right|,,40,3.7,minimivärde,40,,,secondary,True,[40],,2,0,18.091733,59.348433
+S033,secondary,Hägerstensvägen,24513109,highway.secondary_link,70,1,0,0,0,40,1,0,0,40,24513109,1,1,yes,,,40,6.9,minimivärde,40,,,secondary,True,"[40, 60]",,,0,18.019685,59.306611
+S034,secondary,Sveavägen,1374225548#5,highway.secondary,62,1,0,2,0,40,1,0,2,40,1374225548#4,,,yes,,,40,7,minimivärde,40,,,secondary,True,[40],,3,7,18.0497,59.350433
+S035,secondary,Solnavägen,992247634#0,highway.secondary,75,3,0,2,0,50,3,0,2,50,992247634#0,3,3,yes,,,50,4.1,minimivärde,50,,,secondary,True,[50],,,0,18.024093,59.350524
+S036,secondary,Odengatan,504583461#1,highway.secondary,52,2,0,2,0,40,2,0,2,40,504583461#1,4,4,,,,40,7.1,minimivärde,40,Körfält,påbjudet körfält eller körbax1;körfält eller körbanax1,secondary,False,[40],,1,0,18.06433,59.346233
+S037,secondary,Lidingövägen,1190260126,highway.secondary,66,2,0,2,0,40,2,0,2,40,1190260126,2,2,yes,,,40,,,40,,,secondary,True,[40],,,0,18.096438,59.349643
+S038,secondary,Karlbergsvägen,41574205#0,highway.secondary,64,2,0,1,0,40,2,0,1,40,41574205#0,2,2,yes,,,40,10.2,minimivärde,40,Körfält,påbjudet körfält eller körbax3,secondary,True,[40],,,0,18.044996,59.342866
+S039,secondary,Hamnpirsvägen,495036148,highway.secondary,99,1,0,2,0,30,1,0,2,30,495036148,3,1,no,,,30,,,50,,,secondary,False,[30],,2,0,18.107912,59.351705
+S040,secondary,Drottningholmsvägen,299998010,highway.secondary,120,2,0,0,0,50,2,0,0,50,299998010,2,2,yes,,,50,10,medelvärde,60,,,secondary,True,[50],,,12,18.010354,59.331508
+S041,secondary,Sankt Eriksgatan,1337586670#1,highway.secondary,105,2,0,2,1,40,2,0,3,40,1337586670#0,2,2,yes,,,40,7.5,minimivärde,40,Körfält,körfält eller körbanax1,secondary,True,[40],,1,0,18.032089,59.333923
+S042,secondary,Ringvägen,146789569#2,highway.secondary,110,2,0,3,0,50,2,0,3,50,146789569#0,2,2,yes,through|through;right,,50,6.7,minimivärde,40,Körfält,körfält eller körbanax4,secondary,True,[50],,2,0,18.078424,59.307927
+S043,secondary,Götgatan,140726419,highway.secondary,113,2,1,1,0,50,3,0,1,50,140726419,3,3,yes,none|through|right,designated|yes|yes,50,8.7,minimivärde,40,Körfält,körfält eller körbanax1,secondary,True,[50],,3,0,18.077213,59.306747
+S044,secondary,Södra Hamnvägen,-30827009#0,highway.secondary,69,1,0,1,0,40,1,0,1,40,-30827009#0,2,2,,,,40,8.1,minimivärde,40,,,secondary,False,[40],,,0,18.108764,59.348169
+S045,secondary,Sankt Eriksgatan,154922249#1,highway.secondary,51,1,1,2,0,40,2,0,2,40,179695149#0,2,2,yes,,yes|designated,40,7.6,minimivärde,40,Körfält,körfält eller körbanax2,secondary,True,[40],,1,0,18.034159,59.336325
+S046,secondary,Solnavägen,210994884#1,highway.secondary,98,1,0,1,0,30,1,0,1,30,210994884#0,1,1,yes,,,30,4.2,minimivärde,50,,,secondary,True,[30],,,0,18.028482,59.348751
+S047,secondary,Tegeluddsvägen,184615459#1,highway.secondary,77,1,0,2,0,40,1,0,2,40,184615459#1,1,1,yes,,,40,8.7,minimivärde,40,,,secondary,True,[40],,,0,18.103177,59.34861
+S048,secondary,Rålambshovsleden,42567079#0,highway.secondary,90,2,0,4,0,40,2,0,4,40,42567079#0,2,2,yes,,,40,10.6,minimivärde,40,,förbud mot infart med fordonx2,secondary,True,[40],,,0,18.020303,59.331227
+S049,secondary,Drottningholmsvägen,299985111#0,highway.secondary,109,2,0,0,0,50,2,0,0,50,299985111#0,2,2,yes,,,50,,,60,,,secondary,True,[50],,1,0,18.018375,59.331433
+S050,secondary,Ringvägen,41568952#0,highway.secondary,86,3,0,2,0,50,3,0,2,50,41568952#0,3,3,yes,left|through|through,,50,7.5,minimivärde,40,,påbjuden körriktningx1,secondary,True,[50],,,0,18.056886,59.31106
+S051,secondary,Valhallavägen,1337695409#0,highway.secondary,79,2,1,0,0,40,3,0,0,40,1337695409#0,3,3,yes,,yes|yes|designated,40,9.8,minimivärde,40;50,Körfält,körfält eller körbanax1,secondary,True,[40],,,4,18.082056,59.343168
+S052,secondary,Ringvägen,106919278#0,highway.secondary,142,2,0,2,0,30,2,0,2,30,106919278#0,2,2,yes,through|through;right,,30,6.5,minimivärde,30,,,secondary,True,[30],,2,0,18.050891,59.316543
+S053,secondary,Valhallavägen,42978395#0,highway.secondary,204,1,1,0,0,40,2,0,0,40,42978395#0,2,2,yes,,yes|designated,40,6.3,minimivärde,40,Körfält,körfält eller körbanax1,secondary,True,[40],,,20,18.091853,59.340222
+S054,secondary,Sankt Eriksgatan,951439000#0,highway.secondary,42,3,0,2,0,40,3,0,2,40,951439000#0,3,3,yes,left|through|through;right,,40,6,minimivärde,40,,,secondary,True,[40],,,0,18.038524,59.342181
+S055,secondary,Karlbergsvägen,238062140#2,highway.secondary,76,1,0,4,0,40,1,0,4,40,238062140#0,,,yes,,,40,5.9,minimivärde,40,,,secondary,True,[40],,,0,18.038354,59.342485
+S056,tertiary,Folkungagatan,1243218624#0,highway.tertiary,45,2,0,2,0,30,2,0,2,30,1243218624#0,2,2,yes,left|right,,30,5.4,minimivärde,30,,,tertiary,True,[30],,,0,18.073793,59.314307
+S057,tertiary,Hamngatan,124626942#3,highway.tertiary,83,1,0,0,0,30,1,0,0,30,124626942#0,1,1,yes,,,30,3.9,minimivärde,30,,förbud mot trafik med fordonx2,tertiary,True,[30],,,0,18.068485,59.33271
+S058,tertiary,Skansbrogatan,71826651#0,highway.tertiary,232,1,0,1,0,50,1,0,1,50,71826651#0,1,1,yes,,,50,5,minimivärde,40,,förbud mot trafik med cykel x1,tertiary,True,[50],,1,3,18.075117,59.306166
+S059,tertiary,Hamngatan,622465146#0,highway.tertiary,97,2,0,2,0,30,2,0,2,30,622465146#0,2,2,yes,,,30,8.3,minimivärde,30,,förbud mot trafik med fordonx2,tertiary,True,[30],,,0,18.066074,59.33258
+S060,tertiary,Södra Fiskartorpsvägen,-181301932#16,highway.tertiary,805,1,0,1,0,30,1,0,1,30,-181301932#16,2,2,no,,,30,7.1,minimivärde,30,,,tertiary,False,[30],,1,0,18.080725,59.349562
+S061,tertiary,Lindhagensgatan,244450197#0,highway.tertiary,82,1,0,1,0,30,1,0,1,30,244450197#0,1,1,yes,,,30,5.4,minimivärde,30,,,tertiary,True,[30],,,0,18.006581,59.338417
+S062,tertiary,Värtavägen,-177972716#14,highway.tertiary,172,1,0,1,0,40,1,0,1,40,-177972716#14,,,no,,,40,,,40,,,tertiary,False,[40],,1,0,18.1016,59.344942
+S063,tertiary,Hägerstensvägen,103008280#0,highway.tertiary,51,1,0,1,0,30,1,0,1,30,103008280#0,1,1,yes,,,30,3.1,minimivärde,30,,,tertiary,True,[30],,1,0,18.006566,59.305615
+S064,tertiary,Fleminggatan,398076849#0,highway.tertiary,206,1,1,1,0,40,2,0,1,40,1337963908,2,2,yes,,yes|designated,40,5.5,minimivärde,40,Körfält,körfält eller körbanax2;förbud mot trafik med fordonx4,tertiary,True,[40],,1,0,18.041228,59.333376
+S065,tertiary,Oxenstiernsgatan,137879265#0,highway.tertiary,124,1,0,1,0,40,1,0,1,40,137879265#0,1,1,yes,,,40,5.4,minimivärde,40,,,tertiary,True,[40],,1,0,18.102608,59.337682
+S066,tertiary,Hornsgatan,493758758#0,highway.tertiary,91,2,0,1,0,30,2,0,1,30,493758758#0,2,2,yes,through|through;right,,30,6.5,minimivärde,30,,förbud mot trafik med annat x1,tertiary,True,[30],,,0,18.050821,59.317463
+S067,tertiary,Norr Mälarstrand,-28981549#0,highway.tertiary,123,1,0,1,0,40,1,0,1,40,-28981549#6,2,2,,,,40,3.4,minimivärde,40,,enkelriktad trafikx1,tertiary,False,[40],,1,0,18.040435,59.326918
+S068,tertiary,Renstiernas Gata,-1281079211#0,highway.tertiary,55,1,0,1,1,30,1,0,2,30,-1281079211#0,3,1,,,yes|designated,30,4.9,minimivärde,30,Körfält,körfält eller körbanax1,tertiary,False,[30],,,0,18.086192,59.310361
+S069,tertiary,Sjöviksvägen,-734223892#12,highway.tertiary,52,1,0,1,0,30,1,0,1,30,-734223892#12,2,2,,,,30,,,30,,,tertiary,False,[30],,,0,18.031084,59.306643
+S070,tertiary,Lövholmsvägen,1127487454#0,highway.tertiary,69,1,0,1,0,40,1,0,1,40,1127487454#0,2,2,,,,40,3.9,minimivärde,40,,,tertiary,False,[40],,1,0,18.015534,59.314236
+S071,tertiary,Skeppsbron,766761483#1,highway.tertiary,231,1,0,1,0,50,1,0,1,50,1337230905,1,1,yes,,,50,3.5,,30;40,,förbud mot U-svängx1,tertiary,True,[50],,,2,18.075241,59.323668
+S072,tertiary,Götgatan,1281367629#0,highway.tertiary,115,1,0,1,0,30,1,0,1,30,1281367629#0,1,1,yes,,,30,6.1,minimivärde,30,,,tertiary,True,[30],,1,0,18.075357,59.309989
+S073,tertiary,Sturegatan,577180793#2,highway.tertiary,107,1,0,1,0,40,1,0,1,40,161451901#0,1,1,yes,,,40,4.4,minimivärde,40,,,tertiary,True,[40],,,0,18.078254,59.342802
+S074,tertiary,Strandvägen,192992067#1,highway.tertiary,420,1,0,0,0,40,1,0,0,40,192992067#0,1,1,yes,,,40,3.2,minimivärde,40,,förbud mot trafik med fordonx1,tertiary,True,[40],,1,0,18.090324,59.331586
+S075,tertiary,Karlaplan,176555493#0,highway.tertiary,188,1,0,0,0,30,1,0,0,30,176555493#0,1,1,yes,,,30,,,30,,,tertiary,False,[30],,,0,18.090605,59.338271
+S076,tertiary,Karlavägen,177972710#1,highway.tertiary,45,1,0,0,0,40,1,0,0,40,177972710#0,1,1,yes,,,40,,,40,,,tertiary,True,[40],"[{""value"":8.0,""between"":[0.555523738,1.0]}]",,14,18.07715,59.340189
+S077,tertiary,Narvavägen,356955518#3,highway.tertiary,102,1,0,0,0,40,1,0,0,40,356955518#3,1,1,yes,,,40,,,40,,,tertiary,True,[40],,1,0,18.092353,59.33317
+S078,tertiary,Söder Mälarstrand,749079345,highway.tertiary,149,1,0,1,0,40,1,0,1,40,749079345,2,2,,,,40,3.9,minimivärde,40;50,,förbud mot trafik med fordonx1,tertiary,False,[40],,,0,18.052045,59.321137
+S079,tertiary,Hägerstensvägen,458914942,highway.tertiary,76,2,0,0,0,40,2,0,0,40,458914942,2,2,yes,,,40,7.9,minimivärde,40,,,tertiary,True,[40],,,0,18.01013,59.30576
+S080,tertiary,Gävlegatan,119937308#0,highway.tertiary,87,1,0,1,0,30,1,0,1,30,119937308#0,,,no,,,30,,,30,,,tertiary,False,[30],,,0,18.033458,59.347259
+S081,local,Lignagatan,151884978#4,highway.residential,63,1,0,1,0,30,1,0,1,30,151884978#4,2,2,no,,,30,,,30,,,residential,False,[30],"[{""value"":8.5,""between"":null}]",1,0,18.037611,59.314529
+S082,local,Vickergatan,-1881627#4,highway.residential,87,1,0,1,0,30,1,0,1,30,-1881627#4,,,,,,30,,,30,,,residential,False,[30],,1,0,18.064763,59.30637
+S083,local,Uggelviksgatan,138623071#0,highway.residential,139,1,0,0,0,30,1,0,0,30,138623071#0,,,yes,,,30,,,30,,enkelriktad trafikx1,residential,True,[30],,1,0,18.06828,59.343381
+S084,local,Dalagatan,41574203#2,highway.residential,100,1,0,1,0,30,1,0,1,30,41574203#0,,,,,,30,,,30,,,residential,False,[30],,1,0,18.043566,59.343795
+S085,local,Amarantergränd,28144167,highway.residential,45,1,0,1,0,30,1,0,1,30,28144167,,,,,,30,,,50,,,residential,False,[30],,,3,18.044313,59.330897
+S086,local,Ringvägen,198727728#2,highway.residential,50,1,0,0,0,30,1,0,0,30,198727728#2,,,yes,,,30,,,30,,cykelgatax2,residential,True,[30],,,0,18.066758,59.307881
+S087,local,Östermalmsgatan,27585015#5,highway.residential,95,1,0,1,0,30,1,0,1,30,27585015#5,,,,,,30,,,30,,,residential,False,[30],,1,0,18.074666,59.342509
+S088,local,Hornsbergs Strand,19881120#1,highway.residential,66,1,0,1,0,30,1,0,1,30,19881120#1,,,,,,30,10,,30,,,residential,False,[30],,,0,18.004398,59.339455
+S089,local,Nackagatan,41514569#0,highway.residential,78,1,0,1,0,30,1,0,1,30,41514569#0,,,,,,30,,,30,,,residential,False,[30],,,0,18.099503,59.310542
+S090,local,Hästholmsvägen,41658680#0,highway.residential,41,1,0,1,0,40,1,0,1,40,41658680#0,,,,,,40,,,30,,,residential,False,[40],,,0,18.109557,59.313008
+S091,local,Vintertullstorget,43066777#0,highway.residential,104,1,0,0,0,30,1,0,0,30,43066777#0,,,yes,,,30,,,30,,enkelriktad trafikx1,residential,True,[30],,,0,18.090964,59.307646
+S092,local,Nybohovsbacken,41357536#5,highway.residential,238,1,0,1,0,30,1,0,1,30,41357536#5,,,,,,30,,,30,,,residential,False,[30],,1,0,18.017967,59.309347
+S093,local,Styrbjörnsvägen,-58797128#7,highway.residential,81,1,0,1,0,30,1,0,1,30,-58797128#7,,,,,,30,,,30,,,residential,False,[30],,1,0,18.000509,59.309582
+S094,local,Brännkyrkagatan,4672508#0,highway.residential,141,1,0,1,0,30,1,0,1,30,4672508#0,,,,,,30,,,30,,,residential,False,[30],,1,0,18.049901,59.317927
+S095,local,,-509299560#5,highway.living_street,153,1,0,0,0,10,1,0,0,10,-509299560#5,,,,,,10,,,,,,living_street,False,[10],,1,0,18.080427,59.343926
+S096,local,Storskärsgatan,-4338239,highway.residential,96,1,0,1,0,30,1,0,1,30,-4338239,,,,,,30,,,30,,,residential,False,[30],,,0,18.09528,59.342254
+S097,local,Upplandsgatan,-275027893#0,highway.residential,67,1,0,1,0,30,1,0,1,30,-275027893#0,,,,,,30,,,30,,,residential,False,[30],,,0,18.047977,59.343174
+S098,local,Sofiebergsvägen,125585502#0,highway.unclassified,407,1,0,1,0,50,1,0,1,50,125585502#0,,,,,,,,,30,,,unclassified,False,[],,,0,18.020918,59.320367
+S099,local,Rådmansgatan,4853722#0,highway.residential,125,1,0,0,0,30,1,0,0,30,4853722#0,,,yes,,,30,,,30,,,residential,True,[30],,1,0,18.068636,59.343079
+S100,local,Henriksdalsvägen,315174949#0,highway.residential,136,1,0,1,0,30,1,0,1,30,315174949#0,,,,,,30,,,30,,,residential,False,[30],,2,0,18.105812,59.308505

@@ -39,3 +39,6 @@ Write `research/truth/data-hunt/<your number>-<slug>.md`. Plain language.
 - New directions you noticed but couldn't cover.
 
 Your final message: the report path, your top 3, and anything surprising, under 200 words.
+
+## Cheap shell
+The PC is saturated, and `nix develop` takes minutes under this load. If `/home/erikf/projects/personal/cars-data/dev-env.sh` is not empty, use `source` on it in your command instead of `nix develop --command`: same tools, no evaluation. If it is empty, use `nix develop` as usual.

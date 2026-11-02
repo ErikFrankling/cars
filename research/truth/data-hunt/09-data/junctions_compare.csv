@@ -1,0 +1,31 @@
+id,junction,type,lon,lat,names,v5_appr,v5_lanes,v5_bus,v5_turnonly,n7_appr,n7_lanes,n7_turnonly,osm_arrows,nvdb_sig,nvdb_nosig,register,nvdb_bans,bans_open_v5,ltfr,ov_turn,pano
+J01,cluster_1673767222_1673767225_,traffic_light,18.0312,59.33213,Drottningholmsvägen/Sankt Eriksgatan,8,12,0,1,7,11,3,0,2,2,8,0,0,körfält eller körbx2,0,0
+J02,cluster_119698_1673767356_1673,traffic_light,18.03252,59.33448,Fleminggatan/Sankt Eriksgatan,7,13,6,2,4,11,3,4,1,0,31,1,1,körfält eller körbx3,7,0
+J03,cluster_12184692946_1218469294,traffic_light,18.03431,59.31524,Hornsgatan/Långholmsgatan,7,23,0,6,5,17,6,3,2,0,45,0,0,enkelriktad trafikx1;körfält eller körbx4,3,0
+J04,cluster_12957251835_1391047691,traffic_light,18.06118,59.32856,Tegelbacken/Vasagatan,6,9,0,2,5,8,2,0,0,10,41,0,0,körfält eller körbx2;enkelriktad trafikx3;påbjudet körfält ex1;påbjude,4,0
+J05,21760826,traffic_light,18.02222,59.32824,Västerbron/Västerbroplan,4,8,3,2,3,8,2,1,5,0,54,0,0,körfält eller körbx6;påbjudet körfält ex1,0,0
+J06,cluster_12723882194_1272389881,traffic_light,18.05036,59.35022,Cedersdalsgatan/Sveaplan/Sveavägen,6,12,0,2,7,13,3,1,7,0,41,0,0,,3,0
+J07,2453067331,priority,18.05617,59.35159,Norra länken/Roslagstull/Valhallavägen,4,10,0,0,4,10,0,0,3,0,0,0,0,enkelriktad trafikx1;körfält eller körbx3,0,0
+J08,208343357,priority,18.01736,59.33136,Drottningholmsvägen/Mariebergsavfarten,4,4,0,0,4,4,0,0,0,2,0,0,0,,0,0
+J09,cluster_372793477_372793482_78,traffic_light,18.06525,59.34736,Körsbärsvägen/Surbrunnsgatan/Valhallavägen,10,16,0,3,3,4,0,0,2,1,25,0,0,körfält eller körbx5,0,0
+J10,9731336,traffic_light,18.04455,59.33153,Kungsholmsgatan/Scheelegatan,4,4,0,0,4,4,0,0,0,0,22,1,0,,1,0
+J11,cluster_251478053_2771890361_3,traffic_light,18.03119,59.35309,Karolinska vägen,5,5,0,1,5,5,1,0,0,0,0,0,0,,0,0
+J12,cluster_12039444336_1203944433,traffic_light,18.05172,59.34806,Sveavägen/Vanadisvägen,5,9,0,1,3,6,1,0,1,0,22,0,0,körfält eller körbx1,0,0
+J13,cluster_10018010928_1349071722,traffic_light,18.07289,59.32803,Skeppsbron/Slottskajen/Strömbron,6,9,2,3,5,9,3,2,3,1,24,0,0,körfält eller körbx3,2,0
+J14,cluster_273419426_273419967_53,traffic_light,18.00399,59.35249,Armégatan/Arvid Tydéns Allé/Infanterigatan/Lunda,11,14,0,2,7,8,2,0,0,0,0,0,0,,0,0
+J15,cluster_1306264724_1306264727_,traffic_light,18.0949,59.31625,Londonviadukten/Stadsgårdsleden/Tegelviksslingan,3,8,1,4,3,9,1,3,2,0,15,0,0,körfält eller körbx2;påbjudet körfält ex1,2,0
+J16,cluster_1639252575_1639252576_,traffic_light,18.05056,59.31739,Hornsgatan/Ringvägen,4,9,0,1,4,11,5,4,0,1,33,2,0,,2,0
+J17,cluster_1024194461_10801583356,traffic_light,18.04884,59.34233,Odengatan/Upplandsgatan,4,4,0,0,3,3,0,0,1,0,29,0,0,körfält eller körbx1;påbjudet körfält ex4;enkelriktad trafikx1,0,0
+J18,cluster_161901_2020441302_7309,traffic_light,18.01427,59.31567,Gröndalsvägen/Lustigkullavägen/Lusuddsvägen,5,5,0,0,4,4,0,0,0,0,10,0,0,,0,0
+J19,cluster_1647249353_1647249369_,traffic_light,18.04075,59.31613,Hornsgatan/Varvsgatan,5,7,0,1,3,5,1,1,0,0,23,0,0,körfält eller körbx4,0,0
+J20,210470413,traffic_light,18.01311,59.30621,Hägerstensavfarten/Hägerstensvägen,8,14,0,0,5,8,0,1,1,1,18,0,0,,3,0
+J21,29898154,right_before_left,18.09328,59.33934,Värtavägen/Wittstocksgatan,3,3,0,1,3,3,1,0,0,0,5,0,0,körfält eller körbx1,0,0
+J22,38375719,right_before_left,18.09616,59.35439,Ahlsellvägen,4,4,0,2,4,4,2,0,0,0,0,0,0,,0,0
+J23,161008,priority,18.07778,59.33071,Nybrokajen/Teatergatan,5,5,0,1,5,5,1,0,0,0,3,0,0,,0,0
+J24,10905268451,priority,18.0128,59.34032,Ekelundsbron/Hornsbergs Strand,3,3,0,1,3,3,1,0,0,0,0,0,0,,0,0
+J25,35981904,right_before_left,18.00931,59.33805,Nordenflychtsvägen/Pär Lagerkvists Gata,3,3,0,1,3,3,1,0,0,0,0,0,0,,0,0
+J26,264585942,right_before_left,18.00117,59.32992,Fredhällsgatan/Orvar Odds Väg/Snoilskyvägen/Stag,9,9,0,3,9,9,3,0,0,0,0,0,0,,0,0
+J27,21756192,priority,18.02326,59.33447,Bågljusvägen/Sankt Göransgatan/Welanders Väg,4,4,0,0,4,4,0,0,0,1,0,0,0,,0,0
+J28,21643012,right_before_left,18.08802,59.32335,Kastellholmsbron/Kastellholmskajen/Örlogsvägen,6,6,0,1,6,6,1,0,0,0,0,0,0,,0,0
+J29,cluster_1649379254_34914367,priority,18.09671,59.3323,Storgatan/Strandvägen,3,3,0,1,3,3,1,0,0,2,0,0,0,,0,0
+J30,21737543,priority,18.02084,59.33875,Hornsbergs Strand/Igeldammsgatan/Kungsholms Stra,3,3,0,1,3,3,1,0,0,1,0,0,0,,0,0

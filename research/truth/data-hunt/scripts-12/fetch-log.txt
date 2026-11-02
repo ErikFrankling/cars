@@ -1,0 +1,52 @@
+2026-11-02T02:48:04Z | hamburg-tld/things.json | https://tld.iot.hamburg.de/v1.1/Things?$top=2&$expand=Datastreams | 200 application/json;charset=UTF-8 1694 | sha 191e59fb037f8d17
+2026-11-02T02:48:04Z | hamburg-tld/root.json | https://tld.iot.hamburg.de/v1.1/ | 200 application/json;charset=UTF-8 561 | sha 1672b1c3206a6c05
+2026-11-02T02:48:04Z | singapore/taxi.json | https://api-open.data.gov.sg/v2/real-time/api/taxi-availability | 404 application/json; charset=utf-8 71 | sha f0fb3725c0f3a2bf
+2026-11-02T02:48:04Z | utah-atspm/home.html | https://udottraffic.utah.gov/atspm/ | 403 text/html; charset=UTF-8 134 | sha c996c0469ef05ff6
+2026-11-02T02:48:04Z | singapore/datamall_guide.pdf | https://datamall.lta.gov.sg/content/dam/datamall/datasets/LTA_DataMall_API_User_Guide.pdf | 206 application/pdf 1606188 | sha c66b262b04d8d40e
+2026-11-02T02:48:04Z | toronto/signals.json | https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action/package_search?q=traffic&rows=30 | 206 application/json;charset=utf-8 200000 | sha a8f8db5a7b41d1a4
+2026-11-02T02:48:05Z | hk-td/jt.xml | https://resource.data.one.gov.hk/td/jss/Journeytimev2.xml | 206 text/xml 27291 | sha 389adb7e12a7cd3d
+2026-11-02T02:48:05Z | hk-td/speed.xml | https://resource.data.one.gov.hk/td/traffic-detectors/rawSpeedVol-all.xml | 206 text/xml 545926 | sha fb641a212a715426
+2026-11-02T02:48:05Z | seoul/topis.html | https://topis.seoul.go.kr/ | 200 text/html; charset=UTF-8 112629 | sha 303ac58c53dd937d
+2026-11-02T02:49:06Z | taiwan-freeway/M06A_sample.tar.gz | https://tisvcloud.freeway.gov.tw/history/TDCS/M06A/M06A_20241015.tar.gz | curl: (28) Connection timed out after 60001 milliseconds
+000  0 | sha 
+2026-11-02T02:49:06Z | taiwan-freeway/M06A_index.html | https://tisvcloud.freeway.gov.tw/history/TDCS/M06A/ | curl: (28) Connection timed out after 60001 milliseconds
+000  0 | sha 
+2026-11-02T02:49:26Z | hamburg-tld/tld_things_count.json | https://tld.iot.hamburg.de/v1.1/Things?$top=1&$count=true&$select=name | 200 application/json;charset=UTF-8 201 | sha 012fda33c5f1892d
+2026-11-02T02:49:26Z | hamburg-tld/tld_obs_newest.json | https://tld.iot.hamburg.de/v1.1/Observations?$top=3&$count=false&$orderby=phenomenonTime%20desc | 200 application/json;charset=UTF-8 1771 | sha 504ca57a6d59928d
+2026-11-02T02:49:26Z | hamburg-tld/tld_obs_oldest.json | https://tld.iot.hamburg.de/v1.1/Observations?$top=3&$count=false&$orderby=phenomenonTime%20asc | 200 application/json;charset=UTF-8 1766 | sha 7bd885cc5749ac62
+2026-11-02T02:49:26Z | xuancheng/figshare_collection.json | https://api.figshare.com/v2/collections/5796776 | 200 application/json 2065 | sha 6716dd5e8be7932f
+2026-11-02T02:49:26Z | xuancheng/figshare_articles.json | https://api.figshare.com/v2/collections/5796776/articles?page_size=50 | 200 application/json 555 | sha f1c2c7eb8db60c10
+2026-11-02T02:49:26Z | hamburg-tld/tld_ds_count.json | https://tld.iot.hamburg.de/v1.1/Datastreams?$top=3&$count=true | 200 application/json;charset=UTF-8 1058 | sha 8784932e146a4d58
+2026-11-02T02:49:27Z | hk-td/hk_speedmap.xml | https://resource.data.one.gov.hk/td/speedmap.xml | 404 text/html; charset=UTF-8 475 | sha a56ec8a43cf4e6f2
+2026-11-02T02:49:27Z | hk-td/hk_catalog_search.json | https://data.gov.hk/en-data/api/3/action/package_search?q=traffic&rows=20 | 200 application/json;charset=utf-8 1572 | sha f493f80f4c2431e0
+2026-11-02T02:49:28Z | taiwan-tdx/tdx_home.html | https://tdx.transportdata.tw/ | 206 text/html; charset=UTF-8 885 | sha c4a7aeeb9d4b3be1
+2026-11-02T02:49:28Z | taiwan-tdx/tdx_docs.html | https://tdx.transportdata.tw/api-service/swagger/basic/5fa88b0c-120b-43f1-b188-c379ddb2593d | 206 text/html; charset=UTF-8 885 | sha c4a7aeeb9d4b3be1
+2026-11-02T02:50:26Z | taiwan-freeway/freeway_data.html | https://tisvcloud.freeway.gov.tw/ | curl: (28) Connection timed out after 60000 milliseconds
+000  0 | sha 
+2026-11-02T02:50:45Z | hamburg-tld/ds13_obs_new.json | https://tld.iot.hamburg.de/v1.1/Datastreams(13)/Observations?$top=20&$orderby=phenomenonTime%20desc&$select=phenomenonTime,result | 200 application/json;charset=UTF-8 1311 | sha 847ec50dc3ef9470
+2026-11-02T02:50:45Z | hamburg-tld/ds13_obs_old.json | https://tld.iot.hamburg.de/v1.1/Datastreams(13)/Observations?$top=5&$orderby=phenomenonTime%20asc&$select=phenomenonTime,result | 200 application/json;charset=UTF-8 506 | sha 0072b7e03878a55c
+2026-11-02T02:50:45Z | hamburg-tld/loc2.json | https://tld.iot.hamburg.de/v1.1/Things(2)/Locations | 200 application/json;charset=UTF-8 882 | sha 759f2c7a277b7784
+2026-11-02T02:50:45Z | hamburg-tld/ds15_count_2023.json | https://tld.iot.hamburg.de/v1.1/Datastreams(15)/Observations?$top=2&$count=true&$filter=phenomenonTime%20ge%202024-06-04T06:00:00Z%20and%20phenomenonTime%20lt%202024-06-04T07:00:00Z | 200 application/json;charset=UTF-8 27 | sha 694698019c220132
+2026-11-02T02:50:45Z | hamburg-tld/ds15_obs_new.json | https://tld.iot.hamburg.de/v1.1/Datastreams(15)/Observations?$top=20&$orderby=phenomenonTime%20desc&$select=phenomenonTime,result | 200 application/json;charset=UTF-8 1301 | sha f248f05b135c99be
+2026-11-02T02:50:45Z | hamburg-tld/ds15_obs_old.json | https://tld.iot.hamburg.de/v1.1/Datastreams(15)/Observations?$top=5&$orderby=phenomenonTime%20asc&$select=phenomenonTime,result | 200 application/json;charset=UTF-8 503 | sha c63480eb660eb5b5
+2026-11-02T02:50:45Z | hamburg-tld/ds8_count_day.json | https://tld.iot.hamburg.de/v1.1/Datastreams(8)/Observations?$top=1&$count=true&$filter=phenomenonTime%20ge%202026-10-27T00:00:00Z%20and%20phenomenonTime%20lt%202026-10-28T00:00:00Z | 200 application/json;charset=UTF-8 842 | sha 9a67f437cdb9ed1e
+2026-11-02T02:50:45Z | hamburg-tld/things_353.json | https://tld.iot.hamburg.de/v1.1/Things?$filter=properties/trafficLightsID%20eq%20'353'&$select=name,properties&$top=100 | 200 application/json;charset=UTF-8 1080 | sha 99af2258200e8019
+2026-11-02T02:50:45Z | hamburg-tld/ds13_count_day.json | https://tld.iot.hamburg.de/v1.1/Datastreams(13)/Observations?$top=1&$count=true&$filter=phenomenonTime%20ge%202026-10-27T00:00:00Z%20and%20phenomenonTime%20lt%202026-10-28T00:00:00Z | 200 application/json;charset=UTF-8 842 | sha 30addb02d5ed18c6
+2026-11-02T02:50:45Z | hamburg-tld/ds15_count_day.json | https://tld.iot.hamburg.de/v1.1/Datastreams(15)/Observations?$top=1&$count=true&$filter=phenomenonTime%20ge%202026-10-27T00:00:00Z%20and%20phenomenonTime%20lt%202026-10-28T00:00:00Z | 200 application/json;charset=UTF-8 843 | sha 68e9f94950ed6e8e
+2026-11-02T02:51:38Z | hamburg-tld/ds_cycle_second.json | https://tld.iot.hamburg.de/v1.1/Datastreams?$top=1&$count=true&$select=name&$filter=properties/layerName%20eq%20'cycle_second' | 200 application/json;charset=UTF-8 281 | sha 5c923e1d31216315
+2026-11-02T02:51:38Z | hamburg-tld/ds_detector_car.json | https://tld.iot.hamburg.de/v1.1/Datastreams?$top=1&$count=true&$select=name&$filter=properties/layerName%20eq%20'detector_car' | 200 application/json;charset=UTF-8 298 | sha e177bedcecd55728
+2026-11-02T02:51:38Z | hamburg-tld/ds_signal_program.json | https://tld.iot.hamburg.de/v1.1/Datastreams?$top=1&$count=true&$select=name&$filter=properties/layerName%20eq%20'signal_program' | 200 application/json;charset=UTF-8 289 | sha 758c2ddf24250003
+2026-11-02T02:51:38Z | hamburg-tld/ds_primary_signal.json | https://tld.iot.hamburg.de/v1.1/Datastreams?$top=1&$count=true&$select=name&$filter=properties/layerName%20eq%20'primary_signal' | 200 application/json;charset=UTF-8 291 | sha 50df0fefce45b68c
+2026-11-02T02:51:38Z | hamburg-tld/ds_detector_pt.json | https://tld.iot.hamburg.de/v1.1/Datastreams?$top=1&$count=true&$select=name&$filter=properties/layerName%20eq%20'detector_pt' | 200 application/json;charset=UTF-8 27 | sha 694698019c220132
+2026-11-02T02:51:38Z | hamburg-tld/ds_detector_bike.json | https://tld.iot.hamburg.de/v1.1/Datastreams?$top=1&$count=true&$select=name&$filter=properties/layerName%20eq%20'detector_bike' | 200 application/json;charset=UTF-8 27 | sha 694698019c220132
+2026-11-02T02:51:38Z | hamburg-tld/ds_pedestrian_signal.json | https://tld.iot.hamburg.de/v1.1/Datastreams?$top=1&$count=true&$select=name&$filter=properties/layerName%20eq%20'pedestrian_signal' | 200 application/json;charset=UTF-8 27 | sha 694698019c220132
+2026-11-02T02:51:38Z | hamburg-tld/ds_bus_checkin.json | https://tld.iot.hamburg.de/v1.1/Datastreams?$top=1&$count=true&$select=name&$filter=properties/layerName%20eq%20'bus_checkin' | 200 application/json;charset=UTF-8 27 | sha 694698019c220132
+2026-11-02T02:51:38Z | hamburg-tld/iot_root.json | https://iot.hamburg.de/v1.1/Things?$top=2&$count=true&$filter=substringof(%27Verkehr%27,name) | 200 application/json;charset=UTF-8 607 | sha 9566c417c5ccd4bd
+2026-11-02T02:51:38Z | xuancheng/art_18700553.json | https://api.figshare.com/v2/articles/18700553 | 200 application/json 1668 | sha 8283eccbc309d572
+2026-11-02T02:51:38Z | xuancheng/art_18737165.json | https://api.figshare.com/v2/articles/18737165 | 200 application/json 1615 | sha ca993db748284707
+2026-11-02T02:51:38Z | xuancheng/art_18737183.json | https://api.figshare.com/v2/articles/18737183 | 200 application/json 1609 | sha 1b3a5755feb7455d
+2026-11-02T02:51:38Z | singapore/on_request.html | https://datamall.lta.gov.sg/content/datamall/en/on-request_datasets.html | 206 text/html;charset=utf-8 51335 | sha 4eb8d837da3fe415
+2026-11-02T02:51:39Z | hamburg-tld/ckan_search.json | https://suche.transparenz.hamburg.de/api/3/action/package_search?q=Verkehrsst%C3%A4rken&rows=15 | 200 application/json;charset=utf-8 244943 | sha c8328f9fe17aba3a
+2026-11-02T02:51:40Z | hk-td/archive_old.json | https://api.data.gov.hk/v1/historical-archive/list-file-versions?url=https%3A%2F%2Fresource.data.one.gov.hk%2Ftd%2Ftraffic-detectors%2FrawSpeedVol-all.xml&start=20220101&end=20220102 | 200 application/json 46852 | sha dd2dceb8fd69c14c
+2026-11-02T02:51:40Z | hk-td/archive_list.json | https://api.data.gov.hk/v1/historical-archive/list-file-versions?url=https%3A%2F%2Fresource.data.one.gov.hk%2Ftd%2Ftraffic-detectors%2FrawSpeedVol-all.xml&start=20250101&end=20250103 | 200 application/json 48241 | sha e73fb7f4157e7c93
+2026-11-02T02:51:40Z | hk-td/archive_jt.json | https://api.data.gov.hk/v1/historical-archive/list-file-versions?url=https%3A%2F%2Fresource.data.one.gov.hk%2Ftd%2Fjss%2FJourneytimev2.xml&start=20240101&end=20240102 | 200 application/json 24687 | sha cb24d29ce7a969d4
