@@ -1,0 +1,318 @@
+{
+"humans_dt05": {
+"cars": "/home/erikf/projects/personal/cars-data/berlin2019/build/target-humans/release/cars",
+"flags": "--humans",
+"dt": 0.5,
+"signal": [
+{
+"kmh": 30,
+"queued": 7,
+"sat_headway_s": 3.0,
+"sat_flow": 1200.0,
+"jam_spacing_m": 10.315699999999993,
+"start_wave_kmh": 24.806242150101582,
+"lost_time_s": -1.0
+},
+{
+"kmh": 50,
+"queued": 23,
+"sat_headway_s": 2.45,
+"sat_flow": 1469.3877551020407,
+"jam_spacing_m": 8.736699999999928,
+"start_wave_kmh": 22.48725884537625,
+"lost_time_s": 0.6999999999999993
+}
+],
+"lanedrop": [
+{
+"kmh": 100,
+"sustained_veh_h_lane": 1650.0,
+"peak_before_jam": 1560.0,
+"drop_pct": -5.769230769230771,
+"onset_s": 180.0,
+"up_speed_end": 3.6247179035616823
+}
+],
+"giveway": [
+{
+"major": 0,
+"minor_capacity": 1089,
+"siegloch": 1200.0
+},
+{
+"major": 0,
+"minor_capacity": 1092,
+"siegloch": 1200.0
+},
+{
+"major": 400,
+"minor_capacity": 414,
+"siegloch": 735.9689621789939
+},
+{
+"major": 400,
+"minor_capacity": 423,
+"siegloch": 735.9689621789939
+},
+{
+"major": 800,
+"minor_capacity": 150,
+"siegloch": 451.3752610756879
+},
+{
+"major": 800,
+"minor_capacity": 150,
+"siegloch": 451.3752610756879
+},
+{
+"major": 1200,
+"minor_capacity": 42,
+"siegloch": 276.8318187059554
+},
+{
+"major": 1200,
+"minor_capacity": 57,
+"siegloch": 276.8318187059554
+}
+]
+},
+"humans_dt1": {
+"cars": "/home/erikf/projects/personal/cars-data/berlin2019/build/target-humans/release/cars",
+"flags": "--humans",
+"dt": 1.0,
+"signal": [
+{
+"kmh": 30,
+"queued": 10,
+"sat_headway_s": 3.0,
+"sat_flow": 1200.0,
+"jam_spacing_m": 9.681900000000041,
+"start_wave_kmh": 1.1701460869566076,
+"lost_time_s": -3.0
+},
+{
+"kmh": 50,
+"queued": 30,
+"sat_headway_s": 2.4,
+"sat_flow": 1500.0,
+"jam_spacing_m": 7.907000000000039,
+"start_wave_kmh": 22.764013847287487,
+"lost_time_s": -0.5999999999999996
+}
+],
+"lanedrop": [
+{
+"kmh": 100,
+"sustained_veh_h_lane": 1503.0,
+"peak_before_jam": 1260.0,
+"drop_pct": -19.285714285714285,
+"onset_s": 180.0,
+"up_speed_end": 2.5613040513274923
+}
+],
+"giveway": [
+{
+"major": 0,
+"minor_capacity": 1074,
+"siegloch": 1200.0
+},
+{
+"major": 0,
+"minor_capacity": 1080,
+"siegloch": 1200.0
+},
+{
+"major": 400,
+"minor_capacity": 435,
+"siegloch": 735.9689621789939
+},
+{
+"major": 400,
+"minor_capacity": 411,
+"siegloch": 735.9689621789939
+},
+{
+"major": 800,
+"minor_capacity": 186,
+"siegloch": 451.3752610756879
+},
+{
+"major": 800,
+"minor_capacity": 147,
+"siegloch": 451.3752610756879
+},
+{
+"major": 1200,
+"minor_capacity": 54,
+"siegloch": 276.8318187059554
+},
+{
+"major": 1200,
+"minor_capacity": 48,
+"siegloch": 276.8318187059554
+}
+]
+},
+"main_dt1": {
+"cars": "/home/erikf/projects/personal/cars-data/berlin2019/build/target-main/release/cars",
+"flags": "",
+"dt": 1.0,
+"signal": [
+{
+"kmh": 30,
+"queued": 7,
+"sat_headway_s": 2.45,
+"sat_flow": 1469.3877551020407,
+"jam_spacing_m": 10.438200000000052,
+"start_wave_kmh": 21.911698285714184,
+"lost_time_s": -0.8000000000000007
+},
+{
+"kmh": 50,
+"queued": 33,
+"sat_headway_s": 1.9,
+"sat_flow": 1894.7368421052633,
+"jam_spacing_m": 7.100999999999999,
+"start_wave_kmh": 20.92859984233571,
+"lost_time_s": 1.4000000000000004
+}
+],
+"lanedrop": [
+{
+"kmh": 100,
+"sustained_veh_h_lane": 2001.0,
+"peak_before_jam": 2340.0,
+"drop_pct": 14.48717948717949,
+"onset_s": 240.0,
+"up_speed_end": 3.146392896836386
+}
+],
+"giveway": [
+{
+"major": 0,
+"major_arrived_per_h": 0,
+"minor_capacity": 1371,
+"siegloch": 1200.0
+},
+{
+"major": 0,
+"major_arrived_per_h": 0,
+"minor_capacity": 1356,
+"siegloch": 1200.0
+},
+{
+"major": 400,
+"major_arrived_per_h": 360,
+"minor_capacity": 447,
+"siegloch": 735.9689621789939
+},
+{
+"major": 400,
+"major_arrived_per_h": 399,
+"minor_capacity": 426,
+"siegloch": 735.9689621789939
+},
+{
+"major": 800,
+"major_arrived_per_h": 705,
+"minor_capacity": 297,
+"siegloch": 451.3752610756879
+},
+{
+"major": 800,
+"major_arrived_per_h": 867,
+"minor_capacity": 225,
+"siegloch": 451.3752610756879
+},
+{
+"major": 1200,
+"major_arrived_per_h": 1239,
+"minor_capacity": 153,
+"siegloch": 276.8318187059554
+},
+{
+"major": 1200,
+"major_arrived_per_h": 1224,
+"minor_capacity": 150,
+"siegloch": 276.8318187059554
+}
+]
+},
+"phys_dt1": {
+"cars": "/home/erikf/projects/personal/cars-data/berlin2019/build/target-humans/release/cars",
+"flags": "",
+"dt": 1.0,
+"signal": [
+{
+"kmh": 30,
+"queued": 19,
+"sat_headway_s": 2.5,
+"sat_flow": 1440.0,
+"jam_spacing_m": 7.100000000000023,
+"start_wave_kmh": 17.341907349612857,
+"lost_time_s": -2.0
+},
+{
+"kmh": 50,
+"queued": 34,
+"sat_headway_s": 2.1,
+"sat_flow": 1714.2857142857142,
+"jam_spacing_m": 7.100000000000023,
+"start_wave_kmh": 17.853569431578965,
+"lost_time_s": -0.40000000000000036
+}
+],
+"lanedrop": [
+{
+"kmh": 100,
+"sustained_veh_h_lane": 1590.0,
+"peak_before_jam": 1260.0,
+"drop_pct": -26.190476190476186,
+"onset_s": 180.0,
+"up_speed_end": 2.6066843523368552
+}
+],
+"giveway": [
+{
+"major": 0,
+"minor_capacity": 1203,
+"siegloch": 1200.0
+},
+{
+"major": 0,
+"minor_capacity": 1203,
+"siegloch": 1200.0
+},
+{
+"major": 400,
+"minor_capacity": 1194,
+"siegloch": 735.9689621789939
+},
+{
+"major": 400,
+"minor_capacity": 1197,
+"siegloch": 735.9689621789939
+},
+{
+"major": 800,
+"minor_capacity": 1194,
+"siegloch": 451.3752610756879
+},
+{
+"major": 800,
+"minor_capacity": 1197,
+"siegloch": 451.3752610756879
+},
+{
+"major": 1200,
+"minor_capacity": 1200,
+"siegloch": 276.8318187059554
+},
+{
+"major": 1200,
+"minor_capacity": 1200,
+"siegloch": 276.8318187059554
+}
+]
+}
+}

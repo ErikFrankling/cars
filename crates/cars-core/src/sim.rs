@@ -265,7 +265,7 @@ impl Sim {
             p.n_trips as u64 * std::mem::size_of::<GpuTripOut>() as u64,
         );
         let series = empty("series", p.n_samples as u64 * p.n_replicas as u64 * 16);
-        let edge_acc = empty("edge_acc", p.n_edges as u64 * 32);
+        let edge_acc = empty("edge_acc", p.n_edges as u64 * 32 + p.n_lanes as u64 * 16);
         // Second half in physical mode: the hard limits, per trip. llvmpipe caps storage buffers per stage at 48.
         let advice_init = vec![0xffu8; p.n_trips as usize * 4 * if p.mu > 0.0 { 2 } else { 1 }];
         let advice = init("advice", &advice_init, storage);
@@ -925,9 +925,25 @@ impl Sim {
     pub fn take_edge_acc(&self, gpu: &Gpu) -> Vec<[u32; 8]> {
         let out = self.read(gpu, &self.buffers.edge_acc, self.world_params.n_edges as u64);
         let mut enc = gpu.device.create_command_encoder(&Default::default());
-        enc.clear_buffer(&self.buffers.edge_acc, 0, None);
+        enc.clear_buffer(&self.buffers.edge_acc, 0, Some(self.world_params.n_edges as u64 * 32));
         gpu.queue.submit([enc.finish()]);
         out
+    }
+
+    /// Set measuring points: (lane, position in metres from the lane's start). See `sensor_pass`.
+    pub fn set_sensors(&self, gpu: &Gpu, sensors: &[(u32, f32)]) {
+        for &(lane, pos) in sensors {
+            let at = self.world_params.n_edges as u64 * 32 + lane as u64 * 16;
+            gpu.queue.write_buffer(&self.buffers.edge_acc, at, bytemuck::bytes_of(&pos.max(0.01)));
+        }
+        gpu.queue.submit([]);
+    }
+
+    /// Per lane since the start: position bits, count, speed sum in cm/s, vehicles over 7.5 m.
+    pub fn read_sensors(&self, gpu: &Gpu) -> Vec<[u32; 4]> {
+        let n = self.world_params.n_edges as usize * 2;
+        let all: Vec<[u32; 4]> = self.read(gpu, &self.buffers.edge_acc, (n + self.world_params.n_lanes as usize) as u64);
+        all[n..].to_vec()
     }
 
     /// Back to the state `Sim::new` leaves, without rebuilding pipelines. Demand stays as written.

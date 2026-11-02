@@ -1,0 +1,14 @@
+map,run,h7,h10,h13,h16,h19,h23,h25,last_h
+"v6.4 net as cut (m0), old engine",main_f01c_partial_killed_13h,1823,2910.0,6551.0,,,,,13
+"m1: 2019 lanes, speeds, some chains",main_m1_f01,1535,1132.0,4219.0,,,,,14
+m2: + chains merged fully,main2_m2_f01,1515,1749.0,5968.0,,,,,14
+"m3: m1 + report 10 12 m join, per-node",main_m3_f01,2906,7998.0,,,,,,12
+m5: m2 + per-node programs,main_m5_f01,1515,1614.0,5922.0,8000.0,,,,16
+"m6: m2 + report 19 radii, smoothing",main_m6_f01,2167,8000.0,8000.0,,,,,13
+m7: m2 + lane feeds,main2_m7_f01,1515,1292.0,3032.0,11585.0,20000.0,,,20
+m9: m2 + no U-turns + lane feeds,main2_m9_f01c,1514,974.0,1171.0,1912.0,2717.0,3210.0,3157.0,26
+m10: m9 + 7.5 m join away from signals,final_m10_f01,1608,1020.0,1191.0,1472.0,867.0,78.0,0.0,26
+"m10, static programs",main2_m10_f01_static,1857,1175.0,1383.0,1739.0,1011.0,91.0,0.0,26
+"m2, physics branch driver",physics_m2_f01,6204,,,,,,,8
+"m2, human driver",humans_m2_f01,8001,,,,,,,8
+"m10, human driver",humans_m10_f01,7711,,,,,,,8

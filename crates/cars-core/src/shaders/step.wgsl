@@ -1213,6 +1213,8 @@ fn blocked_by_foe(r: Approach, a: f32, l: f32, va: f32, vl: f32, same_target: bo
     if (r.leave < a) {
         return same_target && (a - r.leave < h || unsafe_merge(r.leave_speed, va, r.decel, decel));
     } else if (fa > l + h) {
+        // SUMO softens the foe's braking by the waiter's impatience, so a far foe counts as arriving fast and a head that has waited a while needs a gap of 12 s, not the critical gap. Physical mode asks about real braking only.
+        if (mu > 0.0) { return same_target && unsafe_merge(vl, r.braking, decel, r.decel); }
         return same_target && unsafe_merge(vl, ex_foe_brake_arr, decel, r.decel);
     }
     return true;
@@ -1249,6 +1251,11 @@ var<private> fin_max: f32;
 
 // MSLCM_LC2013::_patchSpeed: what lane changing wants from the speed this step.
 fn lc_patch_speed(wanted: f32, e: Veh, vmax: f32) -> f32 {
+    // A body still half on the lane before can't start a change (ph_lc_room), so stopping for one holds it there for good.
+    if (mu > 0.0 && !is_internal(e.lane) && e.pos < min(ty.length, lanes[e.lane].length - 1.0)) {
+        atomicStore(&advice[e.trip], NONE);
+        return wanted;
+    }
     var mn = fin_min;
     var mx = fin_max;
     var nv = wanted;
@@ -1365,6 +1372,22 @@ fn finalize_speed(v_pos: f32, old_v: f32, lane_vmax_: f32, rng: ptr<private, u32
 }
 
 var<private> ex_rng: u32;
+
+// A measuring point set with `cars run --sensors`, counted like a road loop: one per crossing of the
+// front, with the speed at that moment. Words per lane after the edges: position in bits (0 for none),
+// count, speed sum in cm/s, vehicles over 7.5 m. They only ever grow.
+fn sensor_pass(lane: u32, whole_lane: bool, before: f32, after: f32, v: f32, length: f32) {
+    if (lane >= P.n_lanes) { return; }
+    let at = P.n_edges * 8u + lane * 4u;
+    let bits = atomicLoad(&edge_acc[at]);
+    if (bits == 0u) { return; }
+    let s = bitcast<f32>(bits);
+    if ((whole_lane || before < s) && after >= s) {
+        atomicAdd(&edge_acc[at + 1u], 1u);
+        atomicAdd(&edge_acc[at + 2u], u32(v * 100.0));
+        if (length > 7.5) { atomicAdd(&edge_acc[at + 3u], 1u); }
+    }
+}
 
 // Physical dawdling: a loss of acceleration held for a whole second, so its size is the same at any
 // dt, and drawn from the trip and the second so a replay gives the same draw.
@@ -1910,6 +1933,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         // A loop on a lane left in this step was crossed, however short the lane.
         let crossed = lanes[e.lane].det_pos;
         if (crossed >= 0.0 && (j > 0u || old_pos < crossed)) { last_detect[e.lane] = G.step; }
+        sensor_pass(e.lane, j > 0u, old_pos, len, e.speed, ty.length);
         e.pos -= len;
         e.route_len += len;
         e.prev2_lane = e.prev_lane;
@@ -1928,6 +1952,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         if (j >= MAX_ITEMS) { break; }
     }
 
+    sensor_pass(e.lane, j > 0u, old_pos, e.pos, e.speed, ty.length);
     // A loop stays occupied until the back of the vehicle has passed it.
     var loop_back = e.pos - ty.length;
     let det = lanes[e.lane].det_pos;
