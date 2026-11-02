@@ -105,12 +105,16 @@ def road_stats(r, interval, tally):
     both = pd.concat(cuts, axis=1).interpolate(limit=3).dropna()
     both = both[(both[2850] < 20) & (both[2550] < 20)]
     wave = X.wave_lag(both[2850], both[2550], 2.0, 300.0) if len(both) > 60 else np.nan
+    raw = X.lane_changes(f, interval)
+    slow = f[(f.speed < 15) & (f.speed > 1) & f.lane.str.startswith('A_')]
+    km = X.veh_km(slow, interval)
+    q_rate = float(((raw.speed < 15) & raw.lane.str.startswith('A_')).sum()) / km if km > 5 else np.nan
     ev = X.halfway(f)
-    ev = X.lane_changes(f, interval) if ev is None else ev
+    ev = raw if ev is None else ev
     ev = ev[ev.speed < 15]
     gaps = X.gaps_at_change(f, ev) if len(ev) else pd.DataFrame(columns=['lag', 'lead', 'v'])
     del f
-    return dict(relax=relax, a=a, j=j, T=T, amp=float(np.median(amp)) if amp else np.nan, per=float(np.median(per)) if per else np.nan, rate=rate, wave=wave, gaps=gaps)
+    return dict(q_rate=q_rate, relax=relax, a=a, j=j, T=T, amp=float(np.median(amp)) if amp else np.nan, per=float(np.median(per)) if per else np.nan, rate=rate, wave=wave, gaps=gaps)
 
 
 def free_stats(r, interval, tally):
@@ -178,6 +182,8 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
         M['M1'] = thin_blocks(L.per_tracker([x['a'] for x in st], micro, 'a'))
         M['M2'] = thin_blocks(L.per_tracker([x['j'] for x in st], micro, 'j'))
         M['M3'] = thin_blocks(L.per_tracker([x['T'] for x in st], micro, 'T'))
+        M['M3'].update(thin_blocks(L.M3_tail([x['T'] for x in st], micro)))
+        M['M8'] = L.M8_congested([x['q_rate'] for x in st])
         M['M13'] = L.M13([x['amp'] for x in st], [x['per'] for x in st], micro)
         M['C4'] = L.c4([x['wave'] for x in st])
         M['M10'] = L.M10([x['relax'] for x in st])
@@ -197,7 +203,7 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
             st.append(free_stats(r, max(r.plan['fcd'], ov.get('dt', cfg['dt'])), tally))
             runner.clean(r)
         M['M7'] = L.M7([x['shapes'] for x in st])
-        M['M8'] = L.M8([x['rate'] for x in st])
+        M.setdefault('M8', {}).update(L.M8([x['rate'] for x in st]))
         M.setdefault('M9', {}).update(L.M9([x['gaps'] for x in st], 'free'))
         M['M11'] = L.M11([x['speeds'] for x in st])
     if want('signal'):

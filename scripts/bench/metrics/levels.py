@@ -38,6 +38,26 @@ def per_tracker(samples, floors, key, witness=False):
     return cells
 
 
+def M3_tail(samples, floors):
+    """The short end of time gaps, p5, per tracker and band: W1 over the whole curve hides a thin tail of tailgating. Real blocks rule it."""
+    import itertools
+    cells = {}
+    for site, sr in floors.items():
+        if site.startswith('_'):
+            continue
+        for bn, band in sr['bands'].items():
+            if bn == '1-5':
+                continue
+            p5 = [b['T'][4] for b in band['blocks']]
+            F = score.floor_of([abs(a - b) for a, b in itertools.permutations(p5, 2)])
+            med = [b['T'][49] for b in band['blocks']]
+            D = [[abs(float(np.quantile(s_[bn], .05)) - q) if len(s_.get(bn, [])) >= RMIN else np.nan for q in p5] for s_ in samples]
+            c = score.judge(D, max(F, .05), float(np.median(np.abs(np.array(med) - np.array(p5)))))
+            c.update(D=np.round(D, 4).tolist(), real_blocks=len(p5))
+            cells[f'p5|{site}|{bn}'] = c
+    return cells
+
+
 def M4(spacings):
     v = [float(np.nanmedian(s)) if len(s) else np.nan for s in spacings]
     c = score.band(v, 6.5, 8.2, N=6.0)
@@ -90,6 +110,14 @@ def M8(rates):
     c = score.band(rates, .22, .30, N=0.0)
     c['D'] = [[abs(x - .26)] for x in rates]
     return {'per_veh_km': c}
+
+
+def M8_congested(rates):
+    """In a queue, by report 22's density band. Real: DRaT 0.25 discretionary, I-90 and I-294 survey 0.22 to 0.26. Thin. Null: nobody changes in a queue."""
+    v = [x for x in rates if np.isfinite(x)]
+    c = score.band(v, .15, .35, N=0.0, thin=True) if v else score.no_data('no congested driving in this run')
+    c['D'] = [[abs(x - .25)] for x in v]
+    return {'congested': c}
 
 
 M9_REAL = dict(congested=dict(lag=[.56, .74, 1.67], lead=[.33, .47, 1.13]), free=dict(lag=[.70, .90, 2.33], lead=[.61, .87, 4.14]))

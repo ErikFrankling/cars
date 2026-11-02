@@ -22,8 +22,8 @@ BAD = [
     dict(n=6, name='SUMO secure gap test', driver='main', ov={}, scenes=['free3', 'road', 'lanedrop'], must=['M9', 'M8'], need='any', note='At free flow its lane-change rate is right, which is why M8 alone would not catch it'),
     dict(n=7, name='Lane changing off', driver=BASE, ov={'no_lc': True}, scenes=['free3'], must=['M8'], need='all', note='C6 needs the district'),
     dict(n=8, name='Acceleration noise 0.53 m/s2', driver='human53', ov={}, scenes=['road', 'signal'], must=['V2', 'M3'], need='any'),
-    dict(n=9, name='Car length 3 m, demand raised to match flow', driver=BASE, ov={'length': 3.0}, scenes=['signal'], must=['M4', 'JS1'], need='any', mini={'length': 3.0}, note='The point of this case: N1 may pass while levels 1 and 2 fail'),
-    dict(n=10, name='Reaction time cut 30%, demand raised to match flow', driver=BASE, ov={'flags': ['--tune', 't_scale=0.7']}, scenes=['road', 'signal'], must=['M3', 'JS2', 'C3'], need='any', mini={'tau': .7}, note='The point of this case: N1 may pass while levels 1 to 3 fail'),
+    dict(n=9, name='Car length 3 m, demand raised to match flow', driver='main', base='main', ov={'length': 3.0}, scenes=['signal'], must=['M4', 'JS1'], need='any', mini={'length': 3.0}, note='The point of this case: N1 may pass while levels 1 and 2 fail. On main, because the human driver stands 2 m too far apart and 3 m cars would hide that'),
+    dict(n=10, name='Reaction time cut 30%, demand raised to match flow', driver='main', base='main', ov={'tau': .7}, scenes=['road', 'signal'], must=['M3', 'JS2', 'C3'], need='any', mini={'tau': .7}, note='The point of this case: N1 may pass while levels 1 to 3 fail'),
     dict(n=11, name='Demand x0.6', driver=None, ov={'demand_scale': .6}, scenes=[], must=['N1', 'N5', 'V8'], need='all', mini={'demand_scale': .6}),
     dict(n=12, name='Demand x1.2', driver=None, ov={'demand_scale': 1.2}, scenes=[], must=['N1', 'N14', 'V6'], need='any', mini={'demand_scale': 1.2}),
     dict(n=13, name='Demand clock +1 h', driver=None, ov={'clock': 1}, scenes=[], must=['N3', 'N4'], need='any', mini={'clock': 1}),
@@ -64,10 +64,10 @@ def differs(M, B, i):
     return False
 
 
-def human_fast():
-    runs = sorted((runner.STORE / 'results').glob('*-human-fast.json'))
+def baseline(driver='human'):
+    runs = sorted((runner.STORE / 'results').glob(f'*-{driver}-fast.json'))
     if not runs:
-        raise SystemExit('run the human baseline first')
+        raise SystemExit(f'run the {driver} baseline first')
     return {i: m['cells'] for i, m in json.loads(runs[-1].read_text())['metrics'].items()}
 
 
@@ -90,7 +90,7 @@ def main(a):
     out_p = store / 'knownbad.json'
     rows = {r['n']: r for r in json.loads(out_p.read_text())['rows']} if out_p.exists() else {}
     log = lambda s: print('   ', s, flush=True)
-    base = human_fast()
+    bases = {d: baseline(d) for d in ('human', 'main')}
     for it in BAD:
         if only and it['n'] not in only:
             continue
@@ -116,7 +116,7 @@ def main(a):
             hits = []
             for i in it['must']:
                 st, z = worst_cell(M, i)
-                src, ref = M, base
+                src, ref = M, bases[it.get('base', 'human')]
                 if st is None and i in mini:
                     st, z = worst_cell(mini, i)
                     src, ref = mini, mbase

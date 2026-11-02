@@ -245,4 +245,6 @@ def engine_test(cfg, ov, seed=1, work=None, gpu=False, B=None, log=print):
     q, v = read_sensors(sd / 'sensors.csv', names)
     M = score_runs([(q, v)], sub)
     M['V1'] = {'count': score.zero([r.teleports or 0], 'teleports')}
+    scale = ov.get('demand_scale', 1.0)
+    M['V8'] = {'scale': score.zero([0 if scale >= .95 else 1], f'demand scale {scale}')}
     return M, r.secs
