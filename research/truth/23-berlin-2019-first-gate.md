@@ -8,7 +8,42 @@ Done 2026-11-02 on branch `t3/45597235`. Nobody was contacted. Scenario in `cars
 
 **The largest single cause is not the driver or the signals.** 29.3% of the district's vehicles had a U-turn in their MATSim route, 18,699 of them at signals, because MATSim's routes ignore turn rules. Removing them moved a lock-up from midday to a run that finishes.
 
-**What's still open:** why 50% jams. SUMO on the same net and routes jams about as fast, so it comes from these inputs and not from `cars`. One controller per junction helps most, at −25%, and give-way capacity −11%, but neither stops it. Roads that MATSim's routes overload (see Step 4) are the leading suspect, and that is step 5's job, which the recipe doesn't allow yet.
+**What's still open:** why 50% jams. SUMO on the same net and routes jams about as fast, and 25 iterations of route assignment barely help, so it isn't route choice or `cars` alone. See the hill climb below.
+
+## Hill climb after the first report
+
+Every round is a line in `research/truth/berlin2019/rounds.csv`. The count is cars on the road at 07:30 with teleports off, on step 2's test. A healthy day has 1,403 at 10% and 7,015 at 50%. One seed each except where noted, and lockup is chaotic, so differences under about 10% mean nothing.
+
+| Round | Change | Driver, demand | Cars at 07:30 | At 08:00 | Reading |
+|---|---|---|---:|---:|---|
+| 0 | Map m10, netconvert's signals | Krauss, 50% | 19,825 | 31,527 | Start |
+| 1 | One program per junction (report 10), m12 | Krauss, 50% | **14,792** | 25,258 | **Best signal change: −25%. Kept** |
+| 1 | Static programs | Krauss, 50% | 20,936 | 31,687 | No gain |
+| 1 | Give-way capacity in band, `impatience` 0.25 | Krauss, 50% | 17,709 | | −11% |
+| 1 | Report 11's generator, adapted to Germany | Krauss, 50% | Over 16,800 by 07:00 | | Worse. 9,676 on m12 at 07:00 |
+| 1 | Green split retimed to MATSim's flows | Krauss, 50% | 22,685 | | Worse |
+| 1 | Report 10's 12 m join, across signals | Krauss, 50% | Over 11,700 by 07:00 | | Worse |
+| 3 | Routes after 25 assignment iterations | Krauss, 50% | 13,691 | 23,196 | **−7%. Sensible routes don't hold it** |
+| 2 | Physics, now main's default, on m12 | Physics, 10% | 2,947 | 4,964 | Locks at 10%, where Krauss finishes |
+| 2 | Single rules off: arbiter, certificate, exit clear, zones, fleet of cars only, dt 0.5, faster lane changes, `lc_path` | Physics, 10% | 2,643–3,975 | 3,863–5,382 | **No rule alone frees it** |
+| 4 | Merge rule fix | Physics, 10% | 2,919 | 4,366 | Small |
+| 4 | Fix of a car stopping itself half on a lane | Physics, 10% | 2,948 | 4,466 | Clears the night lock, not the morning |
+| 4 | Both fixes | Physics, 50% | 31,955 | 43,034 | Was 37,728 and 47,641: −15% |
+| 4 | Human driver, branch head | Human, 10%, dt 1 | 11,088 | 14,851 | Far from running on a city at dt 1 |
+
+**Signals: two rounds and no gain, so I've stopped there (status board's rule).** The German generator (`german_tls.py`) gets closer to Hamburg's measured programs than netconvert does: cycle p10/p50/p90 70/76/110 s against 73/90/110, green share 0.16/0.43/0.77 against 0.15/0.31/0.60, where netconvert has 90/90/90 and 0.36/0.47/0.51. It still jams sooner. Retiming also shows signals aren't the limit at 50%: it leaves 2 of 2,050 loaded lanes over capacity, down from 16. So at 50% no signal is short of green for its flow.
+
+**Route assignment, run by the route-choice agent on my scenario:** 25 iterations at 50%, relative gap 33% down to 11%, unfinished at 12:00 from 55% down to 38–44%. Still stalled at about 10:25 in 24 of 25 iterations. **The map doesn't hold under sensible routes, so the fault left is not route choice.**
+
+**Two real bugs found with the tools.** Both are physics, and neither is in main yet:
+1. **Merges asked for 12 s gaps, not 5 s.** Copied from SUMO, the waiter's impatience softens the foe's braking when it judges a merge, so a far foe counts as arriving fast. This is why isolated give-way capacity was low. Minor road capacity at major flows of 400, 800 and 1,200: 327, 194, 96 before and 474, 298, 159 now, against 736, 451, 277 from HBS. Still 57–66%.
+2. **A car stopped itself half on a lane.** A long vehicle needing a lane change stopped for it with its rear on the junction, and physics refuses a change until the rear is clear. So it waited for ever. That locked Ernst-Reuter-Platz from 00:30 with almost no traffic. Stuck over 300 s at 02:00: 11 before, 0 now.
+
+Also: my virtual loops wrote out of bounds for a vehicle with no lane, which stopped every car in trusted mode on the merged engine. That's fixed, and `scripts/bench/instrument/sensors-main.patch` now fits main's new edge counters. The gridlock report no longer crashes on a stale item. Physics at step 3 is now in band on saturation (1,870) and motorway (1,839), against 1,714 and 1,590 before.
+
+**What stops 50% now.** Not signal capacity, routes, fleet, or the kernel alone, since SUMO jams too, with 22,515 at 07:30. Roots of the jam on assigned routes with Krauss, by vehicle-hours held: **a car stopped waiting to change lane 722**, give-way 476, signal 299, exit full 95. The worst cluster sits at Karl-Liebknecht-Straße, close to the cut's east edge, and I haven't ruled out a boundary artefact there. So the leading explanation is cars blocked abreast on short roads, then spillback through blocks of tiny storage. This is an explanation of what the tools show, not yet a proven cause: no test has removed it.
+
+**Next, in order:** a lane swap or giving-up rule for cars blocked abreast, tested at 50%; a larger cut, to test the boundary; then turn and bus lanes from OSM 2019, and the follow-up time at give-way (816 an hour with no major flow, against 1,200).
 
 ## Scorecard
 

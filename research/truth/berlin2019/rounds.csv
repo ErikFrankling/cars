@@ -13,3 +13,8 @@ round,run,step,change,factor,r0600,r0630,r0700,r0730,r0800,ratio_0730,last_time_
 2c,sw_p_nozones,3,physics 10%: --tune nozones,1.0,731,1494,2093,2893,,2.06,7.5,0,,,,,,,,,,,,,,
 2c,sw_p_lcgap,3,physics 10%: --tune lcgap,1.0,728,1450,2204,3346,,2.38,7.5,0,,,,,,,,,,,,,,
 1f,sw_k_s3,2,"Krauss, m12 with green split retimed to MATSim flows, static",5,4003,8941,13768,22685,,3.23,7.5,0,,,,,,,,,,,,,,
+3a,a1_assigned,5,"Krauss 50%, map m12, routes after 25 iterations of assignment",5,3238,6686,8858,13691,23196,1.95,8.0,0,,,,,,,,,,,,,,
+4a,sw_c7_p10_s0,3,physics 10%: merge rule fixed,1.0,715,1417,2053,2919,4366,2.08,8.0,0,,,,,,,,,,,,,,
+4b,sw_f1_p10,2,physics 10%: and a body half on a lane is not stopped for a change,1.0,689,1419,1938,2948,4466,2.1,8.0,0,,,,,,,,,,,,,,
+4c,sw_f2_p50,2,physics 50%: both fixes,5,4979,12707,22456,31955,43034,4.56,8.0,0,,,,,,,,,,,,,,
+4d,sw_h_10,3,"human driver at f69+merge, 10%, dt 1",1.0,2363,4908,8071,11088,14851,7.9,8.0,0,,,,,,,,,,,,,,
