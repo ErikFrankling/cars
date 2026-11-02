@@ -8,6 +8,7 @@ use cars_core::{
     demand::Demand,
     net::Net,
     sim::Sim,
+    why::{KINDS, WHY_WORDS, WhyRecord},
     world::{GpuGlobals, GpuTlsState, GpuVeh, World},
 };
 use serde::{Deserialize, Serialize};
@@ -173,13 +174,18 @@ pub struct Options {
     pub end: f32,
     pub stride: u32,
     pub bbox: Vec<f32>,
+    /// Also copy `Sim::with_why`'s reasons, to `<trace>.why`.
+    pub why: bool,
 }
+
+const WHY_MAGIC: &[u8; 8] = b"CARSWHY1";
 
 struct Slot {
     buffer: wgpu::Buffer,
     ready: Arc<AtomicBool>,
     n: u64,
     n_tls: u64,
+    n_why: u64,
     step: u32,
     teleports: u32,
     collisions: u32,
@@ -197,6 +203,7 @@ pub struct Tracer {
     back: mpsc::Receiver<Slot>,
     writer: Option<std::thread::JoinHandle<Stats>>,
     n_tls: u64,
+    why: bool,
     capture_ms: f64,
     frames: u64,
     path: PathBuf,
@@ -280,10 +287,24 @@ impl Tracer {
         file.write_all(&((json.len() + pad) as u32).to_le_bytes())?;
         file.write_all(&json)?;
         file.write_all(&b"    "[..pad])?;
+        let why_file = if o.why {
+            let mut w = BufWriter::with_capacity(1 << 20, File::create(format!("{}.why", path.display()))?);
+            let json = serde_json::to_vec(&serde_json::json!({"record": size_of::<WhyRecord>(), "kinds": KINDS})).map_err(std::io::Error::other)?;
+            let pad = json.len().next_multiple_of(4) - json.len();
+            w.write_all(WHY_MAGIC)?;
+            w.write_all(&((json.len() + pad) as u32).to_le_bytes())?;
+            w.write_all(&json)?;
+            w.write_all(&b"    "[..pad])?;
+            Some(w)
+        } else {
+            None
+        };
         let (send, take) = mpsc::channel::<Slot>();
         let (give, back) = mpsc::channel();
         let writer = Writer {
             file,
+            why_file,
+            why_records: Vec::new(),
             give,
             routes: std::mem::take(&mut world.routes),
             lane_links: world.lanes.iter().map(|l| (l.links_start, l.links_count)).collect(),
@@ -321,6 +342,7 @@ impl Tracer {
             back,
             writer: Some(handle),
             n_tls: world.tls.len() as u64,
+            why: o.why,
             capture_ms: 0.0,
             frames: 0,
             path: path.to_path_buf(),
@@ -368,7 +390,8 @@ impl Tracer {
         let n = n_active as u64 + counters[0] as u64;
         let veh_bytes = n * size_of::<GpuVeh>() as u64;
         let tls_bytes = self.n_tls * size_of::<GpuTlsState>() as u64;
-        let size = (veh_bytes + tls_bytes).max(256);
+        let why_bytes = if self.why { n * WHY_WORDS * 4 } else { 0 };
+        let size = (veh_bytes + tls_bytes + why_bytes).max(256);
         let mut slot = self.take_slot(g, size);
         let mut e = g.device.create_command_encoder(&Default::default());
         if veh_bytes > 0 {
@@ -377,8 +400,12 @@ impl Tracer {
         if tls_bytes > 0 {
             e.copy_buffer_to_buffer(&sim.buffers.tls, 0, &slot.buffer, veh_bytes, tls_bytes);
         }
+        if why_bytes > 0 {
+            e.copy_buffer_to_buffer(sim.buffers.why.as_ref().expect("Sim::with_why"), 0, &slot.buffer, veh_bytes + tls_bytes, why_bytes);
+        }
         g.queue.submit([e.finish()]);
         slot.n = n;
+        slot.n_why = if self.why { n } else { 0 };
         slot.n_tls = self.n_tls;
         slot.step = sim.step as u32;
         slot.teleports = counters[4];
@@ -420,6 +447,7 @@ impl Tracer {
             ready: Arc::new(AtomicBool::new(false)),
             n: 0,
             n_tls: 0,
+            n_why: 0,
             step: 0,
             teleports: 0,
             collisions: 0,
@@ -465,6 +493,8 @@ struct Last {
 
 struct Writer {
     file: BufWriter<File>,
+    why_file: Option<BufWriter<File>>,
+    why_records: Vec<WhyRecord>,
     give: mpsc::Sender<Slot>,
     routes: Vec<u32>,
     lane_links: Vec<(u32, u32)>,
@@ -500,12 +530,17 @@ impl Writer {
                 let data = slot.buffer.slice(..).get_mapped_range().expect("mapped");
                 let vehicles: &[GpuVeh] = bytemuck::cast_slice(&data[..veh_bytes]);
                 let tls: &[GpuTlsState] = bytemuck::cast_slice(&data[veh_bytes..veh_bytes + tls_bytes]);
-                self.frame(&slot, vehicles, tls);
+                let why_bytes = (slot.n_why * WHY_WORDS * 4) as usize;
+                let why: &[u32] = bytemuck::cast_slice(&data[veh_bytes + tls_bytes..veh_bytes + tls_bytes + why_bytes]);
+                self.frame(&slot, vehicles, tls, why);
             }
             slot.buffer.unmap();
             let _ = self.give.send(slot);
         }
         self.file.flush().expect("trace write");
+        if let Some(w) = self.why_file.as_mut() {
+            w.flush().expect("why write");
+        }
         self.stats
     }
 
@@ -534,15 +569,17 @@ impl Writer {
         }
     }
 
-    fn frame(&mut self, c: &Slot, vehicles: &[GpuVeh], tls: &[GpuTlsState]) {
+    fn frame(&mut self, c: &Slot, vehicles: &[GpuVeh], tls: &[GpuTlsState], why: &[u32]) {
         let (teleports0, collisions0) = self.counters.unwrap_or((c.teleports, c.collisions));
         self.counters = Some((c.teleports, c.collisions));
         let (new_teleports, new_collisions) = (c.teleports - teleports0, c.collisions - collisions0);
         self.names.clear();
         self.records.clear();
+        self.why_records.clear();
+        let words = WHY_WORDS as usize;
         let mut running = 0u32;
         let mut speed_sum = 0f64;
-        for v in vehicles {
+        for (index, v) in vehicles.iter().enumerate() {
             if v.replica != 0 {
                 continue;
             }
@@ -576,6 +613,9 @@ impl Writer {
                         acc: 0,
                         speed: 0,
                     });
+                    if !why.is_empty() {
+                        self.why_records.push(WhyRecord::default());
+                    }
                 }
                 self.last_seen[t].lane = if removed { u32::MAX } else { self.dummy };
                 continue;
@@ -619,6 +659,9 @@ impl Writer {
                 acc: (v.acc * 256.0).round().clamp(-32768.0, 32767.0) as i16,
                 speed: (v.speed * 512.0).round().clamp(0.0, 65535.0) as u16,
             });
+            if !why.is_empty() {
+                self.why_records.push(WhyRecord::from_words(&why[index * words..(index + 1) * words], c.step).unwrap_or_default());
+            }
         }
         let phases: Vec<u16> = self.tls_scope.iter().map(|&i| tls[i as usize].phase as u16).collect();
         let head = FrameHead {
@@ -638,6 +681,13 @@ impl Writer {
         self.file.write_all(&self.names).expect("trace write");
         self.file.write_all(&phase_data).expect("trace write");
         self.file.write_all(bytemuck::cast_slice(&self.records)).expect("trace write");
+        if let Some(w) = self.why_file.as_mut() {
+            w.write_all(b"WHYF").expect("why write");
+            w.write_all(&c.step.to_le_bytes()).expect("why write");
+            w.write_all(&(self.why_records.len() as u32).to_le_bytes()).expect("why write");
+            w.write_all(&0u32.to_le_bytes()).expect("why write");
+            w.write_all(bytemuck::cast_slice(&self.why_records)).expect("why write");
+        }
         self.stats.records += self.records.len() as u64;
         self.stats.bytes += (size_of::<FrameHead>() + self.names.len() + phase_bytes + self.records.len() * size_of::<Record>()) as u64;
     }

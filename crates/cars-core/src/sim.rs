@@ -88,6 +88,8 @@ pub struct Buffers {
     pub tls: wgpu::Buffer,
     pub queues: wgpu::Buffer,
     pub items: wgpu::Buffer,
+    /// Per-step reasons, only with `Sim::with_why`.
+    pub why: Option<wgpu::Buffer>,
     pub total_bytes: u64,
 }
 
@@ -148,6 +150,15 @@ fn uniform_entry(binding: u32) -> wgpu::BindGroupLayoutEntry {
 
 impl Sim {
     pub fn new(gpu: &Gpu, world: &World) -> Result<Self, String> {
+        Self::build(gpu, world, false)
+    }
+
+    /// As `new`, with per-step reasons written to `buffers.why` (see why.rs).
+    pub fn with_why(gpu: &Gpu, world: &World) -> Result<Self, String> {
+        Self::build(gpu, world, true)
+    }
+
+    fn build(gpu: &Gpu, world: &World, why: bool) -> Result<Self, String> {
         let device = &gpu.device;
         let p = world.params;
         let total_bytes = std::cell::Cell::new(0u64);
@@ -238,10 +249,11 @@ impl Sim {
         let lc_plan = empty("lc_plan", cap * LCPLAN_BYTES);
         let unused = empty("unused", 16);
         let lane_free = empty("lane_free", p.n_lanes as u64 * 16);
+        let why_buffer = why.then(|| empty("why", cap * (crate::why::WHY_WORDS + crate::why::MAX_ITEMS * crate::why::ITEM_WORDS) * 4));
 
         // Layouts.
         let main_layout = {
-            let entries: Vec<_> = MAIN_BINDINGS
+            let mut entries: Vec<_> = MAIN_BINDINGS
                 .iter()
                 .enumerate()
                 .map(|(b, &ro)| {
@@ -252,6 +264,9 @@ impl Sim {
                     }
                 })
                 .collect();
+            if why {
+                entries.push(storage_entry(crate::why::WHY_BINDING, false));
+            }
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("main"),
                 entries: &entries,
@@ -311,7 +326,7 @@ impl Sim {
                 &items, &slots, &link_count, &partial, &tail, &entrant, &trip_out, &series, &edge_acc,
                 &unused, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
             ];
-            let entries: Vec<_> = list
+            let mut entries: Vec<_> = list
                 .iter()
                 .enumerate()
                 .map(|(i, b)| wgpu::BindGroupEntry {
@@ -319,6 +334,9 @@ impl Sim {
                     resource: b.as_entire_binding(),
                 })
                 .collect();
+            if let Some(b) = &why_buffer {
+                entries.push(wgpu::BindGroupEntry { binding: crate::why::WHY_BINDING, resource: b.as_entire_binding() });
+            }
             device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("main"),
                 layout: &main_layout,
@@ -422,7 +440,10 @@ impl Sim {
             std::env::var("CARS_SHADER_DIR").ok().and_then(|d| std::fs::read_to_string(format!("{d}/{name}")).ok()).unwrap_or_else(|| builtin.to_string())
         };
         let (common, route, step, lc) = (shader("common.wgsl", COMMON), shader("route.wgsl", ROUTE), shader("step.wgsl", STEP), shader("lc.wgsl", LC));
-        let main_src = format!("{common}\n{route}\n{step}\n{lc}");
+        let mut main_src = format!("{common}\n{route}\n{step}\n{lc}");
+        if why {
+            main_src = crate::why::instrument(&main_src).map_err(|lost| format!("--why: probes that no longer fit, see why.rs:\n  {}", lost.join("\n  ")))?;
+        }
         let main_module = gpu.shader("step", &main_src);
         let control_module = gpu.shader("control", &format!("{common}\n{CONTROL}"));
         let sort_module = gpu.shader("sort", &format!("{common}\n{SORT}"));
@@ -561,6 +582,7 @@ impl Sim {
             tls,
             queues,
             items,
+            why: why_buffer,
             total_bytes: total_bytes.get(),
         };
         Ok(Self {
