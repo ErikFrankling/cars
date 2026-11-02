@@ -50,6 +50,38 @@ struct Args {
     /// Load even when memory looks short.
     #[arg(long)]
     force: bool,
+    /// Automated model, by its id in registry.toml. Without it the run is human-only.
+    #[arg(long)]
+    model: Option<String>,
+    /// Percentage of cars driven by humans, when a model is given.
+    #[arg(long)]
+    human: Option<f32>,
+    /// Demand percentage.
+    #[arg(long)]
+    demand: Option<f32>,
+    #[arg(long)]
+    seed: Option<u64>,
+    /// Step size in seconds.
+    #[arg(long)]
+    dt: Option<f32>,
+    /// Planning with coordinated junctions: off, full or route.
+    #[arg(long)]
+    plan: Option<String>,
+    /// Message loss percentage with coordinated junctions.
+    #[arg(long)]
+    loss: Option<f32>,
+    /// The stricter safety level B with coordinated junctions.
+    #[arg(long)]
+    level_b: bool,
+    /// The coordinator's own signals instead of signal-free.
+    #[arg(long)]
+    baseline: bool,
+    /// Overlays to turn on: leader,braking,speed,state,foes,events,grants,paths,channel,arrivals,brake.
+    #[arg(long, value_delimiter = ',')]
+    overlay: Vec<String>,
+    /// Colour by speed, waiting, type, braking or paint.
+    #[arg(long)]
+    colour: Option<String>,
 }
 
 /// How the map is coloured. The numbers are the renderer's modes.
@@ -280,7 +312,37 @@ impl App {
         if first.is_none() {
             errors.push(ui::Problem { text: format!("There is no scenario called {} in the registry. Pick one on the left.", self.args.scenario), retry: None });
         }
-        let draft = first.as_ref().map_or_else(|| Settings::for_scenario(&registry::custom("", "", "")), Settings::for_scenario);
+        let mut draft = first.as_ref().map_or_else(|| Settings::for_scenario(&registry::custom("", "", "")), Settings::for_scenario);
+        let a = &self.args;
+        draft.model = a.model.clone().filter(|id| match registry.model(id) {
+            Some(m) if m.status == registry::Status::Merged => true,
+            _ => {
+                errors.push(ui::Problem { text: format!("{id} is not a model that can run. The list is under Automated cars."), retry: None });
+                false
+            }
+        });
+        draft.human_pct = a.human.unwrap_or(draft.human_pct);
+        draft.demand_pct = a.demand.unwrap_or(draft.demand_pct);
+        draft.seed = a.seed.unwrap_or(draft.seed);
+        draft.dt = a.dt.unwrap_or(draft.dt);
+        draft.loss_pct = a.loss.unwrap_or(draft.loss_pct);
+        draft.level_b = a.level_b;
+        draft.plan = match a.plan.as_deref() {
+            Some("full") => settings::Plan::Full,
+            Some("route") => settings::Plan::Route,
+            _ => settings::Plan::Off,
+        };
+        if a.baseline {
+            draft.junctions = settings::Junctions::Baseline;
+        }
+        draft.normalise(&registry);
+        let colour = match a.colour.as_deref() {
+            Some("waiting") => Colour::Waiting,
+            Some("type") => Colour::VehicleType,
+            Some("braking") => Colour::Braking,
+            Some("paint") => Colour::Paint,
+            _ => Colour::Speed,
+        };
         let first_pace = match (self.args.paused, self.args.speed) {
             (true, _) => Some(Pace::Paused),
             (_, Some(0.0)) => Some(Pace::AsFast),
@@ -296,9 +358,9 @@ impl App {
             last_load: None,
             scenario: first.clone(),
             draft,
-            colour: Colour::Speed,
+            colour,
             far_brake: false,
-            overlays: Vec::new(),
+            overlays: self.args.overlay.clone(),
             errors,
             toasts: Vec::new(),
             help: false,

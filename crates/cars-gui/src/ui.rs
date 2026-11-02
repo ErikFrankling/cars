@@ -420,7 +420,7 @@ fn numbers(ui: &mut Ui, s: &Session) {
         row(ui, "Standing", format!("{}", n.stats.halting), false);
         row(ui, "Braking", format!("{}", n.stats.braking), false);
         if n.overflow > 0 {
-            row(ui, "No room for", format!("{}", n.overflow), true);
+            row(ui, "Junction slots full", format!("{}", n.overflow), false);
         }
     });
     ui.add_space(4.0);

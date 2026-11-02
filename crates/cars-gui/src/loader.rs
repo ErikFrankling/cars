@@ -152,11 +152,11 @@ fn gb(b: u64) -> f64 {
 const VRAM_SPARE: u64 = 3_000_000_000;
 const RAM_SPARE: u64 = 1_000_000_000;
 
-/// RAM the load will reach at its peak, from the size of the files. Measured on the scenarios here:
-/// XML roughly triples in memory, a gzipped route file grows about ninefold.
+/// RAM the load will reach at its peak, a rough guess from the size of the files. Stockholm's 200 MB
+/// net and 14 MB gzipped routes peaked at 1.2 GB.
 fn ram_needed(r: &Request) -> u64 {
     let size = |p: &Path| std::fs::metadata(p).map_or(0, |m| m.len());
-    let file = |p: &Path| if p.extension().is_some_and(|e| e == "gz") { size(p) * 9 } else { size(p) * 3 };
+    let file = |p: &Path| if p.extension().is_some_and(|e| e == "gz") { size(p) * 14 } else { size(p) * 5 };
     file(&r.net_path) + r.routes.iter().map(|p| file(p)).sum::<u64>() + r.additional.iter().map(|p| file(p)).sum::<u64>()
 }
 

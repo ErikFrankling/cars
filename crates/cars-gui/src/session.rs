@@ -175,6 +175,8 @@ impl Session {
         let (ask, jobs) = channel::<[f32; 4]>();
         let (done, answer) = channel();
         let dt = l.settings.dt as f64;
+        let mut l = l;
+        l.sim.target_submit_ms = 8.0;
         let end_step = ((l.scenario.end - l.scenario.begin) as f64 / dt).ceil() as u64;
         let mut overlay = Overlay::default();
         overlay.keep_log = true;

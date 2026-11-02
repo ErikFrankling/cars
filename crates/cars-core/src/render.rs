@@ -627,7 +627,7 @@ impl Renderer {
             approaches: closeup::approaches(net),
             meshes: Vec::new(),
             max_meshes: MAX_MESHES,
-            uniform: [0; 16],
+            uniform: std::array::from_fn(|i| if i == 12 { u32::MAX } else { 0 }),
             lods: Vec::new(),
             present: None,
             selected,
@@ -899,7 +899,7 @@ impl Renderer {
             count: vertices.len() as u32,
             buffer: buffer(g, "close road", bytemuck::cast_slice(&vertices), wgpu::BufferUsages::VERTEX),
         };
-        if self.meshes.len() >= MAX_MESHES {
+        if self.meshes.len() >= self.max_meshes {
             self.meshes.remove(0);
         }
         self.meshes.push(mesh);
