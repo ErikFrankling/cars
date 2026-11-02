@@ -76,12 +76,12 @@ pub struct Sim {
 }
 
 pub struct Buffers {
-    /// Per-step reasons, only with `Sim::with_why`.
-    pub why: Option<wgpu::Buffer>,
     pub params: wgpu::Buffer,
     pub globals: wgpu::Buffer,
     pub counters: wgpu::Buffer,
     pub lanes: wgpu::Buffer,
+    /// Per-step reasons, only with `Sim::with_why`.
+    pub why: Option<wgpu::Buffer>,
     pub veh: [wgpu::Buffer; 2],
     pub trip_out: wgpu::Buffer,
     pub series: wgpu::Buffer,
@@ -573,11 +573,11 @@ impl Sim {
         };
 
         let buffers = Buffers {
-            why: why_buffer,
             params,
             globals,
             counters,
             lanes,
+            why: why_buffer,
             veh,
             trip_out,
             series,
