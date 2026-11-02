@@ -1,8 +1,8 @@
 diff --git a/crates/cars-cli/src/run.rs b/crates/cars-cli/src/run.rs
-index 4a9c511..aea3d42 100644
+index 9bc93d5..3eadb93 100644
 --- a/crates/cars-cli/src/run.rs
 +++ b/crates/cars-cli/src/run.rs
-@@ -130,6 +130,12 @@ pub struct Args {
+@@ -133,6 +133,12 @@ pub struct Args {
      /// Trace only lanes touching this box: x0,y0,x1,y1.
      #[arg(long, value_delimiter = ',', allow_negative_numbers = true)]
      trace_bbox: Vec<f32>,
@@ -15,7 +15,7 @@ index 4a9c511..aea3d42 100644
      /// Steps between traced frames.
      #[arg(long, default_value_t = 1)]
      trace_stride: u32,
-@@ -238,6 +244,20 @@ pub fn run(args: Args) {
+@@ -260,6 +266,20 @@ pub fn run(args: Args) {
          malloc_trim(0);
      }
      eprintln!("gpu buffers: {:.1} MB, sort passes {}", sim.buffers.total_bytes as f64 / 1e6, sim.passes());
@@ -36,7 +36,7 @@ index 4a9c511..aea3d42 100644
      let steps = ((args.end - args.begin) / args.dt).ceil() as u64;
      let t = Instant::now();
      let mut fcd = args.fcd.as_ref().map(|p| std::io::BufWriter::new(std::fs::File::create(p).expect("fcd")));
-@@ -446,6 +466,17 @@ pub fn run(args: Args) {
+@@ -468,6 +488,17 @@ pub fn run(args: Args) {
          }
          if done % interval == 0 || done >= steps {
              let begin = args.begin + ((done - 1) / interval * interval) as f32 * args.dt;
@@ -55,10 +55,10 @@ index 4a9c511..aea3d42 100644
                  let acc = sim.take_edge_acc(&gpu);
                  for (e, a) in acc.iter().enumerate() {
 diff --git a/crates/cars-core/src/shaders/step.wgsl b/crates/cars-core/src/shaders/step.wgsl
-index d3483f0..d97219a 100644
+index b796656..5fa46b6 100644
 --- a/crates/cars-core/src/shaders/step.wgsl
 +++ b/crates/cars-core/src/shaders/step.wgsl
-@@ -1572,6 +1572,21 @@ fn shadow_sync(@builtin(global_invocation_id) id: vec3u) {
+@@ -1596,6 +1596,21 @@ fn shadow_sync(@builtin(global_invocation_id) id: vec3u) {
      }
  }
  
@@ -66,7 +66,7 @@ index d3483f0..d97219a 100644
 +// front, with the speed at that moment. Words per lane after the edges: position in bits (0 for none),
 +// count, speed sum in cm/s, vehicles over 7.5 m. They only ever grow.
 +fn sensor_pass(lane: u32, whole_lane: bool, before: f32, after: f32, v: f32, length: f32) {
-+    let at = (P.n_edges + lane) * 4u;
++    let at = P.n_edges * 8u + lane * 4u;
 +    let bits = atomicLoad(&edge_acc[at]);
 +    if (bits == 0u) { return; }
 +    let s = bitcast<f32>(bits);
@@ -80,7 +80,7 @@ index d3483f0..d97219a 100644
  @compute @workgroup_size(64)
  fn exec(@builtin(global_invocation_id) id: vec3u) {
      let i = id.x;
-@@ -1713,6 +1728,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
+@@ -1737,6 +1752,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
          // A loop on a lane left in this step was crossed, however short the lane.
          let crossed = lanes[e.lane].det_pos;
          if (crossed >= 0.0 && (j > 0u || old_pos < crossed)) { last_detect[e.lane] = G.step; }
@@ -88,7 +88,7 @@ index d3483f0..d97219a 100644
          e.pos -= len;
          e.route_len += len;
          e.prev2_lane = e.prev_lane;
-@@ -1730,6 +1746,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
+@@ -1755,6 +1771,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
          if (j >= MAX_ITEMS) { break; }
      }
  
@@ -97,24 +97,24 @@ index d3483f0..d97219a 100644
      var loop_back = e.pos - ty.length;
      let det = lanes[e.lane].det_pos;
 diff --git a/crates/cars-core/src/sim.rs b/crates/cars-core/src/sim.rs
-index 933a55e..5a2f8a2 100644
+index 78dc19b..5f68c73 100644
 --- a/crates/cars-core/src/sim.rs
 +++ b/crates/cars-core/src/sim.rs
-@@ -239,7 +239,7 @@ impl Sim {
+@@ -257,7 +257,7 @@ impl Sim {
              p.n_trips as u64 * std::mem::size_of::<GpuTripOut>() as u64,
          );
          let series = empty("series", p.n_samples as u64 * p.n_replicas as u64 * 16);
--        let edge_acc = empty("edge_acc", p.n_edges as u64 * 16);
-+        let edge_acc = empty("edge_acc", (p.n_edges as u64 + p.n_lanes as u64) * 16);
+-        let edge_acc = empty("edge_acc", p.n_edges as u64 * 32);
++        let edge_acc = empty("edge_acc", p.n_edges as u64 * 32 + p.n_lanes as u64 * 16);
          let advice_init = vec![0xffu8; p.n_trips as usize * 4];
          let advice = init("advice", &advice_init, storage);
          let adv_flags = empty("adv_flags", p.n_trips as u64 * 4);
-@@ -868,11 +868,27 @@ impl Sim {
-     pub fn take_edge_acc(&self, gpu: &Gpu) -> Vec<[u32; 4]> {
+@@ -913,11 +913,27 @@ impl Sim {
+     pub fn take_edge_acc(&self, gpu: &Gpu) -> Vec<[u32; 8]> {
          let out = self.read(gpu, &self.buffers.edge_acc, self.world_params.n_edges as u64);
          let mut enc = gpu.device.create_command_encoder(&Default::default());
 -        enc.clear_buffer(&self.buffers.edge_acc, 0, None);
-+        enc.clear_buffer(&self.buffers.edge_acc, 0, Some(self.world_params.n_edges as u64 * 16));
++        enc.clear_buffer(&self.buffers.edge_acc, 0, Some(self.world_params.n_edges as u64 * 32));
          gpu.queue.submit([enc.finish()]);
          out
      }
@@ -122,7 +122,7 @@ index 933a55e..5a2f8a2 100644
 +    /// Set measuring points: (lane, position in metres from the lane's start). See `sensor_pass`.
 +    pub fn set_sensors(&self, gpu: &Gpu, sensors: &[(u32, f32)]) {
 +        for &(lane, pos) in sensors {
-+            let at = (self.world_params.n_edges as u64 + lane as u64) * 16;
++            let at = self.world_params.n_edges as u64 * 32 + lane as u64 * 16;
 +            gpu.queue.write_buffer(&self.buffers.edge_acc, at, bytemuck::bytes_of(&pos.max(0.01)));
 +        }
 +        gpu.queue.submit([]);
@@ -130,11 +130,11 @@ index 933a55e..5a2f8a2 100644
 +
 +    /// Per lane since the start: position bits, count, speed sum in cm/s, vehicles over 7.5 m.
 +    pub fn read_sensors(&self, gpu: &Gpu) -> Vec<[u32; 4]> {
-+        let n = self.world_params.n_edges as usize;
++        let n = self.world_params.n_edges as usize * 2;
 +        let all: Vec<[u32; 4]> = self.read(gpu, &self.buffers.edge_acc, (n + self.world_params.n_lanes as usize) as u64);
 +        all[n..].to_vec()
 +    }
 +
-     /// The coordinator's statistics per replica, returned and reset.
-     pub fn take_coord_stats(&self, gpu: &Gpu) -> Vec<u32> {
-         let Some(cj) = &self.coord else { return Vec::new() };
+     /// Back to the state `Sim::new` leaves, without rebuilding pipelines. Demand stays as written.
+     pub fn reset(&mut self, gpu: &Gpu, world: &World) {
+         let mut enc = gpu.device.create_command_encoder(&Default::default());
