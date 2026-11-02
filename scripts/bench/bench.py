@@ -98,10 +98,18 @@ def cmd_run(a):
     run_id = time.strftime('%Y%m%d-%H%M%S') + f'-{a.driver}-{a.mode}'
     only = a.scenes.split(',') if a.scenes else None
     berlin = None
-    if a.berlin:
+    if a.berlin_factor or a.berlin_runs:
         import berlin as B
-        berlin, secs = B.evaluate(cfg, a.berlin, gpu=a.gpu)
-    M, seconds, seeds = suite.evaluate(cfg, a.mode == 'fast', gpu=a.gpu, only=only, berlin=berlin, log=lambda s: print(s, flush=True))
+        berlin, secs = B.evaluate(cfg, gpu=a.gpu, factor=a.berlin_factor or '10', runs=a.berlin_runs.split(',') if a.berlin_runs else None)
+    M, seconds, seeds = suite.evaluate(cfg, a.mode == 'fast', gpu=a.gpu, only=only if not a.reuse else [], berlin=berlin, log=lambda s: print(s, flush=True))
+    if a.reuse:
+        old = load(a.reuse)
+        if old['driver'] != a.driver or old['commit'] != cfg['commit']:
+            raise SystemExit('--reuse needs a run of the same driver and commit')
+        for i, m in old['metrics'].items():
+            if i in berlin or (not (berlin or {}).get(i) and m['status'] != 'NO DATA'):
+                M.setdefault(i, m['cells'])
+        seeds = old['seeds']
     res = suite.assemble(M, cfg, a.mode, seeds, seconds, suite.load_registry(), name=run_id, bench_commit=bench_commit())
     save(res)
     card(res)
@@ -187,7 +195,9 @@ def main():
     r.add_argument('--mode', choices=['fast', 'full'], default='fast')
     r.add_argument('--scenes')
     r.add_argument('--gpu', action='store_true', help='run on the real GPU, through the lock')
-    r.add_argument('--berlin', help='district folder')
+    r.add_argument('--berlin-factor', choices=['01', '05', '10'], help='also run the Berlin district at this demand; 10 is the whole demand')
+    r.add_argument('--berlin-runs', help='score these existing runs under berlin2019/runs instead of running')
+    r.add_argument('--reuse', help='keep the scene results of this earlier run of the same commit')
     r.add_argument('--no-dashboard', action='store_true')
     r.set_defaults(fn=cmd_run)
     k = s.add_parser('knownbad')

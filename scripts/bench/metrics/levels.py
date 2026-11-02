@@ -114,6 +114,32 @@ def M9(gaps, regime):
     return {regime: c}
 
 
+RELAX_REAL = dict(small=[[.03, .16, .37, .50, .59, .69], [.08, .19, .30, .40, .49, .55], [.02, .12, .25, .32, .36, .37]], large=[[-.16, -.44, -.86, -1.24, -1.58, -1.84], [-.21, -.39, -.49, -.50, -.54, -.61]])
+
+
+def M10(rows_by_seed):
+    """Witness. Sites differ at each time by what the ruler says; the null never relaxes at all."""
+    cells = {}
+    for which, curves in RELAX_REAL.items():
+        real = np.array(curves)
+        mid, spread = real.mean(0), (real.max(0) - real.min(0)) / 2
+        F = float(max(spread.mean(), .05))
+        N = float(np.abs(mid).mean())
+        D = []
+        for rows in rows_by_seed:
+            if len(rows) < 40:
+                D.append([np.nan])
+                continue
+            cut = np.quantile(rows[:, 0], .25 if which == 'small' else .75)
+            pick = rows[rows[:, 0] <= cut] if which == 'small' else rows[rows[:, 0] >= cut]
+            delta = np.median(pick[:, 1:] - pick[:, :1], axis=0)
+            D.append([float(np.abs(delta - mid).mean())])
+        c = score.judge(D, F, N, thin=True)
+        c['D'] = D
+        cells[which] = c
+    return cells
+
+
 def M11(speeds, limit=33.0):
     v = [float(np.median(s) / limit) for s in speeds if len(s)]
     return {'desired_ratio': dict(score.no_data('reported only: limit on the A39 not verified'), value=round(float(np.mean(v)), 3) if v else None)}
@@ -250,7 +276,7 @@ def yellow_decisions(f, length, dt, end):
             later = f[(f.trip == r.trip) & (f.time >= t_y) & (f.time < t_y + 25)]
             red = later[later.time < t_y + 23]
             stopped = red.speed.min() < .3 and (red.lane == 'in_0').all()
-            rows.append((ttl, stopped, max(-later.acc.min(), 0.0)))
+            rows.append((ttl, stopped, r.speed ** 2 / (2 * max(length - r.pos, .5))))
     return rows
 
 
@@ -268,8 +294,8 @@ def js6(rows_by_seed):
             q = np.clip(1 / (1 + np.exp(-z)), 1e-6, 1 - 1e-6)
             return -(y * np.log(q) + (1 - y) * np.log(1 - q)).sum()
         half.append(float(minimize(nll, [5.0, .5], method='Nelder-Mead').x[0]))
-        st = a[a[:, 1] > 0]
-        hard.append(float((st[:, 2] > 3).mean()) if len(st) else 0.0)
+        far = a[a[:, 2] >= 2]
+        hard.append(float(far[:, 1].mean()) if len(far) else 0.0)
     if not half:
         return {'half_at_s': score.no_data('no decisions'), 'hard_stops': score.no_data('no decisions')}
     a = score.band(half, 4.5, 5.7, N=0.0)
@@ -281,17 +307,26 @@ def js6(rows_by_seed):
 
 
 def delay_samples(f, interval):
+    """Time lost against 50 km/h and stops, per track, as floors.signal_delay does on real tracks."""
     f = f.sort_values(['trip', 'time'], kind='stable')
-    lost = (1 - f.speed / 13.89).clip(lower=0) * interval
-    return lost.groupby(f.trip.values).sum().to_numpy()
+    lost = ((1 - f.speed / 13.89).clip(lower=0) * interval).groupby(f.trip.values).sum()
+    moving = f.speed.to_numpy() >= 1
+    down = moving[:-1] & ~moving[1:] & (f.trip.to_numpy()[:-1] == f.trip.to_numpy()[1:])
+    return lost.to_numpy(), down.sum() / max(f.trip.nunique(), 1)
 
 
-def js7(samples, floors):
+def js7(samples, stops, floors):
     d = floors['delay']
-    D = [[w1(s, b['q']) if len(s) >= 20 else np.nan for b in d['blocks']] for s in samples]
+    D = []
+    for s in samples:
+        x = s[s > 2]
+        D.append([w1(x, b['q']) if len(x) >= 20 else d['N'] for b in d['blocks']])
     c = score.judge(D, d['F'], d['N'])
     c.update(D=np.round(D, 3).tolist(), p50=d['p50'], real_blocks=len(d['blocks']))
-    return {'delay_s': c}
+    Ds = [[abs(s - b['stops']) for b in d['blocks']] for s in stops]
+    e = score.judge(Ds, d['stops_F'], float(np.median([b['stops'] for b in d['blocks']])))
+    e.update(D=np.round(Ds, 3).tolist(), value=round(float(np.mean(stops)), 3))
+    return {'delay_of_delayed_s': c, 'stops_per_vehicle': e}
 
 
 def roundabout_decisions(f):
@@ -406,3 +441,48 @@ def c4(waves):
 
 def jo1(*a):
     return {'share': score.no_data('report 18 pending: real merge positions are not yet tagged')}
+
+
+def _bands(pairs):
+    """name, values per replicate, lo, hi, null"""
+    cells = {}
+    for name, v, lo, hi, nul in pairs:
+        v = [float(x) for x in v if np.isfinite(x)]
+        c = score.band(v, lo, hi, N=nul) if v else score.no_data('nothing to measure')
+        c['D'] = [[abs(x - (lo + hi) / 2)] for x in v]
+        cells[name] = c
+    return cells
+
+
+def M15(stops):
+    """Real: Braunschweig, Athens, Washington, Aargau. Ranges across the four sites, report 19. Null: stopping at SUMO's 4.5 m/s2."""
+    mean = [np.median(s[:, 0]) if len(s) else np.nan for s in stops]
+    hard = [np.median(s[:, 1]) if len(s) else np.nan for s in stops]
+    firm = [np.quantile(s[:, 1], .95) if len(s) else np.nan for s in stops]
+    return _bands([('average_stop', mean, .99, 1.25, 4.5), ('hardest_moment', hard, 1.41, 1.99, 4.5), ('firm_stop_p95', firm, 2.64, 3.89, 4.5)])
+
+
+def M16(shares):
+    """Share of moving time over each level. Real ranges across sites, report 19. Null: nobody ever brakes that hard."""
+    return _bands([(f'over_{k}', [s[k] for s in shares], lo, hi, 0.0) for k, lo, hi in (('2', .013, .073), ('3', .0025, .032), ('4.5', .0009, .0059))])
+
+
+def M17(launches, share2):
+    peak = [np.median(x) if len(x) else np.nan for x in launches]
+    return _bands([('launch_peak', peak, 1.35, 2.18, 4.0), ('time_over_2', share2, .003, .032, 0.0)])
+
+
+def M18(sideways):
+    """Sideways acceleration across a bend. Real medians by radius 1.45 to 2.02 m/s2, 3,584 turns. Null: no slowing, the limit on 50 km/h."""
+    cells = {}
+    for r_, vals in sideways.items():
+        nul = 13.89 ** 2 / r_
+        v = [float(x) for x in vals if np.isfinite(x)]
+        c = score.band(v, 1.45, 2.02, N=nul) if v else score.no_data('no car took this bend')
+        c['D'] = [[abs(x - 1.735)] for x in v]
+        cells[f'R{r_}'] = c
+    return cells
+
+
+def M19(p50, p95):
+    return _bands([('jerk_p50', p50, .24, .47, 0.0), ('jerk_p95', p95, .9, 2.2, 0.0)])

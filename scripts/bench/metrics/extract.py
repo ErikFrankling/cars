@@ -34,7 +34,26 @@ def leaders(f):
     f['lead_len'] = f.length.shift(-1).where(same)
     f['lead_v'] = f.speed.shift(-1).where(same)
     f['bumper'] = f.cc - f.lead_len
+    f['lead_trip'] = f.trip.shift(-1).where(same)
     return f
+
+
+RELAX_AT = (2, 5, 10, 15, 20, 25)
+
+
+def relaxation(f, interval):
+    """Report 05 section 4.9: segments of 25 s or more behind one leader, starting in the smallest or largest quartile of time gap. Change of time gap at 2 to 25 s."""
+    g = f[f['T'].notna() & f.lead_trip.notna()].sort_values(['trip', 'time'], kind='stable')
+    t, T, trip, lead = g.time.to_numpy(), g['T'].to_numpy(), g.trip.to_numpy(), g.lead_trip.to_numpy()
+    new = np.r_[True, (trip[1:] != trip[:-1]) | (lead[1:] != lead[:-1]) | (t[1:] - t[:-1] > 1.5 * interval)]
+    starts = np.flatnonzero(new)
+    ends = np.r_[starts[1:], len(t)]
+    rows = []
+    idx = [int(round(x / interval)) for x in RELAX_AT]
+    for a, b in zip(starts, ends):
+        if b - a > idx[-1]:
+            rows.append([T[a]] + [T[a + k] for k in idx])
+    return np.array(rows).reshape(-1, 1 + len(idx))
 
 
 def time_gap(f):
@@ -46,6 +65,16 @@ def band_samples(f, lo, hi, col):
     m = (f.speed >= lo) & (f.speed < hi)
     x = f.loc[m, col].to_numpy('f8')
     return x[np.isfinite(x)]
+
+
+def halfway(f, width=3.2):
+    """Where a driver has a lateral position: the sample at which it is half way across, as report 05 measures at the label change."""
+    if 'offset' not in f or not (f.offset.abs() > 1e-3).any():
+        return None
+    g = f.sort_values(['trip', 'time'], kind='stable').reset_index(drop=True)
+    o = g.offset.abs()
+    hit = (g.trip.shift(1) == g.trip) & (o.shift(1) > width / 2) & (o <= width / 2) & (o.shift(1) < 4.5)
+    return g[hit]
 
 
 def lane_changes(f, interval):
@@ -122,7 +151,7 @@ def queue_table(f, lane, length, cycle, green, end):
         snap = snap[snap.speed < 1.0].sort_values('pos', ascending=False)
         if snap.empty or length - snap.pos.iloc[0] > 15:
             continue
-        prev_pos, prev_cross = None, tg
+        prev_pos, prev_cross, prev_still = None, tg, True
         for i, s in enumerate(snap.itertuples(), 1):
             if prev_pos is not None and prev_pos - s.pos > 15:
                 break
@@ -138,26 +167,32 @@ def queue_table(f, lane, length, cycle, green, end):
             moved = g[g.speed > .5]
             start = float(moved.time.iloc[0] - tg) if len(moved) else np.nan
             to5 = g[g.speed >= 5]
-            rows.append(dict(cycle=k, pos=i, h=cross - prev_cross, cross=cross - tg, start=start, spacing=(prev_pos - s.pos) if prev_pos is not None else np.nan, stand=s.pos,
+            still = s.speed < .1 and prev_still
+            rows.append(dict(cycle=k, pos=i, h=cross - prev_cross, cross=cross - tg, start=start, spacing=(prev_pos - s.pos) if prev_pos is not None and still else np.nan, stand=s.pos,
                              peak=float(g[g.time < tg + 10].acc.max()) if 'acc' in g else np.nan, t5=float(to5.time.iloc[0] - tg) if len(to5) else np.nan))
-            prev_pos, prev_cross = s.pos, cross
+            prev_pos, prev_cross, prev_still = s.pos, cross, s.speed < .1
     return pd.DataFrame(rows)
 
 
-def wave_lag(speeds_a, speeds_b, dt, sep):
-    """Backward wave speed from the lag that best lines up the two speed series, km/h."""
-    a = np.asarray(speeds_a) - np.mean(speeds_a)
-    b = np.asarray(speeds_b) - np.mean(speeds_b)
+def wave_lag(speeds_a, speeds_b, dt, sep, lo=6.0, hi=150.0, smooth=40.0):
+    """Backward wave speed from the lag that best lines up two speed series, km/h. Slow trends are taken out first."""
+    a, b = np.asarray(speeds_a, float), np.asarray(speeds_b, float)
     n = min(len(a), len(b))
-    if n < 20 or a.std() < .05 or b.std() < .05:
+    k = max(1, int(round(smooth / dt)))
+    if n < k + int(lo / dt) + 10:
+        return np.nan
+    trend = lambda x: np.convolve(x, np.ones(k) / k, mode='same')
+    a, b = (a - trend(a))[k // 2:n - k // 2], (b - trend(b))[k // 2:n - k // 2]
+    n = len(a)
+    if a.std() < .05 or b.std() < .05:
         return np.nan
     best, lag = -2, 0
-    for k in range(1, int(60 / dt)):
-        if k >= n - 10:
+    for m in range(max(1, int(lo / dt)), int(hi / dt)):
+        if m >= n - 10:
             break
-        c = np.corrcoef(a[:n - k], b[k:n])[0, 1]
+        c = np.corrcoef(a[:n - m], b[m:n])[0, 1]
         if c > best:
-            best, lag = c, k
+            best, lag = c, m
     return sep / (lag * dt) * 3.6 if lag and best > .2 else np.nan
 
 
@@ -168,3 +203,29 @@ def swing(x, dt):
     up = np.flatnonzero((d[:-1] < 0) & (d[1:] >= 0))
     per = float(np.median(np.diff(up)) * dt) if len(up) >= 2 else np.nan
     return float(np.quantile(x, .9) - np.quantile(x, .1)), per
+
+
+def stops_launches(f):
+    """f has a1 from track_arrays. A stop runs from the last time above 3 m/s to under 0.5 m/s; a launch from under 0.5 m/s until 5 m/s."""
+    stops, launches = [], []
+    for _, g in f.groupby('trip', sort=False):
+        t, v, a = g.time.to_numpy(), g.speed.to_numpy(), g.a1.to_numpy()
+        below = np.flatnonzero((v[:-1] >= .5) & (v[1:] < .5))
+        for b in below:
+            high = np.flatnonzero(v[:b + 1] >= 3)
+            if not len(high):
+                continue
+            s = high[-1]
+            win = a[s:b + 1]
+            win = win[np.isfinite(win)]
+            if t[b + 1] > t[s] and len(win):
+                stops.append(((v[s] - v[b + 1]) / (t[b + 1] - t[s]), -win.min()))
+        above = np.flatnonzero((v[:-1] < .5) & (v[1:] >= .5))
+        for b in above:
+            fast = np.flatnonzero(v[b:] >= 5)
+            if len(fast):
+                win = a[b:b + fast[0] + 1]
+                win = win[np.isfinite(win)]
+                if len(win):
+                    launches.append(win.max())
+    return np.array(stops).reshape(-1, 2), np.array(launches)

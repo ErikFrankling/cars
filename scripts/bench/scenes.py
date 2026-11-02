@@ -62,9 +62,9 @@ def road(d, cfg, ov, fast, seed):
                    '<edge id="A" from="a" to="b" numLanes="3" speed="33"/><edge id="B" from="b" to="c" numLanes="2" speed="33"/><edge id="C" from="c" to="e" numLanes="2" speed="33"/>')
         if ov.get('no_lc'):
             block_changes(d)
-    end = 600 if fast else 1800
-    r = routes(d, cfg, ov, '<route id="r" edges="A B C"/>' + flow('f', 'r', 0, end, 5400, ov))
-    return dict(routes=r, end=end + 60, fcd=.5, planned=5400 * ov.get('demand_scale', 1.0) * end / 3600)
+    end = 600 if fast else 1200
+    r = routes(d, cfg, ov, '<route id="r" edges="A B C"/>' + flow('f', 'r', 0, end, 6600, ov))
+    return dict(routes=r, end=end + 60, fcd=.5, planned=6600 * ov.get('demand_scale', 1.0) * end / 3600)
 
 
 def free3(d, cfg, ov, fast, seed):
@@ -90,7 +90,7 @@ def _tl(d, phases):
     return '<additional><tlLogic id="t" type="static" programID="fix" offset="0">' + ''.join(f'<phase duration="{p}" state="{st(a, b)}"/>' for p, a, b in phases) + '</tlLogic></additional>'
 
 
-def signal(d, cfg, ov, fast, seed, cycle=CYCLE, vph=600, name='tl.xml', dur=None, drain=240):
+def signal(d, cfg, ov, fast, seed, cycle=CYCLE, vph=600, name='tl.xml', dur=None, drain=300):
     """One approach at a signal, enough arrivals to queue every cycle. Green begins at multiples of the cycle."""
     if not (d / 'net.xml').exists():
         typ = '' if ov.get('signals') == 'none' else ' type="traffic_light"'
@@ -217,6 +217,32 @@ def chain(d, cfg, ov, fast, seed, heads=None):
     return dict(routes=d / f'r{seed}.xml', net=d / f'net{seed}.xml', end=len(prof) + 60, fcd=.5, planned=9)
 
 
+BENDS = (15, 20, 30, 50)
+
+
+def curves(d, cfg, ov, fast, seed):
+    """Open-road bends of known radius on a 50 km/h road, light traffic: straight, 90 degree arc, straight. As report 19."""
+    if not (d / 'net.xml').exists():
+        nodes, edges = '', ''
+        for k, r_ in enumerate(BENDS):
+            y = k * 500
+            pts = [(0, y), (300, y)]
+            for i in range(1, 37):
+                th = math.radians(i * 2.5)
+                pts.append((300 + r_ * math.sin(th), y + r_ * (1 - math.cos(th))))
+            xe, ye = pts[-1]
+            pts.append((xe, ye + 300))
+            shape = ' '.join(f'{a:.2f},{b:.2f}' for a, b in pts)
+            nodes += f'<node id="a{k}" x="0" y="{y}"/><node id="b{k}" x="{xe:.2f}" y="{ye + 300:.2f}"/>'
+            edges += f'<edge id="e{k}" from="a{k}" to="b{k}" numLanes="1" speed="13.89" shape="{shape}"/>'
+        netconvert(d, nodes, edges)
+    dur = 240 if fast else 600
+    body = ''
+    for k in range(len(BENDS)):
+        body += f'<route id="r{k}" edges="e{k}"/>' + flow(f'f{k}', f'r{k}', 0, dur, 120, ov)
+    return dict(routes=routes(d, cfg, ov, body), end=dur + 90, fcd=.5, planned=4 * 120 * dur / 3600)
+
+
 def ring(d, cfg, ov, fast, seed):
     """Fixed density on a closed two-lane loop, for drift over hours: no insertion, no arrival."""
     L, n = 2000.0, 80
@@ -256,4 +282,4 @@ def lane_offsets(net):
     return out
 
 
-SCENES = dict(road=road, free3=free3, signal=signal, signal_real=signal_real, yellow=yellow, roundabout=roundabout, ramp=ramp, chain=chain, ring=ring)
+SCENES = dict(road=road, free3=free3, signal=signal, signal_real=signal_real, yellow=yellow, roundabout=roundabout, ramp=ramp, chain=chain, ring=ring, curves=curves)

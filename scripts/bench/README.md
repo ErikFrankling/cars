@@ -15,7 +15,8 @@ scripts/bench/build_driver.sh human       # once per commit: that commit plus th
 python3 -I $B selftest                    # no simulator: corruptions of real days, must keep passing
 python3 -I $B run --driver human --mode fast     # one seed, small scenes
 python3 -I $B run --driver human --mode full     # six seeds, longer scenes, drift and capacity drop
-python3 -I $B run --driver human --mode full --gpu --berlin /home/erikf/projects/personal/cars-data/berlin2019
+python3 -I $B run --driver human --mode fast --gpu --berlin-factor 10   # adds the Berlin district, whole demand
+python3 -I $B run --driver human --mode fast --reuse RUN --berlin-runs NAME   # scores an existing district run
 python3 -I $B compare RUN_A RUN_B          # per metric: better, worse, same, with paired intervals
 python3 -I $B knownbad                     # the 20 known-bad configurations, on the simulator
 python3 -I $B history

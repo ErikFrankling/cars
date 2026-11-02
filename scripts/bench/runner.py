@@ -73,8 +73,11 @@ class Run:
             return None
         last_t = f.time.max()
         t = self.trips()
-        arrived = int((t.arrival <= last_t).sum()) if t is not None else 0
-        return int(f.trip.nunique()), arrived, int(f[f.time == last_t].trip.nunique())
+        seen = set(f.trip.unique())
+        gone = set(t.trip.astype(str)) if t is not None else set()
+        ended = last_t < self.plan['end'] - 2 * (self.plan.get('fcd') or 1)
+        running = (set() if ended else set(f[f.time == last_t].trip)) - gone
+        return len(seen), len(seen & gone), len(running)
 
     def trips(self):
         p = self.d / 'trips.csv'

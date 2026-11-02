@@ -142,6 +142,47 @@ def score_district(sensor_csvs, scale=1.0, edges=None, trips=None, B=None):
     return M
 
 
+def evaluate(cfg, folder=None, gpu=False, factor='10', seeds=(1,), runs=None):
+    """The district. Either run it here, or score runs already made by the same commit. Demand factor 10 is the whole demand."""
+    folder = Path(folder or B19)
+    scale = {'01': .1, '05': .5, '10': 1.0}[factor]
+    paths = []
+    secs = 0.0
+    extras = dict(teleports=0, unfinished=[])
+    if runs:
+        ds = [folder / 'runs' / r for r in runs]
+    else:
+        ds = []
+        for seed in seeds:
+            d = runner.STORE / 'work' / f"{cfg['name']}-berlin-f{factor}" / f's{seed}'
+            d.mkdir(parents=True, exist_ok=True)
+            plan = dict(net=folder / 'district/net.net.xml', routes=folder / f'district/routes_f{factor}.rou.gz', end=93600, fcd=None, sensors=folder / 'district/sensors.csv', edge_interval=900, edges=True, extra=['--capacity', str(int(factor) * 4000 + 4000), '--trusted'])
+            r = runner.launch(cfg, plan, d, seed, {}, plan['net'], dt=cfg['dt_network'], gpu=gpu)
+            secs += r.secs
+            ds.append(d)
+    for d in ds:
+        paths.append(d / 'sensors.csv')
+        sm = d / ('summary.csv')
+        if sm.exists():
+            t = pd.read_csv(sm)
+            if len(t):
+                last = t.iloc[-1]
+                extras['teleports'] += int(last.teleports)
+                extras['unfinished'].append(float(last.running) / max(float(last.inserted), 1))
+    edges = next((d / 'edges.csv' for d in ds if (d / 'edges.csv').exists()), None)
+    trips = next((d / 'trips.csv' for d in ds if (d / 'trips.csv').exists()), None)
+    M = score_district(paths, 1.0, edges, trips)
+    if extras['unfinished']:
+        v = extras['unfinished']
+        c = score.judge([[x] for x in v], .005)
+        c.update(D=[[x] for x in v], value=round(float(np.median(v)), 5), note='running at the end of 26 h, of those inserted')
+        M['V6'] = {'district_end': c}
+    M['_V8_scale'] = scale
+    M['_V1_teleports'] = extras['teleports']
+    M['_runs'] = [str(d) for d in ds]
+    return M, secs
+
+
 def mini_day(d, cfg, ov, B, sites=30):
     """An engine test: separate roads, one per real site, with that site's mean hourly flow as demand. Its demand comes from
     the data that scores it, so it can never count as validation. It is what lets demand-side known-bad cases be run in minutes."""

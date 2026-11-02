@@ -71,11 +71,10 @@ def judge(D, F, N=None, credible=None, thin=False, proxy=False):
 
 
 def _credible(S, F, N, credible):
+    """Report 22: meets the credible threshold of section 7, and closes half the gap from the null to real noise. No threshold, no such status."""
+    if credible is None or S > credible:
+        return False
     has_skill = N is not None and math.isfinite(N) and N > F
-    if credible is None and not has_skill:
-        return False
-    if credible is not None and S > credible:
-        return False
     return S <= F + .5 * (N - F) if has_skill else True
 
 

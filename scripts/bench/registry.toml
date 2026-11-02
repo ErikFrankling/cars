@@ -178,6 +178,46 @@ name = "No drift over hours"
 plain = "Speed does not creep up or down over a long run at fixed demand"
 
 [[metric]]
+id = "M15"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Braking in a normal stop"
+plain = "How hard cars brake to a stop: the average, the hardest moment, the firmest stops (report 19)"
+
+[[metric]]
+id = "M16"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Time spent braking hard"
+plain = "Share of moving time braking over 2, 3 and 4.5 m/s2 (report 19)"
+
+[[metric]]
+id = "M17"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Launch from a stand"
+plain = "How hard cars pull away (report 19)"
+
+[[metric]]
+id = "M18"
+level = 1
+tag = "P"
+gate = "physical"
+name = "Cornering"
+plain = "How hard cars go round a bend, sideways. Real drivers hold about 1.8 m/s2 at any radius (report 19)"
+
+[[metric]]
+id = "M19"
+level = 1
+tag = "W"
+gate = "physical"
+name = "Everyday jerk"
+plain = "How abruptly acceleration changes in everyday driving (report 19). Witness, never tuned on"
+
+[[metric]]
 id = "JS1"
 level = 2
 tag = "P"

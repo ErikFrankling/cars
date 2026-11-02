@@ -18,7 +18,6 @@ from metrics import levels as L
 HERE = Path(__file__).resolve().parent
 NO_SCENE = {
     'M5': 'needs a kernel that replays a real leader; only the human branch has one, so it cannot be scored across drivers yet',
-    'M10': 'recovery curves of report 05 section 4.9 are not yet extracted as a target',
     'JS8': 'real queue-per-cycle data (Songdo) is not analysed yet',
     'JP1': 'no clean real source for give-way junctions in hand (report 22)', 'JP2': 'no clean real source for give-way junctions in hand', 'JP3': 'no clean real source for give-way junctions in hand',
     'JR3': 'entry-against-circulating curve from the Swiss data is not computed yet',
@@ -82,6 +81,7 @@ def road_stats(r, interval, tally):
     for lo, hi in X.BANDS:
         name = f'{lo}-{hi}'
         a[name], j[name], T[name] = X.band_samples(f, lo, hi, 'a1'), X.band_samples(f, lo, hi, 'j1'), X.band_samples(f, lo, hi, 'T')
+    relax = X.relaxation(f, interval)
     amp, per = [], []
     A = f[f.lane.str.startswith('A_')]
     for _, g in A.groupby('trip'):
@@ -95,19 +95,20 @@ def road_stats(r, interval, tally):
     counted = C.groupby('trip').time.min()
     lanes = 2
     window = max(float(counted.max() - counted.min()), 1.0) if len(counted) else 1.0
-    queued = A[(A.pos > 2500) & (A.time > t_end / 2)].speed.mean() if len(A) else np.nan
-    rate = len(counted) / window * 3600 / lanes if np.isfinite(queued) and queued < 20 else np.nan
+    rate = len(counted) / window * 3600 / lanes if len(counted) >= 50 else np.nan
     cuts = {}
-    for x in (2700, 2200):
-        m = A[(np.abs(A.pos - x) < 60) & (A.time > t_end / 2)]
-        cuts[x] = m.groupby((m.time // 5).astype(int)).speed.mean()
-    both = pd.concat(cuts, axis=1).dropna()
-    wave = X.wave_lag(both[2700], both[2200], 5.0, 500.0) if len(both) > 20 else np.nan
-    ev = X.lane_changes(f, interval)
+    for x in (2850, 2550):
+        m = A[(np.abs(A.pos - x) < 40) & (A.time > 60)]
+        cuts[x] = m.groupby((m.time // 2).astype(int)).speed.mean()
+    both = pd.concat(cuts, axis=1).interpolate(limit=3).dropna()
+    both = both[(both[2850] < 20) & (both[2550] < 20)]
+    wave = X.wave_lag(both[2850], both[2550], 2.0, 300.0) if len(both) > 60 else np.nan
+    ev = X.halfway(f)
+    ev = X.lane_changes(f, interval) if ev is None else ev
     ev = ev[ev.speed < 15]
     gaps = X.gaps_at_change(f, ev) if len(ev) else pd.DataFrame(columns=['lag', 'lead', 'v'])
     del f
-    return dict(a=a, j=j, T=T, amp=float(np.median(amp)) if amp else np.nan, per=float(np.median(per)) if per else np.nan, rate=rate, wave=wave, gaps=gaps)
+    return dict(relax=relax, a=a, j=j, T=T, amp=float(np.median(amp)) if amp else np.nan, per=float(np.median(per)) if per else np.nan, rate=rate, wave=wave, gaps=gaps)
 
 
 def free_stats(r, interval, tally):
@@ -117,7 +118,9 @@ def free_stats(r, interval, tally):
     tally.neg.append(int(((f.bumper < -.05) & (f.offset.abs() < .5)).sum()))
     ev = X.lane_changes(f, interval)
     km = X.veh_km(f, interval)
-    gaps = X.gaps_at_change(f, ev[ev.speed >= 15]) if len(ev) else pd.DataFrame(columns=['lag', 'lead', 'v'])
+    half = X.halfway(f)
+    half = ev if half is None else half
+    gaps = X.gaps_at_change(f, half[half.speed >= 15]) if len(half) else pd.DataFrame(columns=['lag', 'lead', 'v'])
     shapes = X.lc_shapes(f)
     speeds = f[f.bumper.isna() | (f.bumper > 150)].speed.to_numpy()
     return dict(rate=len(ev) / max(km, 1e-3), gaps=gaps, shapes=shapes, speeds=speeds)
@@ -136,6 +139,17 @@ def lane_length(net, lane):
         if l.get('id') == lane:
             return float(l.get('length'))
     raise SystemExit(f'no lane {lane}')
+
+
+def physical(f, interval):
+    """Report 19's quantities on one run: stops, launches, shares of moving time, everyday jerk."""
+    f = X.track_arrays(f, interval)
+    moving = f[f.speed > 1.0]
+    a = moving.a1.dropna().to_numpy()
+    j = moving.j1.dropna().abs().to_numpy()
+    stops, launches = X.stops_launches(f)
+    share = {'2': float((a < -2).mean()) if len(a) else np.nan, '3': float((a < -3).mean()) if len(a) else np.nan, '4.5': float((a < -4.5).mean()) if len(a) else np.nan}
+    return dict(stops=stops, launches=launches, share=share, up2=float((a > 2).mean()) if len(a) else np.nan, j50=float(np.median(j)) if len(j) else np.nan, j95=float(np.quantile(j, .95)) if len(j) else np.nan)
 
 
 def real_heads():
@@ -164,6 +178,7 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
         M['M3'] = thin_blocks(L.per_tracker([x['T'] for x in st], micro, 'T'))
         M['M13'] = L.M13([x['amp'] for x in st], [x['per'] for x in st], micro)
         M['C4'] = L.c4([x['wave'] for x in st])
+        M['M10'] = L.M10([x['relax'] for x in st])
         rates = [x['rate'] for x in st]
         M['M9'] = L.M9([x['gaps'] for x in st], 'congested')
         r1 = []
@@ -208,13 +223,10 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
             a2 = rr('signal', seeds[0], ctx=short, tag='_b')
             M['V4'] = {'bits': score.zero([0 if runner.sha(a1.fcd) == runner.sha(a2.fcd) else 1], 'runs of the same seed that differ')}
             runner.clean(a1), runner.clean(a2)
-            mid = dict(dur=360, drain=60)
-            base_t = rr('signal', seeds[0], ctx=mid, tag='_b')
-            half = rr('signal', seeds[0], dt=ov.get('dt', cfg['dt']) / 2, ctx=mid, tag='_h')
-            tb, _, _ = signal_table(base_t, base_t.plan, length, tally)
+            half = rr('signal', seeds[0], dt=ov.get('dt', cfg['dt']) / 2, tag='_h')
             th, _, _ = signal_table(half, half.plan, length, tally)
-            runner.clean(base_t), runner.clean(half)
-            M['V5'] = v5(tb, th)
+            runner.clean(half)
+            M['V5'] = v5(tabs[0], th)
         for s in seeds:
             r = rr('signal', s, dt=1.0, tag='_dt1')
             if ov.get('signals') != 'none':
@@ -228,7 +240,7 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
             M['V6'] = {'unfinished_share': _le(fin, .005)}
             M['V7'] = {'not_entered_share': _le(wait, .01)}
     if want('signal_real'):
-        s_ = []
+        s_, stops, phys = [], [], []
         ctx = dict(real=junc.get('cycle') or dict(cycle=90.0, green=40.0, vph=300))
         for s in seeds:
             r = rr('signal_real', s, ctx=ctx)
@@ -236,9 +248,16 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
             f = r.table()
             interval = max(r.plan['fcd'], ov.get('dt', cfg['dt']))
             tally.add('signal_real', r, f, interval)
-            s_.append(L.delay_samples(f, interval))
+            phys.append(physical(f, interval))
+            a_, b_ = L.delay_samples(f, interval)
+            s_.append(a_)
+            stops.append(b_)
             runner.clean(r)
-        M['JS7'] = L.js7(s_, junc)
+        M['JS7'] = L.js7(s_, stops, junc)
+        M['M15'] = L.M15([x['stops'] for x in phys])
+        M['M16'] = L.M16([x['share'] for x in phys])
+        M['M17'] = L.M17([x['launches'] for x in phys], [x['up2'] for x in phys])
+        M['M19'] = L.M19([x['j50'] for x in phys], [x['j95'] for x in phys])
     if want('yellow'):
         rows = []
         for s in seeds:
@@ -275,7 +294,8 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
             f = r.table()
             interval = max(r.plan['fcd'], ov.get('dt', cfg['dt']))
             tally.add('ramp', r, f, interval)
-            ev = X.lane_changes(f, interval)
+            ev = X.halfway(f)
+            ev = X.lane_changes(f, interval) if ev is None else ev
             ev = ev[ev.lane.str.startswith('merge_1')]
             gaps.append(X.gaps_at_change(f, ev) if len(ev) else pd.DataFrame(columns=['lag', 'lead', 'v']))
             if r.plan.get('steps'):
@@ -284,6 +304,20 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
         c = L.M9(gaps, 'congested')['congested']
         M['JO2'] = {'gaps': c}
         M['JO3'] = L.jo3(drops) if drops else {'drop': score.no_data('only the full run raises demand until it breaks down')}
+    if want('curves'):
+        sideways = {r_: [] for r_ in __import__('scenes').BENDS}
+        for s in seeds:
+            r = rr('curves', s)
+            log(f'curves s{s} {r.secs:.0f}s')
+            f = r.table()
+            interval = max(r.plan['fcd'], ov.get('dt', cfg['dt']))
+            tally.add('curves', r, f, interval)
+            for k, r_ in enumerate(sideways):
+                arc = f[f.lane == f'e{k}_0']
+                arc = arc[(arc.pos > 300 + .2 * r_ * 1.57) & (arc.pos < 300 + .8 * r_ * 1.57)]
+                sideways[r_].append(float((arc.speed ** 2 / r_).median()) if len(arc) else np.nan)
+            runner.clean(r)
+        M['M18'] = L.M18(sideways)
     if want('chain'):
         ch = []
         ctx = dict(heads=real_heads())
@@ -307,14 +341,19 @@ def evaluate(cfg, fast=True, ov=None, seeds=None, gpu=False, only=None, berlin=N
             ser.append(g)
             runner.clean(r)
         M['M14'] = L.M14(ser)
-    if berlin:
-        M.update(berlin)
+    berlin = dict(berlin or {})
+    b_scale, b_tele, b_runs = berlin.pop('_V8_scale', None), berlin.pop('_V1_teleports', None), berlin.pop('_runs', None)
+    for k, v in berlin.items():
+        M.setdefault(k, {}).update(v)
+    if b_tele is not None:
+        tally.teleports.append(b_tele)
     M['V1'] = {'count': score.zero(tally.teleports, 'teleports') if cfg.get('time_to_teleport', 0) == 0 and not ov.get('teleport') else dict(score.zero(tally.teleports, 'teleports on: not a valid run'), status='FAIL', z=score.Z_CAP)}
     if tally.collisions or tally.neg:
         M['V2'] = {'overlaps_per_veh_km': score.zero([sum(tally.collisions) + sum(tally.neg)], f'{sum(tally.collisions)} engine collisions, {sum(tally.neg)} negative bumper gap samples, over {sum(tally.veh_km):.0f} veh-km')}
     if tally.conserve:
         M['V3'] = {'mismatch': score.zero(tally.conserve, 'inserted minus arrived minus running')}
-    M['V8'] = {'scale': score.zero([0 if ov.get('demand_scale', 1.0) >= .95 else 1], f'demand scale {ov.get("demand_scale", 1.0)}')}
+    scale = min(ov.get('demand_scale', 1.0), b_scale if b_scale is not None else 1.0)
+    M['V8'] = {'scale': score.zero([0 if scale >= .95 else 1], f'demand scale {scale}')}
     if tally.acc_bad:
         M['M12'] = L.M12(tally.acc_bad)
     return M, tally.seconds, seeds
