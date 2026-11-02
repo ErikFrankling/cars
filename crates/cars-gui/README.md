@@ -15,7 +15,7 @@ scripts/cars-gui.sh --scenario phantom-jam
 scripts/cars-gui.sh --scenario stockholm-new --speed 0
 ```
 
-`--speed 0` means as fast as possible. `--help` lists the rest.
+`--speed 0` means as fast as possible. `--net file` opens any net, with `--routes` optional. `--model`, `--human`, `--demand`, `--overlay`, `--colour` and `--camera x,y,metres-per-pixel` set things up from the start. `--help` lists them all.
 
 ## How far to trust what you see
 

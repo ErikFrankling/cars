@@ -690,7 +690,7 @@ fn map(ui: &mut Ui, m: &mut Model, wall: f32) {
     let hover = response.hover_pos().map(|p| [(p.x - rect.left()) * ppp, (p.y - rect.top()) * ppp]);
     if let Some(p) = hover {
         let (scroll, pinch) = ui.input(|i| (i.smooth_scroll_delta.y + i.smooth_scroll_delta.x * 0.0, i.zoom_delta()));
-        let factor = (-scroll / 260.0).exp() / pinch;
+        let factor = (-scroll / 170.0).exp() / pinch;
         if (factor - 1.0).abs() > 1e-4 {
             let anchor = if s.following { [0.0, 0.0] } else { [p[0] - w * 0.5, p[1] - h * 0.5] };
             s.flyer.zoom_at(factor, anchor);

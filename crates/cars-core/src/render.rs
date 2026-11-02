@@ -651,7 +651,7 @@ impl Renderer {
         }
         let mut lods = vec![lod_mesh(g, 0.0, net.bounds, all)];
         // Further out, one strip for each road, losing detail and then the smallest streets.
-        for (from_mpp, tolerance, min_speed) in [(2.0, 1.5, 0.0), (8.0, 6.0, 0.0), (24.0, 18.0, 12.0)] {
+        for (from_mpp, tolerance, min_speed, bright) in [(2.0, 1.5, 0.0, 1.4), (8.0, 6.0, 0.0, 2.2), (24.0, 18.0, 12.0, 4.0)] {
             let mut segs = Vec::new();
             for e in net.edges.iter().filter(|e| e.func == crate::net::EdgeFunc::Normal) {
                 let lanes = &net.lanes[e.first_lane as usize..(e.first_lane + e.lane_count) as usize];
@@ -660,7 +660,7 @@ impl Renderer {
                 if mid.speed < min_speed {
                     continue;
                 }
-                push(&mut segs, &simplify(&mid.shape, tolerance), width, tint_of(mid.speed, false));
+                push(&mut segs, &simplify(&mid.shape, tolerance), width, tint_of(mid.speed, false) * bright);
             }
             lods.push(lod_mesh(g, from_mpp, net.bounds, segs));
         }

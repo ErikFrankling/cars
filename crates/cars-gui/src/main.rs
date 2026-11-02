@@ -50,6 +50,15 @@ struct Args {
     /// Load even when memory looks short.
     #[arg(long)]
     force: bool,
+    /// Open this net instead of a scenario from the registry.
+    #[arg(long)]
+    net: Option<String>,
+    /// Route files for --net, separated by commas. May be left out, to look at the map alone.
+    #[arg(long, default_value = "")]
+    routes: String,
+    /// Additional files for --net, separated by commas.
+    #[arg(long, default_value = "")]
+    additional: String,
     /// Automated model, by its id in registry.toml. Without it the run is human-only.
     #[arg(long)]
     model: Option<String>,
@@ -315,7 +324,10 @@ impl App {
         if let Some(text) = problem {
             errors.push(ui::Problem { text, retry: None });
         }
-        let first = registry.scenario(&self.args.scenario).cloned();
+        let first = match &self.args.net {
+            Some(net) => Some(registry::custom(net, &self.args.routes, &self.args.additional)),
+            None => registry.scenario(&self.args.scenario).cloned(),
+        };
         if first.is_none() {
             errors.push(ui::Problem { text: format!("There is no scenario called {} in the registry. Pick one on the left.", self.args.scenario), retry: None });
         }
