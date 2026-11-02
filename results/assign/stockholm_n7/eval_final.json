@@ -1,0 +1,279 @@
+{
+  "all_balanced": true,
+  "all_clean": false,
+  "collisions": 134302.0,
+  "gap": 0.3431257109438937,
+  "gap_sampled": 197993,
+  "mean_travel_s": 6777.971374905316,
+  "p95_travel_s": 27680.25,
+  "sd_travel_s": 1019.4551656348448,
+  "seeds": [
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {
+        "held_peak": {
+          "geh5": 0.25757575757575757,
+          "observed": 95161.59999084473,
+          "rows": 264,
+          "simulated": 47221.5,
+          "wape": 0.6756738012300573
+        },
+        "selection": {
+          "geh5": 0.5163043478260869,
+          "observed": 337371.69884467125,
+          "rows": 1656,
+          "simulated": 263903.5,
+          "wape": 0.5856718261494043
+        },
+        "test": {
+          "geh5": 0.4599447513812155,
+          "observed": 908181.6999160051,
+          "rows": 4344,
+          "simulated": 700665.0,
+          "wape": 0.6734113889867928
+        },
+        "test_other": {
+          "geh5": 0.46788354898336415,
+          "observed": 2796935.0,
+          "rows": 12984,
+          "simulated": 1968724.75,
+          "wape": 0.6230165341704401
+        },
+        "train": {
+          "geh5": 0.4593465045592705,
+          "observed": 1467771.800158091,
+          "rows": 7896,
+          "simulated": 1076639.5,
+          "wape": 0.6288555891559311
+        }
+      },
+      "ledger": {
+        "active": 63311,
+        "arrived": 1211908,
+        "collisions": 134302,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 1318869,
+        "teleports": 968405,
+        "waiting_to_insert": 43650
+      },
+      "peak_active": 750293,
+      "seed": 9101,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 1211908,
+        "mean_insertion_wait_s": 646.4471940114266,
+        "mean_travel_s": 6279.302393945115,
+        "p50_travel_s": 1416.0,
+        "p95_travel_s": 26342.0,
+        "requested": 1318869,
+        "route_km": 10887674.279990485,
+        "total_generalised_s": 8281577269.0,
+        "unfinished": 106961
+      },
+      "wall_s": 788.427259323
+    },
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {
+        "held_peak": {
+          "geh5": 0.25757575757575757,
+          "observed": 95161.59999084473,
+          "rows": 264,
+          "simulated": 47221.5,
+          "wape": 0.6756738012300573
+        },
+        "selection": {
+          "geh5": 0.5163043478260869,
+          "observed": 337371.69884467125,
+          "rows": 1656,
+          "simulated": 263903.5,
+          "wape": 0.5856718261494043
+        },
+        "test": {
+          "geh5": 0.4599447513812155,
+          "observed": 908181.6999160051,
+          "rows": 4344,
+          "simulated": 700665.0,
+          "wape": 0.6734113889867928
+        },
+        "test_other": {
+          "geh5": 0.46788354898336415,
+          "observed": 2796935.0,
+          "rows": 12984,
+          "simulated": 1968724.75,
+          "wape": 0.6230165341704401
+        },
+        "train": {
+          "geh5": 0.4593465045592705,
+          "observed": 1467771.800158091,
+          "rows": 7896,
+          "simulated": 1076639.5,
+          "wape": 0.6288555891559311
+        }
+      },
+      "ledger": {
+        "active": 96889,
+        "arrived": 1151555,
+        "collisions": 134302,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 1318869,
+        "teleports": 1284476,
+        "waiting_to_insert": 70425
+      },
+      "peak_active": 750293,
+      "seed": 9102,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 1151555,
+        "mean_insertion_wait_s": 878.4720695060158,
+        "mean_travel_s": 8521.639616974848,
+        "p50_travel_s": 2102.0,
+        "p95_travel_s": 31515.0,
+        "requested": 1318869,
+        "route_km": 10116086.729931487,
+        "total_generalised_s": 11238926320.0,
+        "unfinished": 167314
+      },
+      "wall_s": 788.427259323
+    },
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {
+        "held_peak": {
+          "geh5": 0.25757575757575757,
+          "observed": 95161.59999084473,
+          "rows": 264,
+          "simulated": 47221.5,
+          "wape": 0.6756738012300573
+        },
+        "selection": {
+          "geh5": 0.5163043478260869,
+          "observed": 337371.69884467125,
+          "rows": 1656,
+          "simulated": 263903.5,
+          "wape": 0.5856718261494043
+        },
+        "test": {
+          "geh5": 0.4599447513812155,
+          "observed": 908181.6999160051,
+          "rows": 4344,
+          "simulated": 700665.0,
+          "wape": 0.6734113889867928
+        },
+        "test_other": {
+          "geh5": 0.46788354898336415,
+          "observed": 2796935.0,
+          "rows": 12984,
+          "simulated": 1968724.75,
+          "wape": 0.6230165341704401
+        },
+        "train": {
+          "geh5": 0.4593465045592705,
+          "observed": 1467771.800158091,
+          "rows": 7896,
+          "simulated": 1076639.5,
+          "wape": 0.6288555891559311
+        }
+      },
+      "ledger": {
+        "active": 66091,
+        "arrived": 1207183,
+        "collisions": 134302,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 1318869,
+        "teleports": 961497,
+        "waiting_to_insert": 45595
+      },
+      "peak_active": 750293,
+      "seed": 9103,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 1207183,
+        "mean_insertion_wait_s": 676.7749636964735,
+        "mean_travel_s": 6371.219360679492,
+        "p50_travel_s": 1398.0,
+        "p95_travel_s": 26851.0,
+        "requested": 1318869,
+        "route_km": 10848810.341173379,
+        "total_generalised_s": 8402803707.0,
+        "unfinished": 111686
+      },
+      "wall_s": 788.427259323
+    },
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {
+        "held_peak": {
+          "geh5": 0.25757575757575757,
+          "observed": 95161.59999084473,
+          "rows": 264,
+          "simulated": 47221.5,
+          "wape": 0.6756738012300573
+        },
+        "selection": {
+          "geh5": 0.5163043478260869,
+          "observed": 337371.69884467125,
+          "rows": 1656,
+          "simulated": 263903.5,
+          "wape": 0.5856718261494043
+        },
+        "test": {
+          "geh5": 0.4599447513812155,
+          "observed": 908181.6999160051,
+          "rows": 4344,
+          "simulated": 700665.0,
+          "wape": 0.6734113889867928
+        },
+        "test_other": {
+          "geh5": 0.46788354898336415,
+          "observed": 2796935.0,
+          "rows": 12984,
+          "simulated": 1968724.75,
+          "wape": 0.6230165341704401
+        },
+        "train": {
+          "geh5": 0.4593465045592705,
+          "observed": 1467771.800158091,
+          "rows": 7896,
+          "simulated": 1076639.5,
+          "wape": 0.6288555891559311
+        }
+      },
+      "ledger": {
+        "active": 64561,
+        "arrived": 1214736,
+        "collisions": 134302,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 1318869,
+        "teleports": 897402,
+        "waiting_to_insert": 39572
+      },
+      "peak_active": 750293,
+      "seed": 9104,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 1214736,
+        "mean_insertion_wait_s": 602.6792109561254,
+        "mean_travel_s": 5939.724128021812,
+        "p50_travel_s": 1271.0,
+        "p95_travel_s": 26013.0,
+        "requested": 1318869,
+        "route_km": 10955229.901593346,
+        "total_generalised_s": 7833718021.0,
+        "unfinished": 104133
+      },
+      "wall_s": 788.427259323
+    }
+  ],
+  "seeds_averaged": 4,
+  "teleports": 1027945.0,
+  "unfinished_share": 0.09290043211266623
+}

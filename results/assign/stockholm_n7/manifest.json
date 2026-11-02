@@ -1,0 +1,50 @@
+{
+  "files": [
+    {
+      "bytes": 199516122,
+      "path": "/home/erikf/projects/personal/cars-data/truth/stockholm/factorial/n7_ramps.net.xml",
+      "sha256": "c12175ae755dc71ea241498cc65e023a601ea3bd0b0f91bb1bb4c916ca895c11"
+    },
+    {
+      "bytes": 16962276,
+      "path": "/home/erikf/projects/personal/cars-data/truth/stockholm/factorial/v2_a26.rou.gz",
+      "sha256": "a66187aede9f50c09fff3b7d9025a345cb8cf8262b73b642c2ae0a5ec320dfc5"
+    },
+    {
+      "bytes": 2901500,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/stockholm_n7/counts.csv",
+      "sha256": "55d07c5c5cb4ea2528e78f943fa3275518844c0ce29b059da61e09f74ed2d43d"
+    }
+  ],
+  "scenario": {
+    "additional": [],
+    "begin": 0.0,
+    "blind_test": true,
+    "capacity": 200000,
+    "counts": "/home/erikf/projects/personal/cars-data/truth/assign/stockholm_n7/counts.csv",
+    "cuts": null,
+    "discharge": null,
+    "dt": 1.0,
+    "end": 86400.0,
+    "fixed_prefixes": [],
+    "fixed_vtypes": [],
+    "horizon": 93600.0,
+    "ignore_blocker": 20.0,
+    "init": "given",
+    "landmarks": 16,
+    "memory": 0.30000001192092896,
+    "name": "stockholm_n7_v2full",
+    "net": "/home/erikf/projects/personal/cars-data/truth/stockholm/factorial/n7_ramps.net.xml",
+    "noise_floor": 0.12245541016890638,
+    "routes": [
+      "/home/erikf/projects/personal/cars-data/truth/stockholm/factorial/v2_a26.rou.gz"
+    ],
+    "seed": 0,
+    "share": 0.15,
+    "time_to_teleport": 120.0,
+    "travellers": null,
+    "trusted": true,
+    "turnaround_s": 300.0,
+    "zones": null
+  }
+}

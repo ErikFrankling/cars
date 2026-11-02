@@ -1,0 +1,48 @@
+{
+  "files": [
+    {
+      "bytes": 1099742,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/grid.net.xml",
+      "sha256": "66d254ec94ad877c042245aa046009255583c5eac41a6fa5e43c42ee3efe97a8"
+    },
+    {
+      "bytes": 151,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/vtypes.add.xml",
+      "sha256": "d599a59a474bbe2b23186d9db31aa658bc8a8bc3a13663b6e1e29bbd9e34d858"
+    },
+    {
+      "bytes": 293563,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/grid_150.csv.gz",
+      "sha256": "8aa9f5609ab40cd9913c097a9060012b8c3541678a3ffc486e5f0ba3a9ad969e"
+    }
+  ],
+  "scenario": {
+    "additional": [
+      "/home/erikf/projects/personal/cars-data/truth/assign/nets/vtypes.add.xml"
+    ],
+    "begin": 0.0,
+    "capacity": 40000,
+    "counts": null,
+    "cuts": null,
+    "discharge": null,
+    "dt": 1.0,
+    "end": 14000.0,
+    "fixed_prefixes": [],
+    "fixed_vtypes": [],
+    "horizon": 21600.0,
+    "ignore_blocker": null,
+    "init": "",
+    "landmarks": 16,
+    "memory": 0.30000001192092896,
+    "name": "grid_150",
+    "net": "/home/erikf/projects/personal/cars-data/truth/assign/nets/grid.net.xml",
+    "routes": [],
+    "seed": 0,
+    "share": 0.15,
+    "time_to_teleport": 0.0,
+    "travellers": "/home/erikf/projects/personal/cars-data/truth/assign/nets/grid_150.csv.gz",
+    "trusted": false,
+    "turnaround_s": 10.0,
+    "zones": null
+  }
+}

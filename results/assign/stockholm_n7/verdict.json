@@ -1,0 +1,397 @@
+{
+  "verdict": "network_suspect",
+  "requested": 1318869,
+  "unfinished": 100021,
+  "teleports": 855186,
+  "collisions": 149127,
+  "stalled_at_s": null,
+  "due_at_stall": 0.0,
+  "half_demand_day": {
+    "mean_travel_s": 882.084715530373,
+    "stalled_at_s": null,
+    "teleports": 5761,
+    "unfinished_share": 0.0
+  },
+  "half_demand_cut_load": 0.039401419728164036,
+  "converged": {
+    "gap_ok": false,
+    "stable": false,
+    "ledger_clean": false,
+    "converged": false,
+    "stability_cost_change": 0.8382134632354498,
+    "stability_flow_change": 0.16975921654778728,
+    "gap_unseen": 0.4177648135572686
+  },
+  "first_queues": [
+    {
+      "discharge_veh_h": 1344.0,
+      "edge": "26992780#1",
+      "from_s": 22800.0,
+      "nominal_veh_h": 4787.3623046875
+    },
+    {
+      "discharge_veh_h": 876.0,
+      "edge": "212472723#0",
+      "from_s": 23100.0,
+      "nominal_veh_h": 4417.0068359375
+    },
+    {
+      "discharge_veh_h": 360.0,
+      "edge": "176240974#0",
+      "from_s": 23400.0,
+      "nominal_veh_h": 3912.328857421875
+    },
+    {
+      "discharge_veh_h": 588.0,
+      "edge": "252678010",
+      "from_s": 23400.0,
+      "nominal_veh_h": 8834.013671875
+    },
+    {
+      "discharge_veh_h": 768.0,
+      "edge": "252678011",
+      "from_s": 23400.0,
+      "nominal_veh_h": 4417.0068359375
+    },
+    {
+      "discharge_veh_h": 996.0,
+      "edge": "43996609#0",
+      "from_s": 23400.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 1080.0,
+      "edge": "252678009",
+      "from_s": 23700.0,
+      "nominal_veh_h": 4417.0068359375
+    },
+    {
+      "discharge_veh_h": 972.0000610351562,
+      "edge": "252678012",
+      "from_s": 23700.0,
+      "nominal_veh_h": 2208.50341796875
+    },
+    {
+      "discharge_veh_h": 660.0,
+      "edge": "43160908#0",
+      "from_s": 23700.0,
+      "nominal_veh_h": 4787.3623046875
+    },
+    {
+      "discharge_veh_h": 720.0,
+      "edge": "924775287#0",
+      "from_s": 23700.0,
+      "nominal_veh_h": 1956.1644287109375
+    },
+    {
+      "discharge_veh_h": 684.0,
+      "edge": "1279895966",
+      "from_s": 24300.0,
+      "nominal_veh_h": 3912.328857421875
+    },
+    {
+      "discharge_veh_h": 588.0,
+      "edge": "273574621",
+      "from_s": 24300.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 935.9999389648438,
+      "edge": "53025260",
+      "from_s": 24300.0,
+      "nominal_veh_h": 4417.0068359375
+    },
+    {
+      "discharge_veh_h": 1344.0,
+      "edge": "636606922",
+      "from_s": 24300.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 816.0,
+      "edge": "107182115#0",
+      "from_s": 24600.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 852.0,
+      "edge": "121449591#0",
+      "from_s": 24600.0,
+      "nominal_veh_h": 4800.0
+    },
+    {
+      "discharge_veh_h": 924.0,
+      "edge": "460404869",
+      "from_s": 25200.0,
+      "nominal_veh_h": 4787.3623046875
+    },
+    {
+      "discharge_veh_h": 396.0,
+      "edge": "577459648#1",
+      "from_s": 25200.0,
+      "nominal_veh_h": 4417.0068359375
+    },
+    {
+      "discharge_veh_h": 480.0000305175781,
+      "edge": "-223231581",
+      "from_s": 25500.0,
+      "nominal_veh_h": 1023.3128662109375
+    },
+    {
+      "discharge_veh_h": 564.0,
+      "edge": "-252124531#3",
+      "from_s": 25500.0,
+      "nominal_veh_h": 1956.1644287109375
+    },
+    {
+      "discharge_veh_h": 156.0,
+      "edge": "196892563#0",
+      "from_s": 25500.0,
+      "nominal_veh_h": 1956.1644287109375
+    },
+    {
+      "discharge_veh_h": 276.0,
+      "edge": "212085574#0",
+      "from_s": 25500.0,
+      "nominal_veh_h": 1956.1644287109375
+    },
+    {
+      "discharge_veh_h": 984.0,
+      "edge": "223480392",
+      "from_s": 25500.0,
+      "nominal_veh_h": 2208.50341796875
+    },
+    {
+      "discharge_veh_h": 1008.0,
+      "edge": "270327158#0",
+      "from_s": 25500.0,
+      "nominal_veh_h": 7181.04345703125
+    },
+    {
+      "discharge_veh_h": 1044.0,
+      "edge": "43683189#0",
+      "from_s": 25500.0,
+      "nominal_veh_h": 1956.1644287109375
+    },
+    {
+      "discharge_veh_h": 396.0,
+      "edge": "-807464443#1",
+      "from_s": 25800.0,
+      "nominal_veh_h": 2208.50341796875
+    },
+    {
+      "discharge_veh_h": 480.0000305175781,
+      "edge": "1014672557#7",
+      "from_s": 25800.0,
+      "nominal_veh_h": 1956.1644287109375
+    },
+    {
+      "discharge_veh_h": 1008.0,
+      "edge": "265948017#0",
+      "from_s": 25800.0,
+      "nominal_veh_h": 2208.50341796875
+    },
+    {
+      "discharge_veh_h": 840.0,
+      "edge": "-120309477#2",
+      "from_s": 26100.0,
+      "nominal_veh_h": 2208.50341796875
+    },
+    {
+      "discharge_veh_h": 720.0,
+      "edge": "-45984139#2",
+      "from_s": 26100.0,
+      "nominal_veh_h": 1956.1644287109375
+    }
+  ],
+  "suspect_links": [
+    {
+      "edge": "212472723#0",
+      "from_s": 23100.0,
+      "isolated_discharge_veh_h": 896.0,
+      "nominal_veh_h": 4417.0068359375
+    },
+    {
+      "edge": "43160908#0",
+      "from_s": 23700.0,
+      "isolated_discharge_veh_h": 320.0,
+      "nominal_veh_h": 4787.3623046875
+    },
+    {
+      "edge": "53025260",
+      "from_s": 24300.0,
+      "isolated_discharge_veh_h": 1436.0,
+      "nominal_veh_h": 4417.0068359375
+    },
+    {
+      "edge": "121449591#0",
+      "from_s": 24600.0,
+      "isolated_discharge_veh_h": 616.0,
+      "nominal_veh_h": 4800.0
+    },
+    {
+      "edge": "577459648#1",
+      "from_s": 25200.0,
+      "isolated_discharge_veh_h": 360.0,
+      "nominal_veh_h": 4417.0068359375
+    },
+    {
+      "edge": "212085574#0",
+      "from_s": 25500.0,
+      "isolated_discharge_veh_h": 64.0,
+      "nominal_veh_h": 1956.1644287109375
+    },
+    {
+      "edge": "270327158#0",
+      "from_s": 25500.0,
+      "isolated_discharge_veh_h": 904.0000610351562,
+      "nominal_veh_h": 7181.04345703125
+    },
+    {
+      "edge": "-807464443#1",
+      "from_s": 25800.0,
+      "isolated_discharge_veh_h": 304.0,
+      "nominal_veh_h": 2208.50341796875
+    }
+  ],
+  "cuts_checked": 122,
+  "cuts_violated": [],
+  "worst_cuts": [
+    {
+      "name": "k16_c12",
+      "direction": "in",
+      "links": 143,
+      "capacity_veh_h": 185569.1752642393,
+      "storage_veh": 3497.616018794477,
+      "must_cross": 160414,
+      "peak_1h_crossing": 14899,
+      "peak_1h_start_s": 57598.52,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k4_c1",
+      "direction": "out",
+      "links": 127,
+      "capacity_veh_h": 149307.6718211174,
+      "storage_veh": 2491.8560129217803,
+      "must_cross": 119541,
+      "peak_1h_crossing": 11179,
+      "peak_1h_start_s": 57617.57,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k4_c3",
+      "direction": "in",
+      "links": 176,
+      "capacity_veh_h": 216872.4939197302,
+      "storage_veh": 3997.4893242418766,
+      "must_cross": 162467,
+      "peak_1h_crossing": 15284,
+      "peak_1h_start_s": 57597.16,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k4_c1",
+      "direction": "in",
+      "links": 116,
+      "capacity_veh_h": 139069.47621703148,
+      "storage_veh": 2806.9799842126667,
+      "must_cross": 102974,
+      "peak_1h_crossing": 9662,
+      "peak_1h_start_s": 57601.45,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k8_c6",
+      "direction": "in",
+      "links": 187,
+      "capacity_veh_h": 239555.83856999874,
+      "storage_veh": 4722.524006314576,
+      "must_cross": 173918,
+      "peak_1h_crossing": 16201,
+      "peak_1h_start_s": 57597.16,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k2_c0",
+      "direction": "out",
+      "links": 185,
+      "capacity_veh_h": 219937.17446029186,
+      "storage_veh": 4831.264002773911,
+      "must_cross": 155540,
+      "peak_1h_crossing": 14595,
+      "peak_1h_start_s": 57596.98,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k4_c3",
+      "direction": "out",
+      "links": 183,
+      "capacity_veh_h": 220152.05952823162,
+      "storage_veh": 4243.766656342894,
+      "must_cross": 153664,
+      "peak_1h_crossing": 14412,
+      "peak_1h_start_s": 57608.05,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k16_c7",
+      "direction": "in",
+      "links": 87,
+      "capacity_veh_h": 98621.83631658554,
+      "storage_veh": 2036.0413205623627,
+      "must_cross": 67145,
+      "peak_1h_crossing": 6334,
+      "peak_1h_start_s": 57615.58,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k16_c12",
+      "direction": "out",
+      "links": 144,
+      "capacity_veh_h": 184434.62037742138,
+      "storage_veh": 3508.4133296869695,
+      "must_cross": 128510,
+      "peak_1h_crossing": 11769,
+      "peak_1h_start_s": 57649.8,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k8_c3",
+      "direction": "out",
+      "links": 182,
+      "capacity_veh_h": 206825.81723928452,
+      "storage_veh": 3074.660007338971,
+      "must_cross": 138709,
+      "peak_1h_crossing": 12948,
+      "peak_1h_start_s": 57606.35,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    }
+  ],
+  "min_unmet_demand": 0.0,
+  "delay_ratio": 8.22414364031926,
+  "notes": [
+    "Cut capacity is measured discharge from an isolated test where a discharge file was given; otherwise the larger of the day's peak outflow and half a nominal screen.",
+    "Labelled diagnostic: teleports or ignore-junction-blocker were on, so this is not a counted run."
+  ]
+}

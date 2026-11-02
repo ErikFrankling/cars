@@ -1,0 +1,76 @@
+{
+  "files": [
+    {
+      "bytes": 10940662,
+      "path": "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/lust.net.xml",
+      "sha256": "6f5d76223cf14b797ae6267f13b23eb6c872d76adec1fb22a8569a806dc09341"
+    },
+    {
+      "bytes": 41722369,
+      "path": "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/DUERoutes/local.actuated.0.rou.xml",
+      "sha256": "d63ce26b79998c7d6101227bb83f7ab0aada695b6af04eeb2fe2036e82a6f253"
+    },
+    {
+      "bytes": 42688239,
+      "path": "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/DUERoutes/local.actuated.1.rou.xml",
+      "sha256": "69841ba1354567533d0a1747ab8ce17a623b4be44799e629d08368ac0939abee"
+    },
+    {
+      "bytes": 43531500,
+      "path": "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/DUERoutes/local.actuated.2.rou.xml",
+      "sha256": "14ddbad24dc5dc3eeebac8b07b26256cfba491603ba2873dfa8f8f78b8f50063"
+    },
+    {
+      "bytes": 35681718,
+      "path": "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/transit.rou.xml",
+      "sha256": "2effb58329e51fd79fea06fb9c212524a769e730df38c033af4a2f041996f4a0"
+    },
+    {
+      "bytes": 3169632,
+      "path": "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/buslines.rou.xml",
+      "sha256": "201101ae9ae3812c35bdb775eb2f8c8549fc7435f702202fc89d7df338b06e1e"
+    },
+    {
+      "bytes": 1707,
+      "path": "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/vtypes.add.xml",
+      "sha256": "8bfa1f4f2c51f4f15066e5d799027572f3482aaaa67fb37ee10a75cecf42ee92"
+    }
+  ],
+  "scenario": {
+    "additional": [
+      "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/vtypes.add.xml"
+    ],
+    "begin": 0.0,
+    "capacity": 60000,
+    "counts": null,
+    "cuts": null,
+    "discharge": null,
+    "dt": 1.0,
+    "end": 86400.0,
+    "fixed_prefixes": [],
+    "fixed_vtypes": [
+      "bus"
+    ],
+    "horizon": 93600.0,
+    "ignore_blocker": 20.0,
+    "init": "free",
+    "landmarks": 16,
+    "memory": 0.30000001192092896,
+    "name": "lust_valve",
+    "net": "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/lust.net.xml",
+    "routes": [
+      "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/DUERoutes/local.actuated.0.rou.xml",
+      "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/DUERoutes/local.actuated.1.rou.xml",
+      "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/DUERoutes/local.actuated.2.rou.xml",
+      "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/transit.rou.xml",
+      "/home/erikf/projects/personal/cars-data/lust/LuSTScenario-2.0/scenario/buslines.rou.xml"
+    ],
+    "seed": 0,
+    "share": 0.15,
+    "time_to_teleport": 120.0,
+    "travellers": null,
+    "trusted": true,
+    "turnaround_s": 10.0,
+    "zones": null
+  }
+}

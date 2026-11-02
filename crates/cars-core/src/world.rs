@@ -505,6 +505,8 @@ pub struct World {
     pub n_edges_per_replica: u32,
     pub edge_is_normal: Vec<bool>,
     pub total_cells: u64,
+    /// Which lanes a route and vehicle type may depart on, kept for `rewrite_demand`.
+    pub depart_masks: rustc_hash::FxHashMap<(u32, u32), u32>,
     pub zones: Vec<GpuZone>,
     pub speed_trace: Vec<f32>,
     /// Lane geometry for the detector: x, y, distance along, per point.
@@ -690,12 +692,16 @@ fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
 impl World {
     pub fn build(net: &Net, demand: &Demand, cfg: &SimConfig, replicas: &[Replica]) -> Self {
         let topo = Topology::build(net);
+        Self::build_with(net, &topo, demand, cfg, replicas)
+    }
+
+    pub fn build_with(net: &Net, topo: &Topology, demand: &Demand, cfg: &SimConfig, replicas: &[Replica]) -> Self {
         let mut w = World {
             bounds: net.bounds,
             speed_trace: cfg.speed_trace.clone(),
             ..Default::default()
         };
-        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 4.3)), crate::physics::zones(net, &topo, cfg.tune("zone_distance", 2.6))));
+        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 4.3)), crate::physics::zones(net, topo, cfg.tune("zone_distance", 2.6))));
         w.vtypes = demand.vtypes.iter().map(|t| gpu_vtype(t, cfg.dt)).collect();
         if cfg.mu > 0.0 {
             for (g, t) in w.vtypes.iter_mut().zip(&demand.vtypes) {
@@ -709,7 +715,7 @@ impl World {
         }];
         let reps: &[Replica] = if replicas.is_empty() { &single } else { replicas };
         let mut key_base = 0u64;
-        let coord_base = cfg.coord.as_ref().map(|c| crate::coord::build(net, &topo, c, cfg.dt, cfg.seed));
+        let coord_base = cfg.coord.as_ref().map(|c| crate::coord::build(net, topo, c, cfg.dt, cfg.seed));
         if let Some(base) = &coord_base {
             w.coord = Some(crate::coord::CoordWorld {
                 cfg: base.cfg,
@@ -721,7 +727,7 @@ impl World {
         }
         for (ri, rep) in reps.iter().enumerate() {
             let lane0 = w.lanes.len() as u32;
-            w.append_replica(net, &topo, demand, cfg, rep, ri as u32, &mut key_base, phys.as_ref(), coord_base.as_ref());
+            w.append_replica(net, topo, demand, cfg, rep, ri as u32, &mut key_base, phys.as_ref(), coord_base.as_ref());
             if let (Some(base), Some(out)) = (&coord_base, w.coord.as_mut()) {
                 crate::coord::add_replica(out, base, lane0, ri as u32);
             }
@@ -812,6 +818,22 @@ impl World {
             lateral_median: cfg.tune("lateral_median", 2.2),
         };
         w
+    }
+
+    /// Replace routes, trips and queues without touching the network. `Sim::write_demand` uploads them.
+    /// Trips must be sorted by departure, as `Demand::load` leaves them.
+    pub fn rewrite_demand(&mut self, net: &Net, topo: &Topology, demand: &Demand, cfg: &SimConfig, replicas: &[Replica]) {
+        self.routes.clear();
+        self.trips.clear();
+        self.trip_source.clear();
+        self.queues.clear();
+        self.queue_trips.clear();
+        let single = [Replica { seed: cfg.seed, ..Default::default() }];
+        let reps: &[Replica] = if replicas.is_empty() { &single } else { replicas };
+        for (ri, rep) in reps.iter().enumerate() {
+            let edge0 = self.replica_edge_start[ri];
+            self.append_demand(net, topo, demand, cfg, rep, ri as u32, edge0);
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -1141,18 +1163,27 @@ impl World {
             }
         }
 
-        // Routes and trips.
-        let route0 = self.routes.len() as u32;
-        let mut route_at = Vec::with_capacity(demand.routes.len());
-        for r in &demand.routes {
-            route_at.push(self.routes.len() as u32);
-            self.routes.extend(r.iter().map(|&e| e + edge0));
+        self.append_demand(net, topo, demand, cfg, rep, ri, edge0);
+    }
+
+    /// Routes and trips of one replica.
+    #[allow(clippy::too_many_arguments)]
+    fn append_demand(&mut self, net: &Net, topo: &Topology, demand: &Demand, cfg: &SimConfig, rep: &Replica, ri: u32, edge0: u32) {
+        // Only routes a trip uses: assignment keeps alternatives in the arena that no vehicle follows today.
+        let mut used = vec![false; demand.routes.len()];
+        for t in &demand.trips {
+            used[t.route as usize] = true;
         }
-        let _ = route0;
+        let mut route_at = Vec::with_capacity(demand.routes.len());
+        for (i, r) in demand.routes.iter().enumerate() {
+            route_at.push(self.routes.len() as u32);
+            if used[i] {
+                self.routes.extend(r.iter().map(|&e| e + edge0));
+            }
+        }
         let mut rng_state = rep.seed.wrapping_mul(0x2545F4914F6CDD1D) ^ (ri as u64 + 1);
         let mut by_edge: Vec<Vec<u32>> = vec![Vec::new(); net.edges.len()];
         let mut by_lane: std::collections::BTreeMap<(u32, u32), Vec<u32>> = Default::default();
-        let mut masks: std::collections::HashMap<(u32, u32), u32> = std::collections::HashMap::new();
         for (ti, t) in demand.trips.iter().enumerate() {
             if t.depart < cfg.begin_seconds as f64 {
                 continue;
@@ -1197,7 +1228,7 @@ impl World {
             let sf = speed_factor(vt, &mut rng_state);
             let mask = match t.depart_lane {
                 DepartLane::Best | DepartLane::BestProb => {
-                    *masks.entry((t.route, vtype_id)).or_insert_with(|| crate::bestlanes::depart_mask(net, topo, route, vt))
+                    *self.depart_masks.entry((t.route, vtype_id)).or_insert_with(|| crate::bestlanes::depart_mask(net, topo, route, vt))
                 }
                 _ => 0,
             };

@@ -1,0 +1,75 @@
+{
+  "rows": [
+    {
+      "at_window_edge": 63,
+      "iter": 0,
+      "mean_travel_s": 485.944,
+      "moved": 150,
+      "rejected": false,
+      "schedule_cost_mean": 624.3029481277466,
+      "share": 0.05,
+      "tried": 1220,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 63,
+      "iter": 1,
+      "mean_travel_s": 477.7314166666667,
+      "moved": 215,
+      "rejected": false,
+      "schedule_cost_mean": 615.9538808224996,
+      "share": 0.05,
+      "tried": 1153,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 63,
+      "iter": 2,
+      "mean_travel_s": 474.113125,
+      "moved": 254,
+      "rejected": false,
+      "schedule_cost_mean": 614.1054629904429,
+      "share": 0.05,
+      "tried": 1207,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 64,
+      "iter": 3,
+      "mean_travel_s": 456.857875,
+      "moved": 237,
+      "rejected": false,
+      "schedule_cost_mean": 594.5077177934646,
+      "share": 0.05,
+      "tried": 1178,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 0,
+      "iter": 4,
+      "mean_travel_s": 673.75775,
+      "moved": 0,
+      "rejected": true,
+      "schedule_cost_mean": 894.0017885438601,
+      "share": 0.05,
+      "tried": 0,
+      "unfinished": 1153
+    },
+    {
+      "at_window_edge": 0,
+      "iter": 5,
+      "mean_travel_s": 493.44808333333333,
+      "moved": 0,
+      "rejected": true,
+      "schedule_cost_mean": 634.2782509638469,
+      "share": 0.025,
+      "tried": 0,
+      "unfinished": 0
+    }
+  ],
+  "schedule": {
+    "early": 0.9100000262260437,
+    "late": 0.5600000023841858
+  },
+  "status": "departure adaptation unstable at this load"
+}

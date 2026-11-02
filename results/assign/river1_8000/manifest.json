@@ -1,0 +1,58 @@
+{
+  "files": [
+    {
+      "bytes": 1017326,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river1.net.xml",
+      "sha256": "bd15271b6177e49b37bfefd42d6705d7a190c9332c61ab2cdb2e80ee6d92037d"
+    },
+    {
+      "bytes": 151,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/vtypes.add.xml",
+      "sha256": "d599a59a474bbe2b23186d9db31aa658bc8a8bc3a13663b6e1e29bbd9e34d858"
+    },
+    {
+      "bytes": 135042,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river1_8000.csv.gz",
+      "sha256": "d40a7a4de0529d0aca3c9ae79bcb218a7f373cdca15f6c716c994bc768fa8b02"
+    },
+    {
+      "bytes": 39,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river1.cuts.csv",
+      "sha256": "9231cdf4fa8dd62c9845432a95db87b14356a1dfd3cd214d0c9a67e916b2d574"
+    },
+    {
+      "bytes": 63,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river1.discharge.csv",
+      "sha256": "97a8f1d1b02975c2b75df721d3bbbdbc86b906f36a81cb86d3604db20fe5c000"
+    }
+  ],
+  "scenario": {
+    "additional": [
+      "/home/erikf/projects/personal/cars-data/truth/assign/nets/vtypes.add.xml"
+    ],
+    "begin": 0.0,
+    "capacity": 40000,
+    "counts": null,
+    "cuts": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river1.cuts.csv",
+    "discharge": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river1.discharge.csv",
+    "dt": 1.0,
+    "end": 14000.0,
+    "fixed_prefixes": [],
+    "fixed_vtypes": [],
+    "horizon": 28800.0,
+    "ignore_blocker": null,
+    "init": "",
+    "landmarks": 16,
+    "memory": 0.30000001192092896,
+    "name": "river1_8000",
+    "net": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river1.net.xml",
+    "routes": [],
+    "seed": 0,
+    "share": 0.15,
+    "time_to_teleport": 0.0,
+    "travellers": "/home/erikf/projects/personal/cars-data/truth/assign/nets/river1_8000.csv.gz",
+    "trusted": false,
+    "turnaround_s": 10.0,
+    "zones": null
+  }
+}
