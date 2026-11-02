@@ -16,6 +16,7 @@ import heapq
 import json
 import pickle
 import random
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -23,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import *
 
 OUT = B19 / 'district'
+BASE = B19 / 'district'
 TRUCK_MODES = ('truck', 'freight')
 # Estimated lengths by class, EU limits and common models. MATSim's own 7.5 and 15 m are road-space units, not bodies.
 VTYPES = '''  <vType id="car" vClass="passenger" length="4.6" width="1.8"/>
@@ -33,17 +35,17 @@ VTYPES = '''  <vType id="car" vClass="passenger" length="4.6" width="1.8"/>
 '''
 
 
-def vtype(mode, person):
-    m = mode.lower()
-    if 'truck40' in m or '40t' in m or m == 'truck' and 'longhaul' in person.lower():
-        return 'truck40t'
-    if '26' in m or '18' in m:
-        return 'truck18t'
-    if '8t' in m or m == 'freight' or m == 'truck':
-        return 'truck8t'
-    if 'commercial' in person.lower() or 'van' in m:
-        return 'van'
-    return 'car'
+def vehicle_classes():
+    """MATSim's own vehicle type per person and mode, from output_vehicles."""
+    pat = re.compile(r'<vehicle id="(.+)_([^_"]+)" type="([^"]+)"')
+    table = {'golf1.4': 'car', 'car': 'car', 'vwCaddy': 'van', 'mercedes313': 'van', 'light8t': 'truck8t', 'medium18t': 'truck18t', 'heavy40t': 'truck40t', 'truck': 'truck40t', 'freight': 'truck40t'}
+    out = {}
+    with gzip.open(RAW / 'berlin-v6.4.output_vehicles.xml.gz', 'rt') as f:
+        for line in f:
+            m = pat.search(line)
+            if m and m[3] in table and not m[1].startswith(('berlin', 'bb_')):
+                out[(m[1], m[2])] = table[m[3]]
+    return out
 
 
 def cut_net(box, buffer):
@@ -56,8 +58,47 @@ def cut_net(box, buffer):
     subprocess.run(['gzip', '-kf', '-1', str(OUT / 'net.net.xml')], check=False)
 
 
+def edge_remap(cut):
+    """Old edge -> edge of the rebuilt net, for edges --geometry.remove merged away. By geometry and heading."""
+    from scipy.spatial import cKDTree
+    old = read_net(BASE / 'net0_cut.net.xml', BASE / 'net0_cut.pkl')
+    pts, ids = [], []
+    for k, e in cut['edges'].items():
+        if not car_lanes(e):
+            continue
+        s = e['lanes'][0]['shape']
+        for p, q in zip(s[:-1], s[1:]):
+            n = max(1, int(np.linalg.norm(q - p) / 4))
+            for j in range(n):
+                pts.append(p + (q - p) * (j + .5) / n)
+                ids.append((k, q - p))
+    tree = cKDTree(np.array(pts))
+    out, lost = {}, []
+    for k, e in old['edges'].items():
+        if k in cut['edges'] or not car_lanes(e):
+            continue
+        s = e['lanes'][0]['shape']
+        v = s[-1] - s[0]
+        mid = s[len(s) // 2 - 1] * .5 + s[len(s) // 2] * .5 if len(s) > 1 else s[0]
+        best = None
+        for j in tree.query_ball_point(mid, 12):
+            o, w = ids[j]
+            c = np.dot(v, w) / max(np.linalg.norm(v) * np.linalg.norm(w), 1e-6)
+            if c > .7:
+                d = np.linalg.norm(pts[j] - mid)
+                if best is None or d < best[0]:
+                    best = (d, o)
+        if best:
+            out[k] = best[1]
+        else:
+            lost.append(k)
+    print('edges merged away', len(out), 'not found', len(lost))
+    return out
+
+
 def cut_demand(a):
     cut = read_net(OUT / 'net.net.xml', OUT / 'net.pkl')
+    remap = edge_remap(cut)
     edges = {k: e for k, e in cut['edges'].items() if car_lanes(e)}
     nexts = collections.defaultdict(set)
     for f, t, *_ in cut['conns']:
@@ -87,17 +128,19 @@ def cut_demand(a):
         memo[(u, v)] = path
         return path
 
+    classes = vehicle_classes()
     rows = []
     with gzip.open(B19 / 'demand/legs.tsv.gz', 'rt') as f:
         next(f)
         for line in f:
             log['legs_read'] += 1
             person, leg, mode, dep, trav, dist, links = line.rstrip('\n').split('\t')
-            links = links.split()
+            raw = links.split()
+            links = [remap.get(l, l) for l in raw]
             if not any(l in edges for l in links):
                 continue
             dep, trav = int(dep), int(trav)
-            times = [tt.get(l, 5.0) for l in links]
+            times = [tt.get(l, 5.0) for l in raw]
             total = max(sum(times), 1.0)
             run, part, cur, t_start = 0.0, 0, [], None
             segs = []
@@ -136,7 +179,7 @@ def cut_demand(a):
                 ends_cut = links[-1] != seg[-1]
                 kind = 'inner' if not starts_cut and not ends_cut else 'through' if starts_cut and ends_cut else 'in' if starts_cut else 'out'
                 log['kind_' + kind] += 1
-                rows.append((t0, f'{person}.{leg}.{part}', vtype(mode, person), fixed, starts_cut))
+                rows.append((t0, f'{person}.{leg}.{part}', classes.get((person, mode), 'car'), fixed, starts_cut))
                 part += 1
     log = dict(log)
     print(log)
@@ -163,16 +206,28 @@ def cut_demand(a):
 
 def sensors():
     cut = read_net(OUT / 'net.net.xml', OUT / 'net.pkl')
+    remap = edge_remap(cut)
     s = pd.read_csv(B19 / 'step0/sites.csv')
     lanes = pd.read_csv(B19 / 'step0/site_lanes.csv')
     freeze = json.load(open(B19 / 'step1/freeze.json'))
     rows, issues = [], []
     for site in freeze['district_sites']:
         r = s[s.site == site].iloc[0]
-        e = cut['edges'].get(r.edge)
+        edge = remap.get(r.edge, r.edge)
+        e = cut['edges'].get(edge)
         if e is None or not car_lanes(e):
             issues.append((site, r.edge, 'edge not in the cut net'))
             continue
+        # position by projecting the real coordinate on the edge as it now stands
+        sh = car_lanes(e)[len(car_lanes(e)) // 2]['shape']
+        best, run, pos = 1e18, 0.0, r.pos_m
+        for p, q in zip(sh[:-1], sh[1:]):
+            v = q - p
+            t = np.clip(np.dot(np.array([r.x, r.y]) - p, v) / max(np.dot(v, v), 1e-9), 0, 1)
+            d = np.linalg.norm(p + v * t - [r.x, r.y])
+            if d < best:
+                best, pos = d, run + t * np.linalg.norm(v)
+            run += np.linalg.norm(v)
         ls = lanes[lanes.site == site]
         use = sorted(set(int(x) for x in ls.lane_index.dropna()))
         cl = [l['index'] for l in car_lanes(e)]
@@ -180,7 +235,7 @@ def sensors():
             use = cl
         for i in use:
             if i in cl:
-                rows.append(f'{site},{r.edge}_{i},{r.pos_m:.1f}')
+                rows.append(f'{site},{edge}_{i},{pos:.1f}')
         if len(ls) != len(cl):
             issues.append((site, r.edge, f'{len(ls)} detectors, {len(cl)} car lanes on the map; measured lanes {use}'))
     (OUT / 'sensors.csv').write_text('\n'.join(rows) + '\n')
@@ -193,7 +248,11 @@ def main():
     p.add_argument('what', choices=['net', 'demand', 'sensors'])
     p.add_argument('--factors', default='1,5,10')
     p.add_argument('--buffer', type=float, default=500.0)
+    p.add_argument('--dir', help='a rebuilt net under district/')
     a = p.parse_args()
+    if a.dir:
+        global OUT
+        OUT = BASE / a.dir
     box = json.load(open(B19 / 'step0/district.json'))['box']
     if a.what == 'net':
         cut_net(box, a.buffer)

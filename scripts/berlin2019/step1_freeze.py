@@ -57,7 +57,8 @@ def main():
     keep = bad[~bad].reset_index()[['site', 'date']]
     clean = d.merge(keep, on=['site', 'date'])
     per = clean.groupby('site').date.nunique()
-    usable = set(per[per >= 5].index)
+    daily = clean.groupby(['site', 'date']).flow.sum().groupby('site').median()
+    usable = set(per[per >= 5].index) & set(daily[daily >= 100].index)
     print('sites with at least 5 clean days of 8:', len(usable), 'site-days dropped', int(bad.sum()), 'of', len(bad))
     clean = clean[clean.site.isin(usable)]
     clean.to_csv(OUT / 'real_days.csv.gz', index=False)
