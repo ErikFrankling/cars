@@ -86,7 +86,9 @@ fn detect_pose(@builtin(global_invocation_id) id: vec3u) {
         let w = lanes[v.lane].width;
         let done = ph_lateral_u(f32((v.phys >> 16u) & 0x3fffu) / 16383.0, w, v_lat);
         let side = select(1.0, -1.0, (v.phys >> 30u) == 1u);
-        center += vec2f(-dir.y, dir.x) * side * (w - done);
+        center += vec2f(-dir.y, dir.x) * side * (w - abs(v.lc_edge) - (1.0 - abs(v.lc_edge) / w) * done);
+    } else {
+        center += vec2f(-dir.y, dir.x) * v.lc_edge;
     }
     let c = cell_of(center);
     poses[i] = Pose(center, dir, t.length * 0.5, t.width * 0.5, (u32(c.x + 32768) << 16u) | u32(c.y + 32768), 0u);

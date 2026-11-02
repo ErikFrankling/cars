@@ -36,6 +36,7 @@ const F_LAT_FAST: u32 = 65536u;    // this lane change runs at the raised latera
 const F_DENIED: u32 = 131072u;     // held at a junction lane in the last step: not coming for now
 const F_GRANTED: u32 = 262144u;    // won a junction lane in the last step, and goes on holding it
 const F_REROUTE: u32 = 524288u;    // asked for a new route, waiting for route_patch
+const HU_ENGAGED: u32 = 1073741824u; // hu_state: has decided to go, is edging or waiting for the gap
 const F_YELLOW_GO: u32 = 1048576u;  // decided at yellow to carry on through the junction
 
 // Human lane change rules, each one switchable: P.hu_flags.
@@ -46,6 +47,12 @@ const HS_ANTICIPATE: u32 = 8u; // two-leader car following before a change
 const HS_MISS: u32 = 16u;
 const HS_GATE: u32 = 32u;
 const HS_YELLOW: u32 = 64u;
+const HS_TTE: u32 = 128u;
+const HS_START: u32 = 256u;
+const HS_EDGE: u32 = 512u;
+const HS_FOLLOW: u32 = 1024u;
+const HS_MATCH: u32 = 2048u;
+const HS_STEER: u32 = 4096u;
 
 // Link flags.
 const L_CONT: u32 = 1u;
@@ -116,6 +123,10 @@ struct Params {
     hu_g: vec4f,      // sees a give-way line from, steering slope at a crawl, standing target at a stop line, slowing for a limit ahead
     hu_i: vec4f,      // Gipps limit behind a moving leader: deceleration, reaction term. 0 off
     hu_h: vec4f,      // shortest lane a driver expects to change on; critical gap shifts far from the lane end, lead, lag
+    hm_a: vec4f,      // report 18: urgency time scale; start law constant, time to end, lag
+    hm_b: vec4f,      // start law lead, driver spread; follower weight, its delay
+    hm_c: vec4f,      // follower's braking limit; speed match down, up; gap steering
+    hm_d: vec4f,      // edge median share of a lane, top speed; anticipation time mean, spread
 }
 
 struct Globals {
@@ -174,6 +185,8 @@ struct Veh {
     hu_noise: f32,
     lc_wait: f32,     // seconds of continuous urgent wish, which is also the blinker's age
     hu_state: u32,    // bits 0-7 start timer in 1/16 s, 8-15 this lane change's duration in 0.1 s
+    lc_bias: f32,     // extra acceleration while looking for a gap, report 18 B5, B6
+    lc_edge: f32,     // sideways offset before a lane change, left positive, B3
 }
 
 struct Lane {
@@ -611,6 +624,8 @@ var<private> hu_overshoot: f32 = 1.4;
 var<private> hu_b_approach: f32 = 1.2;
 var<private> hu_comfort: f32 = 1.5;
 var<private> hu_stop_s0: f32 = 1.0;
+var<private> pl_bias: f32 = 0.0;
+var<private> pl_w_lead: f32 = 1.0;
 var<private> hu_gipps_b: f32 = 4.5;
 var<private> hu_gipps_tau: f32 = 0.4;
 

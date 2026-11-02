@@ -119,6 +119,12 @@ fn ph_setup(e: Veh) {
     ph_curved = select(1.0, 0.866, l.curve_v > 0.0);
 }
 
+// Report 18 B7. The driver's own weight is mean 1, spread invented.
+fn hu_follower_share(trip: u32, lag: f32, closing: f32) -> f32 {
+    let wd = 0.3 + 1.4 * f32(pcg(trip * 2654435761u ^ 41u) >> 8u) / 16777216.0;
+    return P.hm_b.z * wd * clamp(0.2 + lag / 5.0, 0.2, 1.0) * select(1.0, 0.5, closing > 3.0);
+}
+
 fn hu_setup(e: Veh) {
     hu_on = false;
     if (ty.model != MODEL_HUMAN || mu <= 0.0) { return; }
@@ -306,6 +312,8 @@ var<private> pl_n: u32;
 var<private> pl_set_request: bool;
 var<private> pl_v_wait: f32;
 var<private> pl_rng: u32;
+var<private> pl_trip_ego: u32;
+var<private> pl_own_a: f32;
 
 fn adapt_leave(item: u32, v: f32) {
     let a = items[item].leave;
@@ -324,7 +332,16 @@ fn adapt_to_leader(gap: f32, seen: f32, cur_len: f32, ls: f32, lb: f32, lcacc: b
     }
     if (back_on_route) {
         vsafe = follow_speed(pl_speed, gap, ls, lb, lcacc, pl_lane_vmax, pl_limit);
-        if (hu_on) { vsafe = min(vsafe, hu_leader_limit(pl_speed, gap + ty.min_gap, ls, hu_s0)); }
+        if (hu_on) {
+            if (pl_w_lead >= 1.0) { vsafe = min(vsafe, hu_leader_limit(pl_speed, gap + ty.min_gap, ls, hu_s0)); }
+            // Report 18 B7: a share of what following a car still moving over would ask. The guard stays whole.
+            let cert = ph_v_cert(gap + ty.min_gap, pl_speed, ls, min(lb, ty.b_lo), ego_acc);
+            if (pl_w_lead < 1.0) {
+                let share = pl_own_a + pl_w_lead * min((vsafe - pl_speed) / dt - pl_own_a, 0.0);
+                vsafe = min(max(vsafe, pl_speed + share * dt), cert);
+            }
+            if (pl_bias != 0.0) { vsafe = min(vsafe + pl_bias, cert); }
+        }
     }
     if (has_last) {
         let last = pl_base + pl_n - 1u;
@@ -351,7 +368,21 @@ fn adapt_to_lane(lane: u32, seen: f32, first: bool, leader_index: u32, ego_pos: 
         let back = lead.pos - lt.length;
         var gap: f32;
         if (first) { gap = back - ego_pos - ty.min_gap; } else { gap = back + seen - l_len - ty.min_gap; }
+        pl_w_lead = 1.0;
+        if (hu_on && (P.hu_flags & HS_FOLLOW) != 0u && (lead.phys >> 30u) != 0u && (lead.flags & F_SHADOW) == 0u
+            && f32((lead.phys >> 16u) & 0x3fffu) / 16383.0 < 0.5) {
+            pl_w_lead = hu_follower_share(pl_trip_ego, gap + ty.min_gap, pl_speed - lead.speed);
+            // What it would do anyway: follow the car beyond the one moving over.
+            pl_own_a = hu_a_up(pl_speed, pl_lane_vmax);
+            let beyond = leader_index + 1u;
+            if (beyond < G.n_active && cur[beyond].lane == lane) {
+                let o = cur[beyond];
+                let g2 = o.pos - types[o.vtype].length + select(seen - l_len, -ego_pos, first);
+                pl_own_a = hu_target(pl_speed, g2, o.speed, pl_lane_vmax, hu_s0);
+            }
+        }
         adapt_to_leader(gap, seen, l_len, lead.speed, lt.apparent, lt.model == MODEL_CACC, back >= 0.0, extra);
+        pl_w_lead = 1.0;
     }
     let p = atomicLoad(&partial_occ[lane]);
     if (p != NONE) {
@@ -650,6 +681,9 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     pl_n = 0u;
     pl_speed = ego.speed;
     pl_rng = ego.rng;
+    pl_trip_ego = ego.trip;
+    pl_bias = 0.0;
+    if (hu_on) { pl_bias = ego.lc_bias * dt; }
 
     let speed = ego.speed;
     let max_v = max_next_speed(speed);
@@ -659,7 +693,7 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     pl_limit = lanes[lane].speed;
     pl_lane_vmax = lane_vmax(lane, ego.sf);
     var lane_max = max(pl_lane_vmax, select(v_min_comfort, max_v, hu_on));
-    pl_v = min(max_v, lane_max);
+    pl_v = min(max_v + max(pl_bias, 0.0), lane_max);
     let horizon = max_v * dt + brake_gap(max_v, ty.decel, ty.tau);
     var seen = lanes[lane].length - ego.pos;
     var had_non_internal = false;
@@ -720,10 +754,18 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
                 // Short lanes: the car has to come to stand on this lane, where the missed-turn rule sees it, and far
                 // enough along for ph_lc_room to let it change. hu_target stops a car short of its point by this margin.
                 let ll = lanes[lane].length;
-                let want = max(max(ll - P.hu_a.w - P.hu_b.x * f32(lanes[lane].index & 1u), min(ty.length, ll - 1.0) + 0.2), min(ll, 1.0));
+                var want = max(max(ll - P.hu_a.w - P.hu_b.x * f32(lanes[lane].index & 1u), min(ty.length, ll - 1.0) + 0.2), min(ll, 1.0));
+                // Report 18 B3: one who has decided noses on to the end at a crawl, which is what lets it move over.
+                if ((ego.hu_state & HU_ENGAGED) != 0u && (P.hu_flags & HS_EDGE) != 0u) { want = max(ll - 1.0, want); }
                 stop_at = seen - ll + want + hu_stop_s0 + hu_overshoot - 0.5;
             }
-            let va = stop_speed(speed, stop_at, ty.decel, true, pl_lane_vmax);
+            var va = stop_speed(speed, stop_at, ty.decel, true, pl_lane_vmax);
+            // Report 18 B4, as LMRS: do not stop before one can merge. The gentle approach to a queue would slow the car
+            // to a walk through the whole zone, so towards a lane end it brakes as late as is comfortable.
+            if (hu_on && (P.hu_flags & HS_START) != 0u) {
+                let room = max(stop_at - hu_stop_s0 - hu_overshoot + 0.5, 0.0);
+                va = hu_next(speed, clamp(sqrt(2.0 * P.hu_h.w * room) - speed, -HU_BMAX, hu_a_up(speed, pl_lane_vmax)));
+            }
             if (pl_n > 0u) { adapt_leave(pl_base + pl_n - 1u, va); }
             pl_v = min(va, pl_v);
             push_item(NONE, pl_v, pl_v, false, 0.0, 0.0, 0.0, seen, -1.0);
@@ -1956,10 +1998,11 @@ fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32) {
     if (u >= 1.0) {
         (*e).phys = p & 0xffffu;
         (*e).flags &= ~F_LAT_FAST;
+        (*e).lc_edge = 0.0;
     } else {
         (*e).phys = (p & 0xc000ffffu) | (u32(u * 16383.0) << 16u);
     }
-    if (((*e).flags & F_HAS_SHADOW) != 0u && ph_lateral_u(u, w, v_lat) >= 0.5 * (w + ty.width)) {
+    if (((*e).flags & F_HAS_SHADOW) != 0u && abs((*e).lc_edge) + (1.0 - abs((*e).lc_edge) / w) * ph_lateral_u(u, w, v_lat) >= 0.5 * (w + ty.width)) {
         ph_mirror(e, true);
         (*e).flags &= ~F_HAS_SHADOW;
     }

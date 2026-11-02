@@ -21,7 +21,11 @@ const GRIDLOCK_EVERY: f32 = 60.0;
 pub fn offset_of(v: &GpuVeh, world: &World) -> f32 {
     let t = &world.vtypes[v.vtype as usize];
     let v_lat = if v.flags & 65536 != 0 { 1.1 } else { t.v_lat };
-    physics::lateral_offset(v.phys, world.lanes[v.lane as usize].width, v_lat)
+    let w = world.lanes[v.lane as usize].width;
+    if v.phys >> 30 == 0 {
+        return v.lc_edge;
+    }
+    physics::lateral_offset(v.phys, w, v_lat) * (1.0 - v.lc_edge.abs() / w)
 }
 
 #[derive(Clone, Debug)]
