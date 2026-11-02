@@ -154,11 +154,12 @@ fn gb(b: u64) -> f64 {
 const VRAM_SPARE: u64 = 3_000_000_000;
 const RAM_SPARE: u64 = 1_000_000_000;
 
-/// RAM the load will reach at its peak, a rough guess from the size of the files. Stockholm's 200 MB
-/// net and 14 MB gzipped routes peaked at 1.2 GB.
+/// RAM the load will reach at its peak, a rough guess from the size of the files. Measured peaks:
+/// Stockholm 1.2 GB (200 MB net, 14 MB routes), its old demand 1.8 GB (203, 30), Berlin to noon
+/// 2.5 GB (170, 399). The last two gzipped.
 fn ram_needed(r: &Request) -> u64 {
     let size = |p: &Path| std::fs::metadata(p).map_or(0, |m| m.len());
-    let file = |p: &Path| if p.extension().is_some_and(|e| e == "gz") { size(p) * 14 } else { size(p) * 5 };
+    let file = |p: &Path| if p.extension().is_some_and(|e| e == "gz") { size(p) * 5 } else { size(p) * 6 };
     file(&r.net_path) + r.routes.iter().map(|p| file(p)).sum::<u64>() + r.additional.iter().map(|p| file(p)).sum::<u64>()
 }
 

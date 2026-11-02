@@ -119,7 +119,7 @@ pub struct JunctionInfo {
 
 struct MeshWorker {
     ask: Sender<[f32; 4]>,
-    answer: Receiver<CloseMesh>,
+    answer: Receiver<(CloseMesh, f32)>,
     busy: bool,
 }
 
@@ -167,6 +167,7 @@ pub struct Session {
     mesh: MeshWorker,
     began: Instant,
     pub flyer_untouched: bool,
+    pub close_mesh_ms: f32,
     pub fitted_for: (u32, u32),
 }
 
@@ -224,12 +225,13 @@ impl Session {
             mesh: MeshWorker { ask, answer, busy: false },
             began: now,
             flyer_untouched: fresh_camera,
+            close_mesh_ms: 0.0,
             fitted_for: (0, 0),
         }
         .with_mesh_worker(jobs, done)
     }
 
-    fn with_mesh_worker(self, jobs: Receiver<[f32; 4]>, done: Sender<CloseMesh>) -> Self {
+    fn with_mesh_worker(self, jobs: Receiver<[f32; 4]>, done: Sender<(CloseMesh, f32)>) -> Self {
         // Runs until the session is dropped, which closes its channel.
         let net = self.net.clone();
         let approaches: Vec<Approach> = self.renderer.approaches();
@@ -240,7 +242,9 @@ impl Session {
                 while let Ok(newer) = jobs.try_recv() {
                     region = newer;
                 }
-                if done.send(render::build_close_mesh(&gpu, &net, &approaches, region)).is_err() {
+                let t = Instant::now();
+                let mesh = render::build_close_mesh(&gpu, &net, &approaches, region);
+                if done.send((mesh, t.elapsed().as_secs_f32() * 1000.0)).is_err() {
                     break;
                 }
             }
@@ -532,8 +536,9 @@ impl Session {
 
     /// Ask for the close-up road the camera needs and take any that has finished.
     pub fn tend_mesh(&mut self) {
-        while let Ok(m) = self.mesh.answer.try_recv() {
+        while let Ok((m, ms)) = self.mesh.answer.try_recv() {
             self.renderer.add_close_mesh(m);
+            self.close_mesh_ms = ms;
             self.mesh.busy = false;
         }
         if !self.mesh.busy

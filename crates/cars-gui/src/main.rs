@@ -562,7 +562,7 @@ impl Running {
                         "t": self.started.elapsed().as_secs_f32(), "scenario": s.scenario.id, "fps": ft.fps, "frame_ms": ft.total_ms, "sim_ms": ft.sim_ms,
                         "prepare_ms": ft.prepare_ms, "ui_ms": ft.ui_ms, "draw_ms": ft.draw_ms, "clock": s.clock(), "multiple": s.multiple,
                         "steps_per_s": s.steps_per_second, "vehicles": s.numbers.stats.vehicles, "mean_speed": s.numbers.stats.mean_speed,
-                        "mpp": s.flyer.mpp, "load_s": s.load_seconds, "lod_sizes": s.renderer.lod_sizes(), "gpu_buffers_mb": s.sim.buffers.total_bytes as f64 / 1e6,
+                        "mpp": s.flyer.mpp, "load_s": s.load_seconds, "lod_sizes": s.renderer.lod_sizes(), "gpu_buffers_mb": s.sim.buffers.total_bytes as f64 / 1e6, "close_mesh_ms": s.close_mesh_ms,
                     }),
                     None => serde_json::json!({"t": self.started.elapsed().as_secs_f32(), "loading": self.model.job.is_some(), "fps": ft.fps}),
                 };
