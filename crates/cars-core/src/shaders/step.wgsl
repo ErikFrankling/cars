@@ -1097,6 +1097,11 @@ var<private> fin_max: f32;
 
 // MSLCM_LC2013::_patchSpeed: what lane changing wants from the speed this step.
 fn lc_patch_speed(wanted: f32, e: Veh, vmax: f32) -> f32 {
+    // A body still half on the lane before can't start a change (ph_lc_room), so stopping for one holds it there for good.
+    if (mu > 0.0 && !is_internal(e.lane) && e.pos < min(ty.length, lanes[e.lane].length - 1.0)) {
+        atomicStore(&advice[e.trip], NONE);
+        return wanted;
+    }
     var mn = fin_min;
     var mx = fin_max;
     var nv = wanted;
