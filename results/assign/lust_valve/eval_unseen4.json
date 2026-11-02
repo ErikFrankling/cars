@@ -1,0 +1,135 @@
+{
+  "all_balanced": true,
+  "all_clean": false,
+  "collisions": 1238.0,
+  "gap": 0.05488169360678292,
+  "gap_sampled": 43052,
+  "mean_travel_s": 789.7038907198612,
+  "p95_travel_s": 1337.5,
+  "sd_travel_s": 35.71766975629397,
+  "seeds": [
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {},
+      "ledger": {
+        "active": 0,
+        "arrived": 288250,
+        "collisions": 1238,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 288250,
+        "teleports": 824,
+        "waiting_to_insert": 0
+      },
+      "peak_active": 20177,
+      "seed": 9001,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 288250,
+        "mean_insertion_wait_s": 136.41730095403295,
+        "mean_travel_s": 771.6192679965308,
+        "p50_travel_s": 611.0,
+        "p95_travel_s": 1311.0,
+        "requested": 288250,
+        "route_km": 2568628.2368988767,
+        "total_generalised_s": 222419254.0,
+        "unfinished": 0
+      },
+      "wall_s": 108.642735974
+    },
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {},
+      "ledger": {
+        "active": 0,
+        "arrived": 288250,
+        "collisions": 1238,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 288250,
+        "teleports": 804,
+        "waiting_to_insert": 0
+      },
+      "peak_active": 20177,
+      "seed": 9002,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 288250,
+        "mean_insertion_wait_s": 135.06063833477884,
+        "mean_travel_s": 772.1800936686903,
+        "p50_travel_s": 613.0,
+        "p95_travel_s": 1322.0,
+        "requested": 288250,
+        "route_km": 2568316.6705969195,
+        "total_generalised_s": 222580912.0,
+        "unfinished": 0
+      },
+      "wall_s": 108.642735974
+    },
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {},
+      "ledger": {
+        "active": 0,
+        "arrived": 288250,
+        "collisions": 1238,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 288250,
+        "teleports": 793,
+        "waiting_to_insert": 0
+      },
+      "peak_active": 20177,
+      "seed": 9003,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 288250,
+        "mean_insertion_wait_s": 126.75624284475282,
+        "mean_travel_s": 763.7194553339116,
+        "p50_travel_s": 611.0,
+        "p95_travel_s": 1317.0,
+        "requested": 288250,
+        "route_km": 2568404.377913051,
+        "total_generalised_s": 220142133.0,
+        "unfinished": 0
+      },
+      "wall_s": 108.642735974
+    },
+    {
+      "balanced": true,
+      "clean": false,
+      "errors": {},
+      "ledger": {
+        "active": 0,
+        "arrived": 288250,
+        "collisions": 1238,
+        "imbalance": 0,
+        "not_yet_due": 0,
+        "requested": 288250,
+        "teleports": 2016,
+        "waiting_to_insert": 0
+      },
+      "peak_active": 20177,
+      "seed": 9004,
+      "stalled_at_s": null,
+      "stats": {
+        "arrived": 288250,
+        "mean_insertion_wait_s": 178.33857762359062,
+        "mean_travel_s": 851.2967458803122,
+        "p50_travel_s": 615.0,
+        "p95_travel_s": 1400.0,
+        "requested": 288250,
+        "route_km": 2568217.557992002,
+        "total_generalised_s": 245386287.0,
+        "unfinished": 0
+      },
+      "wall_s": 108.642735974
+    }
+  ],
+  "seeds_averaged": 4,
+  "teleports": 1109.25,
+  "unfinished_share": 0.0
+}

@@ -1,0 +1,9 @@
+{
+  "gap_ok": false,
+  "stable": false,
+  "ledger_clean": false,
+  "converged": false,
+  "stability_cost_change": 0.32886057170855687,
+  "stability_flow_change": 0.22717484926787251,
+  "gap_unseen": 0.6049967614877584
+}

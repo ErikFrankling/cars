@@ -1,0 +1,53 @@
+{
+  "files": [
+    {
+      "bytes": 202818164,
+      "path": "/home/erikf/projects/personal/cars-data/truth/maps/builds/v5_inventory/net.xml",
+      "sha256": "565b90af82fea909f4af98acae95c9386b317511d8dd0e94547e84e9853a02d7"
+    },
+    {
+      "bytes": 115,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/stockholm/vtypes.add.xml",
+      "sha256": "360f3633397c422ec6b0a9e0461b07239680ad45dd362c639847478504ab5219"
+    },
+    {
+      "bytes": 38935189,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/stockholm/travellers.csv.gz",
+      "sha256": "8679f0e8128876edd8b1deadaac780318dfeb18c10fd5fc68b7d939c96a24846"
+    },
+    {
+      "bytes": 3064245,
+      "path": "/home/erikf/projects/personal/cars-data/truth/assign/stockholm/counts.csv",
+      "sha256": "66bfd2f79ff1e84b4e40790ee2e24907c7e8f98d8a053ba1178c2fcaeb260670"
+    }
+  ],
+  "scenario": {
+    "additional": [
+      "/home/erikf/projects/personal/cars-data/truth/assign/stockholm/vtypes.add.xml"
+    ],
+    "begin": 0.0,
+    "capacity": 150000,
+    "counts": "/home/erikf/projects/personal/cars-data/truth/assign/stockholm/counts.csv",
+    "cuts": null,
+    "discharge": null,
+    "dt": 1.0,
+    "end": 86400.0,
+    "fixed_prefixes": [],
+    "fixed_vtypes": [],
+    "horizon": 93600.0,
+    "ignore_blocker": null,
+    "init": "",
+    "landmarks": 16,
+    "memory": 0.30000001192092896,
+    "name": "stockholm_v5",
+    "net": "/home/erikf/projects/personal/cars-data/truth/maps/builds/v5_inventory/net.xml",
+    "routes": [],
+    "seed": 0,
+    "share": 0.15,
+    "time_to_teleport": 0.0,
+    "travellers": "/home/erikf/projects/personal/cars-data/truth/assign/stockholm/travellers.csv.gz",
+    "trusted": true,
+    "turnaround_s": 300.0,
+    "zones": null
+  }
+}

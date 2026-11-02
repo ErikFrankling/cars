@@ -1,0 +1,42 @@
+{
+  "rows": [
+    {
+      "at_window_edge": 63,
+      "iter": 0,
+      "mean_travel_s": 470.48245833333334,
+      "moved": 170,
+      "rejected": false,
+      "schedule_cost_mean": 645.528532318751,
+      "share": 0.05,
+      "tried": 1220,
+      "unfinished": 0
+    },
+    {
+      "at_window_edge": 0,
+      "iter": 1,
+      "mean_travel_s": 1190.6602083333332,
+      "moved": 0,
+      "rejected": true,
+      "schedule_cost_mean": 2711.0047507486343,
+      "share": 0.05,
+      "tried": 0,
+      "unfinished": 3535
+    },
+    {
+      "at_window_edge": 0,
+      "iter": 2,
+      "mean_travel_s": 487.773,
+      "moved": 0,
+      "rejected": true,
+      "schedule_cost_mean": 689.3103391618729,
+      "share": 0.025,
+      "tried": 0,
+      "unfinished": 0
+    }
+  ],
+  "schedule": {
+    "early": 0.5,
+    "late": 2.0
+  },
+  "status": "departure adaptation unstable at this load"
+}

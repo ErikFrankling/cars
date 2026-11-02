@@ -1,0 +1,341 @@
+{
+  "verdict": "unstable_or_unconverged",
+  "requested": 8000,
+  "unfinished": 0,
+  "teleports": 0,
+  "collisions": 0,
+  "stalled_at_s": null,
+  "due_at_stall": 0.0,
+  "half_demand_day": null,
+  "converged": {
+    "gap_ok": false,
+    "stable": false,
+    "ledger_clean": false,
+    "converged": false,
+    "stability_cost_change": 0.372463704648593,
+    "stability_flow_change": 0.4078567302137493,
+    "gap_unseen": 0.35397945211319876
+  },
+  "first_queues": [
+    {
+      "discharge_veh_h": 1320.0,
+      "edge": "G4G5",
+      "from_s": 3900.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 1464.0,
+      "edge": "G5G6",
+      "from_s": 3900.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 1308.0,
+      "edge": "F5G5",
+      "from_s": 4200.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 768.0,
+      "edge": "F4G4",
+      "from_s": 4500.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 540.0,
+      "edge": "H4G4",
+      "from_s": 4500.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 912.0,
+      "edge": "H5G5",
+      "from_s": 4500.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 564.0,
+      "edge": "H6G6",
+      "from_s": 4500.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 360.0,
+      "edge": "H8G8",
+      "from_s": 4500.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 504.0,
+      "edge": "F2G2",
+      "from_s": 4800.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 456.0,
+      "edge": "F3G3",
+      "from_s": 4800.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 324.0,
+      "edge": "F7G7",
+      "from_s": 4800.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 1092.0,
+      "edge": "G2G3",
+      "from_s": 4800.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 1500.0,
+      "edge": "G7G6",
+      "from_s": 4800.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 804.0,
+      "edge": "E5F5",
+      "from_s": 5100.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 1464.0,
+      "edge": "G8G7",
+      "from_s": 5100.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 852.0,
+      "edge": "H10G10",
+      "from_s": 5100.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 432.0,
+      "edge": "H3G3",
+      "from_s": 5100.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 576.0,
+      "edge": "H7G7",
+      "from_s": 5100.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 972.0000610351562,
+      "edge": "I10H10",
+      "from_s": 5100.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 312.0,
+      "edge": "E3F3",
+      "from_s": 5400.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 1056.0,
+      "edge": "E4F4",
+      "from_s": 5400.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 420.0,
+      "edge": "F2F3",
+      "from_s": 5400.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 1260.0,
+      "edge": "G3G4",
+      "from_s": 5400.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 372.0,
+      "edge": "H4H5",
+      "from_s": 5400.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 504.0,
+      "edge": "I5H5",
+      "from_s": 5400.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 660.0,
+      "edge": "D5E5",
+      "from_s": 5700.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 492.0,
+      "edge": "E4E5",
+      "from_s": 5700.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 264.0,
+      "edge": "H2G2",
+      "from_s": 5700.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 444.0,
+      "edge": "H9H10",
+      "from_s": 5700.0,
+      "nominal_veh_h": 2393.68115234375
+    },
+    {
+      "discharge_veh_h": 660.0,
+      "edge": "I9I10",
+      "from_s": 5700.0,
+      "nominal_veh_h": 2393.68115234375
+    }
+  ],
+  "suspect_links": [],
+  "cuts_checked": 66,
+  "cuts_violated": [],
+  "worst_cuts": [
+    {
+      "name": "river_0",
+      "direction": "in",
+      "links": 1,
+      "capacity_veh_h": 1371.9599962234497,
+      "storage_veh": 38.08000183105469,
+      "must_cross": 1532,
+      "peak_1h_crossing": 1328,
+      "peak_1h_start_s": 2754.9,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "river_0",
+      "direction": "out",
+      "links": 1,
+      "capacity_veh_h": 1371.9599962234497,
+      "storage_veh": 38.08000183105469,
+      "must_cross": 1523,
+      "peak_1h_crossing": 1316,
+      "peak_1h_start_s": 2857.7,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k4_c3",
+      "direction": "out",
+      "links": 18,
+      "capacity_veh_h": 21543.130946159363,
+      "storage_veh": 685.9733657836914,
+      "must_cross": 1302,
+      "peak_1h_crossing": 1116,
+      "peak_1h_start_s": 2699.7,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k4_c1",
+      "direction": "out",
+      "links": 18,
+      "capacity_veh_h": 22539.76846933365,
+      "storage_veh": 685.9733657836914,
+      "must_cross": 1292,
+      "peak_1h_crossing": 1122,
+      "peak_1h_start_s": 2829.1,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k8_c7",
+      "direction": "out",
+      "links": 12,
+      "capacity_veh_h": 14362.087297439575,
+      "storage_veh": 457.4933547973633,
+      "must_cross": 765,
+      "peak_1h_crossing": 672,
+      "peak_1h_start_s": 2572.0,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k8_c0",
+      "direction": "out",
+      "links": 12,
+      "capacity_veh_h": 14362.087297439575,
+      "storage_veh": 456.96002197265625,
+      "must_cross": 763,
+      "peak_1h_crossing": 671,
+      "peak_1h_start_s": 2749.9,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k2_c0",
+      "direction": "in",
+      "links": 25,
+      "capacity_veh_h": 30282.45338201523,
+      "storage_veh": 952.0000457763672,
+      "must_cross": 1639,
+      "peak_1h_crossing": 1411,
+      "peak_1h_start_s": 2877.4,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k4_c2",
+      "direction": "in",
+      "links": 20,
+      "capacity_veh_h": 24526.250338554382,
+      "storage_veh": 762.1333694458008,
+      "must_cross": 1275,
+      "peak_1h_crossing": 1111,
+      "peak_1h_start_s": 2541.4,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k2_c0",
+      "direction": "out",
+      "links": 25,
+      "capacity_veh_h": 31203.931546211243,
+      "storage_veh": 952.0000457763672,
+      "must_cross": 1621,
+      "peak_1h_crossing": 1411,
+      "peak_1h_start_s": 2749.9,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    },
+    {
+      "name": "k4_c0",
+      "direction": "in",
+      "links": 20,
+      "capacity_veh_h": 24601.409697532654,
+      "storage_veh": 762.1333694458008,
+      "must_cross": 1270,
+      "peak_1h_crossing": 1099,
+      "peak_1h_start_s": 2879.6,
+      "shortfall_1h": 0.0,
+      "min_unmet": 0.0,
+      "violated": false
+    }
+  ],
+  "min_unmet_demand": 0.0,
+  "delay_ratio": 4.795786362636181,
+  "notes": [
+    "Cut capacity is measured discharge from an isolated test where a discharge file was given; otherwise the larger of the day's peak outflow and half a nominal screen."
+  ]
+}
