@@ -30,3 +30,6 @@ Thresholds come from `data-hunt/14-normal-day.md` and `15-how-to-match-reality.m
 | Trips | Do trip lengths and durations match surveys or trajectories? |
 
 A scenario that passes some checks and fails others reports exactly that. No overall "validated" label without all of them.
+
+## Thresholds
+The table in `data-hunt/15-how-to-match-reality.md`, section "Acceptance thresholds", applies. The real-day floor stays the binding bar, and a miss is reported as a failure: one real site's hourly count scores RMSN 0.19, R² 0.90 and 89% GEH<5 against the same site a week later in Berlin. "Credible" is about the best published on held-out data, and is what we call a real result when reached with teleports off at full demand, even in one district. Reaching it would be new: report 15 found no microscopic whole-city model that has shown it. GEH<5 on daily totals is not a pass mark, since real days only get 69%. R² alone and training error are never quoted as validation.
