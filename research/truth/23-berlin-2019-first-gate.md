@@ -83,7 +83,7 @@ The simulated 10% day holds 68, 34 and 28 km/h all day. Even free flow is below 
 
 ## Step 1: frozen before any score
 
-`freeze.json`, `metrics.py` (hash in the file) and `floor.md` were committed before the first simulated score. Bars for real against real are in the scorecard and `floor.md`. The freeze changed once when report 22 arrived, and again to apply the existing "nearly empty" rule, both before any simulated site score: a static route count had shown one site with 88 vehicles a day. The floor at the 94 district sites matches `reference-days/berlin-2019` exactly at tuning sites on 15 May: 1,509 site-hours, flow and speed identical. `reference_day.py` itself wasn't run on these outputs, because `metrics.py` measures at the real sensor position, which is what report 22 asks for.
+`metrics.py` and the freeze were committed before the first simulated score, and the metric code hasn't changed since (its hash is in `freeze.json`). Bars for real against real are in the scorecard and `floor.md`. The freeze changed twice before any simulated site score: when report 22 arrived, and to apply the existing "nearly empty" rule, after a static route count showed one site with 88 vehicles a day. That second version was on disk before the first score, but was only committed with this report. The floor at the 94 district sites matches `reference-days/berlin-2019` exactly at tuning sites on 15 May: 1,509 site-hours, flow and speed identical. `reference_day.py` itself wasn't run on these outputs, because `metrics.py` measures at the real sensor position, which is what report 22 asks for.
 
 **Virtual detectors:** `cars run --sensors`, on this branch, counts a vehicle's front crossing a point per lane, with spot speed, on the loop's real position, and only the lanes the loops cover. Output is the same hour and definition as the real files.
 
@@ -91,7 +91,7 @@ The simulated 10% day holds 68, 34 and 28 km/h all day. Even free flow is below 
 
 Every issue is in `research/truth/berlin2019/` (`map_issues_summary.csv`, `map_fixes_m10.csv`, `step2_map_variants.csv`).
 
-Audit of the cut (MEASURED against OSM): 371 edges with a different speed limit, 172 with a different lane count, 540 under a car's length, 278 lanes with no way on, 96 edges with a bus lane in 2019, 2,112 edges whose OSM way isn't in the 2019 file and so went unchecked. Streets that lost lanes after 2019 include Kantstraße and Hardenbergstraße; lots of streets had 30 km/h added.
+Audit of the cut (MEASURED against OSM): 371 edges with a different speed limit, 172 with a different lane count, 540 under a car's length, 278 lanes with no way on, 96 edges with a bus lane in 2019, 2,112 edges whose OSM way isn't in the 2019 file and so went unchecked. Of the lane differences, 114 have fewer lanes on the 2023 map and 58 more; Kantstraße is the longest case, and Hardenbergstraße has 3 loops on 2 mapped lanes. Of the limit differences, 232 are 30 on the 2023 map against 50 in 2019.
 
 Cars running at the end of each hour, 10% demand. A healthy day peaks near 1,600 and falls to 0:
 
