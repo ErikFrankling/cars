@@ -55,6 +55,20 @@ pub struct GpuParams {
     pub lc_carry: u32,
     pub meter_n: u32,
     pub lateral_median: f32,
+    /// Metres from which a driver can see whether a give-way line is free, at least. The map's 4.5 m means stopping at every one.
+    pub vis_floor: f32,
+    /// Seconds at a stand a driver keeps holding back for someone else's lane change.
+    pub lc_patience: f32,
+    /// Spread between drivers of the gap they keep: sigma of a lognormal around 1.
+    pub gap_spread: f32,
+    /// How hard the one of two cars abreast slows to fall behind the other, m/s2.
+    pub abreast_b: f32,
+    /// Mean seconds at the end of a lane with no way on before a driver goes past and looks for another way. 0 never.
+    pub miss_patience: f32,
+    /// On a lane shorter than this there is no waiting: a change can't fit.
+    pub miss_short: f32,
+    pub pad_e: f32,
+    pub pad_f: f32,
 }
 
 #[repr(C)]
@@ -392,6 +406,8 @@ pub const C_DENIED: usize = 23;
 pub const C_CONTACT: usize = 24;
 pub const C_CONTACT_KINDS: usize = 25;
 pub const C_LOST: usize = 34;
+pub const C_HU_REROUTE: usize = 35;
+pub const REROUTE_LOG: u64 = 65536;
 /// Contact kinds, as counted from `C_CONTACT_KINDS`.
 pub const CONTACT_NAMES: [&str; 9] = ["same lane", "neighbour lane", "junction crossing", "junction merge", "junction diverge", "lane start", "other", "crossed without grant", "lost on a wrong lane"];
 /// Kinds from here on are protocol breaches, not bodies touching.
@@ -425,6 +441,8 @@ pub struct SimConfig {
     pub detect_every: u32,
     /// Desired speed per step for scripted vehicles, for driving-cycle checks.
     pub speed_trace: Vec<f32>,
+    /// Room in the routes buffer for routes handed out during the run, in edges.
+    pub route_arena: u32,
     /// Physical parameters a sensitivity test wants to move. See `tune`.
     pub tune: Vec<(String, f32)>,
     /// Junctions run by the coordinator instead of SUMO's rules.
@@ -460,6 +478,7 @@ impl Default for SimConfig {
             mu: 0.0,
             detect_every: 0,
             speed_trace: Vec::new(),
+            route_arena: 0,
             tune: Vec::new(),
             coord: None,
             per_lane_queues: false,
@@ -487,6 +506,7 @@ pub struct World {
     pub conflicts: Vec<GpuConflict>,
     pub vtypes: Vec<GpuVType>,
     pub routes: Vec<u32>,
+    pub route_arena: u32,
     pub trips: Vec<GpuTrip>,
     /// Which demand trip each GPU trip came from.
     pub trip_source: Vec<u32>,
@@ -607,15 +627,18 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
     g.v_lat = num("phys.v_lat", cfg.tune("v_lat", 0.6));
     g.width = t.width;
-    g.ph_tau = num("phys.tau", cfg.tune("tau", 0.65));
+    g.ph_tau = num("phys.tau", cfg.tune("tau", 1.0));
+    // Krauss's 0.5 is inherited. 0.2 brings 50 km/h saturation into report 04's band, 1,846 against 1,714.
+    if t.sigma == 0.5 { g.sigma = 0.2; }
     g.sigma = cfg.tune("sigma", g.sigma);
+    g.lc_strategic = cfg.tune("lc_strategic", g.lc_strategic);
     let automated = matches!(t.model, CfModel::Acc | CfModel::Cacc);
     g.exit_comply = num("phys.exit_comply", if automated { 1.0 } else { cfg.tune("exit_comply", 0.9) });
     // Gipps' two decelerations: what the driver plans with, and what it expects of the leader.
     if t.model == CfModel::Krauss {
         g.decel = num("phys.b_plan", cfg.tune("driver_b", 3.0));
     }
-    g.b_assume = num("phys.b_assume", cfg.tune("leader_b", if t.model == CfModel::Krauss { 4.5 } else { g.decel }));
+    g.b_assume = num("phys.b_assume", cfg.tune("leader_b", g.decel));
     // Leaders and tails are judged by their hardest possible stop.
     g.apparent = g.b_hi;
 }
@@ -700,6 +723,7 @@ impl World {
         let mut w = World {
             bounds: net.bounds,
             speed_trace: cfg.speed_trace.clone(),
+            route_arena: cfg.route_arena,
             ..Default::default()
         };
         let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 4.3)), crate::physics::zones(net, topo, cfg.tune("zone_distance", 2.6))));
@@ -817,6 +841,14 @@ impl World {
             lc_carry: cfg.tune("lc_carry", 0.0) as u32,
             meter_n: cfg.meter_n,
             lateral_median: cfg.tune("lateral_median", 2.2),
+            vis_floor: cfg.tune("vis_floor", 30.0),
+            lc_patience: cfg.tune("lc_patience", 10.0),
+            gap_spread: cfg.tune("gap_spread", 0.3),
+            abreast_b: cfg.tune("abreast_b", 2.5),
+            miss_patience: if cfg.route_arena > 0 { cfg.tune("miss_patience", 60.0) } else { 0.0 },
+            miss_short: cfg.tune("miss_short", 15.0),
+            pad_e: 0.0,
+            pad_f: 0.0,
         };
         w
     }
@@ -1159,7 +1191,7 @@ impl World {
                     before: l.internal_before.map(|b| b + lane0).unwrap_or(NONE),
                     state: l.state as u32,
                     from_lane: l.from_lane + lane0,
-                    tc: if cfg.mu > 0.0 { (critical_gap(net, topo, l) * cfg.tune("tc_scale", 1.0) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { 0.0 },
+                    tc: if cfg.mu > 0.0 { (critical_gap(net, topo, l) * cfg.tune("tc_scale", 0.7) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { 0.0 },
                 });
             }
         }

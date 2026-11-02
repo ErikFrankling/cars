@@ -42,7 +42,11 @@ Classes as in `research/truth/15-how-the-best-simulators-do-it.md` Part 2. **EST
 | Real widths at run time, margin 0.1 m | INVENTED | | `width_margin` |
 | Bid by class, then arrival, then hash; lowest wins | ADAPTED | Priority claims, as in the lane-change kernel and LPSim's atomic writes, order-independent | `arbiter` |
 | Committed vehicles always win | INVENTED | Point of no return; 15 row 9 | |
-| Critical gaps per movement, give way and stop, +0.9 s at 70 km/h | ESTABLISHED | TRVMB Kapacitet [trv]. Used from the moment the first vehicle has cleared | `tc_scale` |
+| Critical gaps per movement, give way and stop: TRVMB's 4.8-5.3 s times 0.7, about 3.5 s | ADAPTED | TRVMB [trv] are design values. Report 25's measured real gaps: give-way 2.8-4.1 s, roundabouts 3.2-3.8 s. With a 30 m view, minor capacity at 400 and 800 veh/h on the major went from 261 and 171 to 504 and 324, against Siegloch's 736 and 451 | `tc_scale` |
+| Sees a give-way line from at least 30 m | INVENTED | SUMO's 4.5-9 m makes every car slow to a walk with no one coming. Same value as the human driver | `vis_floor` |
+| A driver holds back for someone's lane change for 10 s at a stand, then goes on | INVENTED | Otherwise a car waits for good behind a change that can't happen. On the Ernst-Reuter cut, part of arrivals going from 2,500 to 5,300 | `lc_patience` |
+| Holds for a lane change end past the car's own tail | ADAPTED | A change can't start with the tail on the lane before; LC2013 asked cars to stop 20 to 40 m before the lane end, which on short lanes froze them there | |
+| Dawdling 0.2 instead of Krauss's 0.5 | ADAPTED | 50 km/h saturation 1,714 to 1,846, band 1,800-2,100, report 04. Makes acceleration by speed a little worse in the benchmark | `sigma` |
 | 1.2 s for the first vehicle to clear the conflict point | INVENTED | A body length and zone at 50 km/h, from the gap test | `tc_clear` |
 | Claim distance: v dt + v²/2b + v τ + 2 | INVENTED | Where a driver would start slowing anyway | `claim_scale` |
 | Occupied until the rear has passed the zone | ADAPTED | Vissim conflict area rear gap [vca], with gap 0 | |
