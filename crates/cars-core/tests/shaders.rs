@@ -1,6 +1,7 @@
 //! The kernels must parse and validate without a GPU, so a typo does not wait in the queue for one.
 
 const COMMON: &str = include_str!("../src/shaders/common.wgsl");
+const ROUTE: &str = include_str!("../src/shaders/route.wgsl");
 const STEP: &str = include_str!("../src/shaders/step.wgsl");
 const LC: &str = include_str!("../src/shaders/lc.wgsl");
 const DETECT: &str = include_str!("../src/shaders/detect.wgsl");
@@ -17,7 +18,7 @@ fn validate(name: &str, source: &str) {
 
 #[test]
 fn main_kernels() {
-    validate("step", &format!("{COMMON}\n{STEP}\n{LC}\n{DETECT}"));
+    validate("step", &format!("{COMMON}\n{ROUTE}\n{STEP}\n{LC}\n{DETECT}"));
 }
 
 #[test]

@@ -45,8 +45,16 @@ pub struct GpuParams {
     pub lost_after: f32,
     /// Hold zones by where a body can reach, and ask again for those ahead on the lane. Off: by lane.
     pub zones_ahead: u32,
+    pub lc_gap: f32,
+    /// A body about to leave a zone holds it not: 0 never, 1 at merges, 2 everywhere.
+    pub zone_time: u32,
+    /// Under this speed a change is not held to the heading limit: steering at a crawl can take any angle, and
+    /// a car held to it stays across two lanes for good.
+    pub lc_crawl: f32,
+    /// A change may run on over the end of its lane. Off: it finishes first, and waits at the line if it must.
+    pub lc_carry: u32,
     pub meter_n: u32,
-    pub pad: f32,
+    pub lateral_median: f32,
     pub hu_k: f32,
     pub hu_rho: f32,
     pub hu_nscale: f32,
@@ -287,7 +295,6 @@ pub struct GpuVType {
     /// How hard a driver assumes the leader will brake, Gipps' b-hat.
     pub b_assume: f32,
     pub reaction: f32,
-    pub pad2: f32,
 }
 
 #[repr(C)]
@@ -404,6 +411,7 @@ pub const C_NO_BRAKE: usize = 17;
 pub const C_DEAD_END: usize = 18;
 pub const C_SHADOWS: usize = 19;
 pub const C_SHADOW_REFUSED: usize = 20;
+pub const F_SHADOW: u32 = 16384;
 pub const C_UNGRANTED: usize = 21;
 pub const C_LC_REFUSED_ROOM: usize = 22;
 pub const C_DENIED: usize = 23;
@@ -427,7 +435,6 @@ pub fn human_flags(off: &[String]) -> u32 {
 }
 
 /// Rules of `research/truth/14-human-courtesy.md`, as bits of `GpuParams::hu_flags`.
-pub const F_SHADOW: u32 = 16384;
 pub const HUMAN_RULES: [(&str, u32); 13] = [("courtesy", 1), ("shrink", 2), ("offset", 4), ("anticipate", 8), ("miss", 16), ("gate", 32), ("yellow", 64), ("tte", 128), ("start", 256), ("edge", 512), ("follow", 1024), ("match", 2048), ("steer", 4096)];
 
 /// The human driver's numbers that are ours to choose. Provenance of each: `shaders/HUMAN.md`.
@@ -797,8 +804,7 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.b_lo = num("phys.b_lo", if r.m_ref == 1650.0 { cfg.tune("car_b_lo", r.b_lo) } else { r.b_lo });
     g.b_hi = num("phys.b_hi", r.b_hi);
     g.t_r = num("phys.t_r", r.t_r);
-    // A type that asks for less than the measured driver keeps its own acceleration.
-    g.a0 = num("phys.a0", r.a0.min(t.accel));
+    g.a0 = num("phys.a0", r.a0);
     g.a1 = num("phys.a1", r.a1);
     g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
     g.v_lat = num("phys.v_lat", cfg.tune("v_lat", 0.6));
@@ -830,6 +836,17 @@ fn draw_persona(state: &mut u64) -> (u32, u32) {
     let u = (uniform(state) as f32).clamp(1e-4, 1.0 - 1e-4);
     let yellow = 5.1 + 0.54 * (u / (1.0 - u)).ln();
     (q(t, 0.6, 3.0) | (q(s0, 0.5, 6.0) << 8) | (q(amax, 1.0, 3.0) << 16) | (q(d, 4.0, 22.0) << 24), q(critical, 0.4, 2.5) | (q(yellow, 2.0, 9.0) << 8))
+}
+
+/// Mean free speed over the limit on Swedish municipal main streets, Sept 2018, VTI rapport 1001. Unchecked above 70 km/h.
+fn sweden_speed(limit: f32) -> f32 {
+    match (limit * 3.6).round() as u32 {
+        35..=44 => 0.98,
+        45..=54 => 0.90,
+        55..=64 => 0.85,
+        65..=74 => 0.89,
+        _ => 1.0,
+    }
 }
 
 /// Load and power of one vehicle, packed for `GpuVeh::phys`.
@@ -910,13 +927,13 @@ impl World {
             route_arena: cfg.route_arena,
             ..Default::default()
         };
-        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 4.0)), crate::physics::zones(net, &topo, cfg.tune("zone_distance", 2.6))));
+        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 4.3)), crate::physics::zones(net, &topo, cfg.tune("zone_distance", 2.6))));
         w.vtypes = demand.vtypes.iter().map(|t| gpu_vtype(t, cfg.dt)).collect();
         if cfg.mu > 0.0 {
             for (g, t) in w.vtypes.iter_mut().zip(&demand.vtypes) {
                 physical_type(g, t, cfg);
                 if cfg.humans || matches!(t.model, CfModel::Human) {
-                    g.model = 4;
+                    g.model = 5;
                     // Below zero: lateral motion is a human's quintic, not a fixed speed.
                     g.v_lat = -1.0;
                     g.collision_factor = 0.0;
@@ -1020,7 +1037,7 @@ impl World {
             detect_every: if cfg.mu > 0.0 { cfg.detect_every } else { 0 },
             grid_mask: (capacity.max(16) as u64 * 2).next_power_of_two() as u32 - 1,
             trace_len: cfg.speed_trace.len() as u32,
-            safety: (cfg.tune("certificate", 1.0) as u32) | ((cfg.tune("arbiter", 1.0) as u32) << 1) | ((cfg.tune("exit_clear", 1.0) as u32) << 2) | ((cfg.tune("lc_path", 1.0) as u32) << 3),
+            safety: (cfg.tune("certificate", 1.0) as u32) | ((cfg.tune("arbiter", 1.0) as u32) << 1) | ((cfg.tune("exit_clear", 1.0) as u32) << 2) | ((cfg.tune("lc_path", 1.0) as u32) << 3) | ((cfg.tune("rewind", 1.0) as u32) << 4),
             width_margin: cfg.tune("width_margin", 0.1),
             claim_scale: cfg.tune("claim_scale", 1.0),
             queue_speed: cfg.tune("queue_speed", 2.0),
@@ -1043,8 +1060,12 @@ impl World {
             hm_d: [human.q_edge, human.v_edge, human.tau_a, human.tau_sd],
             lost_after: cfg.tune("lost_after", 0.0),
             zones_ahead: cfg.tune("zones_ahead", 0.0) as u32,
+            lc_gap: cfg.tune("lc_gap", 0.6),
+            zone_time: cfg.tune("zone_time", 1.0) as u32,
+            lc_crawl: cfg.tune("lc_crawl", 0.5),
+            lc_carry: cfg.tune("lc_carry", 0.0) as u32,
             meter_n: cfg.meter_n,
-            pad: 0.0,
+            lateral_median: cfg.tune("lateral_median", 2.2),
         };
         w
     }
@@ -1173,7 +1194,7 @@ impl World {
             let incoming = topo.incoming[li].first().copied();
             self.lanes.push(GpuLane {
                 length: l.length,
-                speed: l.speed,
+                speed: if cfg.tune("free_speed_sweden", 0.0) > 0.0 { l.speed * sweden_speed(l.speed) } else { l.speed },
                 edge: l.edge + edge0,
                 links_start: links.first().copied().unwrap_or(0) + link0,
                 links_count: links.len() as u32,

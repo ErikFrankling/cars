@@ -31,7 +31,7 @@
 @group(0) @binding(27) var<storage, read_write> trip_out: array<TripOut>;
 @group(0) @binding(28) var<storage, read_write> series: array<atomic<u32>>;
 @group(0) @binding(29) var<storage, read_write> edge_acc: array<atomic<u32>>;
-@group(0) @binding(30) var<storage, read_write> route_patch: array<vec2u>;
+@group(0) @binding(30) var<storage, read_write> ph_lane: array<atomic<u32>>;
 @group(0) @binding(17) var<storage, read> incoming_links: array<u32>;
 @group(0) @binding(18) var<storage, read_write> adv_flags: array<atomic<u32>>;
 @group(0) @binding(31) var<storage, read_write> advice: array<atomic<u32>>;
@@ -40,16 +40,18 @@
 @group(0) @binding(34) var<storage, read_write> last_detect: array<u32>;
 @group(0) @binding(19) var<storage, read_write> lane_free: array<LaneFree>;
 @group(0) @binding(35) var<storage, read_write> lc_plan: array<LcPlan>;
+// Five words per lane in physical mode: junction bid, length heading there, front-most entrant, widest body, reach.
+@group(0) @binding(30) var<storage, read_write> ph_lane: array<atomic<u32>>;
 @group(0) @binding(36) var<storage, read_write> mirror: array<Mirror>;
 @group(0) @binding(37) var<storage, read_write> energy: array<TripEnergy>;
-@group(0) @binding(38) var<storage, read_write> junction_bid: array<atomic<u32>>;
-@group(0) @binding(39) var<storage, read_write> inbound: array<atomic<u32>>;
-@group(0) @binding(41) var<storage, read> zones: array<Zone>;
-@group(0) @binding(42) var<storage, read> speed_trace: array<f32>;
-@group(0) @binding(44) var<storage, read_write> poses: array<Pose>;
-@group(0) @binding(45) var<storage, read_write> grid_head: array<atomic<u32>>;
-@group(0) @binding(43) var<storage, read> shape_points: array<vec4f>;
-@group(0) @binding(40) var<storage, read_write> contacts: array<Contact>;
+@group(0) @binding(38) var<storage, read_write> route_patch: array<vec2u>;
+@group(0) @binding(39) var<storage, read> zones: array<Zone>;
+@group(0) @binding(40) var<storage, read> speed_trace: array<f32>;
+@group(0) @binding(41) var<storage, read_write> poses: array<Pose>;
+@group(0) @binding(42) var<storage, read_write> grid_head: array<atomic<u32>>;
+@group(0) @binding(43) var<storage, read_write> grid_next: array<u32>;
+@group(0) @binding(44) var<storage, read> shape_points: array<vec4f>;
+@group(0) @binding(45) var<storage, read_write> contacts: array<Contact>;
 
 const C_NEW: u32 = 0u;
 const C_REMOVED: u32 = 1u;
@@ -129,6 +131,10 @@ fn ph_setup(e: Veh) {
     ph_gz = l.gz;
     ph_gz_lead = l.gz;
     ph_curved = select(1.0, 0.866, l.curve_v > 0.0);
+    // Each driver's own sideways acceleration in a turn: lognormal, median and spread from report 19.
+    let u = pcg(e.trip ^ 0x3c6ef372u);
+    let z = (f32(u & 255u) + f32((u >> 8u) & 255u) + f32((u >> 16u) & 255u) + f32(u >> 24u)) / 255.0 - 2.0;
+    ph_ay = P.lateral_median * exp(0.30 * z * 1.732);
 }
 
 // Report 18 B7. The driver's own weight is mean 1, spread invented.
@@ -185,7 +191,22 @@ fn hu_can_stop(state: u32, seen: f32, speed: f32, kinematic: bool, trip: u32) ->
 
 fn ph_curve_limit(l: Lane) -> f32 {
     if (l.curve_v <= 0.0) { return 1e9; }
-    return min(l.curve_v, l.sqrt_r * sqrt(0.5 * mu * G_ACC));
+    return min(l.curve_v, l.sqrt_r * sqrt(min(ph_ay, 0.5 * mu * G_ACC)));
+}
+
+// Physical mode, at yellow: a driver stops if the line is further off than their own threshold, logistic in time to
+// the line, 5.1 s and scale 0.54 (report 05, 1,357 decisions). None asks over 3 m/s2 of themselves to stop.
+fn ph_yellow_go(trip: u32, seen: f32, v: f32) -> bool {
+    if (seen <= 0.0 || v * v / (2.0 * seen) > 3.0) { return true; }
+    let u = (f32(pcg(trip ^ 0x9e3779b9u) >> 8u) + 0.5) / 16777216.0;
+    return seen / max(v, 0.1) < 5.1 + 0.54 * log(u / (1.0 - u));
+}
+
+// Past the point of stopping at red a driver carries on, like the one who chose to go at yellow.
+fn ph_goes_through(state: u32, trip: u32, seen: f32, v: f32) -> bool {
+    if (mu <= 0.0) { return false; }
+    if (have_yellow(state)) { return ph_yellow_go(trip, seen, v); }
+    return have_red(state) && seen > 0.0 && v * v / (2.0 * seen) > 3.0;
 }
 
 fn link_state(l: u32) -> u32 {
@@ -307,11 +328,11 @@ fn clear_lanes(@builtin(global_invocation_id) id: vec3u) {
     atomicStore(&tail[id.x], NONE);
     atomicStore(&entrant[id.x], NONE);
     if (P.mu > 0.0) {
-        atomicStore(&entrant[P.n_lanes + id.x], 0u);
-        atomicStore(&junction_bid[id.x], NONE);
-        atomicStore(&inbound[id.x], 0u);
-        atomicStore(&inbound[P.n_lanes + id.x], 0u);
-        atomicStore(&inbound[2u * P.n_lanes + id.x], 0u);
+        atomicStore(&ph_lane[(id.x) * 5u + 2u], 0u);
+        atomicStore(&ph_lane[(id.x) * 5u + 0u], NONE);
+        atomicStore(&ph_lane[(id.x) * 5u + 1u], 0u);
+        atomicStore(&ph_lane[(id.x) * 5u + 3u], 0u);
+        atomicStore(&ph_lane[(id.x) * 5u + 4u], 0u);
     }
 }
 
@@ -785,7 +806,8 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
             break;
         }
         let lk = links[link];
-        let state = link_state(link);
+        var state = link_state(link);
+        if (ph_goes_through(state, ego.trip, seen, speed)) { state = CH_G; }
         let yellow_or_red = have_red(state) || have_yellow(state);
         var stop_decel = ty.decel;
         if (yellow_or_red) { stop_decel = max(min(P.tls_yellow_min_decel, ty.emergency), ty.decel); }
@@ -925,7 +947,7 @@ fn lane_free_scan(@builtin(global_invocation_id) id: vec3u) {
         f.mean_speed = speed_sum / f32(max(end - i, 1u));
         lane_free[lane] = f;
         if ((lanes[lane].flags & LANE_INTERNAL) != 0u && lanes[lane].links_count != 0u) {
-            atomicAdd(&inbound[links[lanes[lane].links_start].to_lane], u32(lengths * 8.0));
+            atomicAdd(&ph_lane[(links[lanes[lane].links_start].to_lane) * 5u + 1u], u32(lengths * 8.0));
         }
         return;
     }
@@ -986,6 +1008,7 @@ fn foe_on_last_approach(link: u32, a: f32, va: f32, vl: f32, ego: Veh) -> bool {
 // MSVehicle::checkRewindLinkLanes.
 fn check_rewind(ego: Veh, base: u32, n: u32, lengths_in_front: f32) {
     if ((lanes[ego.lane].flags & LANE_ROUNDABOUT) != 0u || n == 0u) { return; }
+    if (P.mu > 0.0 && (P.safety & 16u) == 0u) { return; }
     let need = ty.length + ty.min_gap;
     var seen = -lengths_in_front;
     var found = false;
@@ -1380,7 +1403,8 @@ fn walk_links(e: ptr<function, Veh>, base: u32, n: u32, speed: f32, vmax_lane: f
                 break;
             }
             if (it.grant > 1u) { (*e).flags |= F_GRANTED; }
-            let state = link_state(it.link);
+            let through = ph_goes_through(link_state(it.link), (*e).trip, it.dist, speed);
+            let state = select(link_state(it.link), CH_G, through);
             let yellow = have_yellow(state);
             if (hu_on && ((*e).flags & F_YELLOW_GO) != 0u && links[it.link].tl != NONE && (yellow || have_red(state))) {
                 v_safe = it.v_pass;
@@ -1399,7 +1423,7 @@ fn walk_links(e: ptr<function, Veh>, base: u32, n: u32, speed: f32, vmax_lane: f
             if (can_brake) { imp = impat; }
             var my_wait = (*e).wait;
             if (((*e).flags & F_HAVE_STOPPED) != 0u) { my_wait = 1e9; }
-            let opened = yellow || link_opened(it.link, it.arrival, it.arr_speed, leave, ty.length, imp, ty.decel, my_wait, (*e).trip);
+            let opened = yellow || through || link_opened(it.link, it.arrival, it.arr_speed, leave, ty.length, imp, ty.decel, my_wait, (*e).trip);
             let k = links[it.link];
             let determined = it.dist <= select(k.visibility, max(k.visibility, P.hu_g.x), hu_on);
             if (opened && (state == CH_s || state == CH_w) && determined) { (*e).flags |= F_HAVE_STOPPED; }
@@ -1476,8 +1500,20 @@ fn ph_exit_room(to: u32, next_item_link: u32) -> f32 {
 fn zone_taken(zn: Zone) -> bool {
     let p = atomicLoad(&tail[zn.foe_lane]);
     if (p == NONE || unpack_back(p) >= zn.foe_out) { return false; }
-    if (P.zones_ahead != 0u && f32(atomicLoad(&inbound[2u * P.n_lanes + zn.foe_lane])) / 8.0 < zn.foe_in) { return false; }
-    return zn.dist < 0.5 * (ty.width + f32(atomicLoad(&inbound[P.n_lanes + zn.foe_lane])) / 16.0) + P.width_margin;
+    if (P.zones_ahead != 0u && f32(atomicLoad(&ph_lane[(zn.foe_lane) * 5u + 4u])) / 8.0 < zn.foe_in) { return false; }
+    return zn.dist < 0.5 * (ty.width + f32(atomicLoad(&ph_lane[(zn.foe_lane) * 5u + 3u])) / 16.0) + P.width_margin;
+}
+
+// Vissim's rear gap: a body that will have left the zone 0.5 s before we reach it does not hold it. Merges only
+// by default, where the one behind follows the one ahead anyway.
+fn zone_clears(zn: Zone, la: Lane, dist: f32, v: f32) -> bool {
+    if (P.zone_time == 0u) { return false; }
+    if (P.zone_time == 1u && (la.links_count == 0u || lanes[zn.foe_lane].links_count == 0u
+        || links[la.links_start].to_lane != links[lanes[zn.foe_lane].links_start].to_lane)) { return false; }
+    let p = atomicLoad(&tail[zn.foe_lane]);
+    let d = dist + zn.own_in;
+    let reach = d / max(v, sqrt(max(2.0 * d, 1.0)));
+    return (zn.foe_out - unpack_back(p)) / max(unpack_speed(p), 0.5) + 0.5 < reach;
 }
 
 // A body whose rear still stands on the foe lane must not wait for itself. A route that leaves a junction over a lane
@@ -1509,7 +1545,7 @@ fn zones_ahead_bid(i: u32, e: Veh, claim: f32) {
     if (hold < 1e8) { atomicMin(&advice[P.n_trips + e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
     if (near) {
         let bid = (1u << 30u) | ((pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u);
-        atomicMin(&junction_bid[e.lane], bid);
+        atomicMin(&ph_lane[(e.lane) * 5u + 0u], bid);
         cur[i].best_off = i32(bid);
     } else {
         cur[i].best_off = 0;
@@ -1546,12 +1582,16 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
     let in_front = f32(s.end - i - 1u) * need_own;
     let floor_v = ph_floor(v, e.acc);
     var chained = false;
-    for (var j = 0u; j < stop; j++) {
+    var chain_from = NONE;
+    for (var j = 0u; j < n; j++) {
+        // Past where the driver means to stop, unless that spot is one no body fits on.
+        if (j >= stop && !chained) { break; }
         let it = items[base + j];
         if (it.link == NONE) { break; }
         let k = links[it.link];
         let next = k.next_lane;
         if (!is_internal(next) || lanes[next].zone_count == 0u) {
+            if (!chained || !is_internal(next)) { chain_from = NONE; }
             chained = false;
             continue;
         }
@@ -1561,16 +1601,30 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
         var ok = true;
         if (!committed) {
             for (var z = 0u; z < la.zone_count; z++) {
-                if (zone_taken(zones[la.zone_start + z]) && !zone_foe_is_self(zones[la.zone_start + z], e)) {
+                let zn = zones[la.zone_start + z];
+                if (zone_taken(zn) && !zone_foe_is_self(zn, e) && !zone_clears(zn, la, it.dist, v)) {
                     ok = false;
                     break;
                 }
             }
             let last_block = la.links_count == 0u || !is_internal(links[la.links_start].next_lane);
+            // A stub too short to hold a body is no place to wait: the tail stands across the approach, and two of
+            // them can each sit in the other's way for good. Wait at the line until the way past it is free.
+            if (ok && !last_block && la.length < need_own && j + 1u < n && items[base + j + 1u].link != NONE) {
+                let onward = lanes[links[items[base + j + 1u].link].next_lane];
+                for (var z = 0u; z < onward.zone_count; z++) {
+                    let zn = zones[onward.zone_start + z];
+                    if (zone_taken(zn) && !zone_clears(zn, onward, it.dist + la.length, v)) {
+                        ok = false;
+                        break;
+                    }
+                }
+            }
             if (ok && last_block) {
                 let to = k.to_lane;
                 if (lanes[to].length < need_own) {
                     chained = true;
+                    if (chain_from == NONE) { chain_from = j; }
                 } else {
                     chained = false;
                     var next_link = NONE;
@@ -1582,7 +1636,7 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
                         }
                     }
                     // Vissim wants room for the length plus 0.5 m, from the share of drivers who bother.
-                    let wanted = in_front + ty.length + 0.5 + f32(atomicLoad(&inbound[to])) / 8.0;
+                    let wanted = in_front + ty.length + 0.5 + f32(atomicLoad(&ph_lane[(to) * 5u + 1u])) / 8.0;
                     // Nobody enters a full roundabout, or its ring locks whole. Whoever is on the ring keeps going, or the
                     // ring waits for itself.
                     let on_ring = (lanes[e.lane].flags & LANE_ROUNDABOUT) != 0u;
@@ -1592,17 +1646,20 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
             }
         }
         if (!ok) {
+            // No room behind this one for a body: it stops at the line of the first junction, not inside it.
+            if (chain_from != NONE) { items[base + chain_from].grant = 1u; }
             items[base + j].grant = 1u;
             atomicAdd(&C[C_DENIED], 1u);
             break;
         }
         // Whoever started goes on: without this a car that won a gap loses it again before it reaches the line.
+        if (committed) { chain_from = NONE; }
         var rank = 3u;
         if (committed) { rank = 0u; } else if ((e.flags & F_GRANTED) != 0u && v > HALT_SPEED) { rank = 1u; } else if (have_priority(link_state(it.link))) { rank = 2u; }
         let hash = (pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u;
         let bid = (rank << 30u) | (min(u32(max(it.arrival, 0.0) * 8.0), 16383u) << 16u) | hash;
         items[base + j].grant = bid;
-        atomicMin(&junction_bid[next], bid);
+        atomicMin(&ph_lane[(next) * 5u + 0u], bid);
     }
 }
 
@@ -1630,7 +1687,7 @@ fn ph_grant(@builtin(global_invocation_id) id: vec3u) {
             let zn = zones[la.zone_start + z];
             let ahead = zn.own_in - e.pos;
             if (ahead <= 0.0 || ahead > claim || ahead < committed_at) { continue; }
-            if (atomicLoad(&junction_bid[zn.foe_lane]) < bid) { hold = min(hold, ahead); }
+            if (atomicLoad(&ph_lane[(zn.foe_lane) * 5u + 0u]) < bid) { hold = min(hold, ahead); }
         }
         if (hold < 1e8) { atomicMin(&advice[P.n_trips + e.trip], u32(max(stop_speed(e.speed, hold, ty.decel, true, 1e9) + 0.002, 0.0) * 1024.0)); }
     }
@@ -1642,9 +1699,22 @@ fn ph_grant(@builtin(global_invocation_id) id: vec3u) {
         let reach = 0.5 * (types[cur[i].vtype].width + WIDEST) + P.width_margin;
         for (var z = 0u; z < la.zone_count; z++) {
             let zn = zones[la.zone_start + z];
-            if (zn.dist < reach && atomicLoad(&junction_bid[zn.foe_lane]) < bid) {
+            if (zn.dist < reach && atomicLoad(&ph_lane[(zn.foe_lane) * 5u + 0u]) < bid) {
                 items[base + j].grant = 1u;
                 atomicAdd(&C[C_DENIED], 1u);
+                // Lost the second of two junctions joined by a lane too short to stop on: stop at the first line, or
+                // two losers each stand with a tail across the other's way.
+                let vt = types[cur[i].vtype];
+                for (var q = j; q > 0u; q--) {
+                    let fl = lanes[links[items[base + q].link].from_lane];
+                    let last_block = is_internal(links[items[base + q].link].from_lane) && !is_internal(links[fl.links_start].next_lane);
+                    if (fl.length >= vt.length + vt.min_gap && !last_block) { break; }
+                    let g = items[base + q - 1u].grant;
+                    if (g > 1u) {
+                        if ((g >> 30u) == 0u) { break; }
+                        items[base + q - 1u].grant = 1u;
+                    }
+                }
                 return;
             }
         }
@@ -1748,6 +1818,11 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     var acc = (v_next - speed) / dt;
     let old_pos = e.pos;
     if (mu > 0.0) {
+        // Bodies do not cross a junction still half in another lane.
+        if (P.lc_carry == 0u && ty.model != MODEL_HUMAN && (e.phys >> 30u) != 0u && !is_internal(e.lane)) {
+            let left = lanes[e.lane].length - e.pos;
+            v_safe = min(v_safe, stop_speed(speed, max(left - 0.1, 0.0), ty.decel, true, 1e9));
+        }
         let bound = atomicExchange(&advice[P.n_trips + e.trip], NONE);
         if (bound != NONE) {
             v_safe = min(v_safe, f32(bound) / 1024.0 - 0.002);
@@ -1954,21 +2029,21 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     }
     if (mu > 0.0) {
         let w = u32(ty.width * 16.0);
-        atomicMax(&inbound[P.n_lanes + e.lane], w);
-        atomicMax(&inbound[2u * P.n_lanes + e.lane], u32((e.pos + ph_stop_distance(e.speed, e.acc) + 0.5) * 8.0));
+        atomicMax(&ph_lane[(e.lane) * 5u + 3u], w);
+        atomicMax(&ph_lane[(e.lane) * 5u + 4u], u32((e.pos + ph_stop_distance(e.speed, e.acc) + 0.5) * 8.0));
         if (back < 0.0 && e.prev_lane != NONE) {
-            atomicMax(&inbound[P.n_lanes + e.prev_lane], w);
-            atomicMax(&inbound[2u * P.n_lanes + e.prev_lane], u32(lanes[e.prev_lane].length * 8.0 + 8.0));
+            atomicMax(&ph_lane[(e.prev_lane) * 5u + 3u], w);
+            atomicMax(&ph_lane[(e.prev_lane) * 5u + 4u], u32(lanes[e.prev_lane].length * 8.0 + 8.0));
             if (e.prev2_lane != NONE && lanes[e.prev_lane].length + back < 0.0) {
-                atomicMax(&inbound[P.n_lanes + e.prev2_lane], w);
-                atomicMax(&inbound[2u * P.n_lanes + e.prev2_lane], u32(lanes[e.prev2_lane].length * 8.0 + 8.0));
+                atomicMax(&ph_lane[(e.prev2_lane) * 5u + 3u], w);
+                atomicMax(&ph_lane[(e.prev2_lane) * 5u + 4u], u32(lanes[e.prev2_lane].length * 8.0 + 8.0));
             }
         }
     }
     if (e.lane != first_lane) {
         atomicMin(&entrant[e.lane], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
         if (mu > 0.0) {
-            atomicMax(&entrant[P.n_lanes + e.lane], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
+            atomicMax(&ph_lane[(e.lane) * 5u + 2u], (u32(clamp(e.pos, 0.0, 127.0) * 8.0) << 22u) | i);
         }
     }
     ph_mirror(&e, false);
@@ -1996,12 +2071,20 @@ fn ph_account(e: ptr<function, Veh>, v0: f32, v1: f32, ds: f32) {
     if (v1 <= HALT_SPEED) { energy[t].idle_s += dt; } else { energy[t].moving_s += dt; }
 }
 
-// Sideways progress of a lane change. It takes forward motion: at a stand the phase does not move.
+fn ph_lateral_done(t: f32, w: f32, v_lat: f32) -> f32 {
+    let total = w / v_lat + 1.0;
+    if (t < 1.0) { return v_lat * (t * 0.5 - sin(3.14159265 * t) / 6.2831853); }
+    if (t <= total - 1.0) { return v_lat * (t - 0.5); }
+    let r = max(total - t, 0.0);
+    return w - v_lat * (r * 0.5 - sin(3.14159265 * r) / 6.2831853);
+}
+
+// Sideways progress of a lane change. Tied to forward motion, except at a crawl.
 fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32) {
     let p = (*e).phys;
     if ((p >> 30u) == 0u) { return; }
     var v_lat = ty.v_lat;
-    if (((*e).flags & F_LAT_FAST) != 0u) { v_lat = 1.1; }
+    if (((*e).flags & F_LAT_FAST) != 0u) { v_lat = 1.0; }
     let w = lanes[(*e).lane].width;
     var u = f32((p >> 16u) & 0x3fffu) / 16383.0;
     if (v_lat <= 0.0) {
@@ -2014,7 +2097,10 @@ fn ph_lateral(e: ptr<function, Veh>, v0: f32, v1: f32) {
         u = min(1.0, u + min(du, du_cap));
     } else {
         let total = w / v_lat + 1.0;
-        u = min(1.0, u + min(1.0, 0.5 * (v0 + v1) * 0.21256 / v_lat) * dt / total);
+        let vbar = 0.5 * (v0 + v1);
+        var rate = min(1.0, vbar * 0.21256 / v_lat);
+        if (vbar < P.lc_crawl) { rate = 1.0; }
+        u = min(1.0, u + rate * dt / total);
     }
     if (u >= 1.0) {
         (*e).phys = p & 0xffffu;

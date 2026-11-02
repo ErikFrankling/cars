@@ -57,6 +57,52 @@ pub struct VType {
     pub params: FxHashMap<String, String>,
 }
 
+/// Swedish traffic by distance, 2025, Trafikanalys Korstrackor: cars, light trucks, heavy trucks, buses, motorcycles.
+/// Sizes are design values (report 19 fix 16): spacing in a queue stays at 7.5 m.
+const SWEDEN: [(&str, f64, f32, f32); 5] =
+    [("passenger", 0.81, 4.5, 3.0), ("delivery", 0.12, 5.5, 2.5), ("truck", 0.05, 7.1, 2.5), ("bus", 0.01, 12.0, 2.5), ("motorcycle", 0.01, 2.2, 2.5)];
+
+impl Demand {
+    /// Replaces the demand's vTypes by the Swedish fleet, by a hash of the trip. Whatever accel, decel, sigma, tau or
+    /// minGap the demand file carried goes with them: those came with no source. A route the class may not drive
+    /// keeps a car. Returns trips per class.
+    pub fn apply_sweden(&mut self, net: &crate::net::Net) -> Vec<(String, u64)> {
+        let base = self.vtypes.len() as u32;
+        for (name, _, length, gap) in SWEDEN {
+            let mut a = Attrs::default();
+            a.insert("id".into(), format!("sweden_{name}"));
+            a.insert("vClass".into(), name.into());
+            let mut t = VType::parse(&a);
+            t.length = length;
+            t.min_gap = gap;
+            self.vtypes.push(t);
+        }
+        let mut counts = vec![0u64; SWEDEN.len()];
+        for trip in &mut self.trips {
+            let u = (u64::from(trip.id).wrapping_add(7).wrapping_mul(0x9E3779B97F4A7C15) >> 32) as f64 / 4294967296.0;
+            let (mut k, mut sum) = (0, 0.0);
+            for (i, row) in SWEDEN.iter().enumerate() {
+                sum += row.1;
+                k = i;
+                if u < sum {
+                    break;
+                }
+            }
+            let bit = self.vtypes[base as usize + k].vclass;
+            let passable = self.routes[trip.route as usize].iter().all(|&e| {
+                let ed = &net.edges[e as usize];
+                (ed.first_lane..ed.first_lane + ed.lane_count).any(|l| net.lanes[l as usize].allow & bit == bit)
+            });
+            if !passable {
+                k = 0;
+            }
+            trip.vtype = base + k as u32;
+            counts[k] += 1;
+        }
+        SWEDEN.iter().zip(counts).map(|(r, c)| (r.0.to_string(), c)).collect()
+    }
+}
+
 impl VType {
     fn parse(a: &Attrs) -> Self {
         let class = get(a, "vClass", "passenger");

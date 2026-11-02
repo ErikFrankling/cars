@@ -301,9 +301,8 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
         var lo = s.first;
         var hi = s.end;
         // Lower bound on position among entries still on this lane. Those that left wrapped around.
-        loop {
-            if (lo >= hi) { break; }
-            let mid = (lo + hi) / 2u;
+        for (var it = 0u; it < 33u && lo < hi; it++) {
+            let mid = lo + (hi - lo) / 2u;
             var k = mid;
             loop {
                 if (k >= hi || (cur[k].lane == l && (cur[k].flags & F_REMOVED) == 0u)) { break; }
@@ -327,7 +326,7 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
         }
         var k = lo;
         loop {
-            if (k == s.first) { break; }
+            if (k <= s.first) { break; }
             k--;
             let o = cur[k];
             if (k != ego && o.lane == l && (o.flags & F_REMOVED) == 0u && o.pos < pos) {
@@ -356,7 +355,7 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
     }
     if (mu > 0.0) {
         // Several vehicles can cross onto a lane in one step. The front-most is the other end of them.
-        let ef = atomicLoad(&entrant[P.n_lanes + l]);
+        let ef = atomicLoad(&ph_lane[(l) * 5u + 2u]);
         if (ef != 0u) {
             let k = ef & 0x3fffffu;
             let o = cur[k];
@@ -395,7 +394,7 @@ fn lc_neighbors(l: u32, pos: f32, ego: u32, egoback: f32) -> LcNeighbors {
                     let sg = seg[src];
                     var k = sg.end;
                     loop {
-                        if (k == sg.first) { break; }
+                        if (k <= sg.first) { break; }
                         k--;
                         if (k == ego || cur[k].lane != src || (cur[k].flags & F_REMOVED) != 0u) { continue; }
                         lc_consider_follower(&r, k, cur[k].pos - sl.length - offset, egoback);
@@ -555,6 +554,10 @@ fn lc_advice(trip: u32, speed: f32) { atomicMin(&advice[trip], u32(max(0.0, spee
 
 // CF::getSecureGap while changing lanes: a vehicle already braking may need less room.
 fn secure_gap_lc(v: f32, vl: f32, bl: f32, acc: f32, safety: f32, leader_cacc: bool) -> f32 {
+    // Physical mode: the driver's own gap law, at Vissim's 0.6 during a change. Hard limits are checked apart.
+    if (mu > 0.0 && ty.model == MODEL_KRAUSS) {
+        return max(0.0, ty.ph_tau * v + v * v / (2.0 * ty.decel) - vl * vl / (2.0 * ty.b_assume)) * P.lc_gap;
+    }
     var g: f32;
     switch ty.model {
         case MODEL_IDM: { g = idm_secure_gap(v, vl); }
@@ -788,18 +791,16 @@ fn lc_ahead_load(l: u32, pos: f32, ego: u32) -> u32 {
         first = s.first;
         var lo = s.first;
         var hi = s.end;
-        loop {
-            if (lo >= hi) { break; }
-            let mid = (lo + hi) / 2u;
+        for (var it = 0u; it < 33u && lo < hi; it++) {
+            let mid = lo + (hi - lo) / 2u;
             if (cur[mid].lane == l && (cur[mid].flags & F_REMOVED) == 0u) { lo = mid + 1u; }
             else { hi = mid; }
         }
         end = lo;
         lo = s.first;
         hi = end;
-        loop {
-            if (lo >= hi) { break; }
-            let mid = (lo + hi) / 2u;
+        for (var it = 0u; it < 33u && lo < hi; it++) {
+            let mid = lo + (hi - lo) / 2u;
             if (cur[mid].pos < pos) { lo = mid + 1u; } else { hi = mid; }
         }
         count = end - lo;
@@ -1393,10 +1394,11 @@ fn ph_lc_room(e: Veh, dest: u32) -> bool {
     if (ty.v_lat <= 0.0) { return 0.33 * 1.875 * max(w - abs(e.lc_edge), 0.0) / 1.3 * e.speed <= lanes[e.lane].length - e.pos; }
     if (road < 0.0) {
         let left = lanes[e.lane].length - e.pos;
+        if (e.speed < 0.5 && left < 2.0) { return true; }
         return left >= w / 0.21256 && (w / ty.v_lat + 1.0) * e.speed <= left;
     }
     if ((w / ty.v_lat + 1.0) * e.speed <= road) { return true; }
-    return (w / 1.1 + 1.0) * e.speed <= road;
+    return (w / 1.0 + 1.0) * e.speed <= road;
 }
 
 // Road left for a change into `dest`. Sideways motion carries over lane ends as long as the route goes on from
@@ -1408,6 +1410,7 @@ fn ph_lc_road(e: Veh, dest: u32) -> f32 {
         if (e.route_i + 1u >= e.route_end) { return remaining; }
         return -1.0;
     }
+    if (P.lc_carry == 0u) { return remaining; }
     return remaining + continuation_length(links[k].to_lane, e.route_i + 1u, e.route_end);
 }
 

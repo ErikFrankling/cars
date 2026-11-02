@@ -27,6 +27,42 @@ pub struct Args {
     /// File from `cars run --trace`.
     #[arg(long)]
     trace: PathBuf,
+    /// Write what would be drawn to this CSV and stop, at every frame of the trace. Needs no GPU. For scripts/physics_qa.py.
+    #[arg(long)]
+    poses: Option<PathBuf>,
+}
+
+/// The pose code of the renderer, at each frame of the trace, as `time,trip,lane,pos,speed,x,y,dx,dy`.
+fn write_poses(r: &Args, trace: &Trace, out: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+    use std::io::Write;
+    let a = &r.common;
+    let mut net = Net::load(&a.net)?;
+    for p in &a.additional {
+        net.load_additional(p)?;
+    }
+    let hash = trace::net_hash(&net);
+    if hash != trace.header.net_hash {
+        return Err(format!("this trace is from another net: file {} here {hash}", trace.header.net_hash).into());
+    }
+    let dt = trace.header.dt;
+    let mut world = World::build(&net, &Demand::default(), &SimConfig { dt, begin_seconds: trace.header.sim_begin as f32, end_seconds: 1e6, ..Default::default() }, &[]);
+    world.vtypes = trace.header.vtypes.iter().map(|t| GpuVType { model: t.model, length: t.length, min_gap: t.min_gap, decel: t.decel, emergency: t.emergency, ..GpuVType::zeroed() }).collect();
+    let widths: Vec<f32> = trace.header.vtypes.iter().map(|t| t.width).collect();
+    let tables = render::tables(&world, &net, false);
+    let mut source = TraceSource { trace, world: &world, tables: &tables, widths, interpolate: false, next: 0, cur: None, prev_step: 0, step: 0, records: Vec::new(), scratch: Vec::new(), phases: Vec::new(), passed: Vec::new(), passed_count: 0, slots: Vec::new(), history: Vec::new(), instances: Vec::new(), signals: Vec::new(), snapped: None };
+    let mut f = std::io::BufWriter::new(std::fs::File::create(out)?);
+    writeln!(f, "time,trip,lane,pos,speed,x,y,dx,dy")?;
+    for i in 0..trace.frames.len() {
+        source.feed(i)?;
+        let time = trace.time_of(trace.frames[i].step);
+        source.pose_all(1.0, source.step as f32 * dt, 0);
+        for (r, p) in source.records.iter().zip(&source.instances) {
+            if p.alive > 0.0 {
+                writeln!(f, "{time:.3},{},{},{:.3},{:.3},{:.3},{:.3},{:.4},{:.4}", r.trip(), r.lane(), r.pos(), r.speed(), p.xy[0], p.xy[1], p.dir[0], p.dir[1])?;
+            }
+        }
+    }
+    Ok(())
 }
 
 type V2 = [f32; 2];
@@ -482,6 +518,9 @@ pub fn run(mut r: Args) -> Result<(), Box<dyn std::error::Error>> {
     let (Some(first), Some(last)) = (trace.frames.first(), trace.frames.last()) else {
         return Err("trace has no frames".into());
     };
+    if let Some(p) = &r.poses {
+        return write_poses(&r, &trace, p);
+    }
     let dt = trace.header.dt;
     let sim_begin = trace.header.sim_begin as f32;
     let begin = r.common.begin.unwrap_or(trace.time_of(first.step));

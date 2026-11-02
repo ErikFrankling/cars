@@ -63,10 +63,13 @@ fn radius(a: [f32; 2], b: [f32; 2], c: [f32; 2]) -> f32 {
     if area2 < 1e-3 { 1e9 } else { ab * bc * ca / (2.0 * area2) }
 }
 
-/// Lateral acceleration drivers accept at a radius: Xu et al., capped at Bosetti's measured comfort.
-fn driver_lateral(r: f32, cap: f32) -> f32 {
-    (20.5 * r.powf(-0.46) - 0.35).min(cap)
-}
+/// Peak sideways acceleration a driver takes through a turn, median over drivers, m/s2. Report 19: 3,584 real turns in
+/// 4 cities, peak median 2.19, p95 3.53, p99 4.26, flat with radius. The kernel draws each driver's own.
+const LATERAL_MEDIAN: f32 = 2.2;
+/// No car drives a tighter line than its turning circle, whatever the map draws.
+const MIN_RADIUS: f32 = 5.0;
+/// Road polylines have kinks a car steers through, so curvature is measured over 30 m. Report 19 cause 2.
+const CHORD_ROAD: f32 = 30.0;
 
 /// Map junctions are drawn 3 to 6 times tighter than cars drive, and a short chord turns each vertex of a polyline into
 /// a corner. So: a turn as one arc, its length over the angle it turns through; a road, the tightest over 30 m.
@@ -113,7 +116,10 @@ pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
                 let g = l.z_rise / l.length;
                 p.gz = G * g * (1.0 - g * g / 2.0);
             }
-            let half = (CHORD / 2.0).min(geom / 2.0);
+            let internal = net.edges[l.edge as usize].func == EdgeFunc::Internal;
+            // netconvert draws a junction turn as a Bezier, far tighter at its apex than the line a car drives: a corner
+            // of 30 m radius reads 7 m over 10 m. Real turns are tightest at about half their whole radius, report 19.
+            let half = (if internal { CHORD.max(geom * 0.5) } else { CHORD_ROAD } / 2.0).min(geom / 2.0);
             if half < 0.5 {
                 return p;
             }
@@ -129,7 +135,8 @@ pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
                 if r >= STRAIGHT_RADIUS {
                     continue;
                 }
-                let v = (driver_lateral(r, lateral_cap) * r).sqrt();
+                let r = r.max(MIN_RADIUS);
+                let v = (LATERAL_MEDIAN * r).sqrt();
                 *lim = v;
                 *ra = r;
                 tightest = tightest.min(r);
@@ -148,7 +155,7 @@ pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
             while hi + 1 < n && limit[hi + 1] <= lowest * 1.2 {
                 hi += 1;
             }
-            p.curve_v = lowest;
+            p.curve_v = (lateral_cap * tightest).sqrt();
             p.sqrt_r = tightest.sqrt();
             p.sqrt_path_r = path_radius(net.edges[l.edge as usize].func == crate::net::EdgeFunc::Internal, &l.shape, &cum, geom).max(5.0).sqrt();
             p.s_curve = lo as f32 * scale;
@@ -198,12 +205,32 @@ pub fn zones(net: &Net, topo: &Topology, reach: f32) -> Vec<Vec<GpuZone>> {
                 let Some((a_in, a_out, d1)) = interval(net, &cum, a, b, reach) else { continue };
                 let Some((b_in, b_out, d2)) = interval(net, &cum, b, a, reach) else { continue };
                 let dist = d1.min(d2);
+                if keeps_apart(net, a, b, dist) {
+                    continue;
+                }
                 out[a as usize].push(GpuZone { foe_lane: b, own_in: a_in, own_out: a_out, foe_in: b_in, foe_out: b_out, dist });
                 out[b as usize].push(GpuZone { foe_lane: a, own_in: b_in, own_out: b_out, foe_in: a_in, foe_out: a_out, dist });
             }
         }
     }
     out
+}
+
+/// Opposite directions that never touch, or lanes side by side by their own widths. On a narrow two-way street a
+/// zone would be a head-on standoff; drivers squeeze past there, and SUMO has no foe either.
+fn keeps_apart(net: &Net, a: u32, b: u32, dist: f32) -> bool {
+    let (la, lb) = (&net.lanes[a as usize], &net.lanes[b as usize]);
+    if dist >= 0.5 * (la.width + lb.width) - 0.05 {
+        return true;
+    }
+    let chord = |s: &[[f32; 2]]| {
+        let (p, q) = (s[0], s[s.len() - 1]);
+        let (dx, dy) = (q[0] - p[0], q[1] - p[1]);
+        let n = (dx * dx + dy * dy).sqrt().max(1e-3);
+        (dx / n, dy / n)
+    };
+    let (ca, cb) = (chord(&la.shape), chord(&lb.shape));
+    dist > 1.4 && ca.0 * cb.0 + ca.1 * cb.1 < -0.7
 }
 
 /// Where along `a`, in lane positions, its centre line is within reach of `b`.

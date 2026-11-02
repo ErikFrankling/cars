@@ -40,7 +40,7 @@ fn detect_pose(@builtin(global_invocation_id) id: vec3u) {
     if (i >= G.n_active) { return; }
     let v = cur[i];
     poses[i].half_len = 0.0;
-    atomicStore(&grid_head[P.grid_mask + 1u + i], NONE);
+    grid_next[i] = NONE;
     if ((v.flags & (F_REMOVED | F_SHADOW)) != 0u || v.lane == P.dummy_lane || v.replica != 0u) { return; }
     let t = types[v.vtype];
     let front = shape_at(v.lane, v.pos);
@@ -82,7 +82,7 @@ fn detect_pose(@builtin(global_invocation_id) id: vec3u) {
     var center = front - dir * t.length * 0.5;
     if ((v.phys >> 30u) != 0u) {
         var v_lat = t.v_lat;
-        if ((v.flags & F_LAT_FAST) != 0u) { v_lat = 1.1; }
+        if ((v.flags & F_LAT_FAST) != 0u) { v_lat = 1.0; }
         let w = lanes[v.lane].width;
         let done = ph_lateral_u(f32((v.phys >> 16u) & 0x3fffu) / 16383.0, w, v_lat);
         let side = select(1.0, -1.0, (v.phys >> 30u) == 1u);
@@ -90,10 +90,11 @@ fn detect_pose(@builtin(global_invocation_id) id: vec3u) {
     } else {
         center += vec2f(-dir.y, dir.x) * v.lc_edge;
     }
+    // On a lane narrower than the body the driver squeezes over: the fault is the lane width in the net.
     let c = cell_of(center);
-    poses[i] = Pose(center, dir, t.length * 0.5, t.width * 0.5, (u32(c.x + 32768) << 16u) | u32(c.y + 32768), 0u);
+    poses[i] = Pose(center, dir, t.length * 0.5, min(t.width, lanes[v.lane].width) * 0.5, (u32(c.x + 32768) << 16u) | u32(c.y + 32768), 0u);
     let h = grid_hash(c.x, c.y);
-    atomicStore(&grid_head[P.grid_mask + 1u + i], atomicExchange(&grid_head[h], i));
+    grid_next[i] = atomicExchange(&grid_head[h], i);
 }
 
 // Separating axes for two rectangles. Positive is how deep they overlap.
@@ -150,7 +151,7 @@ fn detect_pairs(@builtin(global_invocation_id) id: vec3u) {
                 if (j == NONE || guard >= 256u) { break; }
                 guard += 1u;
                 let b = poses[j];
-                let next = atomicLoad(&grid_head[P.grid_mask + 1u + j]);
+                let next = grid_next[j];
                 if (j > i && b.cell == key) {
                     let reach = a.half_len + b.half_len + a.half_width + b.half_width;
                     if (dot(a.center - b.center, a.center - b.center) < reach * reach) {

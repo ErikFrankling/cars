@@ -25,11 +25,11 @@ const MAIN_BINDINGS: &[bool] = &[
     /*15 prev*/ true, /*16 cur*/ false, /*17 incoming*/ true, /*18 adv_flags*/ false, /*19 lane_free*/ false,
     /*20 seg*/ false, /*21 items*/ false, /*22 slots*/ false, /*23 link_count*/ false,
     /*24 partial*/ false, /*25 tail*/ false, /*26 entrant*/ false, /*27 trip_out*/ false,
-    /*28 series*/ false, /*29 edge_acc*/ false, /*30 route_patch*/ false, /*31 advice*/ false,
+    /*28 series*/ false, /*29 edge_acc*/ false, /*30 ph_lane*/ false, /*31 advice*/ false,
     /*32 queue_trips*/ true, /*33 claims*/ false, /*34 last_detect*/ false, /*35 lc_plan*/ false,
-    /*36 mirror*/ false, /*37 energy*/ false, /*38 junction_bid*/ false, /*39 inbound*/ false,
-    /*40 contacts*/ false, /*41 zones*/ true, /*42 speed_trace*/ true, /*43 shape_points*/ true,
-    /*44 poses*/ false, /*45 grid_head*/ false,
+    /*36 mirror*/ false, /*37 energy*/ false, /*38 route_patch*/ false, /*39 zones*/ true,
+    /*40 speed_trace*/ true, /*41 poses*/ false, /*42 grid_head*/ false, /*43 grid_next*/ false,
+    /*44 shape_points*/ true, /*45 contacts*/ false,
 ];
 
 /// The coordinator's buffers and kernels, when any junction is coordinated.
@@ -277,15 +277,14 @@ impl Sim {
         let route_patch = init("route_patch", &vec![0u8; when(physical, (p.n_trips as u64 + 2 * REROUTE_LOG) * 8) as usize], storage | wgpu::BufferUsages::COPY_DST);
         let mirror = empty("mirror", when(physical, p.n_trips as u64 * MIRROR_BYTES));
         let energy = empty("energy", when(physical, p.n_trips as u64 * std::mem::size_of::<GpuTripEnergy>() as u64));
-        let junction_bid = empty("junction_bid", when(physical, p.n_lanes as u64 * 4));
-        // Per lane what is heading there, then the widest body on it, then how far bodies on it can reach.
-        let inbound = empty("inbound", when(physical, p.n_lanes as u64 * 12));
+        let ph_lane = empty("ph_lane", when(physical, p.n_lanes as u64 * 20));
         let zones = init("zones", bytemuck::cast_slice(&world.zones), storage);
         let speed_trace = init("speed_trace", bytemuck::cast_slice(&world.speed_trace), storage);
         let detecting = p.detect_every > 0;
         let poses = empty("poses", when(detecting, cap * POSE_BYTES));
         // The grid's heads, then each vehicle's next in its cell.
-        let grid_head = empty("grid_head", when(detecting, (p.grid_mask as u64 + 1 + cap) * 4));
+        let grid_head = empty("grid_head", when(detecting, (p.grid_mask as u64 + 1) * 4));
+        let grid_next = empty("grid_next", when(detecting, cap * 4));
         let shape_points = init("shape_points", bytemuck::cast_slice(&world.shape_points), storage);
         let contacts = empty("contacts", when(physical, CONTACT_LOG * std::mem::size_of::<GpuContact>() as u64));
 
@@ -362,9 +361,9 @@ impl Sim {
                 &params, &globals, &counters, &lanes, &edges, &links, &foes, &conflicts, &types, &routes,
                 &trips, &queues, &tls, &phases, &states, prev, cur, &incoming_links, &adv_flags, &lane_free, &seg,
                 &items, &slots, &link_count, &partial, &tail, &entrant, &trip_out, &series, &edge_acc,
-                &route_patch, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
-                &mirror, &energy, &junction_bid, &inbound, &contacts, &zones, &speed_trace, &shape_points,
-                &poses, &grid_head,
+                &ph_lane, &advice, &queue_trips, &claims, &last_detect, &lc_plan,
+                &mirror, &energy, &route_patch, &zones, &speed_trace,
+                &poses, &grid_head, &grid_next, &shape_points, &contacts,
             ];
             let mut entries: Vec<_> = list
                 .iter()
@@ -479,8 +478,8 @@ impl Sim {
         let shader = |name: &str, builtin: &'static str| -> String {
             std::env::var("CARS_SHADER_DIR").ok().and_then(|d| std::fs::read_to_string(format!("{d}/{name}")).ok()).unwrap_or_else(|| builtin.to_string())
         };
-        let (common, route, step, lc, detect) = (shader("common.wgsl", COMMON), shader("route.wgsl", ROUTE), shader("step.wgsl", STEP), shader("lc.wgsl", LC), shader("detect.wgsl", DETECT));
-        let main_src = format!("{common}\n{route}\n{step}\n{lc}\n{detect}");
+        let (common, route, step, lc) = (shader("common.wgsl", COMMON), shader("route.wgsl", ROUTE), shader("step.wgsl", STEP), shader("lc.wgsl", LC));
+        let main_src = format!("{common}\n{route}\n{step}\n{lc}\n{}", shader("detect.wgsl", DETECT));
         let main_module = gpu.shader("step", &main_src);
         let control_module = gpu.shader("control", &format!("{common}\n{CONTROL}"));
         let sort_module = gpu.shader("sort", &format!("{common}\n{SORT}"));

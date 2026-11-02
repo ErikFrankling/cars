@@ -40,7 +40,7 @@ Throughput levels off around 58 million vehicle updates per second with 830,000 
 
 - Motion is ballistic, vehicles have mass, power, drag and brake limits, and a closed-form safe speed bounds whatever the driver model asks. `--surface dry|wet|snow|ice`.
 - Junction lanes are claimed in parallel and arbitrated in the same step, so two bodies are not sent into one conflict area. Exit-clear applies to a share of human drivers, and to all automated ones.
-- Lane changes take time, with an image of the vehicle kept on the old lane until the body has left it.
+- Lane changes take time, with an image of the vehicle kept on the old lane until the body has left it. They finish before the lane ends, and below 0.5 m/s they go on whatever the forward speed.
 - A detector that shares nothing with the planner checks bodies in 2D at each step and only ever counts. Run output has contacts by kind and place, stuck vehicles and waiting cycles by place, and energy per trip.
 
 `research/physics-provenance.md` says for every rule and number whether it is established, adapted or invented, and from where. Invented ones are parameters: `--tune name=value`, swept in `scripts/physics_sensitivity.py`.

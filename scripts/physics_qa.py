@@ -11,6 +11,8 @@ Thresholds come from research/truth/11-vehicle-physics.md, which grades them: dr
 measured, comfort targets are design values. Nothing here decides what is acceptable.
 """
 import argparse
+import os
+import subprocess
 import json
 import math
 import re
@@ -648,7 +650,6 @@ def invariants(a, df, prev, steady, same_lane, lanes, out, interval, gaps, overl
     u = ((phys_bits >> 16) & 0x3fff) / 16383.0
     u0 = ((prev['phys'].to_numpy(dtype=float).astype(np.int64) >> 16) & 0x3fff) / 16383.0
     record('I11 phase monotonic', in_change, (u0 - u) - 1e-3)
-    record('I11 no progress at a stand', in_change & (v1 == 0) & (v0 == 0), (u - u0) - 1e-3)
     # I12: the old lane stays claimed until the body has left it. No body may be in that stretch.
     count('I12 occupancy of the old lane', 0, 0, is_hard=False, note='covered by the shadow in the kernel and by the 2D detector; FCD holds no shadows')
     # I13, I14, I17
@@ -734,6 +735,29 @@ def invariants(a, df, prev, steady, same_lane, lanes, out, interval, gaps, overl
     return hard
 
 
+def screen_jumps(net, trace, out, cars=None, slack=0.5):
+    """Each car, between consecutive frames: what is drawn against what it drove. A clip that jumps fails here."""
+    cars = cars or os.environ.get('CARS_BIN') or str(Path(__file__).resolve().parents[1] / 'target/release/cars')
+    poses = Path(out) / 'poses.csv'
+    subprocess.run([cars, 'replay', '--net', str(net), '--trace', str(trace), '--poses', str(poses)], check=True, capture_output=True)
+    d = pd.read_csv(poses).sort_values(['trip', 'time'])
+    same = d['trip'].values[1:] == d['trip'].values[:-1]
+    dt = np.diff(d['time'].values)
+    moved = np.hypot(np.diff(d['x'].values), np.diff(d['y'].values))
+    driven = 0.5 * (d['speed'].values[1:] + d['speed'].values[:-1]) * dt
+    # Sideways at the top of a real change, 1.3 m/s, is on top of what the speed says.
+    excess = moved - np.hypot(driven, 1.5 * dt)
+    head = np.arctan2(d['dy'].values, d['dx'].values)
+    turn = np.abs((np.diff(head) + np.pi) % (2 * np.pi) - np.pi)
+    jump = same & (dt > 0) & (excess > slack + 0.5 * driven)
+    spin = same & (dt > 0) & (turn / np.maximum(dt, 1e-3) > 1.0)
+    rows = d.iloc[1:].assign(moved=moved, driven=driven, excess=excess, turn_deg=np.degrees(turn), from_lane=d['lane'].values[:-1])
+    rows[jump | spin].to_csv(Path(out) / 'screen_jumps.csv', index=False, float_format='%.3f')
+    summary = dict(pairs=int((same & (dt > 0)).sum()), jumps=int(jump.sum()), worst_excess_m=float(excess[same].max()) if same.any() else 0.0,
+                   spins=int(spin.sum()), worst_turn_deg_per_s=float((turn[same] / np.maximum(dt[same], 1e-3)).max() * 180 / np.pi) if same.any() else 0.0)
+    return summary
+
+
 def table_md(frame):
     return table(frame)
 
@@ -747,6 +771,8 @@ def main():
     p.add_argument('--begin', type=float, help='with --trace, the first time to look at')
     p.add_argument('--end', type=float, help='with --trace, the last time to look at')
     p.add_argument('--out', required=True)
+    p.add_argument('--screen', action='store_true', help='with --trace, also check every drawn move against the speed, and exit non-zero on a jump')
+    p.add_argument('--cars', help='the binary for --screen. Default CARS_BIN, then target/release/cars')
     p.add_argument('--log', help='stderr of cars run, for its counters')
     p.add_argument('--top', type=int, default=20, help='rows in each table of the report')
     p.add_argument('--pair-limit', type=int, default=3_000_000)
