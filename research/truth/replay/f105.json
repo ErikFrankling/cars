@@ -1,0 +1,16 @@
+{
+ "sumo_s0": {
+  "windows": 4761,
+  "python_krauss_default": 6.593604719693878,
+  "gpu": 6.594497552451558,
+  "python_all_windows": 6.505272622457625,
+  "mean_abs_gpu_minus_python_spacing": 0.019835466765834284
+ },
+ "main_s0": {
+  "windows": 4955,
+  "python_krauss_default": 6.505272622457624,
+  "gpu": 6.250848726279006,
+  "python_all_windows": 6.505272622457625,
+  "mean_abs_gpu_minus_python_spacing": 1.2184056386346755
+ }
+}
