@@ -34,5 +34,5 @@ Physical motion (Krauss with the physics certificate, `mu > 0`) with decisions o
 | Missed turns `hu_reroute` (mean 120 s) | Main's `ph_reroute` (60 s) passes C-S3 and C-S4, also 43-60 m back | C-S3, C-S4 |
 | Offset stop points (Trafikverket) | C-S5 passes without them (worst swap 13 s) | C-S5 |
 | Yellow decision `hu_can_stop` | Physical's `ph_yellow_go` uses the same report 05 logistic | none |
-| Corner speed `hu_corner` | Physical's curve limit gives 2.9 m/s at the 5.6 m corner of G1, report 19 measures 2.8 at 5-8 m | G1 F134 |
+| Corner speed `hu_corner` | Physical's curve limit gives 2.9 m/s at the 5.6 m corner of G1, report 19 measures 2.8 at 5-8 m | G1 F234 |
 | Swedish free speed table | Region only | none |

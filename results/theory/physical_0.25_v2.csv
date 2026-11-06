@@ -1,0 +1,55 @@
+scene,id,quantity,forecast,measured,spread,tolerance,verdict,seeds,driver,dt
+L7,F007,"lane: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+L1,F001,capacity 50 km/h T 1.4 s 7.5 (veh/h),1797,1780,1.73e+03..1.8e+03,3%,pass,"L1 arrivals 0-4, sim 1",physical,0.25
+L1,F002,capacity 100 km/h (veh/h),2076,2141,2.09e+03..2.18e+03,3%,FAIL,"L1 arrivals 0-4, sim 1",physical,0.25
+L1,F003,capacity 30 km/h (veh/h),1523,1505,1.48e+03..1.54e+03,3%,pass,"L1 arrivals 0-4, sim 1",physical,0.25
+L1,F289,saturation 50 km/h: real read 1750 sweep 1640-1900,1750,1780,,1640-1900,pass,"L1 arrivals 0-4, sim 1",physical,0.25
+L3,F004,jam spacing (m),7.5,7.57,7.56..7.57,3%,pass,"L1 arrivals 0-4, sim 1",physical,0.25
+L4,F005,start wave (km/h),27,24.3,22.7..25.3,10%,FAIL,"L1 arrivals 0-4, sim 1",physical,0.25
+L4,,T from s/w (s),,1.12,,,info,,physical,0.25
+L1,,"F250 Newell consistency 1/(s/w + s/v) = 2159: this driver starts at start_react, not T, so it is no check of the code",,1780,,,info,,physical,0.25
+L7,F007,distance: trajectories against edge counters (rel),exact,0.00959,,1%,pass,"L1 arrivals 0-4, sim 1",physical,0.25
+L7,F007,"signal: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+S1,F008,saturation headway from car 10 (s),1.94,2.02,1.92..2.16,5%,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S1,,speed at the line from car 11 on (km/h),,39,,,info,,physical,0.25
+S1,,first car stop distance d0 (m),,1.5,,,info,,physical,0.25
+S2,F009,"t1 after green, own reactions",2.91,2.65,2.64..2.67,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 2, own reactions and E[T]",2.87,2.92,2.88..2.98,0.2 s,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 3, own reactions and E[T]",2.44,2.31,2.21..2.42,0.2 s,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 4, own reactions and E[T]",2.27,2.04,1.94..2.15,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 5, own reactions and E[T]",2.17,2.1,2..2.45,0.2 s,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 6, own reactions and E[T]",2.1,1.93,1.83..2.05,0.2 s,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 7, own reactions and E[T]",2.04,1.8,1.61..1.98,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 8, own reactions and E[T]",2,1.89,1.59..2.17,0.2 s,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 9, own reactions and E[T]",2,1.76,1.54..1.94,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.25
+S3,F010,start-up lost time first four cars 50 km/h (s),2.74,1.85,1.17..2.31,0.5 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.25
+L7,F007,"ring: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+L2,,"P of the ring (m), cars placed at N=100",,"999, 100",,,info,,physical,0.25
+L2,,q(k): 15:749 25:1122 33:1549 37:1728 41:1696 50:1524 67:1220 83:908 100:598,,0,,,info,,physical,0.25
+L2,F251,critical density 1/(s + v E[T]),35.9,37.3,,5%,pass,"L2 3 per density, sim 1",physical,0.25
+L2,F252,peak ring flow 1/(E[T] + s/v),1796,1742,1.71e+03..1.78e+03,5%,pass,"L2 3 per density, sim 1",physical,0.25
+L2,F253,"congested speed at spacing 10 m, (spacing-s)/E[T]",1.71,1.66,1.63..1.72,5%,pass,"L2 3 per density, sim 1",physical,0.25
+L2,F253,"congested speed at spacing 12 m, (spacing-s)/E[T]",3.07,3.04,2.96..3.17,5%,pass,"L2 3 per density, sim 1",physical,0.25
+L2,F253,"congested speed at spacing 15 m, (spacing-s)/E[T]",5.12,5.06,4.85..5.28,5%,pass,"L2 3 per density, sim 1",physical,0.25
+L2,F253,"congested speed at spacing 20 m, (spacing-s)/E[T]",8.54,8.46,8.31..8.71,5%,pass,"L2 3 per density, sim 1",physical,0.25
+L7,F007,"wave: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+W1,F101,"disturbance moves upstream at s/E[T] (km/h, ground)",18.4,22.9,20.8..26.1,15%,FAIL,"W1 arrivals 0-4, sim 1",physical,0.25
+W1,F102,car 30 min speed less leader min speed (m/s): no growth,-0.5,5.07,4.78..5.3,>= one-sided,pass,"W1 arrivals 0-4, sim 1",physical,0.25
+W1,,"lowest speed of car 30 (m/s), leader 3",,8,,,info,,physical,0.25
+L7,F007,"give: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+G1,F016,"HBS right, major 0",1200,958,948..965,10%,FAIL,"G10 arrivals 0-4, sim 1",physical,0.25
+G1,F016,"HBS right, major 400",736,360,314..418,10%,FAIL,"G1400 arrivals 0-4, sim 1",physical,0.25
+G1,F016,"HBS right, major 800",451,135,110..158,10%,FAIL,"G1800 arrivals 0-4, sim 1",physical,0.25
+G1,F016,"HBS right, major 1200",277,44.6,31.2..60,10%,FAIL,"G11200 arrivals 0-4, sim 1",physical,0.25
+G1,,capacity at major 0 400 800 1200 (F017 report 23 816 474 279 162; F018 its tf fixed 1200 696 404 234),,958 360 135 45,,,info,,physical,0.25
+G1,F258,follow-up time logged in one gap (s),3,4.6,3.73..6.81,10%,FAIL,G1 all,physical,0.25
+G1,F103,"Siegloch at own tc 5.9 tf 4.60, major 0",783,958,948..965,10%,FAIL,"G10 arrivals 0-4, sim 1",physical,0.25
+G1,F103,"Siegloch at own tc 5.9 tf 4.60, major 400",525,360,314..418,10%,FAIL,"G1400 arrivals 0-4, sim 1",physical,0.25
+G1,F103,"Siegloch at own tc 5.9 tf 4.60, major 800",352,135,110..158,10%,FAIL,"G1800 arrivals 0-4, sim 1",physical,0.25
+G1,F103,"Siegloch at own tc 5.9 tf 4.60, major 1200",236,44.6,31.2..60,10%,FAIL,"G11200 arrivals 0-4, sim 1",physical,0.25
+G1,F104,"follow-up from own following: E[T] + s/v_turn, v_turn 3.19",3.82,4.6,3.73..6.81,10%,FAIL,G1 all,physical,0.25
+G1,F288,"major delivered / offered, major 400",1,0.972,0.9..1.06,5%,pass,"G1400 arrivals 0-4, sim 1",physical,0.25
+G1,F288,"major delivered / offered, major 800",1,0.983,0.957..1.03,5%,pass,"G1800 arrivals 0-4, sim 1",physical,0.25
+G1,F288,"major delivered / offered, major 1200",1,0.972,0.884..1.05,5%,pass,"G11200 arrivals 0-4, sim 1",physical,0.25
+G1,,tf by major flow: 0:3.76 400:4.24 800:4.46 1200:5.93,,0,,,info,,physical,0.25
+G4,F257,critical gap recovered from gaps offered and taken right from minor (s),5.9,9.85,9.41..10.1,0.3 s,FAIL,G1 q 400 800,physical,0.25

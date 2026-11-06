@@ -305,7 +305,7 @@ def seedtag(scene, n=SEEDS):
 
 def own(st):
     """The driver's own numbers from the batches before: saturation from S1, lost time from S3, s and w from L3 and L4.
-    A forecast that follows from capacity uses these, so one fault shows as one fail; realism is F089, F090, F001-F005."""
+    A forecast that follows from capacity uses these, so one fault shows as one fail; realism is F289, F290, F001-F005."""
     S = 3600 / st['hs'] if st.get('hs') else 1800.0
     s = st.get('s') if np.isfinite(st.get('s', np.nan)) else 7.5
     w = st.get('w') if np.isfinite(st.get('w', np.nan)) else 19.3
@@ -444,7 +444,7 @@ class Lane:
         book.check('L1', 'F002', 0, caps[100], seeds=tag)
         book.check('L1', 'F003', 0, caps[30], seeds=tag)
         m = float(np.mean(caps[50]))
-        book.verdict('L1', 'F089', 'saturation 50 km/h: real read 1750 sweep 1640-1900', '1750', fmt(m), '1640-1900', 1640 <= m <= 1900, seeds=tag)
+        book.verdict('L1', 'F289', 'saturation 50 km/h: real read 1750 sweep 1640-1900', '1750', fmt(m), '1640-1900', 1640 <= m <= 1900, seeds=tag)
         book.check('L3', 'F004', 0, spacing, seeds=tag)
         book.check('L4', 'F005', 0, wave, seeds=tag)
         st['s'] = float(np.mean(spacing)) if spacing else float('nan')
@@ -453,7 +453,7 @@ class Lane:
         st['T'] = T
         book.info('L4', 'T from s/w (s)', T)
         self_cap = 3600 / (T + st['s'] / V50)
-        book.info('L1', f'F050 Newell consistency 1/(s/w + s/v) = {self_cap:.0f}: this driver starts at start_react, not T, so it is no check of the code', float(np.mean(caps[50])))
+        book.info('L1', f'F250 Newell consistency 1/(s/w + s/v) = {self_cap:.0f}: this driver starts at start_react, not T, so it is no check of the code', float(np.mean(caps[50])))
         # L7: instrument agrees with trajectories, and nobody is lost
         e = run.edges()
         worst = 0.0
@@ -530,8 +530,8 @@ class Bottleneck:
         o = own(st)
         c = float(np.mean(cap)) if cap else float('nan')
         k2 = o['kj'] * 1000 - c / (o['w'] * 3.6)
-        book.check('L6', 'F054', 0, u, quantity=f'queue tail against the bottleneck it has, qa 900 c {c:.0f} (km/h)', forecast=(900 - c) / (k2 - 900 / (V50 * 3.6)), seeds=seedtag('L6'))
-        book.check('L6', 'F096', 0, cap, seeds=seedtag('L6'))
+        book.check('L6', 'F254', 0, u, quantity=f'queue tail against the bottleneck it has, qa 900 c {c:.0f} (km/h)', forecast=(900 - c) / (k2 - 900 / (V50 * 3.6)), seeds=seedtag('L6'))
+        book.check('L6', 'F296', 0, cap, seeds=seedtag('L6'))
 
 
 def ring_cars(c, N, P, edges, repeat, vtype='car'):
@@ -588,13 +588,13 @@ class Ring:
         vf = (free.q / free.k).mean()
         pc = np.polyfit(cong.k, cong.q, 1) if len(cong) > 2 else (float('nan'), float('nan'))
         kc = pc[1] / (vf - pc[0])
-        book.check('L2', 'F051', 0, [kc], quantity='critical density 1/(s + v E[T])', forecast=1000 / (7.5 + V50 * E_T), seeds='L2 3 per density, sim 1')
-        book.check('L2', 'F052', 0, d.groupby('r').q.max().values, quantity='peak ring flow 1/(E[T] + s/v)', forecast=3600 / (E_T + 7.5 / V50), seeds='L2 3 per density, sim 1')
+        book.check('L2', 'F251', 0, [kc], quantity='critical density 1/(s + v E[T])', forecast=1000 / (7.5 + V50 * E_T), seeds='L2 3 per density, sim 1')
+        book.check('L2', 'F252', 0, d.groupby('r').q.max().values, quantity='peak ring flow 1/(E[T] + s/v)', forecast=3600 / (E_T + 7.5 / V50), seeds='L2 3 per density, sim 1')
         spac = {10: 100, 12: 83, 15: 67, 20: 50}
         vs = [d[d.N == spac[x]].v.values for x in (10, 12, 15, 20)]
         for i, v in enumerate(vs):
             sp = [10, 12, 15, 20][i]
-            book.check('L2', 'F053', i, v, quantity=f'congested speed at spacing {sp} m, (spacing-s)/E[T]', forecast=(sp - 7.5) / E_T, seeds='L2 3 per density, sim 1')
+            book.check('L2', 'F253', i, v, quantity=f'congested speed at spacing {sp} m, (spacing-s)/E[T]', forecast=(sp - 7.5) / E_T, seeds='L2 3 per density, sim 1')
 
 
 # --- A wave: a platoon behind a leader that brakes once (Hickert et al. 2026: a wave result moved between dt 0.5 and 0.55)
@@ -654,8 +654,8 @@ class Wave:
             amp.append(x[-1, 3] - x[0, 3])
             mins.append(x[-1, 3])
         w_own = 7.5 / (1.4 * math.exp(0.3 ** 2 / 2)) * 3.6
-        book.check('W1', 'F131', 0, spd, quantity='disturbance moves upstream at s/E[T] (km/h, ground)', forecast=w_own, seeds=seedtag('W1'))
-        book.check('W1', 'F132', 0, amp, quantity='car 30 min speed less leader min speed (m/s): no growth', seeds=seedtag('W1'), mode='low')
+        book.check('W1', 'F231', 0, spd, quantity='disturbance moves upstream at s/E[T] (km/h, ground)', forecast=w_own, seeds=seedtag('W1'))
+        book.check('W1', 'F232', 0, amp, quantity='car 30 min speed less leader min speed (m/s): no growth', seeds=seedtag('W1'), mode='low')
         book.info('W1', 'lowest speed of car 30 (m/s), leader 3', float(np.mean(mins)) if mins else float('nan'))
 
 
@@ -743,7 +743,7 @@ class Sat:
             out.append(((t.arrival >= 450) & (t.arrival < 450 + 1350)).sum() * 3600 / 1350)
         o = own(st)
         book.check('S4', 'F011', 0, out, quantity='capacity from own S and lost time, S(G+y-l)/C', forecast=o['S'] * (43 - o['l']) / 90, seeds=seedtag('S4'))
-        book.verdict('S4', 'F090', 'capacity at real saturation', '778', fmt(float(np.mean(out))), '729-844', 729 <= np.mean(out) <= 844, seeds=seedtag('S4'))
+        book.verdict('S4', 'F290', 'capacity at real saturation', '778', fmt(float(np.mean(out))), '729-844', 729 <= np.mean(out) <= 844, seeds=seedtag('S4'))
         st['c'] = float(np.mean(out))
 
 
@@ -859,8 +859,8 @@ class Webster:
             n1 = np.mean([(sched <= t).sum() - (tr.arrival <= t).sum() for t in np.arange(1710, 1800, 10)])
             cap = st.get('c', 800.0)
             growth.append((n1 - n0) / ((960 - cap) * 1410 / 3600))
-        book.check('N8', 'F077', 0, ratios, quantity='x .8: queue second half over first half', seeds=seedtag('N8640'))
-        book.check('N8', 'F077', 1, growth, quantity='x 1.2: growth over Q-c', seeds=seedtag('N8960'))
+        book.check('N8', 'F277', 0, ratios, quantity='x .8: queue second half over first half', seeds=seedtag('N8640'))
+        book.check('N8', 'F277', 1, growth, quantity='x 1.2: growth over Q-c', seeds=seedtag('N8960'))
 
 
 @scene('S8', 'signal')
@@ -881,7 +881,7 @@ class Over:
         for i, q in enumerate((720, 900)):
             out = [delay_of(run, f'S8q{q}r{r}', st['s8'][f'S8q{q}r{r}'], tf, 0, 900)[0] for r in range(10)]
             fc = sig_forecast(q, o['S'], 43 - o['l'], kj=o['kj'], w=o['w'])
-            book.check('S8', 'F085', i, out, quantity=f'delay qa {q} 15 min, x {fc["x"]:.2f}', forecast=fc['akc'], seeds=seedtag(f'S8{q}', 10))
+            book.check('S8', 'F285', i, out, quantity=f'delay qa {q} 15 min, x {fc["x"]:.2f}', forecast=fc['akc'], seeds=seedtag(f'S8{q}', 10))
         gr = []
         for r in range(10):
             name = f'S8q900r{r}'
@@ -948,7 +948,7 @@ class Clones:
                 I.append(counts.var() / counts.mean())
                 d = delay_of(run, name, times, tf, 900, 8000)[0]
                 Q.append(qa / 3600 * (d - d1))
-            book.check('X1', 'F084', i, I, quantity=f'input var/mean, copies {n}', seeds=seedtag(f'X1{n}', X1_SEEDS))
+            book.check('X1', 'F284', i, I, quantity=f'input var/mean, copies {n}', seeds=seedtag(f'X1{n}', X1_SEEDS))
             fq = np.mean(I) * 0.85 ** 2 / (2 * 0.15) - qa / 3600 * d3
             book.info('X1', f'F039 sizing: random queue, copies {n} (cars); I x2/2(1-x) - q d3 = {fq:.1f}', float(np.mean(Q)), spread=f'{min(Q):.3g}..{max(Q):.3g}')
 
@@ -1070,11 +1070,11 @@ class Give:
             book.check('G1', 'F016', i, caps[q], quantity=f'HBS right, major {q}', seeds=tag)
         book.info('G1', 'capacity at major 0 400 800 1200 (F017 report 23 816 474 279 162; F018 its tf fixed 1200 696 404 234)', ' '.join(f'{np.mean(caps[q]):.0f}' for q in Give.QS))
         all_tf = np.array([x for v in tfs.values() for x in v if np.isfinite(x)])
-        book.check('G1', 'F058', 0, all_tf, seeds='G1 all')
+        book.check('G1', 'F258', 0, all_tf, seeds='G1 all')
         tf_own = float(np.mean(all_tf))
         for i, q in enumerate(Give.QS):
             fc = 3600 / tf_own * math.exp(-q * (5.9 - tf_own / 2) / 3600)
-            book.check('G1', 'F133', i, caps[q], quantity=f'Siegloch at own tc 5.9 tf {tf_own:.2f}, major {q}', forecast=fc, tol='10%', seeds=seedtag(f'G1{q}'))
+            book.check('G1', 'F233', i, caps[q], quantity=f'Siegloch at own tc 5.9 tf {tf_own:.2f}, major {q}', forecast=fc, tol='10%', seeds=seedtag(f'G1{q}'))
         vt = []
         for r in range(SEEDS):
             f = run.cell(f'G1q0r{r}')
@@ -1082,15 +1082,15 @@ class Give:
             if len(z):
                 vt.append(float(z.speed.median()))
         if vt:
-            book.check('G1', 'F134', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: E[T] + s/v_turn, v_turn {np.mean(vt):.2f}', forecast=1.4 * math.exp(0.045) + 7.5 / np.mean(vt), tol='10%', seeds='G1 all')
+            book.check('G1', 'F234', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: E[T] + s/v_turn, v_turn {np.mean(vt):.2f}', forecast=1.4 * math.exp(0.045) + 7.5 / np.mean(vt), tol='10%', seeds='G1 all')
         for q in Give.QS[1:]:
             got = []
             for r in range(SEEDS):
                 major, _ = gaps_log(run, f'G1q{q}r{r}')
                 got.append(((major >= 300) & (major < 1800)).sum() * 3600 / 1500)
-            book.check('G1', 'F088', 0, np.array(got) / q, quantity=f'major delivered / offered, major {q}', seeds=seedtag(f'G1{q}'))
+            book.check('G1', 'F288', 0, np.array(got) / q, quantity=f'major delivered / offered, major {q}', seeds=seedtag(f'G1{q}'))
         book.info('G1', 'tf by major flow: ' + ' '.join(f'{q}:{np.nanmean(v):.2f}' for q, v in tfs.items()), 0.0)
-        book.check('G4', 'F057', 0, tc, seeds='G1 q 400 800')
+        book.check('G4', 'F257', 0, tc, seeds='G1 q 400 800')
 
 
 @scene('G2', 'give')
@@ -1108,7 +1108,7 @@ class Tanner:
             for r in range(SEEDS):
                 _, e = gaps_log(run, f'G2q{q}r{r}')
                 out.append(((e >= 300) & (e < 1800)).sum() * 3600 / 1500)
-            book.check('G2', 'F055', i, out, quantity=f'Tanner t_m 2, major {q}', seeds=seedtag(f'G2{q}'))
+            book.check('G2', 'F255', i, out, quantity=f'Tanner t_m 2, major {q}', seeds=seedtag(f'G2{q}'))
 
 
 @scene('G3', 'give')
@@ -1127,7 +1127,7 @@ class TwoMajor:
                 _, e = gaps_log(run, name, l)
                 tgt.append(((e >= 300) & (e < 1800)).sum() * 3600 / 1500)
         book.info('G3', 'minor through q 800: one major lane, two (veh/h); HBS 355', f'{np.mean(a):.0f}, {np.mean(b):.0f}')
-        book.check('G3', 'F056', 0, np.array(b) / np.maximum(np.mean(a), 1), seeds=seedtag('G3a') + '; G3b')
+        book.check('G3', 'F256', 0, np.array(b) / np.maximum(np.mean(a), 1), seeds=seedtag('G3a') + '; G3b')
 
 
 def cross(w, name, arms=('n', 's', 'e', 'w'), jtype='priority', L=200, major=('e', 'w')):
@@ -1175,8 +1175,8 @@ class Rank:
                 t = run.trips(name)
                 t = t[t.trip.str.contains(r'\.s')]
                 tgt.append(((t.arrival >= 300) & (t.arrival < 1800)).sum() * 3600 / 1500)
-        book.check('G5', 'F059', 0, a, seeds=seedtag('G5'))
-        book.check('G5', 'F060', 0, b, seeds=seedtag('G5b'))
+        book.check('G5', 'F259', 0, a, seeds=seedtag('G5'))
+        book.check('G5', 'F260', 0, b, seeds=seedtag('G5b'))
 
 
 @scene('G6', 'give')
@@ -1274,7 +1274,7 @@ class Roundabout:
                 t = run.trips(name)
                 t = t[t.trip.str.contains(r'\.s')]
                 out.append(((t.arrival >= 300) & (t.arrival < 1800)).sum() * 3600 / 1500)
-            book.check('G8', 'F061', i, out, quantity=f'roundabout entry, circulating {q}', seeds=seedtag(f'G8{q}'))
+            book.check('G8', 'F261', i, out, quantity=f'roundabout entry, circulating {q}', seeds=seedtag(f'G8{q}'))
 
 
 @scene('G9', 'give2')
@@ -1293,7 +1293,7 @@ class RBL:
         for r in range(SEEDS):
             t = run.trips(f'G9r{r}')
             out.append(((t.arrival >= 300) & (t.arrival < 1500)).sum() * 3 / 4)
-        book.check('G9', 'F062', 0, out, seeds=seedtag('G9'))
+        book.check('G9', 'F262', 0, out, seeds=seedtag('G9'))
 
 
 # --- Lane change
@@ -1376,7 +1376,7 @@ class LC1:
             passes.append(n / T)
         tag = seedtag('LC1')
         book.check('LC1', 'F021', 0, W, seeds=tag, mode='high')
-        book.check('LC1', 'F063', 0, passes, seeds=tag)
+        book.check('LC1', 'F263', 0, passes, seeds=tag)
         book.info('LC1', 'speed difference actually seen (m/s), forecast 3', float(np.mean(dv)) if dv else float('nan'))
 
 
@@ -1573,7 +1573,7 @@ class LC5:
         d10 = [1 - flow(f'LC5d10r{r}') / base for r in range(SEEDS)]
         book.info('LC5', 'target lane alone from a released queue (veh/h)', float(base))
         book.check('LC5', 'F026', 0, d5, seeds=seedtag('LC5'))
-        book.check('LC5', 'F064', 0, [np.mean(d10) / np.mean(d5)] if np.mean(d5) > 0.002 else [np.nan], seeds=seedtag('LC5'))
+        book.check('LC5', 'F264', 0, [np.mean(d10) / np.mean(d5)] if np.mean(d5) > 0.002 else [np.nan], seeds=seedtag('LC5'))
 
 
 @scene('LC6', 'drop')
@@ -1671,7 +1671,7 @@ class LC7:
         book.info('LC7', 'flow per lane ahead of the slow car by speed: ' + ' '.join(f'{k}:{x:.0f}' for k, x in zip(LC7.KMH, m)), 0.0)
         up = m[1:]
         ok = up[-1] >= 1.03 * up[0] and all(b >= 0.98 * a for a, b in zip(up[:-1], up[1:]))
-        book.verdict('LC7', 'F065', 'flow past the slow car rises with its speed', 'rises', f'{up[0]:.0f}..{up[-1]:.0f}', '3%', ok, seeds=seedtag('LC7'))
+        book.verdict('LC7', 'F265', 'flow past the slow car rises with its speed', 'rises', f'{up[0]:.0f}..{up[-1]:.0f}', '3%', ok, seeds=seedtag('LC7'))
 
 
 # --- Network
@@ -1715,14 +1715,14 @@ class N1:
         g = d.groupby('want').mean(numeric_only=True)
         book.info('N1', 'q(k): ' + ' '.join(f'{a:.0f}:{b:.0f}' for a, b in zip(g.k, g.q)), 0.0)
         o = own(st)
-        book.check('N1', 'F066', 0, d.groupby('r').q.max().values, quantity='signal ring top per lane: 0.95 S(G+y-l)/C, own S and l', forecast=0.95 * o['S'] * (24 - o['l']) / 60, seeds='N1 3 per density, sim 1')
+        book.check('N1', 'F266', 0, d.groupby('r').q.max().values, quantity='signal ring top per lane: 0.95 S(G+y-l)/C, own S and l', forecast=0.95 * o['S'] * (24 - o['l']) / 60, seeds='N1 3 per density, sim 1')
         top = g.q.max()
         on = g[g.q >= 0.95 * top]
-        book.check('N1', 'F067', 0, [on.k.min()], quantity='plateau from (veh/km)', seeds='N1')
-        book.check('N1', 'F067', 1, [on.k.max()], quantity='plateau to (veh/km)', seeds='N1')
+        book.check('N1', 'F267', 0, [on.k.min()], quantity='plateau from (veh/km)', seeds='N1')
+        book.check('N1', 'F267', 1, [on.k.max()], quantity='plateau to (veh/km)', seeds='N1')
         high = d[d.want == 130]
         kh = float(high.k.mean())
-        book.check('N1', 'F068', 0, high.q.values, quantity=f'flow at the densest ring, k {kh:.0f}: at most w(kj-k) + 10% of top', forecast=o['w'] * 3.6 * (o['kj'] * 1000 - kh) + 0.1 * top, seeds='N1', mode='high', tol='0')
+        book.check('N1', 'F268', 0, high.q.values, quantity=f'flow at the densest ring, k {kh:.0f}: at most w(kj-k) + 10% of top', forecast=o['w'] * 3.6 * (o['kj'] * 1000 - kh) + 0.1 * top, seeds='N1', mode='high', tol='0')
 
 
 @scene('N2', 'net_long')
@@ -1745,10 +1745,10 @@ class N2:
         for label in 'wa':
             d[label] = pd.DataFrame([dict(want=k, **sig_ring_measure(run, f'N2{label}k{k}', 8, 1200)) for k in N2.KS]).set_index('want')
             book.info('N2', f'{label} q(k): ' + ' '.join(f'{a:.0f}:{b:.0f}' for a, b in zip(d[label].k, d[label].q)), 0.0)
-        book.check('N2', 'F069', 0, [d['w'].v.loc[5]], quantity='free running, wave', seeds='N2')
-        book.check('N2', 'F069', 1, [d['a'].v.loc[5]], quantity='free running, anti-wave', seeds='N2')
+        book.check('N2', 'F269', 0, [d['w'].v.loc[5]], quantity='free running, wave', seeds='N2')
+        book.check('N2', 'F269', 1, [d['a'].v.loc[5]], quantity='free running, anti-wave', seeds='N2')
         o = own(st)
-        book.check('N2', 'F070', 0, [max(d['w'].q.max(), d['a'].q.max())], quantity='top flow per lane S(G+y-l)/C, own S and l', forecast=o['S'] * (43.5 - o['l']) / 90, seeds='N2')
+        book.check('N2', 'F270', 0, [max(d['w'].q.max(), d['a'].q.max())], quantity='top flow per lane S(G+y-l)/C, own S and l', forecast=o['S'] * (43.5 - o['l']) / 90, seeds='N2')
 
 
 def n3_cell(w, name, L, inflow, G, r):
@@ -1800,7 +1800,7 @@ class N3:
         a = [N3.spill(run, f'N3r{r}') for r in range(SEEDS)]
         b = [N3.spill(run, f'N3br{r}') for r in range(SEEDS)]
         o = own(st)
-        for lab, fid, res, L, q in (('N3', 'F029', a, 200, 800), ('N3b', 'F071', b, 400, 1200)):
+        for lab, fid, res, L, q in (('N3', 'F029', a, 200, 800), ('N3b', 'F271', b, 400, 1200)):
             c = float(np.mean([x[3] for x in res]))
             Ll = run.lane_len(f'{lab}r0' if lab == 'N3' else 'N3br0', 'lk_0')
             store = 2 * Ll * o['kj']
@@ -1829,7 +1829,7 @@ class N3:
             ent = float(((first >= 300) & (first < 1500)).sum())
             res.append((dN, ent - arrived_est))
         rr = np.array(res)
-        book.check('N6', 'F076', 0, rr[:, 1] / np.maximum(rr[:, 0], 1), quantity='predicted dN over measured dN (ratio), 20 min', forecast=1.0, tol='10%', seeds=seedtag('N3r'))
+        book.check('N6', 'F276', 0, rr[:, 1] / np.maximum(rr[:, 0], 1), quantity='predicted dN over measured dN (ratio), 20 min', forecast=1.0, tol='10%', seeds=seedtag('N3r'))
 
 
 @scene('N4', 'net')
@@ -1867,7 +1867,7 @@ class N4:
         share = np.array(ea) / (np.array(ea) + np.array(eb))
         book.check('N4', 'F030', 0, ea, quantity='merge both saturated: arm a (veh/h)', seeds=seedtag('N4'), tol='10%')
         book.check('N4', 'F030', 0, eb, quantity='merge both saturated: arm b (veh/h)', seeds=seedtag('N4'), tol='10%')
-        book.check('N4', 'F072', 0, ot, seeds=seedtag('N4b'))
+        book.check('N4', 'F272', 0, ot, seeds=seedtag('N4b'))
 
 
 def n5_cell(w, name, closed, beta=0.2, r=0, lanes=1):
@@ -1920,10 +1920,10 @@ class N5:
             x = e[(e.begin >= 300) & (e.begin < 1150)]
             c1.append(x[x.edge == f'N5c{r}.thr'].entered.sum() * 3600 / 850)
             c0.append(x[(x.edge == f'N5c{r}.ex1') & (x.begin >= 600)].entered.sum() * 3600 / 550)
-        book.check('N5', 'F073', 0, a, seeds=seedtag('N5a'))
-        book.check('N5', 'F074', 0, b, seeds=seedtag('N5b'), tol='30')
-        book.check('N5', 'F075', 0, c1, quantity='3 lanes, other two lanes (veh/h)', seeds=seedtag('N5c'))
-        book.check('N5', 'F075', 1, c0, quantity='3 lanes, closed lane (veh/h)', seeds=seedtag('N5c'), tol='30')
+        book.check('N5', 'F273', 0, a, seeds=seedtag('N5a'))
+        book.check('N5', 'F274', 0, b, seeds=seedtag('N5b'), tol='30')
+        book.check('N5', 'F275', 0, c1, quantity='3 lanes, other two lanes (veh/h)', seeds=seedtag('N5c'))
+        book.check('N5', 'F275', 1, c0, quantity='3 lanes, closed lane (veh/h)', seeds=seedtag('N5c'), tol='30')
 
 
 N9_CASES = (('z', 'offset 0', 0.0, 40, 1), ('o', 'opposed', 45.0, 40, 1), ('h', 'Hamburg +2 overlap .65', 2.0, 26, 1), ('i', 'Hamburg +2 end +4', 2.0, 42, 1),
@@ -1984,15 +1984,15 @@ class N9:
                 left.append(len(f[f.time >= 2890]))
             q = [f"{np.mean(out):.1f}"]
             if lanes == 1:
-                fid, i = {'z': ('F047', 0), 'o': ('F047', 1), 'h': ('F091', 0), 'i': ('F092', 0)}[label]
+                fid, i = {'z': ('F047', 0), 'o': ('F047', 1), 'h': ('F291', 0), 'i': ('F292', 0)}[label]
                 o = own(st)
                 g = {'z': 40, 'o': None, 'h': 26, 'i': 40}[label]
                 fc = o['S'] * (g + 3 - o['l']) / 3600 if g else 3.0
                 book.check('N9', fid, i, out, quantity=f'{text}: cars per cycle' + (', own S(g+y-l)' if g else ''), forecast=fc, seeds=seedtag('N9'))
             else:
-                book.check('N9', 'F095', 0, out, quantity=f'{text}: cars per cycle', seeds=seedtag(f'N9{label}'), mode='low', tol='0')
-            book.check('N9', 'F093', 0, holds, quantity=f'{text}: longest stand on link or approach (s)', seeds=seedtag('N9'), mode='high', tol='0')
-            book.check('N9', 'F094', 0, left, quantity=f'{text}: cars left {2890 - N9_END} s after the feed ends', seeds=seedtag('N9'), tol='0')
+                book.check('N9', 'F295', 0, out, quantity=f'{text}: cars per cycle', seeds=seedtag(f'N9{label}'), mode='low', tol='0')
+            book.check('N9', 'F293', 0, holds, quantity=f'{text}: longest stand on link or approach (s)', seeds=seedtag('N9'), mode='high', tol='0')
+            book.check('N9', 'F294', 0, left, quantity=f'{text}: cars left {2890 - N9_END} s after the feed ends', seeds=seedtag('N9'), tol='0')
             book.info('N9', f'{text}: flow late over early (1 = no decay); link lane (m)', f'{np.mean(trend):.2f}; {np.mean(L):.1f}')
 
 
@@ -2064,7 +2064,7 @@ class N10:
             book.check('N10', 'F049', 0, worst, quantity=f'{key}: longest standing still (s), limit 5 min', forecast=300.0, tol='0', mode='high', seeds=seedtag(f'N10{key}'))
             book.info('N10', f'{key}: longest on an internal lane (s)', float(np.max(ints)))
             if key == 'a':
-                book.check('N10', 'F087', 0, per, seeds=seedtag('N10a'), mode='low', tol='0')
+                book.check('N10', 'F287', 0, per, seeds=seedtag('N10a'), mode='low', tol='0')
 
 
 # --- C's scenes
@@ -2137,7 +2137,7 @@ class S2Off:
     def measure(run, book, st):
         res = s2_all(run, st, 'of')
         v = res[(40, 301.0)]
-        book.check('C-S2', 'F079', 0, [x[0] for x in v], quantity='N 40 of 301 m, exit clear off', tol='30', seeds=seedtag('C-S2'))
+        book.check('C-S2', 'F279', 0, [x[0] for x in v], quantity='N 40 of 301 m, exit clear off', tol='30', seeds=seedtag('C-S2'))
 
 
 def s3_cell(w, name, f_share, lanes=2, r=0, key='S3'):
@@ -2335,7 +2335,7 @@ class Abreast:
                     g = f[(f.trip == f'{name}.{h}') & (f.lane == f'{name}.{lane}')]
                     worst = max(worst, g.time.min() if len(g) else 1e4)
                 out.append(worst)
-        book.check('C-S5', 'F080', 0, [max(out)], quantity='both heads swapped by (s), worst of 10', tol='0', mode='high', seeds=seedtag('C-S5', 10))
+        book.check('C-S5', 'F280', 0, [max(out)], quantity='both heads swapped by (s), worst of 10', tol='0', mode='high', seeds=seedtag('C-S5', 10))
         book.info('C-S5', 'median swap time (s), I-80 median 22.6', float(np.median(out)))
 
 
@@ -2360,9 +2360,9 @@ class Yield:
                 a = np.sort(t.arrival.values)
                 caps.append(((a >= 300) & (a < 1500)).sum() * 3)
                 waits += list(np.diff(a[a >= 300]))
-            book.check('C-S7', 'F081', i, caps, quantity=f'minor through, major {q} (arrival count)', seeds=seedtag(f'CS7{q}'))
+            book.check('C-S7', 'F281', i, caps, quantity=f'minor through, major {q} (arrival count)', seeds=seedtag(f'CS7{q}'))
             w_ = np.array(waits) if waits else np.array([np.nan])
-            book.check('C-S7', 'F082', 0, [w_.max()], quantity=f'longest head wait, major {q} (s)', tol='0', mode='high', seeds=seedtag(f'CS7{q}'))
+            book.check('C-S7', 'F282', 0, [w_.max()], quantity=f'longest head wait, major {q} (s)', tol='0', mode='high', seeds=seedtag(f'CS7{q}'))
             if q == 1800:
                 p = float((w_ > 120).mean()) * 100
                 book.info('C-S7', f'P(head wait>120 s) at 1800, %: table fixed 4.3, falling 0.6 (n={len(w_)})', p)
@@ -2430,9 +2430,9 @@ def block_scene(batch_name, idx, label):
 
         @staticmethod
         def measure(run, book, st):
-            book.check('C-S8', 'F083', idx, [Block.flow(run, f'CS8{label}{r}', 1) for r in range(SEEDS)], quantity=f"cross capacity b {['0', '.75', '1'][idx]} (exit_comply 1-b)", seeds=seedtag('C-S8'))
+            book.check('C-S8', 'F283', idx, [Block.flow(run, f'CS8{label}{r}', 1) for r in range(SEEDS)], quantity=f"cross capacity b {['0', '.75', '1'][idx]} (exit_comply 1-b)", seeds=seedtag('C-S8'))
             if idx == 1:
-                book.check('C-S8', 'F083', 3, [Block.flow(run, f'CS8T{r}', 2) for r in range(SEEDS)], quantity='two lanes b .75, per lane', seeds=seedtag('C-S8'))
+                book.check('C-S8', 'F283', 3, [Block.flow(run, f'CS8T{r}', 2) for r in range(SEEDS)], quantity='two lanes b .75, per lane', seeds=seedtag('C-S8'))
     return B
 
 
@@ -2588,7 +2588,7 @@ class Grid:
             elif s == 0.25:
                 book.info('C-S0', f'{hdr} k .25 kj: theirs hours', txt)
             else:
-                book.verdict('C-S0', 'F078', f'{hdr} k .{int(s * 100)} kj: lock under 1 h', '< 1 h', txt, 'explain', len(finite) == len(v) and finite.max() <= 1.0, seeds=f'{label} 3 per (k,P_T), sim 1')
+                book.verdict('C-S0', 'F278', f'{hdr} k .{int(s * 100)} kj: lock under 1 h', '< 1 h', txt, 'explain', len(finite) == len(v) and finite.max() <= 1.0, seeds=f'{label} 3 per (k,P_T), sim 1')
 
 
 @scene('C-S0,N7', 'grid')

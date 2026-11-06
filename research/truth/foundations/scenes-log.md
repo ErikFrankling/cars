@@ -15,29 +15,29 @@ The first baseline (2 November) read 74/98 and 79/99. Most of the gain is scenes
 
 | Line | What was wrong | Now |
 |---|---|---|
-| F011-F015, F085, F047, F091, F092, F066, F070 | Every signal consequence used S 1,800 and g = G, so one wrong saturation failed ten scenes, and 1,800 isn't the real best read (1,750, R §2) | Consequences use the driver's own S (S1), lost time (S3), s and w (L3, L4): one fault, one fail. Realism stays in F089 (L1 against 1,640-1,900) and F090 (S4 against 729-844) |
+| F011-F015, F285, F047, F291, F292, F266, F270 | Every signal consequence used S 1,800 and g = G, so one wrong saturation failed ten scenes, and 1,800 isn't the real best read (1,750, R §2) | Consequences use the driver's own S (S1), lost time (S3), s and w (L3, L4): one fault, one fail. Realism stays in F289 (L1 against 1,640-1,900) and F290 (S4 against 729-844) |
 | F014 | Webster scored at x .9 where the driver's x was past its range | Scored only where x <= 0.9 |
 | F015 | (q - c) T is fluid; at x 1.02 randomness rules | Scored only at x >= 1.1 |
 | F017, F018 | Report 23's driver no longer exists; today's has t0 2.7 s at low major flow | Info rows; target is F016 |
 | F020 | Wait formula at HBS's c, not the driver's | Kimber-Hollis at the driver's own c (G1) |
 | F023 | B's stopped-gap formula is a floor at a real lane end that zips | One-sided; share F024 and holds F028 stay two-sided |
-| F029, F071 | Storage at jam spacing measured as a mean over green and red; c 720 fixed although the link merges two lanes into one; time to spill moved 30% per 3% of c | Most cars in the cycle of the spill; c measured on the scene |
+| F029, F271 | Storage at jam spacing measured as a mean over green and red; c 720 fixed although the link merges two lanes into one; time to spill moved 30% per 3% of c | Most cars in the cycle of the spill; c measured on the scene |
 | F032 | 40 cars at exactly jam spacing can't be inserted; band on 301 m was 40x too wide | 300 m case unscored; band 1.5 x w/P x slack |
 | F033, F034 | C's h 2 s against the scene's own 2.9 s; first S4 let heads change in gaps, so it wasn't C's scene | h from an f 0 cell; S4 rebuilt with a line and two changes needed; heads stand 43 m back |
-| F039, F084 | 30% on an order-of-magnitude formula, Webster's third term missing; var/mean from 5 draws | Sizing row; 10 draws |
-| F054, F096 | The scene sets a speed, not a flow | Shock at the scene's own c; c against Newell split off as F096 |
-| F063 | Counting passes until a change counts the pass that triggers it, and changers on the target lane | k dv of target cars |
-| F067, F068 | Plateau from plain cuts at fixed offsets, scene has random ones and a 0.95 rule; 130/km can't be placed | Granular cuts by the same rule, 44-71; bound w(kj - k) where the scene is |
-| F087 | 30 cars over 30.2 cycles read 0.992 | Whole cycles |
-| F025, F026, F064 | Insertion can't saturate a lane (1,516-1,622) | Released standing queues |
+| F039, F284 | 30% on an order-of-magnitude formula, Webster's third term missing; var/mean from 5 draws | Sizing row; 10 draws |
+| F254, F296 | The scene sets a speed, not a flow | Shock at the scene's own c; c against Newell split off as F296 |
+| F263 | Counting passes until a change counts the pass that triggers it, and changers on the target lane | k dv of target cars |
+| F267, F268 | Plateau from plain cuts at fixed offsets, scene has random ones and a 0.95 rule; 130/km can't be placed | Granular cuts by the same rule, 44-71; bound w(kj - k) where the scene is |
+| F287 | 30 cars over 30.2 cycles read 0.992 | Whole cycles |
+| F025, F026, F264 | Insertion can't saturate a lane (1,516-1,622) | Released standing queues |
 | F027 | Onset from a 2.5 km edge mean, 400 s late | Last 300 m, held 150 s |
 
 ### Fails of main's physical driver, by cause, smallest scale first
 
-1. **Time gap short and speed-dependent.** T 1.21 s from the start wave, 1.24 at 30 km/h, 1.48 at 100 against a constant 1.4 measured (B §1). L1 1,941/2,055/1,685 against 1,856/2,156/1,565, F089 1,941 over 1,900, L4 22.3 km/h, L2 kc 41 and speeds at 15-20 m, S4 884 over 844. One parameter family: Krauss tau and the certificate.
+1. **Time gap short and speed-dependent.** T 1.21 s from the start wave, 1.24 at 30 km/h, 1.48 at 100 against a constant 1.4 measured (B §1). L1 1,941/2,055/1,685 against 1,856/2,156/1,565, F289 1,941 over 1,900, L4 22.3 km/h, L2 kc 41 and speeds at 15-20 m, S4 884 over 844. One parameter family: Krauss tau and the certificate.
 2. **No start reaction at a green.** The first car crosses 0.24 s after green (d0 1.5 m) against 2.49 closed form and 3.62 measured. S2 t1, S3 lost time 0.5 against 2.74, and through it S5 (queue clears early) and S6.
-3. **Crawling flow.** 511 veh/h at 1.63 m/s against 600 (F096); one hole on a ring moves at 64% of s/T (C-S2). Krauss dawdling at low speed is the suspect.
-4. **Give-way gap is half of HBS.** `Link::tc` = TRVMB × 0.7 − 1.2 s, about 2.3 s for a right turn. Minors take 2.4 s gaps and the major brakes for them: major delivered .91-.94 (F088), minor through across 800 veh/h 1,441 against 355, rank 3 and 4 lefts 983/973 against 555/564, C-S7 1,537 against 277, Tanner high. Follow-up 3.97 s against 3.0 (G1 912 at no major). The two errors cancel near major 400, which is why G1 looked close.
+3. **Crawling flow.** 511 veh/h at 1.63 m/s against 600 (F296); one hole on a ring moves at 64% of s/T (C-S2). Krauss dawdling at low speed is the suspect.
+4. **Give-way gap is half of HBS.** `Link::tc` = TRVMB × 0.7 − 1.2 s, about 2.3 s for a right turn. Minors take 2.4 s gaps and the major brakes for them: major delivered .91-.94 (F288), minor through across 800 veh/h 1,441 against 355, rank 3 and 4 lefts 983/973 against 555/564, C-S7 1,537 against 277, Tanner high. Follow-up 3.97 s against 3.0 (G1 912 at no major). The two errors cancel near major 400, which is why G1 looked close.
 5. **Roundabout entry collapses** with circulating flow: 973/546/190/14 against 1,380/916/608/404. Not looked at yet.
 6. **Lane end.** The merger gets 2/3 of a saturated zip (F024, C-S6), heads wait up to 338 s at a lane end (LC8), a 100 km/h lane drop breaks down below its own discharge (LC6, −9%: merging at speed, not a capacity drop), voids cost 3x theory with no Δv² shape (LC5).
 7. **Network.** Merge 757/1,360 against 928/1,556 (N4), diverge 1,152 and 3,275 against 1,500 and 3,712 (N5), a two-lane link fills one lane first (N3 40 of 51 stored), two lanes with a lane wish on an opposed short link 8.2 per cycle against at least 13 (N9), `exit_comply` changes nothing in C-S8 (cause not found yet), priority grid locks at 0.2 kj in 5 of 6 runs while the signal grid doesn't lock at 0.3 (C-S0, to explain), N6 P/l 0.88 on both drivers.
