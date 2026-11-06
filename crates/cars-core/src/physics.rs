@@ -16,6 +16,8 @@ pub struct LanePhys {
     pub gz: f32,
     pub curve_v: f32,
     pub sqrt_r: f32,
+    /// Root of the radius a driver's path has: over a whole junction turn, over 30 m on a road. See report 19.
+    pub sqrt_path_r: f32,
     pub s_curve: f32,
     pub s_curve_end: f32,
     pub geom_length: f32,
@@ -68,6 +70,35 @@ const LATERAL_MEDIAN: f32 = 2.2;
 const MIN_RADIUS: f32 = 5.0;
 /// Road polylines have kinks a car steers through, so curvature is measured over 30 m. Report 19 cause 2.
 const CHORD_ROAD: f32 = 30.0;
+
+/// Map junctions are drawn 3 to 6 times tighter than cars drive, and a short chord turns each vertex of a polyline into
+/// a corner. So: a turn as one arc, its length over the angle it turns through; a road, the tightest over 30 m.
+fn path_radius(internal: bool, shape: &[[f32; 2]], cum: &[f32], geom: f32) -> f32 {
+    if internal {
+        let mut angle = 0.0f32;
+        for w in shape.windows(3) {
+            let a = (w[1][1] - w[0][1]).atan2(w[1][0] - w[0][0]);
+            let b = (w[2][1] - w[1][1]).atan2(w[2][0] - w[1][0]);
+            let mut d = b - a;
+            while d > std::f32::consts::PI {
+                d -= 2.0 * std::f32::consts::PI;
+            }
+            while d < -std::f32::consts::PI {
+                d += 2.0 * std::f32::consts::PI;
+            }
+            angle += d;
+        }
+        return if angle.abs() < 0.05 { 1e6 } else { geom / angle.abs() };
+    }
+    let half = 15.0f32.min(geom / 2.0);
+    let mut r = 1e6f32;
+    let mut s = half;
+    while s <= geom - half {
+        r = r.min(radius(point_at(shape, cum, s - half), point_at(shape, cum, s), point_at(shape, cum, s + half)));
+        s += 2.0;
+    }
+    r
+}
 
 pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
     net.lanes
@@ -126,6 +157,7 @@ pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
             }
             p.curve_v = (lateral_cap * tightest).sqrt();
             p.sqrt_r = tightest.sqrt();
+            p.sqrt_path_r = path_radius(net.edges[l.edge as usize].func == crate::net::EdgeFunc::Internal, &l.shape, &cum, geom).max(5.0).sqrt();
             p.s_curve = lo as f32 * scale;
             p.s_curve_end = (hi as f32 + 1.0) * scale;
             p
@@ -135,7 +167,8 @@ pub fn lanes(net: &Net, lateral_cap: f32) -> Vec<LanePhys> {
 
 /// Every pair of internal lanes of a junction that come within body reach of each other, and where.
 /// Symmetric by construction, from geometry alone, independent of the right-of-way tables.
-pub fn zones(net: &Net, topo: &Topology, reach: f32) -> Vec<Vec<GpuZone>> {
+/// `wide`: on real-width lanes two bodies need their own width to pass. The human driver was fitted without it.
+pub fn zones(net: &Net, topo: &Topology, reach: f32, wide: bool) -> Vec<Vec<GpuZone>> {
     let mut by_junction: FxHashMap<&str, Vec<u32>> = FxHashMap::default();
     for (li, l) in net.lanes.iter().enumerate() {
         if net.edges[l.edge as usize].func == EdgeFunc::Internal && l.shape.len() >= 2 {
@@ -173,7 +206,7 @@ pub fn zones(net: &Net, topo: &Topology, reach: f32) -> Vec<Vec<GpuZone>> {
                 let Some((a_in, a_out, d1)) = interval(net, &cum, a, b, reach) else { continue };
                 let Some((b_in, b_out, d2)) = interval(net, &cum, b, a, reach) else { continue };
                 let dist = d1.min(d2);
-                if keeps_apart(net, a, b, dist) {
+                if keeps_apart(net, a, b, dist, wide) {
                     continue;
                 }
                 out[a as usize].push(GpuZone { foe_lane: b, own_in: a_in, own_out: a_out, foe_in: b_in, foe_out: b_out, dist });
@@ -186,7 +219,7 @@ pub fn zones(net: &Net, topo: &Topology, reach: f32) -> Vec<Vec<GpuZone>> {
 
 /// Opposite directions that never touch, or lanes side by side by their own widths. On a narrow two-way street a
 /// zone would be a head-on standoff; drivers squeeze past there, and SUMO has no foe either.
-fn keeps_apart(net: &Net, a: u32, b: u32, dist: f32) -> bool {
+fn keeps_apart(net: &Net, a: u32, b: u32, dist: f32, wide: bool) -> bool {
     let (la, lb) = (&net.lanes[a as usize], &net.lanes[b as usize]);
     if dist >= 0.5 * (la.width + lb.width) - 0.05 {
         return true;
@@ -199,7 +232,7 @@ fn keeps_apart(net: &Net, a: u32, b: u32, dist: f32) -> bool {
     };
     let (ca, cb) = (chord(&la.shape), chord(&lb.shape));
     // Narrow lanes in the map squeeze past at 1.4 m; on real-width lanes two bodies need their own width.
-    let need = if la.width.min(lb.width) < 2.0 { 1.4 } else { 1.9 };
+    let need = if !wide || la.width.min(lb.width) < 2.0 { 1.4 } else { 1.9 };
     dist > need && ca.0 * cb.0 + ca.1 * cb.1 < -0.7
 }
 
@@ -255,8 +288,11 @@ pub fn lateral_offset(phys: u32, lane_width: f32, v_lat: f32) -> f32 {
         return 0.0;
     }
     let u = ((phys >> 16) & 0x3fff) as f32 / 16383.0;
-    let t = u * (lane_width / v_lat + 1.0);
-    let remain = lane_width - lateral_done(t, lane_width, v_lat);
+    let remain = if v_lat <= 0.0 {
+        lane_width * (1.0 - u * u * u * (10.0 + u * (6.0 * u - 15.0)))
+    } else {
+        lane_width - lateral_done(u * (lane_width / v_lat + 1.0), lane_width, v_lat)
+    };
     if dir == 1 { -remain } else { remain }
 }
 

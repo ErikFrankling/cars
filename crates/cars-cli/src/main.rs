@@ -1,5 +1,6 @@
 #![recursion_limit = "512"]
 use clap::{Parser, Subcommand};
+mod human_replay;
 mod av;
 mod dbgnet;
 mod junctions;
@@ -21,6 +22,8 @@ enum Command {
     Shot(record::Args),
     /// Draw a trace written by `cars run --trace`, with no simulation at all.
     Replay(replay::Args),
+    /// The human driver behind recorded leaders, for scripts/human_replay.py.
+    HumanReplay(human_replay::Args),
     /// List the busiest junctions of each kind.
     Junctions(junctions::Args),
     /// Run coordinated junctions and report flow, delay, stops, collisions and failures as JSON.
@@ -51,6 +54,7 @@ fn fail(name: &str, e: impl std::fmt::Display) -> ! {
 fn main() {
     match Args::parse().command {
         Command::Run(a) => run::run(a),
+        Command::HumanReplay(a) => human_replay::run(a),
         Command::Record(a) => {
             if let Err(e) = record::run(a, false) {
                 fail("record", e);

@@ -119,7 +119,8 @@ const fn every(func: &'static str, find: &'static str, with: &'static str) -> Pr
 
 const PROBES: &[Probe] = &[
     p("plan", "let ego = cur[i];", "let ego = cur[i]; why_begin(i);"),
-    p("plan", "pl_v = min(max_v, lane_max);", "pl_v = min(max_v, lane_max); why_start(max_v, lane_max);"),
+    p("plan", "pl_v = min(max_v + max(pl_bias, 0.0), lane_max);", "pl_v = min(max_v + max(pl_bias, 0.0), lane_max); why_start(max_v, lane_max);"),
+    p("plan", "pl_v = min(pl_v, va);\n                pl_pass = min(pl_pass, va);", "why_lim_k(K_CURVE, va); pl_v = min(pl_v, va);\n                pl_pass = min(pl_pass, va);"),
     p("adapt_to_lane", "adapt_to_leader(gap, seen, l_len, lead.speed", "why_who(lead.trip, first); adapt_to_leader(gap, seen, l_len, lead.speed"),
     p("adapt_to_lane", "adapt_to_leader(gap, seen, l_len, unpack_speed(p)", "why_who_tail(lane); adapt_to_leader(gap, seen, l_len, unpack_speed(p)"),
     p("adapt_to_leader", "pl_v = min(pl_v, vsafe);", "why_lim(vsafe, gap, ls); pl_v = min(pl_v, vsafe);"),
@@ -128,7 +129,7 @@ const PROBES: &[Probe] = &[
     p("check_link_leader", "adapt_to_junction_leader(gap, false,", "why_who_foe_tail(cf.foe_lane); adapt_to_junction_leader(gap, false,"),
     p("check_link_leader", "pl_v = max(pl_v, items[pl_base + pl_n - 1u].v_wait);", "pl_v = max(pl_v, items[pl_base + pl_n - 1u].v_wait); why_floor();"),
     p("plan", "items[last].v_wait = min(items[last].v_wait, pl_v);", "why_wait_lower(last); items[last].v_wait = min(items[last].v_wait, pl_v);"),
-    p("plan", "pl_v = min(pl_v, va);", "why_lim_k(K_ARRIVAL, va); pl_v = min(pl_v, va);"),
+    p("plan", "pl_v = min(pl_v, va);\n            if (pl_n > 0u) { adapt_leave(pl_base + pl_n - 1u, va); }\n            push_item(NONE", "why_lim_k(K_ARRIVAL, va); pl_v = min(pl_v, va);\n            if (pl_n > 0u) { adapt_leave(pl_base + pl_n - 1u, va); }\n            push_item(NONE"),
     p("plan", "pl_v = min(va, pl_v);\n            push_item(NONE", "why_lim_k(K_LANE_END, va); wy_wanted = routes[route_i + 1u]; pl_v = min(va, pl_v);\n            push_item(NONE"),
     p("plan", "pl_v_wait = min(pl_v, stop_v);", "pl_v_wait = min(pl_v, stop_v); why_stop(state, stop_v, link);"),
     p("plan", "pl_v = min(va, pl_v);\n        let len", "why_next_lane(next_lane, va); pl_v = min(va, pl_v);\n        let len"),

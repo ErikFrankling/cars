@@ -12,12 +12,12 @@ import struct
 import numpy as np
 import pandas as pd
 
-MAGIC = b'CARSTRC1'
+MAGIC = b'CARSTRC2'
 FRAME = b'TRFR'
 NAME_LANE = 1 << 31
 NONE_LANE = 0xffffff
 LANE_CHANGED, TELEPORT, COLLISION, WILL_PASS, HAVE_TO_WAIT, WANT_LEFT, WANT_RIGHT, ON_JUNCTION = (1 << i for i in range(8))
-RECORD = np.dtype([('trip_flags', '<u4'), ('lane_type', '<u4'), ('prev_wait', '<u4'), ('pos_link', '<u4'), ('acc', '<i2'), ('speed', '<u2')])
+RECORD = np.dtype([('trip_flags', '<u4'), ('lane_type', '<u4'), ('prev_wait', '<u4'), ('pos_link', '<u4'), ('acc', '<i2'), ('speed', '<u2'), ('lat', '<i2'), ('pad', '<u2')])
 
 
 class Trace:
