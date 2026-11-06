@@ -279,6 +279,10 @@ def build(dr=DRONE, day=DAY, hh=HH):
                 dropped += 1
                 continue
             sim_started.add(g.vid.iloc[0]); trips_mix.append(dict(row, kind='drv'))
+            # In view at the start: forced in at its recorded state (a recorded gap is never refused), then the
+            # driver has it. Later entries insert normally and wait when blocked; the delay is a result.
+            if key[1] <= t0 + 2.0:
+                tracks_mix.append((tid, key[1], KEY_DT, key[1] + 0.5 * KEY_DT, key[4][:2], key[5][:2], key[6][:2], key[7][:2]))
         else:
             tracks_mix.append(key); trips_mix.append(dict(row, kind='rep'))
     df[['vid', 'piece', 'ti', 'type', 'lane', 'internal', 's', 'lat', 'x', 'y', 'xf', 'yf', 'v', 'L']].to_csv(f'{D}/matched.csv.gz', index=False)
@@ -340,6 +344,33 @@ def f100(dr=DRONE, day=DAY, hh=HH, gpu=False, dt=0.2):
     json.dump(res, open(os.path.join(REPO, 'research/truth/replay', f'f100_pneuma_d{dr}_{day}_{hh}.json'), 'w'), indent=1)
 
 
+def mix(dr=DRONE, day=DAY, hh=HH, seeds=range(5), gpu=True, dt=0.25):
+    """F515: the mix scene run as a harness check."""
+    import overlaps
+    D = outdir(dr, day, hh); meta = json.load(open(f'{D}/scene.json'))
+    res = {}
+    for sd in seeds:
+        fcd = f'{D}/mix_s{sd}.fcd.csv'
+        args = ['--net', f'{D}/net.xml', '--additional', f'{D}/tls.add.xml', '--routes', f'{D}/routes_mix.xml', '--replay', f'{D}/mix.rpl', '--dt', dt,
+                '--begin', meta['begin'], '--end', meta['end'], '--seed', sd, '--time-to-teleport', 0, '--static-tls', '--fcd', fcd, '--fcd-interval', 1.0]
+        log = run_cars(args, gpu=gpu, log=f'{D}/mix_s{sd}.log')
+        import xml.etree.ElementTree as ET
+        sim = {v.get('id'): float(v.get('depart')) for v in ET.parse(f'{D}/routes_mix.xml').getroot().iter('vehicle') if v.get('type') == 'drv'}
+        f = pd.read_csv(fcd, usecols=['time', 'trip', 'lane', 'pos', 'speed', 'length'])
+        fs = f[f.trip.isin(sim)]
+        first = fs.groupby('trip').time.min(); last = fs.groupby('trip').time.max()
+        delay = np.array([first[t] - sim[t] for t in first.index])
+        ov = overlaps.find(f, pd.DataFrame(dict(trip=list(sim), sim=True)))
+        ended, pairs = len(ov['first_overlap_with_replayed']), ov['pairs_by_kind']
+        res[sd] = dict(simulated=len(sim), entered=int(len(first)), entered_pct=round(100 * len(first) / len(sim), 2),
+                       entry_delay_s=dict(p50=round(float(np.median(delay)), 2), p95=round(float(np.percentile(delay, 95)), 2), max=round(float(delay.max()), 2)),
+                       on_net_at_end=int((last >= meta['end'] - 1.5).sum()), on_net_at_end_pct=round(100 * float((last >= meta['end'] - 1.5).mean()), 2),
+                       log=[l for l in log.splitlines() if l.startswith('replay') or 'collisions' in l or l.startswith('wall')],
+                       sim_cars_meeting_replayed=ended, overlap_pairs=pairs)
+        print(sd, json.dumps({k: v for k, v in res[sd].items() if k != 'log'}), flush=True)
+    json.dump(res, open(os.path.join(REPO, 'research/truth/replay', f'f515_pneuma_d{dr}_{day}_{hh}.json'), 'w'), indent=1)
+
+
 if __name__ == '__main__':
     c = sys.argv[1]
     a = [x for x in sys.argv[2:] if not x.startswith('--')]
@@ -348,3 +379,5 @@ if __name__ == '__main__':
         build(dr, day, hh)
     elif c == 'f100':
         f100(dr, day, hh, '--gpu' in sys.argv)
+    elif c == 'mix':
+        mix(dr, day, hh)
