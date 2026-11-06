@@ -8,8 +8,8 @@ Good science: a simulator whose every behaviour is tested against recordings whe
 ## Tiers
 | Tier | State | Number that says so |
 |---|---|---|
-| T0 Verification | Running: theory scenes, one driver, frozen time step | Scenes passing; baseline 74 pass, 98 fail (physical), 79, 99 (human) |
-| T1 One driver | Harness merged (`replay/RESULTS.md`). Driver's parts measured (`measure/DRIVER.md`, held-out list in `measure/HOLDOUT.md`). Next: build the driver from that table, test on the held-out recordings | Main's driver fails: 30 s spacing error 6.30 m; classifier 0.89 against a real floor of 0.64-0.68; next-second response 0.68 m/s, worse than constant speed (0.37). It steers to its own 1 s gap; real followers keep 2.3 s and let it drift |
+| T0 Verification | One driver merged, dt frozen at 0.25 s (`foundations/scenes-log.md` §3, `parameters.md`) | 124 pass, 62 fail. Open code faults: zipper gives one arm everything; roundabout entry collapses; give-way 2 s too careful; lane drop at 100 km/h loses 28%; closed grid locks at 0.2 kj |
+| T1 One driver | Harness merged; driver's parts measured (`measure/DRIVER.md`, held out in `measure/HOLDOUT.md`). Next: set the driver from DRIVER.md, test on held-out recordings | Main's driver: spacing error 6.30 m, classifier 0.89. One driver: 5.75 m (real floor 5.67), classifier 0.866 (real floor 0.64-0.68), next-second response 0.65 m/s, still worse than constant speed (0.37) |
 | T2 Streams | DLR UT approach replays with its recorded signals | Discharge per cycle off by 0.14-0.32 cars of 7.3 (harness check, not independent). Cars cross the stop line 2.1-2.4 s early: launch at 2.6 m/s² against 1.8 measured. F120 on SinD needs stop lines inferred first |
 | T3 Areas, recorded demand | pNEUMA on disk (15 GB); Songdo downloading | |
 | T4 Cities | Berlin macro merged, parked: `foundations/macro-log.md` ("Pick it up cold") | Movement table passes (0.18% of site-hours over). Whole day: arterial speed bias -5.6%, dip .66 against .69; motorways, jam list (0-17% caught) and counts (RMSN .43) fail. Route choice alone reaches RMSN .30, so next is route cost on unsignalled streets |
