@@ -56,6 +56,7 @@ const HS_EDGE: u32 = 512u;
 const HS_FOLLOW: u32 = 1024u;
 const HS_MATCH: u32 = 2048u;
 const HS_STEER: u32 = 4096u;
+const HS_PHYS: u32 = 8192u;    // the physical driver takes the human's lane-change decisions: gate, merge start, courtesy
 
 // Link flags.
 const L_CONT: u32 = 1u;

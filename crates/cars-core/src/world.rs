@@ -1077,7 +1077,7 @@ impl World {
             hu_k: 1.0 - (-cfg.dt / 1.0).exp(),
             hu_rho: (-cfg.dt / 3.0).exp(),
             hu_nscale: 0.20 * (1.0 - (-2.0 * cfg.dt / 3.0).exp()).sqrt(),
-            hu_flags: cfg.human_flags,
+            hu_flags: cfg.human_flags | if !cfg.humans && cfg.tune("decide", 1.0) > 0.0 { 8192 } else { 0 },
             hu_a: [human.cooperation, human.t_miss, 0.0, human.stop_base],
             hu_b: [human.stop_offset, human.sig_react, human.r_urg, human.coop_decel],
             hu_c: [human.tau_gate, human.tau_min, human.b_em, human.gap_model],

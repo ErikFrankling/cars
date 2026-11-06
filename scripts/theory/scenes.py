@@ -1082,7 +1082,7 @@ class Give:
             if len(z):
                 vt.append(float(z.speed.median()))
         if vt:
-            book.check('G1', 'F104', 0, all_tf, quantity=f'follow-up from own following: E[T] + s/v_turn, v_turn {np.mean(vt):.2f}', forecast=1.4 * math.exp(0.045) + 7.5 / np.mean(vt), tol='10%', seeds='G1 all')
+            book.check('G1', 'F104', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: E[T] + s/v_turn, v_turn {np.mean(vt):.2f}', forecast=1.4 * math.exp(0.045) + 7.5 / np.mean(vt), tol='10%', seeds='G1 all')
         for q in Give.QS[1:]:
             got = []
             for r in range(SEEDS):
@@ -1370,7 +1370,8 @@ class LC1:
             # target cars passing a changer: density on the target lane times the speed difference. Counting passes until
             # each change is biased, since a change follows a pass.
             L1 = run.lane_len(name, 'm_1')
-            k = lt[(lt.time >= 300) & lt.trip.astype(str).str.contains(r'\.t')].groupby('time').size().reindex(np.arange(300, 1300, run.a.fcd), fill_value=0).mean() / L1
+            win = f[(f.time >= 300) & (f.time < 1300)]
+            k = ((lt.time >= 300) & (lt.time < 1300) & lt.trip.astype(str).str.contains(r'\.t')).sum() / max(win.time.nunique(), 1) / L1
             n, T = k * dv[-1], 1.0
             passes.append(n / T)
         tag = seedtag('LC1')

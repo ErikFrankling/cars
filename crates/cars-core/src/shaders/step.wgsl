@@ -993,7 +993,7 @@ fn foe_on_last_approach(link: u32, a: f32, va: f32, vl: f32, ego: Veh) -> bool {
     let k = links[link];
     if (hu_on) { hu_set_gap(link, ego.trip); }
     var l = a + (k.length + ty.length) / max((va + vl) * 0.5, EPS);
-    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor; }
+    if (mu > 0.0 && k.tc > 0.0) { l = select(max(a, 0.0), 0.0, ego.wait > 0.0) + k.tc - ty.timegap_minor; }
     let impat = clamp(ty.impatience + ego.wait / P.time_to_impatience, 0.0, 1.0);
     for (var f = 0u; f < k.foe_count; f++) {
         let foe = foes[k.foe_start + f];
@@ -1231,8 +1231,9 @@ fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f3
     if (have_red(state)) { return false; }
     if ((k.flags & L_CONT) != 0u) { return true; }
     var l = a + (k.length + veh_len) / max((va + vl) * 0.5, EPS);
-    // Physical mode: go when the next foe arrives a critical gap (HBS, by movement) after we would reach the line.
-    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor; }
+    // Physical mode: go when the next foe arrives a critical gap (HBS, by movement) after we would reach the line,
+    // or after now for a driver already waiting there: HBS takes the gap from the waiting driver's departure.
+    if (mu > 0.0 && k.tc > 0.0) { l = select(max(a, 0.0), 0.0, wait > 0.0) + k.tc - ty.timegap_minor; }
     let e_is_major_green = (k.flags & (L_EXIT_AFTER_IJ | L_INTERNAL_JUNCTION)) != 0u && link_state(k.entry) == CH_G;
     if ((have_priority(state) || e_is_major_green) && state != CH_Z) { return true; }
     if (state == CH_w && wait < dt) { return false; }
@@ -1868,7 +1869,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
             atomicAdd(&C[C_CERT_FLOOR], 1u);
         }
         if (ph_b_follower() <= 0.05) { atomicAdd(&C[C_NO_BRAKE], 1u); }
-        if (hu_on) { nv = hu_start_hold(&e, speed, v_safe, nv); } else if (P.start_react > 0.0) { nv = ph_start_hold(&e, i, speed, nv, have_to_wait); }
+        if (hu_on) { nv = hu_start_hold(&e, speed, v_safe, nv); } else if (P.start_react > 0.0) { nv = ph_start_hold(&e, i, speed, nv, have_to_wait, n > 0u && items[base].link != NONE && links[items[base].link].tl != NONE); }
         acc = (nv - speed) / dt;
         var ds: f32;
         if (nv > 0.0) {
@@ -2177,7 +2178,7 @@ fn ph_reroute(e: ptr<function, Veh>, n: u32, base: u32) {
 
 // A driver standing still goes a reaction time after its way opens. Report 05: the first car at a green 1.62 s,
 // stopped-start lags behind a leader 1.0-1.6 s. Steps with reason to go are counted in the low byte of hu_state.
-fn ph_start_hold(e: ptr<function, Veh>, i: u32, speed: f32, nv: f32, held: bool) -> f32 {
+fn ph_start_hold(e: ptr<function, Veh>, i: u32, speed: f32, nv: f32, held: bool, at_light: bool) -> f32 {
     if (speed >= 0.05) { return nv; }
     // Nobody creeps after a car that stands: the clock runs from when it moves, or from when the way opens.
     let still = ((*e).flags & F_LEAD_STILL) != 0u;
@@ -2187,11 +2188,13 @@ fn ph_start_hold(e: ptr<function, Veh>, i: u32, speed: f32, nv: f32, held: bool)
     if (still || (front && (nv <= 0.0 || held))) { steps = 0u; } else if (nv > 0.0) { steps = min(steps + 1u, 255u); }
     (*e).hu_state = ((*e).hu_state & 0xffffff00u) | steps;
     if (still || steps == 0u) { return 0.0; }
-    // A light is seen in the step it changes; a leader's start one step after it began. Partial steps keep the
-    // reaction the same at any dt.
+    // G.step counts the step's end, so a light that changes at t is seen in the step ending at t: one step early.
+    // A leader's start is seen one step after it began. Partial steps keep the reaction the same at any dt.
     let first = front && lanes[(*e).lane].length - (*e).pos < 10.0;
+    // At a give-way line the driver has watched the gap come: HBS's critical gap holds that reaction already.
+    if (first && !at_light) { return nv; }
     let react = select(P.start_react, P.first_react, first);
-    let waited = f32(steps - 1u) * dt + select(dt, 0.0, first);
+    let waited = f32(steps - 1u) * dt + select(dt, -dt, first);
     if (waited + dt <= react + 1e-3) { return 0.0; }
     if (waited < react - 1e-3) { return nv * (waited + dt - react) / dt; }
     return nv;

@@ -708,7 +708,7 @@ fn inform_follower(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f3
     let gap = n.f_gap;
     let limit = lanes[e.lane].speed;
     // Report 18: a follower does a share of what following the merger asks, never all of it. That is hu_follower.
-    if (hu_courteous(ft) && (P.hu_flags & HS_FOLLOW) != 0u) { return; }
+    if (hu_courteous(ft) && (P.hu_flags & HS_FOLLOW) != 0u && ft.model == MODEL_HUMAN) { return; }
     if ((blocked & LCA_BLOCK_FOLLOWER) != 0u) {
         // A human follower is not told. It sees the blinker and decides, in hu_request.
         if (hu_courteous(ft)) {
@@ -963,7 +963,7 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
     let tl = 0.2 / max(1e-6, ty.lc_speed_gain);
     let tr = tl / max(1e-6, ty.lc_speed_gain_right);
     // Report 18 B1: must-change by time left. At speed that is the start of the lane, not the last 150 m.
-    let by_time = ty.model == MODEL_HUMAN && (P.hu_flags & HS_TTE) != 0u && usable / f32(abs(best_offset)) / max(e.speed, 1.0) < P.hm_a.x;
+    let by_time = (ty.model == MODEL_HUMAN || hd_phys(ty)) && (P.hu_flags & HS_TTE) != 0u && usable / f32(abs(best_offset)) / max(e.speed, 1.0) < P.hm_a.x;
     if (change_to_best && best_offset == curr_offset && (by_time || usable / f32(abs(best_offset)) < la_dist)) {
         ret |= lca | LCA_STRATEGIC | LCA_URGENT;
     } else {
@@ -1130,7 +1130,10 @@ fn h01(a: u32, b: u32) -> f32 {
 
 fn logit01(u: f32) -> f32 { return log(u / (1.0 - u)); }
 
-fn hu_courteous(t: VType) -> bool { return t.model == MODEL_HUMAN && (P.hu_flags & HS_COURTESY) != 0u; }
+// The one driver: physical motion, and the human's measured lane-change decisions (report 14, report 18 B1 B2).
+fn hd_phys(t: VType) -> bool { return mu > 0.0 && t.model == MODEL_KRAUSS && (P.hu_flags & HS_PHYS) != 0u; }
+
+fn hu_courteous(t: VType) -> bool { return (t.model == MODEL_HUMAN || hd_phys(t)) && (P.hu_flags & HS_COURTESY) != 0u; }
 
 // How pressed the driver is: 1 at the end of the road. Distance only, as Rao, Lee and I-80 say.
 // Report 18: time left to the end of the lane, the form that carries from one site to another.
@@ -1159,7 +1162,7 @@ fn hu_request(e: Veh, n: LcNeighbors, dir: u32) {
     if (n.follower == NONE) { return; }
     let ft = types[n.f_vtype];
     if (!hu_courteous(ft)) { return; }
-    if ((P.hu_flags & HS_FOLLOW) != 0u) { hu_follower(e, n, ft, dir); return; }
+    if ((P.hu_flags & HS_FOLLOW) != 0u && ft.model == MODEL_HUMAN) { hu_follower(e, n, ft, dir); return; }
     let style = h01(e.trip, 3u);
     let blinks = style < P_SIG_ANY;
     if (blinks && e.lc_wait < P.hu_b.y) { return; }
@@ -1329,7 +1332,7 @@ fn check_blocked_human(e: Veh, n: LcNeighbors, dest: u32) -> u32 {
 
 // MSLaneChanger::checkChange: the gaps a change into `dest` would have to respect.
 fn check_blocked(e: Veh, n: LcNeighbors, dest: u32) -> u32 {
-    if (ty.model == MODEL_HUMAN && (P.hu_flags & HS_GATE) != 0u) { return check_blocked_human(e, n, dest); }
+    if ((ty.model == MODEL_HUMAN || hd_phys(ty)) && (P.hu_flags & HS_GATE) != 0u) { return check_blocked_human(e, n, dest); }
     var blocked = 0u;
     let safety = 1.0 / max(EPS, ty.lc_assertive);
     if (n.follower != NONE) {
@@ -1542,6 +1545,7 @@ fn lc_evaluate(i: u32) {
         let wishes = (state & LCA_WANTS) != 0u && (state & LCA_URGENT) != 0u;
         cur[i].lc_wait = select(0.0, e.lc_wait + dt, wishes);
     }
+    if (hd_phys(ty) && (state & LCA_URGENT) == 0u) { cur[i].hu_state &= ~HU_ENGAGED; }
     if (ty.model == MODEL_HUMAN && mu > 0.0) {
         cur[i].lc_bias = clamp(lc_bias_out, -0.8, 0.8);
         var side = 0.0;
