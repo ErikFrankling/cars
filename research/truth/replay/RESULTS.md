@@ -110,7 +110,7 @@ The data side for area tests, and the harness extended so the drivers being rewr
 | F512 SinD saturated cycles | 0-2 | **0** on Tianjin approach 2 (Tianjin and Chongqing have no car queue over 3) | pass: F120 as written can't be measured on SinD's two usable cities |
 | F513 SinD Tianjin approach 2, crossing error | driver 1-3 s, no worse than the point queue | driver **3.57-4.10 s** (5 seeds), bias +0.0 to +0.7; point queue **1.33 s**; without two-wheelers 2.67-3.43 | **miss**, explained below |
 | F514 discharge per queued cycle | driver no worse than the point queue | driver 0.10 cars, point queue 0.00 | miss by one car in ten cycles |
-| F515 pNEUMA drone 8 mix (harness check) | 99% enter, delay p95 under 2 s | F515_RESULT | F515_VERDICT |
+| F515 pNEUMA drone 8 mix (harness check) | 99% enter, delay p95 under 2 s | all forced: 100% enter, 60-65% still on the net at the end (boundary entries stacked onto full edges); snapshot forced only: **29-32%** enter, delay p95 607-660 s | **miss**, two rounds, stopped: boundary entries are the open problem (below) |
 
 ## F513: why the driver loses to a point queue on SinD
 
@@ -127,6 +127,21 @@ What this says:
 
 The null's saturation headway is SinD's clock-free 2.6 s (other cities), because Tianjin's other approaches give one car-to-car headway; its first-car time, 1.91 s after green, is Tianjin's own.
 
+## F515: cars simulated on a whole pNEUMA area
+
+A harness check on drone 8, five seeds each way.
+- **Every simulated car forced in** at its recorded state: all of them enter, but 60-65% are still there at the end. Cars entering at the boundary were put onto edges the simulated queue already filled: 431 cars on a 35 m three-lane edge of Patision, about 5,400 simulated-on-simulated overlap pairs.
+- **Only the start snapshot forced**, later entries inserted normally: the stacking is gone (132-160 pairs), but only 29-32% of the cars get in, with entry delays to 660 s.
+
+A car's recorded entry is where the tracker first sees it, often inside a queue at the edge of the view. If the simulated queue or a replayed motorcycle is there, it waits, and the per-edge insertion queue holds every later car on that edge.
+
+Two rounds without a pass, so stopped (rule 9). Next:
+- enter at the start of the boundary edge with the time carried back;
+- per-lane insertion queues;
+- two-wheelers that don't take a whole lane (also F513).
+
+Until then no T3 number is scored on pNEUMA.
+
 ## What the harness can do now
 
 Everything in the first round, plus:
@@ -139,6 +154,7 @@ Everything in the first round, plus:
 
 Can't yet:
 - Two-wheelers that share a lane with a car.
+- Simulated entries at a pNEUMA area's boundary (F515): forced, they stack; unforced, two thirds never get in.
 - Routes through cuts in pNEUMA: 1.56 pieces per vehicle; a simulated car's route ends where its first piece ended.
 - Read signals on approaches with few standing cars: 70 of 87 links in drone 8 stay green.
 - A saturated-cycle test on SinD (F120).

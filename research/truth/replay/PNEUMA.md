@@ -116,7 +116,7 @@ Three fixes were needed before this, each found by F100:
 - Fronts past the end of their lane had to move onto the next lane.
 - A piece that ends inside a junction needs its route to go on to that connection's exit.
 
-**F515**, a first all-cars-simulated run: see RESULTS.md.
+**F515**, a first all-cars-simulated run, fails as a harness check: forced boundary entries stack onto full edges, and unforced ones mostly never get in (29-32% enter). Details and the next step are in RESULTS.md.
 
 ## Rerun
 
