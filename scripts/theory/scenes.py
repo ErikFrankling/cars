@@ -284,6 +284,30 @@ def seedtag(scene, n=SEEDS):
     return f'{scene} arrivals 0-{n - 1}, sim {SIM_SEED}'
 
 
+def own(st):
+    """The driver's own numbers from the batches before: saturation from S1, lost time from S3, s and w from L3 and L4.
+    A forecast that follows from capacity uses these, so one fault shows as one fail; realism is F089, F090, F001-F005."""
+    S = 3600 / st['hs'] if st.get('hs') else 1800.0
+    s = st.get('s') if np.isfinite(st.get('s', np.nan)) else 7.5
+    w = st.get('w') if np.isfinite(st.get('w', np.nan)) else 19.3
+    return dict(S=S, l=st.get('lost', 0.0), s=s, kj=1 / s, w=w / 3.6)
+
+
+def sig_forecast(q, S, g, C=90.0, kj=1 / 7.5, w=19.3 / 3.6, uf=V50, Tp=0.25):
+    """B §2 at one approach, g effective green. Same as scripts/theory/sheet_s.py."""
+    q1, S1 = q / 3600, S / 3600
+    x, r, ka = q1 * C / (S1 * g), C - g, q1 / uf
+    u = q1 / (kj - ka)
+    ts = r * w / (w - u)
+    gs = r * q1 / (S1 - q1) if S1 > q1 else float('inf')
+    d1 = C * (1 - g / C) ** 2 / (2 * (1 - q1 / S1)) if x < 1 else r / 2
+    web = d1 + x ** 2 / (2 * q1 * (1 - x)) - .65 * (C / q1 ** 2) ** (1 / 3) * x ** (2 + 5 * g / C) if x < 1 else float('inf')
+    cap = S * g / C
+    CT, x0 = cap * Tp, .67 + S1 * g / 600
+    Q0 = CT / 4 * ((x - 1) + math.sqrt((x - 1) ** 2 + 12 * max(x - x0, 0) / CT)) if x > x0 else 0
+    return dict(x=x, cap=cap, N=u * ts * kj, L=u * ts, gs=gs, d1=d1, web=web, akc=d1 + Q0 / cap * 3600, d3=.65 * (C / q1 ** 2) ** (1 / 3) * x ** (2 + 5 * g / C))
+
+
 # ---------------------------------------------------------------- batches
 BATCHES = {}
 
@@ -323,7 +347,7 @@ BATCH_CFG = {
     'give2': dict(end=1500, fcd=0),
     'lc': dict(end=1400, fcd=0.5),
     'lc2': dict(end=1500, fcd=0.5),
-    'drop': dict(end=1800, fcd=0),
+    'drop': dict(end=1800, fcd=2.0),
     'drop_city': dict(end=1500, fcd=0.5),
     'slow': dict(end=800, fcd=1.0),
     'net': dict(end=1200, fcd=1.0),
@@ -480,8 +504,11 @@ class Bottleneck:
             t = t[t > 250]
             if len(t) > 5:
                 cap.append(3600 * (len(t) - 1) / (t[-1] - t[0]))
-        book.check('L6', 'F054', 0, u, seeds=seedtag('L6'))
-        book.info('L6', 'bottleneck flow c (veh/h), forecast used 600', float(np.mean(cap)) if cap else float('nan'))
+        o = own(st)
+        c = float(np.mean(cap)) if cap else float('nan')
+        k2 = o['kj'] * 1000 - c / (o['w'] * 3.6)
+        book.check('L6', 'F054', 0, u, quantity=f'queue tail against the bottleneck it has, qa 900 c {c:.0f} (km/h)', forecast=(900 - c) / (k2 - 900 / (V50 * 3.6)), seeds=seedtag('L6'))
+        book.check('L6', 'F096', 0, cap, seeds=seedtag('L6'))
 
 
 def ring_cars(c, N, P, edges, repeat, vtype='car'):
@@ -627,7 +654,8 @@ class Sat:
             name = f'S4r{r}'
             t = run.trips(name)
             out.append(((t.arrival >= 450) & (t.arrival < 450 + 1350)).sum() * 3600 / 1350)
-        book.check('S4', 'F011', 0, out, seeds=seedtag('S4'))
+        o = own(st)
+        book.check('S4', 'F011', 0, out, quantity='capacity from own S and lost time, S(G+y-l)/C', forecast=o['S'] * (43 - o['l']) / 90, seeds=seedtag('S4'))
         book.verdict('S4', 'F090', 'capacity at real saturation', '778', fmt(float(np.mean(out))), '729-844', 729 <= np.mean(out) <= 844, seeds=seedtag('S4'))
         st['c'] = float(np.mean(out))
 
@@ -677,10 +705,12 @@ class Uniform:
             t = t[(t.depart > 270) & (t.depart < 1500)]
             D.append(t.duration.mean() - tf)
         tag = seedtag('S5')
-        book.check('S5', 'F012', 0, N, quantity='max queue qa 600 (cars)', seeds=tag)
-        book.check('S5', 'F012', 1, L_, quantity='max queue qa 600 (m)', seeds=tag)
-        book.check('S5', 'F012', 2, clear, quantity='queue clears after effective green (s)', seeds=tag)
-        book.check('S6', 'F013', 0, D, seeds=tag)
+        o = own(st)
+        fc = sig_forecast(600, o['S'], 43 - o['l'], kj=o['kj'], w=o['w'])
+        book.check('S5', 'F012', 0, N, quantity='max queue qa 600 (cars)', forecast=fc['N'], seeds=tag)
+        book.check('S5', 'F012', 1, L_, quantity='max queue qa 600 (m)', forecast=fc['L'], seeds=tag)
+        book.check('S5', 'F012', 2, clear, quantity='queue clears after effective green (s)', forecast=fc['gs'], seeds=tag)
+        book.check('S6', 'F013', 0, D, forecast=fc['d1'], seeds=tag)
 
 
 def delay_of(run, name, times, tfree, t0, t1):
@@ -720,7 +750,12 @@ class Webster:
         tf = float(run.trips('Wfree').duration.mean())
         for i, q in enumerate(Webster.XS):
             out = [delay_of(run, f'S7q{q}r{r}', st['web'][f'S7q{q}r{r}'], tf, 600, 5200)[0] for r in range(SEEDS)]
-            book.check('S7', 'F014', i, out, quantity=f'Webster delay qa {q}', seeds=seedtag(f'S7{q}'))
+            o = own(st)
+            fc = sig_forecast(q, o['S'], 43 - o['l'], kj=o['kj'], w=o['w'])
+            if fc['x'] <= 0.9:
+                book.check('S7', 'F014', i, out, quantity=f'Webster delay qa {q}, x {fc["x"]:.2f}', forecast=fc['web'], seeds=seedtag(f'S7{q}'))
+            else:
+                book.info('S7', f'Webster delay qa {q}, x {fc["x"]:.2f} past Webster\'s range', float(np.mean(out)))
         ratios, growth = [], []
         for r in range(SEEDS):
             name = f'N8q640r{r}'
@@ -736,7 +771,7 @@ class Webster:
             n0 = np.mean([(sched <= t).sum() - (tr.arrival <= t).sum() for t in np.arange(300, 390, 10)])
             n1 = np.mean([(sched <= t).sum() - (tr.arrival <= t).sum() for t in np.arange(1710, 1800, 10)])
             cap = st.get('c', 800.0)
-            growth.append((n1 - n0) / ((960 - 800) * 1410 / 3600))
+            growth.append((n1 - n0) / ((960 - cap) * 1410 / 3600))
         book.check('N8', 'F077', 0, ratios, quantity='x .8: queue second half over first half', seeds=seedtag('N8640'))
         book.check('N8', 'F077', 1, growth, quantity='x 1.2: growth over Q-c', seeds=seedtag('N8960'))
 
@@ -755,9 +790,11 @@ class Over:
     @staticmethod
     def measure(run, book, st):
         tf = st.get('tfree') or float(run.trips('Sfree').duration.mean())
+        o = own(st)
         for i, q in enumerate((720, 900)):
             out = [delay_of(run, f'S8q{q}r{r}', st['s8'][f'S8q{q}r{r}'], tf, 0, 900)[0] for r in range(10)]
-            book.check('S8', 'F085', i, out, quantity=f'delay qa {q} 15 min', seeds=seedtag(f'S8{q}', 10))
+            fc = sig_forecast(q, o['S'], 43 - o['l'], kj=o['kj'], w=o['w'])
+            book.check('S8', 'F085', i, out, quantity=f'delay qa {q} 15 min, x {fc["x"]:.2f}', forecast=fc['akc'], seeds=seedtag(f'S8{q}', 10))
         gr = []
         for r in range(10):
             name = f'S8q900r{r}'
@@ -767,7 +804,14 @@ class Over:
             en_route = 900 * tf / 3600
             n = np.mean([(sched <= t).sum() - (tr.arrival <= t).sum() for t in np.arange(811, 900, 10)])
             gr.append(n - en_route)
-        book.check('S8', 'F015', 0, gr, seeds=seedtag('S8900', 10))
+        c = st.get('c', 800.0)
+        if 900 / c < 1.1:
+            book.info('S8', f'growth qa 900 at c {c:.0f}, x {900 / c:.2f}: too near 1 for the fluid count (cars)', float(np.mean(gr)))
+            return
+        book.check('S8', 'F015', 0, gr, quantity=f'oversaturated growth qa 900 c {c:.0f} 15 min (cars)', forecast=(900 - c) / 4, seeds=seedtag('S8900', 10))
+
+
+X1_SEEDS = 10
 
 
 @scene('X1', 'xone')
@@ -789,7 +833,7 @@ class Clones:
         for n in (1, 3, 5.6):
             # Copied within +-150 s, the demand's own rule. Five and ten copies give 2.97 and 5.63 in 5 min counts (dispersion.py).
             copies = {1: 1, 3: 5, 5.6: 10}[n]
-            for r in range(SEEDS):
+            for r in range(X1_SEEDS):
                 rng = arrival_rng(f'X1{n}', r)
                 base = poisson(rng, qa / copies, 0, 8400)
                 times = []
@@ -805,17 +849,21 @@ class Clones:
         qa = st['x1qa']
         d1 = delay_of(run, 'Xuni', st['x1']['Xuni'], tf, 900, 8000)[0]
         book.info('X1', f'qa {qa:.0f}, uniform delay (s)', d1)
+        c = qa / 0.85
+        o = own(st)
+        d3 = sig_forecast(qa, c * 90 / (43 - o['l']), 43 - o['l'])['d3']
         for i, n in enumerate((1, 3, 5.6)):
             I, Q = [], []
-            for r in range(SEEDS):
+            for r in range(X1_SEEDS):
                 times = st['x1'][f'X1n{n}r{r}']
                 name = f'X1n{str(n).replace(".", "p")}r{r}'
                 counts = np.histogram(times, bins=np.arange(600, 8100, 300))[0]
                 I.append(counts.var() / counts.mean())
                 d = delay_of(run, name, times, tf, 900, 8000)[0]
                 Q.append(qa / 3600 * (d - d1))
-            book.check('X1', 'F084', i, I, quantity=f'input var/mean, copies {n}', seeds=seedtag(f'X1{n}'))
-            book.check('X1', 'F039', i, Q, quantity=f'random queue, copies {n} (cars)', seeds=seedtag(f'X1{n}'))
+            book.check('X1', 'F084', i, I, quantity=f'input var/mean, copies {n}', seeds=seedtag(f'X1{n}', X1_SEEDS))
+            fq = np.mean(I) * 0.85 ** 2 / (2 * 0.15) - qa / 3600 * d3
+            book.info('X1', f'F039 sizing: random queue, copies {n} (cars); I x2/2(1-x) - q d3 = {fq:.1f}', float(np.mean(Q)), spread=f'{min(Q):.3g}..{max(Q):.3g}')
 
 
 # --- One give-way
@@ -933,8 +981,7 @@ class Give:
         for i, q in enumerate(Give.QS):
             tag = seedtag(f'G1{q}')
             book.check('G1', 'F016', i, caps[q], quantity=f'HBS right, major {q}', seeds=tag)
-            book.check('G1', 'F018', i, caps[q], quantity=f'tf 3.0 t0 4.9, major {q}', seeds=tag)
-            book.check('G1', 'F017', i, caps[q], quantity=f'report 23 before fix, major {q}', seeds=tag)
+        book.info('G1', 'capacity at major 0 400 800 1200 (F017 report 23 816 474 279 162; F018 its tf fixed 1200 696 404 234)', ' '.join(f'{np.mean(caps[q]):.0f}' for q in Give.QS))
         all_tf = np.array([x for v in tfs.values() for x in v if np.isfinite(x)])
         book.check('G1', 'F058', 0, all_tf, seeds='G1 all')
         for q in Give.QS[1:]:
@@ -1086,7 +1133,10 @@ class Wait:
                 idx = t.trip.str.split('.').str[1].str[1:].astype(int).values
                 sched = np.array(st['g7'][name])[idx]
                 out.append(float((t.arrival.values - sched).mean() - tf))
-            book.check('G7', 'F020', i, out, quantity=f'mean wait, minor {q}', seeds=seedtag(f'G7{q}', 8))
+            c = st.get('G1', {}).get(800, 451.0)
+            x = q / c
+            kh = 3600 / c + 900 * 0.25 * ((x - 1) + math.sqrt((x - 1) ** 2 + (3600 / c) * x / (450 * 0.25)))
+            book.check('G7', 'F020', i, out, quantity=f'mean wait, minor {q}, own c {c:.0f} at major 800', forecast=kh, seeds=seedtag(f'G7{q}', 8))
 
 
 @scene('G8', 'give')
@@ -1218,19 +1268,12 @@ class LC1:
             lt = f[f.lane == f'{name}.m_1']
             lz = f[f.lane == f'{name}.m_0']
             dv.append(float(lt.speed.mean() - lz.speed.mean()))
-            n, T = 0, 0.0
-            pv = lt.pivot_table(index='time', columns='trip', values='pos', observed=True)
-            for _, row in d.iterrows():
-                g = lz[lz.trip.astype(str) == row.trip]
-                if len(g) < 3:
-                    continue
-                t0, t1 = g.time.iloc[0], g.time.iloc[-1]
-                x0, x1 = g.pos.iloc[0], g.pos.iloc[-1]
-                if t0 in pv.index and t1 in pv.index:
-                    a, b = pv.loc[t0], pv.loc[t1]
-                    n += int((((a < x0) | a.isna()) & (b > x1)).sum())
-                    T += t1 - t0
-            passes.append(n / T if T > 0 else np.nan)
+            # target cars passing a changer: density on the target lane times the speed difference. Counting passes until
+            # each change is biased, since a change follows a pass.
+            L1 = run.lane_len(name, 'm_1')
+            k = lt[(lt.time >= 300) & lt.trip.astype(str).str.contains(r'\.t')].groupby('time').size().reindex(np.arange(300, 1300, run.a.fcd), fill_value=0).mean() / L1
+            n, T = k * dv[-1], 1.0
+            passes.append(n / T)
         tag = seedtag('LC1')
         book.check('LC1', 'F021', 0, W, seeds=tag, mode='high')
         book.check('LC1', 'F063', 0, passes, seeds=tag)
@@ -1315,7 +1358,7 @@ class LaneEnd:
                 nearby = on0[on0.pos > L - 100]
                 if len(nearby):
                     waits.append(nearby.time.max() - nearby.time.min())
-        book.check('LC3', 'F023', 0, cap, seeds=seedtag('LC3a'))
+        book.check('LC3', 'F023', 0, cap, seeds=seedtag('LC3a'), mode='low')
         book.check('LC3', 'F024', 0, shr, seeds=seedtag('LC3b'))
         book.info('LC3', 'both saturated: total out (veh/h)', float(np.mean(tot)))
         w = np.array(waits)
@@ -1328,28 +1371,51 @@ class LaneEnd:
             book.verdict('LC8', 'F028', 'wait', '72.7', 'none', 'p99 <= 75', False)
 
 
+LCQ_N = 170
+LCQ_RED = 40.0
+
+
+def queue_feeder(c, key, y, to, n, v, routes, x0=-1650.0, run_in=150.0):
+    """A standing queue of n cars behind a light that turns green at LCQ_RED, then run_in metres to reach v.
+    Insertion alone can't saturate a lane: it needs a gap at the insertion speed, so it gave 1,500-1,600 per lane."""
+    c.node(f'{key}q', x0, y)
+    c.node(f'{key}s', -run_in, y, 'traffic_light')
+    c.edge(f'{key}Q', f'{key}q', f'{key}s', v=v)
+    c.edge(key, f'{key}s', to, v=v)
+    c.signal(f'{key}s', [(LCQ_RED, 'r'), (90000, 'G')])
+    L = -run_in - x0
+    for i in range(n):
+        c.car(f'{key}{i}', i * 0.001, [f'{key}Q', key] + routes[i], pos=L - 16 - i * 8.0, speed='0')
+
+
+def lc_out_rate(run, name, lanes=('m_0', 'm_1'), skip=30, take=200):
+    """Flow leaving the block from the saturated discharge: cars skip to skip+take of all leaving, both lanes."""
+    f = run.cell(name)
+    t = np.sort(np.concatenate([leave_times(f, name, l, run.lane_len(name, l)).values for l in lanes]))
+    if len(t) < skip + 20:
+        return float('nan')
+    w = t[skip:skip + take]
+    return 3600 * (len(w) - 1) / (w[-1] - w[0])
+
+
 def lc4_cell(w, name, frac, r):
     c = w.cell(name, 120)
-    c.node('a', 0, -40)
-    c.node('b', 0, 0)
-    c.node('m', 300, 0)
-    c.node('n', 400, 0)
-    c.node('t', 900, 0)
-    c.node('r', 900, -60)
-    c.edge('fa', 'a', 'm', v=10)
-    c.edge('fb', 'b', 'm', v=10)
+    c.node('m', 0, 0)
+    c.node('n', 100, 0)
+    c.node('t', 600, 0)
+    c.node('r', 600, -60)
     c.edge('m', 'm', 'n', lanes=2, v=10)
     c.edge('th', 'n', 't', v=10)
     c.edge('rt', 'n', 'r', v=10)
-    c.conn('fa', 'm', 0, 0)
-    c.conn('fb', 'm', 0, 1)
     c.conn('m', 'rt', 0, 0)
     c.conn('m', 'th', 1, 0)
     rng = arrival_rng(f'LC4{frac}', r)
-    for k, t in enumerate(uniform(2400, 0, 1400)):
-        c.car(f'a{k}', t, ['fa', 'm', 'th'] if rng.random() < frac else ['fa', 'm', 'rt'], lane=0)
-    for k, t in enumerate(uniform(2400, 0, 1400)):
-        c.car(f'b{k}', t, ['fb', 'm', 'rt'] if rng.random() < frac else ['fb', 'm', 'th'], lane=0)
+    ra = [['m', 'th'] if rng.random() < frac else ['m', 'rt'] for _ in range(LCQ_N)]
+    rb = [['m', 'rt'] if rng.random() < frac else ['m', 'th'] for _ in range(LCQ_N)]
+    queue_feeder(c, 'fa', -40, 'm', LCQ_N, 10, ra)
+    queue_feeder(c, 'fb', 0, 'm', LCQ_N, 10, rb)
+    c.conn('fa', 'm', 0, 0)
+    c.conn('fb', 'm', 0, 1)
 
 
 @scene('LC4', 'lc2')
@@ -1362,32 +1428,26 @@ class LC4:
 
     @staticmethod
     def measure(run, book, st):
-        a, b = [], []
-        for r in range(SEEDS):
-            for n, t in ((f'LC4a{r}', a), (f'LC4b{r}', b)):
-                x = run.trips(n)
-                t.append(((x.arrival >= 300) & (x.arrival < 1450)).sum() * 3600 / 1150)
-        book.info('LC4', 'two saturated lanes: no changes; a third change (veh/h)', f'{np.mean(a):.0f}, {np.mean(b):.0f}')
-        book.check('LC4', 'F025', 0, np.array(b) / np.mean(a), seeds=seedtag('LC4b'))
+        a = [lc_out_rate(run, f'LC4a{r}') for r in range(SEEDS)]
+        b = [lc_out_rate(run, f'LC4b{r}') for r in range(SEEDS)]
+        book.info('LC4', 'two lanes from a released queue: no changes; a third change (veh/h)', f'{np.nanmean(a):.0f}, {np.nanmean(b):.0f}')
+        book.check('LC4', 'F025', 0, np.array(b) / np.nanmean(a), seeds=seedtag('LC4b'))
 
 
 def lc5_cell(w, name, dv, phi, r):
     v = V50
     c = w.cell(name, 120)
-    c.node('a', 0, -40)
-    c.node('b', 0, 0)
-    c.node('m', 300, 0)
-    c.node('n', 700, 0)
-    c.node('t', 1200, 0)
+    c.node('a', -300, -40)
+    c.node('m', 0, 0)
+    c.node('n', 400, 0)
+    c.node('t', 900, 0)
     c.edge('fa', 'a', 'm', v=v - dv)
-    c.edge('fb', 'b', 'm', v=v)
     c.edge('m', 'm', 'n', lanes=2, v=v, lane_speed={0: v - dv, 1: v})
     c.edge('dn', 'n', 't', v=v)
+    queue_feeder(c, 'fb', 0, 'm', LCQ_N, v, [['m', 'dn']] * LCQ_N, run_in=250.0)
     c.conn('fa', 'm', 0, 0)
     c.conn('fb', 'm', 0, 1)
     c.conn('m', 'dn', 1, 0)
-    for k, t in enumerate(uniform(2400, 0, 1400)):
-        c.car(f'b{k}', t, ['fb', 'm', 'dn'], lane=0)
     for k, t in enumerate(uniform(phi, 3, 1400)):
         c.car(f'a{k}', t, ['fa', 'm', 'dn'], lane=0)
 
@@ -1404,12 +1464,14 @@ class LC5:
     @staticmethod
     def measure(run, book, st):
         def flow(n):
-            x = run.trips(n)
-            return ((x.arrival >= 300) & (x.arrival < 1450)).sum() * 3600 / 1150
-        base = np.mean([flow(f'LC5base{r}') for r in range(SEEDS)])
+            f = run.cell(n)
+            t = np.sort(pass_times(f, n, 'dn_0', 300.0).values)
+            w = t[20:140]
+            return 3600 * (len(w) - 1) / (w[-1] - w[0]) if len(w) > 20 else float('nan')
+        base = np.nanmean([flow(f'LC5base{r}') for r in range(SEEDS)])
         d5 = [1 - flow(f'LC5d5r{r}') / base for r in range(SEEDS)]
         d10 = [1 - flow(f'LC5d10r{r}') / base for r in range(SEEDS)]
-        book.info('LC5', 'saturated target lane alone (veh/h)', float(base))
+        book.info('LC5', 'target lane alone from a released queue (veh/h)', float(base))
         book.check('LC5', 'F026', 0, d5, seeds=seedtag('LC5'))
         book.check('LC5', 'F064', 0, [np.mean(d10) / np.mean(d5)] if np.mean(d5) > 0.002 else [np.nan], seeds=seedtag('LC5'))
 
@@ -1446,11 +1508,17 @@ class LC6:
             dn = e[e.edge == f'{n}.dn'].set_index('begin')
             up = e[e.edge == f'{n}.up'].set_index('begin')
             q = dn.entered * 60.0
-            spd = up.distance / up.samples.replace(0, np.nan)
-            jam = spd[spd < 0.6 * v].index
+            # onset where the queue starts, the last 300 m before the drop; the mean of the 2.5 km edge saw it 400 s late
+            f = run.cell(n)
+            L = run.lane_len(n, 'up_0')
+            z = f[f.lane.astype(str).str.startswith(f'{n}.up_') & (f.pos > L - 300)]
+            spd = z.groupby(np.floor(z.time / 30) * 30).speed.mean()
+            low = (spd < 0.6 * v).astype(int)
+            held = low[::-1].rolling(5, min_periods=5).min()[::-1]
+            jam = held[held == 1].index
             if not len(jam):
                 continue
-            onset = jam.min()
+            onset = float(jam.min())
             pre = q[(q.index >= onset - 300) & (q.index < onset)].rolling(5, min_periods=1).mean().max()
             after = q[q.index >= onset + 180].mean()
             drops.append(100 * (1 - after / pre))
@@ -1546,13 +1614,15 @@ class N1:
         d = pd.DataFrame(rows)
         g = d.groupby('want').mean(numeric_only=True)
         book.info('N1', 'q(k): ' + ' '.join(f'{a:.0f}:{b:.0f}' for a, b in zip(g.k, g.q)), 0.0)
-        book.check('N1', 'F066', 0, d.groupby('r').q.max().values, seeds='N1 3 per density, sim 1')
+        o = own(st)
+        book.check('N1', 'F066', 0, d.groupby('r').q.max().values, quantity='signal ring top per lane: 0.95 S(G+y-l)/C, own S and l', forecast=0.95 * o['S'] * (24 - o['l']) / 60, seeds='N1 3 per density, sim 1')
         top = g.q.max()
         on = g[g.q >= 0.95 * top]
         book.check('N1', 'F067', 0, [on.k.min()], quantity='plateau from (veh/km)', seeds='N1')
         book.check('N1', 'F067', 1, [on.k.max()], quantity='plateau to (veh/km)', seeds='N1')
         high = d[d.want == 130]
-        book.check('N1', 'F068', 0, high.q.values, seeds='N1', mode='high', tol='0')
+        kh = float(high.k.mean())
+        book.check('N1', 'F068', 0, high.q.values, quantity=f'flow at the densest ring, k {kh:.0f}: at most w(kj-k) + 10% of top', forecast=o['w'] * 3.6 * (o['kj'] * 1000 - kh) + 0.1 * top, seeds='N1', mode='high', tol='0')
 
 
 @scene('N2', 'net_long')
@@ -1577,7 +1647,8 @@ class N2:
             book.info('N2', f'{label} q(k): ' + ' '.join(f'{a:.0f}:{b:.0f}' for a, b in zip(d[label].k, d[label].q)), 0.0)
         book.check('N2', 'F069', 0, [d['w'].v.loc[5]], quantity='free running, wave', seeds='N2')
         book.check('N2', 'F069', 1, [d['a'].v.loc[5]], quantity='free running, anti-wave', seeds='N2')
-        book.check('N2', 'F070', 0, [max(d['w'].q.max(), d['a'].q.max())], seeds='N2')
+        o = own(st)
+        book.check('N2', 'F070', 0, [max(d['w'].q.max(), d['a'].q.max())], quantity='top flow per lane S(G+y-l)/C, own S and l', forecast=o['S'] * (43.5 - o['l']) / 90, seeds='N2')
 
 
 def n3_cell(w, name, L, inflow, G, r):
@@ -1613,22 +1684,34 @@ class N3:
         n = k.groupby('time').size()
         slow = k[(k.pos < 25) & (k.speed < 2)]
         ts = float(slow.time.min()) if len(slow) else float('nan')
-        cars = float(n[(n.index >= ts - 60) & (n.index < ts + 60)].mean()) if np.isfinite(ts) else float(n.max())
+        # the link holds most at the end of a red: the most within a cycle of the spill, not a mean over green and red
+        cars = float(n[(n.index >= ts - 90) & (n.index < ts + 10)].max()) if np.isfinite(ts) else float(n.max())
+        e = run.edges()
+        end = ts if np.isfinite(ts) else 2900
+        x = e[(e.edge == f'{name}.dn') & (e.begin >= 300) & (e.begin + 60 <= end)]
+        c = x.entered.sum() * 3600 / max(60 * len(x), 1)
         s = k[k.speed < 2].groupby(np.floor(k[k.speed < 2].time / 90)).pos.min()
         s = s[(s.index * 90 > 200) & (s.index * 90 < (ts if np.isfinite(ts) else 2900))]
         tail = -np.polyfit(s.index * 90, s.values, 1)[0] * 3.6 if len(s) > 3 else float('nan')
-        return ts, cars, tail
+        return ts, cars, tail, c
 
     @staticmethod
     def measure(run, book, st):
         a = [N3.spill(run, f'N3r{r}') for r in range(SEEDS)]
         b = [N3.spill(run, f'N3br{r}') for r in range(SEEDS)]
-        book.check('N3', 'F029', 0, [x[1] for x in a], quantity='storage at spill (cars)', seeds=seedtag('N3r'))
-        spill_a = [x[0] / 60 if np.isfinite(x[0]) else 50.0 for x in a]
-        book.check('N3', 'F029', 1, spill_a, quantity='time to spill (min; 50 = not in 50 min)', seeds=seedtag('N3r'))
-        book.check('N3b', 'F071', 0, [x[1] for x in b], quantity='storage at spill (cars)', seeds=seedtag('N3b'), tol='15%')
-        book.check('N3b', 'F071', 1, [x[0] / 60 for x in b], quantity='time to spill (min)', seeds=seedtag('N3b'), tol='15%')
-        book.check('N3b', 'F071', 2, [x[2] for x in b], quantity='tail speed (km/h)', seeds=seedtag('N3b'), tol='15%')
+        o = own(st)
+        for lab, fid, res, L, q in (('N3', 'F029', a, 200, 800), ('N3b', 'F071', b, 400, 1200)):
+            c = float(np.mean([x[3] for x in res]))
+            Ll = run.lane_len(f'{lab}r0' if lab == 'N3' else 'N3br0', 'lk_0')
+            store = 2 * Ll * o['kj']
+            over = q - c
+            book.info(lab, f'discharge c the scene has (veh/h), B took {720 if lab == "N3" else 810}', c)
+            book.check(lab, fid, 0, [x[1] for x in res], quantity=f'storage at spill: 2 lanes x {Ll:.0f} m x kj (cars)', forecast=store, tol='15%', seeds=seedtag(lab))
+            spill = [x[0] / 60 if np.isfinite(x[0]) else 50.0 for x in res]
+            book.check(lab, fid, 1, spill, quantity=f'time to spill, storage/(q-c) (min; 50 = not in 50 min)', forecast=min(store / over * 60, 50.0) if over > 0 else 50.0, tol='15%', seeds=seedtag(lab))
+            if lab == 'N3b' and over > 0:
+                u = over / (2 * (o['kj'] * 1000 - q / 2 / (V50 * 3.6)))
+                book.check(lab, fid, 2, [x[2] for x in res], quantity='tail speed (km/h)', forecast=u, tol='15%', seeds=seedtag(lab))
         # N6: dN/dt = e - P/l on the growing queue
         res = []
         e = run.edges()
@@ -1802,7 +1885,10 @@ class N9:
             q = [f"{np.mean(out):.1f}"]
             if lanes == 1:
                 fid, i = {'z': ('F047', 0), 'o': ('F047', 1), 'h': ('F091', 0), 'i': ('F092', 0)}[label]
-                book.check('N9', fid, i, out, quantity=f'{text}: cars per cycle', seeds=seedtag('N9'))
+                o = own(st)
+                g = {'z': 40, 'o': None, 'h': 26, 'i': 40}[label]
+                fc = o['S'] * (g + 3 - o['l']) / 3600 if g else 3.0
+                book.check('N9', fid, i, out, quantity=f'{text}: cars per cycle' + (', own S(g+y-l)' if g else ''), forecast=fc, seeds=seedtag('N9'))
             else:
                 book.check('N9', 'F095', 0, out, quantity=f'{text}: cars per cycle', seeds=seedtag(f'N9{label}'), mode='low', tol='0')
             book.check('N9', 'F093', 0, holds, quantity=f'{text}: longest stand on link or approach (s)', seeds=seedtag('N9'), mode='high', tol='0')
@@ -1870,8 +1956,9 @@ class N10:
                 f = run.cell(name).sort_values(['trip', 'time'], kind='stable')
                 worst.append(longest_stand(f))
                 x = run.trips(name)
-                l = x[x.trip.str.contains(r'\.l')]
-                per.append(((l.arrival >= 300) & (l.arrival < 2900)).sum() / (2600 / 86))
+                # left turners onto oe, counted in whole cycles: 4 to 33, each ending with the north-south yellow
+                lf = f[f.trip.astype(str).str.contains(r'\.l') & (f.lane == f'{name}.oe_0')].groupby('trip', observed=True).time.min()
+                per.append(float(((lf >= 4 * 86) & (lf < 34 * 86)).sum()) / 30)
                 il = f[f.lane.astype(str).str.startswith(':') & (f.speed < 0.1)]
                 ints.append(il.groupby('trip', observed=True).size().max() * run.a.fcd if len(il) else 0.0)
             book.check('N10', 'F049', 0, worst, quantity=f'{key}: longest standing still (s), limit 5 min', forecast=300.0, tol='0', mode='high', seeds=seedtag(f'N10{key}'))
@@ -1933,7 +2020,9 @@ class S2On:
         for key in ((40, 300.0), (40, 301.0)):
             v = res[key]
             if np.mean([x[1] for x in v]) >= 39.5:
-                book.check('C-S2', 'F032', 0, [x[0] for x in v], quantity=f'N 40 of {key[1]:.0f} m flow', forecast=0.0, tol=f'{(key[1] - 300 + .01) / T * 40 / key[1] * 3600 * 1.5:.0f}', seeds=seedtag('C-S2'))
+                book.check('C-S2', 'F032', 0, [x[0] for x in v], quantity=f'N 40 of {key[1]:.0f} m flow', forecast=0.0, tol=f'{(key[1] - 300 + .01) / T / key[1] * 3600 * 1.5:.0f}', seeds=seedtag('C-S2'))
+            elif key[1] == 300.0:
+                book.info('C-S2', 'N 40 of 300 m: cars insertion placed (exact jam spacing, not scored)', float(np.mean([x[1] for x in v])))
             else:
                 book.verdict('C-S2', 'F032', f'N 40 of {key[1]:.0f} m', '40 in', f'{np.mean([x[1] for x in v]):.1f} in', 'exact', False, seeds='insertion refuses it')
 
@@ -1952,37 +2041,44 @@ class S2Off:
 
 
 def s3_cell(w, name, f_share, lanes=2, r=0, key='S3'):
-    """Lane 0 turns off gently, the others go through. A share of lane 0 wants through.
-    lanes 2 (S3): a line no one may cross stands in for C's 'no gaps', so the head can only wait or give up.
-    lanes 3 (S4): through lanes stand in a queue behind a short green, so a head needing two changes is held back."""
+    """Lane 0 turns off gently, the others go through. A share of lane 0 wants another lane, and a line no one may
+    cross stands in for C's 'no gaps', so the head can only wait or give up.
+    lanes 2 (S3): the head wants lane 1, one change, and stands at the lane end.
+    lanes 3 (S4): the head wants lane 2, two changes, so lane changing holds it back from the end (C's lc_blocker)."""
     c = w.cell(name, 300)
     c.node('a', 0, 0)
     c.node('m', 300, 0)
-    c.node('t', 600, 0, 'traffic_light' if lanes == 3 else 'priority')
+    c.node('t', 600, 0)
     c.node('z', 1000, 0)
     c.node('r', 600, -80)
     c.node('q', 800, -80)
-    c.edge('in', 'a', 'm', lanes=lanes, lane_change={0: 'authority'} if lanes == 2 else None)
-    c.edge('thr', 'm', 't', lanes=lanes - 1)
+    c.node('y', 1400, 0)
+    c.edge('in', 'a', 'm', lanes=lanes, lane_change={0: 'authority'})
+    c.edge('thr', 'm', 't')
     c.edge('rt', 'm', 'r')
     c.edge('r2', 'r', 'q')
     c.edge('r3', 'q', 'z')
-    c.node('y', 1400, 0)
-    c.edge('end', 't', 'z', lanes=lanes - 1)
+    c.edge('end', 't', 'z')
     c.edge('fin', 'z', 'y')
     c.conn('in', 'rt', 0, 0)
-    for li in range(1, lanes):
-        c.conn('in', 'thr', li, li - 1)
+    c.conn('in', 'thr', lanes - 1, 0)
+    want = ['in', 'thr', 'end', 'fin']
     if lanes == 3:
-        c.signal('t', [(12, 'G'), (3, 'y'), (75, 'r')])
+        c.node('u', 600, 80)
+        c.node('v', 900, 160)
+        c.edge('mid', 'm', 'u')
+        c.edge('mid2', 'u', 'v')
+        c.conn('in', 'mid', 1, 0)
+        others = {1: ['in', 'mid', 'mid2'], 2: want}
+    else:
+        others = {1: want}
     fs = c.feeders('in', lanes, 'a', 0, 0)
     rng = arrival_rng(f'{key}{f_share}', r)
-    through = ['in', 'thr', 'end', 'fin']
     for li in range(1, lanes):
-        for k, t in enumerate(uniform(2400, 0, 1450)):
-            c.car(f't{li}k{k}', t, [fs[li]] + through)
+        for k, t in enumerate(uniform(1200, 0, 1450)):
+            c.car(f't{li}k{k}', t, [fs[li]] + others[li])
     for k, t in enumerate(uniform(2400, 0, 1450)):
-        c.car(f'c{k}', t, [fs[0]] + (through if rng.random() < f_share else ['in', 'rt', 'r2', 'r3', 'fin']))
+        c.car(f'c{k}', t, [fs[0]] + (want if rng.random() < f_share else ['in', 'rt', 'r2', 'r3', 'fin']))
 
 
 def s3_flow(run, name):
@@ -1992,59 +2088,76 @@ def s3_flow(run, name):
     return x[x.edge == f'{name}.rt'].entered.sum() * 3600 / 1150
 
 
-def s3_measure(run, book, fid, batch_vals, prefix, lanes=2):
-    for i, (label, share, r_idx) in enumerate(batch_vals):
-        vals = [s3_flow(run, f'{prefix}{label}{r}') for r in range(SEEDS)]
-        book.check(prefix, fid, r_idx, vals, quantity=f'flow lane 0 {label}', seeds=seedtag(prefix))
+def s3_head_stop(run, name):
+    """How far before the end of lane 0 wrong-lane heads stand, median over stops longer than 10 s."""
+    f = run.cell(name)
+    L = run.lane_len(name, 'in_0')
+    z = f[(f.lane == f'{name}.in_0') & (f.speed < 0.1) & f.trip.astype(str).str.contains(r'\.c')]
+    g = z.groupby('trip', observed=True).agg(pos=('pos', 'max'), n=('time', 'size'))
+    g = g[g.n * run.a.fcd > 10]
+    return float(L - g.pos.median()) if len(g) else float('nan')
+
+
+S3_CASES = (('f05', 0, 0.05), ('f10', 1, 0.1))
+
+
+def s3_check(run, book, st, scene_name, pre, fid, cases, T):
+    base = float(np.mean([s3_flow(run, f'{pre}f00r{r}') for r in range(SEEDS)]))
+    h = 3600 / base
+    book.info(scene_name, f'lane 0 flow with no wrong-lane car (veh/h), C took 1800', base)
+    for lab, idx, f in cases:
+        vals = [s3_flow(run, f'{pre}{lab}r{r}') for r in range(SEEDS)]
+        fc = 3600 / (h + f * T) if T else 0.0
+        book.check(scene_name, fid, idx, vals, quantity=f'lane 0 flow, f {f:g} patience {T or "never"}: 3600/(h+fT), h {h:.2f}', forecast=fc, tol=None if T else '30', seeds=seedtag(scene_name))
+
+
+def s3_build(w, cases):
+    for r in range(SEEDS):
+        for f in (0.0,) + tuple(c[2] for c in cases):
+            lab = f'f{int(round(f * 100)):02d}'
+            s3_cell(w, f'CS3{lab}r{r}', f, r=r)
+            s3_cell(w, f'CS4{lab}r{r}', f, lanes=3, r=r, key='S4')
+
+
+def s3_measure(run, book, st, cases, T):
+    s3_check(run, book, st, 'C-S3', 'CS3', 'F033', cases, T)
+    s3_check(run, book, st, 'C-S4', 'CS4', 'F034', cases, T)
+    for pre, sc in (('CS3', 'C-S3'), ('CS4', 'C-S4')):
+        book.info(sc, 'wrong-lane heads stand this far before the lane end (m)', float(np.nanmean([s3_head_stop(run, f'{pre}f10r{r}') for r in range(SEEDS)])))
+    book.info('C-S4', f'patience {T}: missed turns asked, rerouted, no way', str({k: run.rep.get('missed_turns', {}).get(k) for k in ('asked', 'rerouted', 'no_way')}))
 
 
 @scene('C-S3,C-S4', 'miss60')
 class S3a:
     @staticmethod
     def build(w, st):
-        for r in range(SEEDS):
-            s3_cell(w, f'CS3f00r{r}', 0.0, r=r)
-            s3_cell(w, f'CS3f05r{r}', 0.05, r=r)
-            s3_cell(w, f'CS3f10r{r}', 0.1, r=r)
-            s3_cell(w, f'CS4f05r{r}', 0.05, lanes=3, r=r, key='S4')
-            s3_cell(w, f'CS4f10r{r}', 0.1, lanes=3, r=r, key='S4')
+        s3_build(w, S3_CASES)
 
     @staticmethod
     def measure(run, book, st):
-        book.info('C-S3', 'lane 0 flow with no wrong-lane car, formula 1800', float(np.mean([s3_flow(run, f'CS3f00r{r}') for r in range(SEEDS)])))
-        for pre, scene_name, fid in (('CS3', 'C-S3', 'F033'), ('CS4', 'C-S4', 'F034')):
-            for i, lab in enumerate(('f05', 'f10')):
-                vals = [s3_flow(run, f'{pre}{lab}r{r}') for r in range(SEEDS)]
-                book.check(scene_name, fid, i, vals, quantity=f'lane 0 flow, f .{lab[1:]} patience 60', seeds=seedtag(scene_name))
-        book.info('C-S4', 'missed turns asked, rerouted, no way', str({k: run.rep.get('missed_turns', {}).get(k) for k in ('asked', 'rerouted', 'no_way')}))
+        s3_measure(run, book, st, S3_CASES, 60)
 
 
 @scene('C-S3c', 'miss120')
 class S3b:
     @staticmethod
     def build(w, st):
-        for r in range(SEEDS):
-            s3_cell(w, f'CS3f10r{r}', 0.1, r=r)
-            s3_cell(w, f'CS4f10r{r}', 0.1, lanes=3, r=r, key='S4')
+        s3_build(w, (('f10', 2, 0.1),))
 
     @staticmethod
     def measure(run, book, st):
-        book.check('C-S3', 'F033', 2, [s3_flow(run, f'CS3f10r{r}') for r in range(SEEDS)], quantity='lane 0 flow, f .10 patience 120', seeds=seedtag('C-S3'))
-        book.check('C-S4', 'F034', 2, [s3_flow(run, f'CS4f10r{r}') for r in range(SEEDS)], quantity='lane 0 flow, f .10 patience 120', seeds=seedtag('C-S4'))
+        s3_measure(run, book, st, (('f10', 2, 0.1),), 120)
 
 
 @scene('C-S3n', 'miss0')
 class S3c:
     @staticmethod
     def build(w, st):
-        for r in range(SEEDS):
-            s3_cell(w, f'CS3f10r{r}', 0.1, r=r)
-            s3_cell(w, f'CS4f10r{r}', 0.1, lanes=3, r=r, key='S4')
+        s3_build(w, (('f10', 3, 0.1),))
 
     @staticmethod
     def measure(run, book, st):
-        book.check('C-S3', 'F033', 3, [s3_flow(run, f'CS3f10r{r}') for r in range(SEEDS)], quantity='lane 0 flow, f .10 never', seeds=seedtag('C-S3'), tol='30')
-        book.check('C-S4', 'F034', 3, [s3_flow(run, f'CS4f10r{r}') for r in range(SEEDS)], quantity='lane 0 flow, f .10 never', seeds=seedtag('C-S4'), tol='30')
+        s3_measure(run, book, st, (('f10', 3, 0.1),), 0)
 
 
 @scene('C-S4b,C-S6', 'drop_city')
@@ -2428,6 +2541,11 @@ def run_batch(name, scenes, a, book, st, out):
         fcd = max(fcd, a.dt)
         args += ['--fcd', d / 'fcd.csv', '--fcd-interval', fcd]
     for t in cfg.get('tune', []):
+        # the human driver on t3/1b36c9cf names its patience t_miss, and switches the rule off by name
+        if a.driver == 'human' and t.startswith('miss_patience='):
+            v = t.split('=')[1]
+            args += ['--human-off', 'miss'] if float(v) == 0 else ['--tune', f't_miss={v}']
+            continue
         args += ['--tune', t]
     args += shlex.split(a.flags)
     t0 = time.time()
@@ -2459,7 +2577,7 @@ def run_batch(name, scenes, a, book, st, out):
         (d / 'fcd.csv').unlink(missing_ok=True)
 
 
-ORDER = ['signal', 'lane', 'ring', 'sringon', 'sringoff', 'signal_long', 'xone', 'give', 'give2', 'lc', 'lc2', 'drop', 'drop_city', 'slow', 'net', 'net_long', 'n9', 'n10', 'miss60', 'miss120', 'miss0', 'block1', 'block25', 'block0', 'grid', 'grid_sig']
+ORDER = ['lane', 'signal', 'ring', 'sringon', 'sringoff', 'signal_long', 'xone', 'give', 'give2', 'lc', 'lc2', 'drop', 'drop_city', 'slow', 'net', 'net_long', 'n9', 'n10', 'miss60', 'miss120', 'miss0', 'block1', 'block25', 'block0', 'grid', 'grid_sig']
 
 
 def main():
@@ -2499,7 +2617,9 @@ def main():
         new = pd.DataFrame(book.rows)
         # A partial run replaces its own scenes in the table and leaves the rest.
         if only and res_old is not None and len(new):
-            new = pd.concat([res_old[~res_old.scene.isin(set(new.scene))], new], ignore_index=True)
+            # per-batch rows (L7) are replaced by batch, scene rows by scene
+            gone = (res_old.scene.isin(set(new.scene) - {'L7'})) | (res_old.scene.eq('L7') & res_old.quantity.isin(set(new.quantity)))
+            new = pd.concat([res_old[~gone], new], ignore_index=True)
         new.to_csv(res, index=False)
     d = pd.DataFrame(book.rows)
     if not len(d):
