@@ -1072,7 +1072,9 @@ fn md_tgap(v: f32) -> f32 {
 // What the driver asks for behind a leader at bumper gap gb: closing speed over gap (the inverse time to collision),
 // a share of the leader's acceleration, braking only well too close, and a weak pull from far behind.
 fn md_cmd(v: f32, gb: f32, vl: f32, al: f32) -> f32 {
-    let gs = max(md_s0, md_f * md_tgap(v) * v);
+    // Spacing grows as s0 + T v from standstill (queues.json, F611); above 6.5 m/s it equals DRIVER.md's T(v) v.
+    let vt = max(v, 6.5);
+    let gs = md_s0 + md_f * (md_tgap(vt) - md_s0 / vt) * v;
     let e = (gb - gs) / max(v, 1.0);
     return md_k * min(vl - v, md_dvmax) / max(gb, 1.0) + md_ca * al + md_kp * max(e, 0.0) - md_kg * max(-e - md_near, 0.0);
 }

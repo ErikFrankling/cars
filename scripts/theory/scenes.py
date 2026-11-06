@@ -28,10 +28,11 @@ warnings.simplefilter('ignore')
 ROOT = Path(__file__).resolve().parents[2]
 FORECASTS = ROOT / 'research/truth/foundations/forecasts.csv'
 BINS = {'measured': ROOT / 'target/release/cars', 'physical': ROOT / 'target/release/cars', 'human': ROOT / 'target/drivers/cars-human-11afb41'}
-# The measured driver (research/truth/measure/MODEL.md) is the default; the one driver of scenes-log section 3 is --tune measured=0.
-FLAGS = {'measured': '', 'physical': '--tune measured=0', 'human': '--humans'}
+# The measured driver (research/truth/measure/MODEL.md) is --tune measured=1; the one driver of scenes-log section 3 is --tune measured=0.
+FLAGS = {'measured': '--tune measured=1', 'physical': '--tune measured=0', 'human': '--humans'}
 # Lines the measured driver replaces with forecasts from its own equations (F312-F321), and rows it reports as emergent (F322).
-MD_FID = {'F003': 'F312', 'F004': 'F313', 'F008': 'F314', 'F009': 'F315', 'F232': 'F316', 'F234': 'F317', 'F251': 'F318', 'F252': 'F319', 'F253': 'F320', 'F296': 'F321'}
+# Round 2 (F620-F629, md_platoon_r2.json) replaces round 1's F312-F321 for the same scene lines.
+MD_FID = {'F003': 'F620', 'F004': 'F621', 'F008': 'F622', 'F009': 'F623', 'F232': 'F624', 'F234': 'F625', 'F251': 'F626', 'F252': 'F627', 'F253': 'F628', 'F296': 'F629'}
 MD_INFO = {'F001', 'F002', 'F005', 'F231'}
 MD_EF = math.exp((0.27 * math.sqrt(1 - 0.41 ** 2)) ** 2 / 2)
 
@@ -278,7 +279,7 @@ class Book:
         if self.driver == 'measured' and fid in MD_FID:
             fid = MD_FID[fid]
             mode = 'two'
-            if fid != 'F317':
+            if fid != 'F625':
                 forecast, tol, quantity = None, None, None
         ln = self.lines[fid]
         fn = self.nums(ln['forecast'])
@@ -1123,8 +1124,9 @@ class Give:
         if vt:
             if book.driver == 'measured':
                 vt_ = float(np.mean(vt))
-                book.check('G1', 'F234', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: E[f] T(v) - 0.25 + 5/v_turn, v_turn {vt_:.2f}',
-                           forecast=MD_EF * md_tgap(vt_) - 0.25 + 5.0 / vt_, tol='0.3 s', seeds='G1 all')
+                vv = max(vt_, 6.5)
+                book.check('G1', 'F234', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: (L + s0)/v + E[f] Tc(v) - 0.25, v_turn {vt_:.2f}',
+                           forecast=6.7 / vt_ + MD_EF * (md_tgap(vv) - 1.7 / vv) - 0.25, tol='0.3 s', seeds='G1 all')
             else:
                 book.check('G1', 'F234', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: E[T] + s/v_turn, v_turn {np.mean(vt):.2f}', forecast=1.4 * math.exp(0.045) + 7.5 / np.mean(vt), tol='10%', seeds='G1 all')
         for q in Give.QS[1:]:
@@ -1335,7 +1337,7 @@ class Roundabout:
         # runs at its own capacity at 1200 offered.
         tf = 3600 / max(np.mean(outs[0]), 1.0)
         tm = E_T + 7.5 / max(np.mean(vr), 0.5) if vr else float('nan')
-        tc = 5.9
+        tc = 4.97   # rounD drivers who stopped at the line (gaps_rounD.json), both physical drivers since round 2 (F634)
         for i, q in enumerate(Roundabout.QS[1:]):
             qs = np.mean(qc[q]) / 3600
             fc = 3600 * qs * max(1 - qs * tm, 0) * math.exp(-qs * (tc - tm)) / (1 - math.exp(-qs * tf))
@@ -2059,7 +2061,7 @@ class N9:
     @staticmethod
     def measure(run, book, st):
         for label, text, off, g2, lanes in N9_CASES:
-            out, L, trend, holds, left, why = [], [], [], [], [], []
+            out, L, trend, holds, left, why, fed, done, late_r = [], [], [], [], [], [], [], [], []
             for r in range(SEEDS):
                 name = f'N9{label}{r}'
                 x = run.trips(name)
@@ -2072,7 +2074,10 @@ class N9:
                 L.append(run.lane_len(name, 'lk_0'))
                 f = run.cell(name).sort_values(['trip', 'time'], kind='stable')
                 holds.append(longest_stand(f, on=('.lk_', '.up_')))
-                left.append(len(f[f.time >= 2890]))
+                # distinct cars, not FCD rows (F600: the line counted about ten rows per car)
+                left.append(f[f.time >= 2890].trip.nunique())
+                fed.append(N9_FEED[label] * N9_END / 3600); done.append(int((a < 2890).sum()))
+                late_r.append(((a >= 2290) & (a < 2890)).sum() / 600 / max(((a >= 400) & (a < N9_END)).sum() / (N9_END - 400), 1e-9))
             q = [f"{np.mean(out):.1f}"]
             if lanes == 1:
                 fid, i = {'z': ('F047', 0), 'o': ('F047', 1), 'h': ('F291', 0), 'i': ('F292', 0)}[label]
@@ -2090,6 +2095,8 @@ class N9:
             book.check('N9', 'F293', 0, holds, quantity=f'{text}: longest stand on link or approach (s)', seeds=seedtag('N9'), mode='high', tol='0')
             book.check('N9', 'F294', 0, left, quantity=f'{text}: cars left {2890 - N9_END} s after the feed ends', seeds=seedtag('N9'), tol='0')
             book.info('N9', f'{text}: flow late over early (1 = no decay); link lane (m)', f'{np.mean(trend):.2f}; {np.mean(L):.1f}')
+            book.info('N9', f'{text}: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)',
+                      f'{np.mean(fed):.0f}, {np.mean(done):.0f}, {np.mean(left):.0f}; {np.mean(late_r):.2f}')
 
 
 def longest_stand(f, on=None):

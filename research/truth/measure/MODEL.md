@@ -80,3 +80,14 @@ Critical gap by movement from inD and rounD (DRIVER.md), replacing HBS: minor ro
 - Free speed is kept for the whole trip, though it drifts in reality (r 0.5 at 3 km). The scenes and replays are shorter than that.
 - The slower part of the time gap that belongs to a leader pair (e-folding 1.2 km) is not modelled.
 - Urban desired speed is not measured; urban lanes use the lane limit times the factor.
+
+## Round 2, 7 November ([ROUND2.md](ROUND2.md))
+
+Two parts change, each from a measurement on recordings not held out. Everything else stays frozen as above.
+
+1. **Desired gap from standstill.** g\*(v) = s0 + f_i (T(v') − s0/v') v with v' = max(v, 6.5 m/s). Above 6.5 m/s this is f_i T(v) v + (1 − f_i) s0, the same as before for the median driver. Below, spacing grows as s0 + 1.34 s × v. Measured on rounD, inD, SinD, Lankershim and TGSIM: 2.7-3.9 m at 1 m/s, 4.0-4.8 at 2, 5.1-5.9 at 3 (queues.json, F611). Round 1's max(s0, T v) asked for 1.7 m at 1 m/s.
+2. **Command noise** 0.38 m/s² with correlation time 0.75 s: the driver's part of the next-second residual once TGSIM's speed error is split off (noise2.json, F615). Round 1's 0.97 m/s² near-white was mostly the tracker.
+
+Kept, with the round 2 evidence: k_p 0.025, since 10 and 30 s rollouts give 0.035 and 0.044 and real open gaps close no faster than the law closes them (F604-F608). Also kept: K, c_a, k_g, s0 1.7 m (rounD 1.83), the start reaction of 1.0 s (the twin's delay at 1 m/s is 1.25 s, measured 1.08-1.37), and no creep rule (77-85% of stopped cars do not creep). Roundabout entries take rounD's critical gap of drivers who stopped at the line, 4.97 s (4.40-5.60), for both physical drivers: the give-way rule counts gaps for a head standing at its line. The 3.0 s of all seen arrivals, mostly rolling, was tried first and missed (F631, F634).
+
+Twin: `fit_driver.command` (MD_LOWGAP=0 gives round 1), `md_platoon.py`, `md_twin.py`; kernel `md_cmd` in common.wgsl; constants `MD_NOISE_SD`, `MD_NOISE_T` in world.rs.
