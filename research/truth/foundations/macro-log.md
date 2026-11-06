@@ -40,6 +40,21 @@ Signal pairs under 50 m: 208 (`signal_pairs.csv`), 163 under 30 m, 166 on main r
 
 Clean cross-sections: all 24 stations over 200 m from a calibration link are in the locked set (report 22's rule), 4 of them in the district. They are not read here. Macro writes their flows for the reveal.
 
+### Rung 3 on the reality table's corrections (6 November)
+
+| Test | Result | Forecast |
+|---|---|---|
+| Upper, s 1,640 / 1,750 / 1,900, committed rule greens | .33% / .18% / .12% of 11,948 site-hours; 1 site at 1,750, TE562 Potsdamer Straße needs g/C .40 | F072 hit after the rule change below |
+| Jam heads tier A at a third, real flow over table capacity (`jam_heads.csv`) | 18 heads with a loop within two edges: median .56, p25-p75 .44-.94; 4 of 33 over 1.1 | F067 .8 ± .15: miss |
+| Short links under 50 m between signals, saturated feed over storage, map programs (`short_links.csv`) | through: 75 of 166 links overfed, 2,574 excess cars a cycle; R 6's rule on the 74 opposed through connections: 74 links, 1,655 (−36%). Turns: 118 of 151 links, 2,815, unchanged | F068: through −36% against half; turns now the larger source |
+| Cuts | unchanged: 0 of 58, 0 of 84 at s 1,640 and up | F052, F055 |
+
+**The jam-head miss, named.** Hourly flow at a head is a floor on capacity, since a queue rarely fills the hour (R 2: queue-present flow equals flow without one). The invented greens give main roads about .46, while Berlin's queue-hour flows imply an effective .33. And macro carries .65-.8 of real flow at those heads, at x .66 median; only 11-23% of heads are over x .9 in macro at 08 and 16 h. A loop can't prove the table generous; rung 4's jam list can, and this predicts it will catch few.
+
+**Short links.** R 6's rule takes a third off the through feed, but at saturated feed it clears almost none of these links, as Hamburg clears only 46%. Turns into short links, which the rule doesn't touch, are the larger source. That points to rung 2's scene N9 and to turn feeds, not to through offsets.
+
+**Rung 3 exits** on the upper test, the cuts and the audits. The lower side has named causes and no proof either way, and goes to rung 4's jam list.
+
 ## Rule fixed before any macro score (rule 8)
 
 Revised 6 November from the reality table, before any score on it. Scores F058-F064 ran on an uncommitted mix of this and the first rule, so they count as development runs; the scores from F072 on are the first on this rule.
