@@ -159,7 +159,7 @@ struct Params {
     md_u: vec4f,      // time gap at 30, 40 m/s, spare, spare
     lcm_a: vec4f,     // measured lane change (measure/LANECHANGE.md): start law constant, per 10 s to the end; critical lag log median, per m/s closing
     lcm_b: vec4f,     // critical lag log-SD; critical lead log median, per m/s closing, log-SD
-    lcm_c: vec4f,     // share of followers who open a gap; on; closing speed the lag term stops at, the lead term
+    lcm_c: vec4f,     // share of followers who open a gap; on; spare; spare
 }
 
 struct Globals {

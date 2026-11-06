@@ -106,8 +106,7 @@ pub struct GpuParams {
     pub lcm_a: [f32; 4],
     /// Critical lag log-SD; critical lead time gap log median, rise per m/s ego closes, log-SD.
     pub lcm_b: [f32; 4],
-    /// Share of target-lane followers who open a gap for a must-change; on (1) or off (0); closing speeds (m/s) where the
-    /// lag and the lead terms stop rising.
+    /// Share of target-lane followers who open a gap for a must-change; on (1) or off (0); spare; spare.
     pub lcm_c: [f32; 4],
 }
 
@@ -473,9 +472,6 @@ pub const LCM_AT: f32 = -1.119;
 /// speed, lead over own speed, both floored at 1 m/s. Same fit; drawn afresh every 0.5 s as the fit assumes.
 pub const LCM_LAG: [f32; 3] = [-0.908, 0.551, 1.676];
 pub const LCM_LEAD: [f32; 3] = [-2.004, 0.453, 1.374];
-/// The closing-speed terms hold at the p95 of the positive closing speeds the fit saw (lag 3.81, lead 7.71 m/s; p99 6.1
-/// and 10.8): extrapolated, a head standing beside a 10 m/s stream needed a 98 s lag (F727).
-pub const LCM_CLOSE_CAP: [f32; 2] = [3.81, 7.71];
 /// Share of new followers who slow 0.3 m/s2 or more beyond matched followers in the 3 s before the start: 11.9% against
 /// a 6.4% baseline (exiD, 1,044 merges, F707).
 pub const LCM_COURTESY: f32 = 0.055;
@@ -1247,7 +1243,7 @@ impl World {
             md_u: [0.95, 0.8, 0.0, 0.0],
             lcm_a: [cfg.tune("lcm_a0", LCM_A0), cfg.tune("lcm_at", LCM_AT), cfg.tune("lcm_lag_mu", LCM_LAG[0]), cfg.tune("lcm_lag_close", LCM_LAG[1])],
             lcm_b: [cfg.tune("lcm_lag_sd", LCM_LAG[2]), cfg.tune("lcm_lead_mu", LCM_LEAD[0]), cfg.tune("lcm_lead_close", LCM_LEAD[1]), cfg.tune("lcm_lead_sd", LCM_LEAD[2])],
-            lcm_c: [cfg.tune("lcm_courtesy", LCM_COURTESY), if !cfg.humans && cfg.tune("lc_measured", 1.0) > 0.0 { 1.0 } else { 0.0 }, cfg.tune("lcm_lag_cap", LCM_CLOSE_CAP[0]), cfg.tune("lcm_lead_cap", LCM_CLOSE_CAP[1])],
+            lcm_c: [cfg.tune("lcm_courtesy", LCM_COURTESY), if !cfg.humans && cfg.tune("lc_measured", 1.0) > 0.0 { 1.0 } else { 0.0 }, 0.0, 0.0],
         };
         w
     }
