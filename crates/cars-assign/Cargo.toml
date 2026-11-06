@@ -8,6 +8,10 @@ license.workspace = true
 name = "assign"
 path = "src/bin/assign.rs"
 
+[[bin]]
+name = "cuttable"
+path = "src/bin/cuttable.rs"
+
 [dependencies]
 cars-core = { path = "../cars-core" }
 wgpu.workspace = true

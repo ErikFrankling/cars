@@ -736,7 +736,54 @@ pub struct World {
     /// Lane geometry for the detector: x, y, distance along, per point.
     pub shape_points: Vec<[f32; 4]>,
     pub coord: Option<crate::coord::CoordWorld>,
+    /// Recorded tracks that overwrite their vehicles each step, see `crate::replay`.
+    pub replay: Option<ReplayWorld>,
 }
+
+/// Twin of `ReplayCfg` in replay.wgsl.
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable, Debug, Default)]
+pub struct GpuReplayCfg {
+    pub begin: f32,
+    pub n_tracks: u32,
+    pub n_trips: u32,
+    pub pad: u32,
+}
+
+/// Twin of `ReplayTrack` in replay.wgsl. Keys `first..first + n` at `t0 + k * key_dt`; replayed while time < `release`.
+/// Times in seconds after `--begin`.
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable, Debug, Default)]
+pub struct GpuReplayTrack {
+    pub first: u32,
+    pub n: u32,
+    pub t0: f32,
+    pub key_dt: f32,
+    pub release: f32,
+    pub pad: [u32; 3],
+}
+
+/// Twin of `ReplayKey` in replay.wgsl. `route_i` is absolute in `routes`, as `Veh::route_i`.
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable, Debug, Default)]
+pub struct GpuReplayKey {
+    pub lane: u32,
+    pub pos: f32,
+    pub speed: f32,
+    pub route_i: u32,
+}
+
+#[derive(Default, Clone)]
+pub struct ReplayWorld {
+    pub cfg: GpuReplayCfg,
+    pub tracks: Vec<GpuReplayTrack>,
+    pub keys: Vec<GpuReplayKey>,
+    /// Track per GPU trip, `u32::MAX` for a trip simulated throughout.
+    pub trip_track: Vec<u32>,
+}
+
+/// Counters of `replay_apply`, in `rstats`.
+pub const REPLAY_STATS: [&str; 5] = ["applied", "ended", "shadows_removed", "lane_jumps", "released"];
 
 fn splitmix(state: &mut u64) -> u64 {
     *state = state.wrapping_add(0x9E3779B97F4A7C15);

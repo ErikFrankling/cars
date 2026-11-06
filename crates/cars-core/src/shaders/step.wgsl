@@ -2693,7 +2693,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     var speed = 0.0;
     var patch_speed = false;
     switch t.depart_speed_mode {
-        case 1u: { speed = t.depart_speed; }
+        case 1u, 7u: { speed = t.depart_speed; }
         case 2u: { speed = rand01(&ins_rng) * vmax; patch_speed = true; }
         case 3u: { speed = vmax; patch_speed = true; }
         case 4u: { speed = vmax; }
@@ -2743,7 +2743,7 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     }
 
     let gap = lead_back - pos - ty.min_gap;
-    if (lead_back < 1e8) {
+    if (lead_back < 1e8 && t.depart_speed_mode != 7u) {
         if (gap < 0.0) { return false; }
         if (ty.model == MODEL_AV) {
             // The upstream queue discharges at the equilibrium headway of the tail's speed.
@@ -2757,12 +2757,12 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
         }
     }
     // Whoever comes up behind must be able to keep following us, even from the lane before.
-    if (!follower_allows(lane, pos, 0xfffffffeu, speed)) { return false; }
+    if (t.depart_speed_mode != 7u && !follower_allows(lane, pos, 0xfffffffeu, speed)) { return false; }
     // What lies within braking distance along the route, as in MSLane::isInsertionSuccess.
     var seen = la.length - pos;
     var at = lane;
     var route_at = t.route_start;
-    for (var hop = 0u; hop < 8u; hop++) {
+    for (var hop = 0u; hop < 8u && t.depart_speed_mode != 7u; hop++) {
         let dist = brake_gap(speed, ty.decel, ty.tau) + ty.min_gap;
         if (seen >= dist) { break; }
         let k = pick_link(at, route_at, t.route_end);

@@ -2,7 +2,7 @@
 
 A GPU microscopic traffic simulator in Rust and WGSL. Goal: match real measured traffic, at network level, on data the model never saw. Reality and theory are the reference; see `research/truth/VALIDATION-GATE.md`. Human-only traffic must pass that gate before any self-driving work counts. It began as a reimplementation of SUMO and still reads SUMO's file formats. No decision rests on SUMO or `--sumo-compat`.
 
-Work follows the ladder in `research/truth/PLAN.md`. No run without a line in `research/truth/foundations/forecasts.csv`: the number, where it comes from, the tolerance. No city run until the rungs below it pass. `scripts/theory/` holds the static checks, which take seconds and need no simulator.
+Work follows the tiers in `research/truth/PLAN.md`: behaviour is tested by replaying recordings that see every vehicle, so demand, routes and signals are recorded facts, before any city with modelled demand. No run without a line in `research/truth/foundations/forecasts.csv`: the number, where it comes from, the tolerance. A behaviour number comes from a recording of that behaviour, never from making a scene pass. `scripts/theory/` holds the static checks, which take seconds and need no simulator.
 
 The GPU also drives Erik's desktop. Scale every experiment from small to big, keep GPU submissions short (Sim::run does this), keep 3 GB of VRAM spare, run one GPU job at a time, leave nothing running. CPU jobs over about 10 minutes go to the homelab with `heavy`.
 

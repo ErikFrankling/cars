@@ -1,0 +1,136 @@
+{
+ "v_free": 9.939,
+ "runs": {
+  "mix_s0.fcd.csv": {
+   "n": 581,
+   "crossing_mae_s": 2.880849956642001,
+   "crossing_bias_s": -2.102768164115592,
+   "mae_by_half_hour": {
+    "14:00": 2.54,
+    "14:30": 3.39,
+    "15:00": 2.24,
+    "15:30": 4.45,
+    "16:00": 2.21,
+    "16:30": 2.4,
+    "17:00": 1.83
+   },
+   "overlaps": {
+    "pairs": {
+     "rep_behind_sim": 10,
+     "sim_behind_rep": 3,
+     "rep_behind_rep": 1
+    },
+    "sim_cars_ended": 9
+   },
+   "discharge_per_sat_cycle_mae": 0.3181818181818182,
+   "discharge_bias": -0.13636363636363635,
+   "never_entered": 0,
+   "entry_delay_s": {
+    "p50": 0.09999999999854481,
+    "p95": 0.10000000000582077,
+    "max": 3.5
+   },
+   "replayed_vehicle_samples": 24185
+  },
+  "mix_s1.fcd.csv": {
+   "n": 581,
+   "crossing_mae_s": 3.0024372496731186,
+   "crossing_bias_s": -2.415261190571422,
+   "mae_by_half_hour": {
+    "14:00": 3.06,
+    "14:30": 3.66,
+    "15:00": 2.19,
+    "15:30": 4.05,
+    "16:00": 2.68,
+    "16:30": 2.47,
+    "17:00": 1.68
+   },
+   "overlaps": {
+    "pairs": {
+     "rep_behind_sim": 9,
+     "sim_behind_rep": 3,
+     "rep_behind_rep": 1
+    },
+    "sim_cars_ended": 9
+   },
+   "discharge_per_sat_cycle_mae": 0.18181818181818182,
+   "discharge_bias": -0.09090909090909091,
+   "never_entered": 0,
+   "entry_delay_s": {
+    "p50": 0.09999999999854481,
+    "p95": 0.10000000000582077,
+    "max": 3.2999999999956344
+   },
+   "replayed_vehicle_samples": 24185
+  },
+  "mix_s2.fcd.csv": {
+   "n": 583,
+   "crossing_mae_s": 2.6647535825539004,
+   "crossing_bias_s": -2.216645660758904,
+   "mae_by_half_hour": {
+    "14:00": 3.1,
+    "14:30": 2.26,
+    "15:00": 2.25,
+    "15:30": 3.71,
+    "16:00": 2.73,
+    "16:30": 1.97,
+    "17:00": 1.93
+   },
+   "overlaps": {
+    "pairs": {
+     "rep_behind_sim": 7,
+     "sim_behind_rep": 3,
+     "rep_behind_rep": 1
+    },
+    "sim_cars_ended": 7
+   },
+   "discharge_per_sat_cycle_mae": 0.13636363636363635,
+   "discharge_bias": -0.13636363636363635,
+   "never_entered": 0,
+   "entry_delay_s": {
+    "p50": 0.09999999999854481,
+    "p95": 0.10000000000582077,
+    "max": 3.2999999999956344
+   },
+   "replayed_vehicle_samples": 24185
+  }
+ },
+ "null_point_queue": {
+  "n": 587,
+  "crossing_mae_s": 4.944167996459521,
+  "crossing_bias_s": 4.201817560903275,
+  "mae_by_half_hour": {
+   "14:00": 3.69,
+   "14:30": 2.74,
+   "15:00": 6.77,
+   "15:30": 4.94,
+   "16:00": 5.01,
+   "16:30": 6.24,
+   "17:00": 1.22
+  },
+  "discharge_per_sat_cycle_mae": 0.4090909090909091,
+  "discharge_bias": 0.045454545454545456
+ },
+ "null_point_queue_lenient": {
+  "n": 587,
+  "crossing_mae_s": 4.944167996459521,
+  "crossing_bias_s": 4.201817560903275,
+  "mae_by_half_hour": {
+   "14:00": 3.69,
+   "14:30": 2.74,
+   "15:00": 6.77,
+   "15:30": 4.94,
+   "16:00": 5.01,
+   "16:30": 6.24,
+   "17:00": 1.22
+  },
+  "discharge_per_sat_cycle_mae": 0.4090909090909091,
+  "discharge_bias": 0.045454545454545456
+ },
+ "recorded": {
+  "saturated_cycles": 22,
+  "discharge_mean": 7.2727272727272725,
+  "vehicles_simulated": 603,
+  "crossing_recorded": 602
+ }
+}

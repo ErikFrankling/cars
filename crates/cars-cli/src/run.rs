@@ -152,6 +152,10 @@ pub struct Args {
     /// `cars why`, `cars jam` and `cars junction`. Compiles probes into the kernels; off without it.
     #[arg(long)]
     why: bool,
+    /// Recorded tracks (.rpl, scripts/replay/rpl.py): their trips are put where the recording has them until
+    /// their release time. research/truth/replay/README.md.
+    #[arg(long)]
+    replay: Option<PathBuf>,
 }
 
 fn surface_friction(name: &str) -> f32 {
@@ -217,6 +221,10 @@ pub fn run(args: Args) {
     };
     let t = Instant::now();
     let mut world = World::build(&net, &demand, &cfg, &[]);
+    if let Some(p) = &args.replay {
+        let a = cars_core::replay::attach(&mut world, &net, &demand, p, args.begin).expect("replay");
+        eprintln!("replay: {} tracks, {} keys, {} tracks with no trip", a.tracks, a.keys, a.missing_trips);
+    }
     if !speed_trace.is_empty() {
         // Only the types marked phys.trace follow it, or everyone if none is marked.
         let any = demand.vtypes.iter().any(|t| t.params.contains_key("phys.trace"));
@@ -564,6 +572,11 @@ pub fn run(args: Args) {
             }
             writeln!(f).unwrap();
         }
+    }
+    if sim.replay.is_some() {
+        let st = sim.replay_stats(&gpu);
+        let line: Vec<String> = cars_core::world::REPLAY_STATS.iter().zip(&st).map(|(n, v)| format!("{n} {v}")).collect();
+        eprintln!("replay: {}", line.join(", "));
     }
     eprintln!("time: encode {:.2}s, gpu submit+wait {:.2}s, total {wall:.2}s", sim.encode_ms / 1000.0, sim.gpu_ms / 1000.0);
     if mu > 0.0 {

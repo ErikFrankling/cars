@@ -1,43 +1,43 @@
 # Status board
 
-The orchestrator keeps this current. Work follows the ladder in `PLAN.md`. No run without a line in `foundations/forecasts.csv`. Reference is reality or theory; SUMO and `--sumo-compat` count for nothing here.
+The orchestrator keeps this current. Work follows the tiers in `PLAN.md`. No run without a line in `foundations/forecasts.csv`. Reference is recordings and theory; SUMO and `--sumo-compat` count for nothing here.
 
 ## Goal
-Human-only traffic on the Berlin district (49 km²): no vehicle removal, full demand, report 15's Credible thresholds on held-out sites.
+Good science: a simulator whose every behaviour is tested against recordings where everything else was observed, so that a car you look at acts like a human and an area matches its recording, before any self-driving result counts.
 
-## Ladder
-| Rung | State | Number that says so |
+## Tiers
+| Tier | State | Number that says so |
 |---|---|---|
-| 1. Reality table | **Done**, `foundations/R-reality-table.md` | 97 real jam places in the district; bands for cars on the road |
-| 2. Scenes and real tracks | Running | Scenes passing, of about 40 |
-| 3. Movement table | Running | Site-hours over the upper test; real jam heads with no matching capacity |
-| 4. Macro assignment | Next | RMSN, R², slope, GEH<5, class bias, rush-hour dip, jam list |
-| 5. Vehicles and forecast | Waits | Var/mean, now 0.82 / 2.97 / 5.63 at 10 / 50 / 100% |
-| 6. Corridor | Waits for 2, 5 | Real queue place, start, end, discharge |
-| 7. Micro district | Waits for 6 | Real speeds and jam list; cars on road against forecast; hold p99 and max |
-| 8. Score | Waits | Gate |
+| T0 Verification | Running: theory scenes, one driver, frozen time step | Scenes passing; baseline 74 pass, 98 fail (physical), 79, 99 (human) |
+| T1 One driver | Harness merged (`replay/RESULTS.md`). Measuring the driver's parts from highD, inD, rounD, exiD, SinD | Main's driver fails: 30 s spacing error 6.30 m; classifier 0.89 against a real floor of 0.64-0.68; next-second response 0.68 m/s, worse than constant speed (0.37). It steers to its own 1 s gap; real followers keep 2.3 s and let it drift |
+| T2 Streams | DLR UT approach replays with its recorded signals | Discharge per cycle off by 0.14-0.32 cars of 7.3 (harness check, not independent). Cars cross the stop line 2.1-2.4 s early: launch at 2.6 m/s² against 1.8 measured. F120 on SinD needs stop lines inferred first |
+| T3 Areas, recorded demand | pNEUMA on disk (15 GB); Songdo downloading | |
+| T4 Cities | Berlin macro merged, parked: `foundations/macro-log.md` ("Pick it up cold") | Movement table passes (0.18% of site-hours over). Whole day: arterial speed bias -5.6%, dip .66 against .69; motorways, jam list (0-17% caught) and counts (RMSN .43) fail. Route choice alone reaches RMSN .30, so next is route cost on unsignalled streets |
+| T5 Self-driving | Waits for T3 | |
+
+## Recordings on disk
+Car following and lane changes: highD and exiD (`datasets/levelx/`), TGSIM (5 sites), DLR HT (A39), HIGH-SIM sample, NGSIM (4 sites), DRaT, HDSVT. Junctions: inD and rounD (`datasets/levelx/`), DLR UT (24 h, controller signal states), SinD (4 cities, signal states), OpenDD, Swiss roundabouts, Songdo one junction-day. Whole areas: pNEUMA (`datasets/pneuma-full`). Junction sets: Helsinki (`datasets/helsinki-drones-full`, Jätkäsaari 2024-2025, the Nordic contrast), LADDMS stage 1 (`datasets/laddms-stage1`, lidar at a Nashville corridor), Songdo (20 junctions, downloading to `datasets/songdo-full`). Cities: Xuancheng, Cambridge one day, Jinan. All under `/home/erikf/projects/personal/cars-data/truth/trajectories/` and `datasets/`.
 
 ## What is known, measured or computed
 | Fact | Value | Source |
 |---|---|---|
-| Movements over capacity on MATSim's routes, 100 / 50 / 30% | 311-365 / 11-20 / 0 | D §2.4 |
-| Top jam roots at 50%, two old-driver runs: on or next to an overload; on a signal approach under 50 m | 6-27%; 40-54% (chance 4%, 10%) | PLAN, `scripts/theory/seeds_vs_*.py` |
-| Major-road demand at peak against a regression on other cities | 245,200 against 262,000-318,000 veh-km/h, ±47% | B §5.4 |
-| Cars on the road at 100%, real speeds on model vehicle-km | 12,800-16,100 at 07-08 h, 15,700-18,500 at 08-09 h, 18,500-21,800 at 16-17 h | R §4 |
-| Real saturation flow | 1,750, sweep 1,640-1,900; Berlin can't settle it | R §2 |
-| Hamburg close through pairs under 50 m | 77% linked, +2 s, overlap 0.65, 46% clear; our invented pairs clear as often | R §6 |
-| MATSim's morning against real counts | 0.77 at 06 h, 0.86 at 07 h, 0.98 at 08 h, 1.11-1.18 at 09-11 h | R §4 |
+| Queue discharge with real signal states | 2.0 s per car, 2.7 s lost | Report 05, DLR UT |
+| Lane change duration, 10-90% | 5.1-5.6 s on about 36,000 events | Report 05 |
+| Congested US lane changes passing SUMO's safe-gap test | 35% (free German motorway 85%) | Report 05 |
+| Yellow: half stop at | 5.1 s to the line; almost none brake over 2 m/s² | Report 05 |
+| Roundabout critical gap | about 2.95 s, 7,131 decisions | Report 05 |
+| Car following, held-out 30 s spacing error | lagged model 4.00 m, Krauss 5.43, IDM 5.54 | Report 05 |
 | Longest wait at a real lane end | 79 s, 0 of 610 failed | Report 14 |
-| Time for a held car to fill a median block | 78-157 s | C §3.4 |
-| Physical driver follow-up at give-way | 4.41 s against 3.0 | B §3 |
-| Human driver saturation | 1,500, now 1,800 after the launch fix B's formula points to | B §1, report 16 |
-| Physical driver saturation and motorway | 1,929; 1,732-1,891 across three runs | Physics rounds |
+| Berlin: movements over capacity on MATSim's routes, 100 / 50 / 30% | 311-365 / 11-20 / 0 | D §2.4 |
+| Berlin real saturation flow | 1,750, sweep 1,640-1,900 | R §2 |
+| Real day against real day, Berlin jam places | caught 67%, false 33% | Report 22 |
 
-## Open from the stopped runs
-Not in main: the human driver, `t3/1b36c9cf` at 11afb41, conflicts with the physical driver in seven files, and gets merged by scene results. Its motorway flow is 1,220 per lane, and its final regression pass was cut short. Its no-jump fix for real I-80 tracks is in, but `merge_i80_real_vs_sim.mp4` was cut to 33 of 80 s by the watchdog and needs a full render, checked by eye, once the driver settles. `t3/c5547dcd` has the route agent's iteration files only. Rules committed but unproven: abreast (never fired), missed turns (15 m trigger misses 62% of lane-change root hours in older runs).
+## Data access
+- highD, exiD, inD, rounD: downloaded 6 November, manifest with checksums and licence in `datasets/levelx/manifest.json`.
+- I-24 MOTION and CIRCLES: account requested 6 November, pending approval; scheduled check 7 November 17:00.
 
 ## Rules against rabbit holes
-- Fix a cause only on the lowest rung that shows it.
+- Fix a cause only on the lowest tier that shows it.
 - A miss against a forecast gets explained before anything else changes.
 - Two rounds with no gain on a problem: stop, write down what was tried, take the next item.
-- Merge to main often. At most 3 agents while one Claude account is at its weekly limit (it resets 4 November, 16:00).
+- Merge to main often. At most 3 agents while one Claude account is at its weekly limit (account 2 until 9 November, 11:00).
