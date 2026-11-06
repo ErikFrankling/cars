@@ -1140,10 +1140,11 @@ fn hu_courteous(t: VType) -> bool { return (t.model == MODEL_HUMAN || hd_phys(t)
 // Measured lane changes (research/truth/measure/LANECHANGE.md): the one driver's decisions with numbers from exiD.
 fn lcm_on(t: VType) -> bool { return hd_phys(t) && P.lcm_c.y > 0.5; }
 
-// A critical time gap, lognormal, drawn afresh every 0.5 s as the fit assumes; it rises with the closing speed.
-fn lcm_critical(trip: u32, key: u32, ln_med: f32, per_close: f32, sd: f32, close: f32) -> f32 {
+// A critical time gap, lognormal, drawn afresh every 0.5 s as the fit assumes. It rises with the closing speed up to the
+// closing speeds the fit saw (p95), and no further.
+fn lcm_critical(trip: u32, key: u32, ln_med: f32, per_close: f32, sd: f32, close: f32, cap: f32) -> f32 {
     let second = pcg(u32(f32(G.step) * dt * 2.0));
-    return exp(ln_med + per_close * max(close, 0.0) + sd * hu_normal(trip ^ second, key));
+    return exp(ln_med + per_close * clamp(close, 0.0, cap) + sd * hu_normal(trip ^ second, key));
 }
 
 // Gaps a change into `n` takes: lag over the follower's speed, lead over ours, each at least its critical gap.
@@ -1152,11 +1153,11 @@ fn lcm_gate(e: Veh, n: LcNeighbors) -> u32 {
     var blocked = 0u;
     if (n.follower != NONE) {
         let lag = n.f_gap + types[n.f_vtype].min_gap;
-        if (lag <= 0.0 || lag / max(n.f_speed, 1.0) < lcm_critical(e.trip, 41u, P.lcm_a.z, P.lcm_a.w, P.lcm_b.x, n.f_speed - e.speed)) { blocked |= LCA_BLOCK_FOLLOWER; }
+        if (lag <= 0.0 || lag / max(n.f_speed, 1.0) < lcm_critical(e.trip, 41u, P.lcm_a.z, P.lcm_a.w, P.lcm_b.x, n.f_speed - e.speed, P.lcm_c.z)) { blocked |= LCA_BLOCK_FOLLOWER; }
     }
     if (n.gap < 1e8) {
         let lead = n.gap + ty.min_gap;
-        if (lead <= 0.0 || lead / max(e.speed, 1.0) < lcm_critical(e.trip, 43u, P.lcm_b.y, P.lcm_b.z, P.lcm_b.w, e.speed - n.speed)) { blocked |= LCA_BLOCK_LEADER; }
+        if (lead <= 0.0 || lead / max(e.speed, 1.0) < lcm_critical(e.trip, 43u, P.lcm_b.y, P.lcm_b.z, P.lcm_b.w, e.speed - n.speed, P.lcm_c.w)) { blocked |= LCA_BLOCK_LEADER; }
     }
     return blocked;
 }

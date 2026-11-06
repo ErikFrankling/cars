@@ -178,16 +178,19 @@ def crossings(f, sims, lanes, acc, chains):
         nx = np.flatnonzero(on[:-1] & ~on[1:]) + 1
         if not len(nx):
             out.append(dict(trip=trip, merged=False)); continue
-        k = nx[0]; dest = ln[k]
-        if lanes.get(dest, {}).get('index') != 1:
+        k = nx[0]; c = acc[ln[k - 1]]
+        if lanes.get(ln[k], {}).get('index') != 1:
             continue
-        w = lanes[dest]['width']
-        j = k + np.flatnonzero((ln[k:] == dest) & (lat[k:] > -0.5 * w))[:1]
+        # The change may run on over the next section: follow the car until its centre is over the marking.
+        wd = np.array([lanes.get(x, {}).get('width', 3.5) for x in ln[k:]])
+        ix = np.array([lanes.get(x, {}).get('index', -1) for x in ln[k:]])
+        j = k + np.flatnonzero((ix >= 1) & (lat[k:] > -0.5 * wd))[:1]
         if not len(j):
             continue
-        j = int(j[0]); c = acc[ln[k - 1]]
+        j = int(j[0]); dest = ln[j]
         row = g.iloc[j]; t = row.time
-        s_acc = c['start'][ln[k - 1]] + row.pos - 0.5 * row.length
+        a0 = dest.rsplit('_', 1)[0] + '_0'
+        s_acc = (c['start'][a0] if a0 in c['start'] else c['length']) + row.pos - 0.5 * row.length
         t_on = g.time.iloc[np.flatnonzero(on)[0]]
         nb = by_t[t]; nb = nb[(nb.lane == dest) & (nb.trip != trip)]
         ahead = nb[nb.pos > row.pos]; behind = nb[nb.pos <= row.pos]
@@ -204,7 +207,7 @@ def crossings(f, sims, lanes, acc, chains):
 
 def score(a):
     res = {}
-    for d in sorted(os.listdir(f'{WORK}/{a.tag}')):
+    for d in sorted(x for x in os.listdir(f'{WORK}/{a.tag}') if x.startswith('exiD')):
         out = f'{WORK}/{a.tag}/{d}'
         rec = int(d[4:6]); setting = int(d.split('_s')[1])
         D, m, lanes, chains, acc, rel, kind, groups, meta = build(rec, setting)
@@ -244,7 +247,7 @@ def qs(v, ps=(5, 25, 50, 75, 95)):
 
 def summarise(R, S, overlaps, n):
     Rm = R[R.merged == True]; Sm = S[S.merged == True]
-    out = dict(mergers=n, real_merged=len(Rm), sim_merged_share=round(float(S.merged.mean()), 3) if len(S) else None, sim_runs=len(S), overlap_pairs=overlaps)
+    out = dict(mergers=n, real_merged=len(Rm), sim_merged=len(Sm), sim_runs=len(S), overlap_pairs=overlaps)
     for col in ('left', 'share', 'lag_tg', 'lead_tg', 'v', 't_on_to_cross'):
         out[col] = dict(real=qs(Rm[col]), sim=qs(Sm[col]))
     out['last_tenth'] = dict(real=round(float((Rm.share > 0.9).mean()), 3), sim=round(float((Sm.share > 0.9).mean()), 3))
