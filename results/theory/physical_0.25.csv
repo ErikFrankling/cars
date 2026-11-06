@@ -47,10 +47,16 @@ L2,F253,"congested speed at spacing 12 m, (spacing-s)/E[T]",3.07,3.04,2.96..3.17
 L2,F253,"congested speed at spacing 15 m, (spacing-s)/E[T]",5.12,5.06,4.85..5.28,5%,pass,"L2 3 per density, sim 1",physical,0.25
 L2,F253,"congested speed at spacing 20 m, (spacing-s)/E[T]",8.54,8.46,8.31..8.71,5%,pass,"L2 3 per density, sim 1",physical,0.25
 L7,F007,"wave: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
-W1,F101,"disturbance moves upstream at s/E[T] (km/h, ground)",18.4,22.9,20.8..26.1,15%,FAIL,"W1 arrivals 0-4, sim 1",physical,0.25
-W1,F102,car 30 min speed less leader min speed (m/s): no growth,-0.5,5.07,4.78..5.3,>= one-sided,pass,"W1 arrivals 0-4, sim 1",physical,0.25
+W1,F231,"disturbance moves upstream at s/E[T] (km/h, ground)",18.4,22.9,20.8..26.1,15%,FAIL,"W1 arrivals 0-4, sim 1",physical,0.25
+W1,F232,car 30 min speed less leader min speed (m/s): no growth,-0.5,5.07,4.78..5.3,>= one-sided,pass,"W1 arrivals 0-4, sim 1",physical,0.25
 W1,,"lowest speed of car 30 (m/s), leader 3",,8,,,info,,physical,0.25
+L7,F007,"sringon: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+C-S2,,"N,P: in ring, flow 36,278:36.0,0 40,300:36.0,244 40,301:36.0,250 40,303:40.0,0",,0,,,info,,physical,0.25
+C-S2,F032,"one hole, N 36 of 277.5 m: flow against w/perimeter",86.6,0,0..0,20%,FAIL,"C-S2 arrivals 0-4, sim 1",physical,0.25
+C-S2,,"N 40 of 300 m: cars insertion placed (exact jam spacing, not scored)",,36,,,info,,physical,0.25
+C-S2,F032,N 40 of 301 m,40 in,36.0 in,,exact,FAIL,insertion refuses it,physical,0.25
 L7,F007,"sringoff: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+C-S2,F279,"N 40 of 301 m, exit clear off",0,250,240..259,30,FAIL,"C-S2 arrivals 0-4, sim 1",physical,0.25
 L7,F007,"signal_long: inserted-arrived-running, contacts 0",exact,0.1,,1,pass,sim 1,physical,0.25
 S7,F014,"Webster delay qa 304, x 0.39",17.3,19,18.1..19.9,15%,pass,"S7304 arrivals 0-4, sim 1",physical,0.25
 S7,F014,"Webster delay qa 448, x 0.57",19.9,20.7,20.1..21,15%,pass,"S7448 arrivals 0-4, sim 1",physical,0.25
@@ -66,6 +72,23 @@ X1,F284,"input var/mean, copies 3",3,3.42,2.02..5.67,20%,pass,"X13 arrivals 0-9,
 X1,,"F039 sizing: random queue, copies 3 (cars); I x2/2(1-x) - q d3 = 7.4",,5.89,0.89..18.2,,info,,physical,0.25
 X1,F284,"input var/mean, copies 5.6",5.6,5.78,2.17..11.4,20%,pass,"X15.6 arrivals 0-9, sim 1",physical,0.25
 X1,,"F039 sizing: random queue, copies 5.6 (cars); I x2/2(1-x) - q d3 = 13.1",,11.5,2.64..36,,info,,physical,0.25
+L7,F007,"give: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+G1,F016,"HBS right, major 0",1200,956,943..967,10%,FAIL,"G10 arrivals 0-4, sim 1",physical,0.25
+G1,F016,"HBS right, major 400",736,489,463..528,10%,FAIL,"G1400 arrivals 0-4, sim 1",physical,0.25
+G1,F016,"HBS right, major 800",451,231,206..252,10%,FAIL,"G1800 arrivals 0-4, sim 1",physical,0.25
+G1,F016,"HBS right, major 1200",277,87.4,67.2..108,10%,FAIL,"G11200 arrivals 0-4, sim 1",physical,0.25
+G1,,capacity at major 0 400 800 1200 (F017 report 23 816 474 279 162; F018 its tf fixed 1200 696 404 234),,956 489 231 87,,,info,,physical,0.25
+G1,F258,follow-up time logged in one gap (s),3,3.81,3.71..3.91,10%,FAIL,G1 all,physical,0.25
+G1,F233,"Siegloch at own tc 5.9 tf 3.81, major 0",946,956,943..967,10%,pass,"G10 arrivals 0-4, sim 1",physical,0.25
+G1,F233,"Siegloch at own tc 5.9 tf 3.81, major 400",607,489,463..528,10%,FAIL,"G1400 arrivals 0-4, sim 1",physical,0.25
+G1,F233,"Siegloch at own tc 5.9 tf 3.81, major 800",389,231,206..252,10%,FAIL,"G1800 arrivals 0-4, sim 1",physical,0.25
+G1,F233,"Siegloch at own tc 5.9 tf 3.81, major 1200",250,87.4,67.2..108,10%,FAIL,"G11200 arrivals 0-4, sim 1",physical,0.25
+G1,F234,"follow-up from own following: E[T] + s/v_turn, v_turn 3.21",3.8,3.77,3.72..3.82,10%,pass,G1 all,physical,0.25
+G1,F288,"major delivered / offered, major 400",1,0.972,0.9..1.06,5%,pass,"G1400 arrivals 0-4, sim 1",physical,0.25
+G1,F288,"major delivered / offered, major 800",1,0.983,0.957..1.03,5%,pass,"G1800 arrivals 0-4, sim 1",physical,0.25
+G1,F288,"major delivered / offered, major 1200",1,0.972,0.884..1.05,5%,pass,"G11200 arrivals 0-4, sim 1",physical,0.25
+G1,,tf by major flow: 0:3.77 400:3.79 800:3.83 1200:3.84,,0,,,info,,physical,0.25
+G4,F257,critical gap recovered from gaps offered and taken right from minor (s),5.9,7.92,7.61..8.17,0.3 s,FAIL,G1 q 400 800,physical,0.25
 G2,F255,"Tanner t_m 2, major 400",712,420,391..439,15%,FAIL,"G2400 arrivals 0-4, sim 1",physical,0.25
 G2,F255,"Tanner t_m 2, major 800",384,120,113..130,15%,FAIL,"G2800 arrivals 0-4, sim 1",physical,0.25
 G2,F255,"Tanner t_m 2, major 1200",172,7.68,4.8..12,15%,FAIL,"G21200 arrivals 0-4, sim 1",physical,0.25
@@ -78,12 +101,12 @@ G8,F261,"roundabout entry, circulating 0",1380,1006,994..1.02e+03,15%,FAIL,"G80 
 G8,F261,"roundabout entry, circulating 400",916,319,302..331,15%,FAIL,"G8400 arrivals 0-4, sim 1",physical,0.25
 G8,F261,"roundabout entry, circulating 800",608,66.7,33.6..93.6,15%,FAIL,"G8800 arrivals 0-4, sim 1",physical,0.25
 G8,F261,"roundabout entry, circulating 1200",404,0,0..0,15%,FAIL,"G81200 arrivals 0-4, sim 1",physical,0.25
-L7,F007,"give2: inserted-arrived-running, contacts 0",exact,-14.0,,1,FAIL,sim 1,physical,0.25
+L7,F007,"give2: inserted-arrived-running, contacts 0",exact,-14.1,,1,FAIL,sim 1,physical,0.25
 G7,F020,"mean wait, minor 100, own c 231 at major 800",27,17.8,7.02..28.2,25%,FAIL,"G7100 arrivals 0-7, sim 1",physical,0.25
 G7,F020,"mean wait, minor 200, own c 231 at major 800",69.1,63.8,39.6..117,25%,pass,"G7200 arrivals 0-7, sim 1",physical,0.25
 G7,F020,"mean wait, minor 300, own c 231 at major 800",200,177,49..403,25%,pass,"G7300 arrivals 0-7, sim 1",physical,0.25
 G7,F020,"mean wait, minor 400, own c 231 at major 800",379,217,97.5..320,25%,FAIL,"G7400 arrivals 0-7, sim 1",physical,0.25
-G9,F262,right before left four saturated arms per arm (veh/h),230,428,358..493,20%,FAIL,"G9 arrivals 0-4, sim 1",physical,0.25
+G9,F262,right before left four saturated arms per arm (veh/h),230,429,344..482,20%,FAIL,"G9 arrivals 0-4, sim 1",physical,0.25
 C-S7,F281,"minor through, major 1200 (arrival count)",277,93,75..141,20%,FAIL,"CS71200 arrivals 0-4, sim 1",physical,0.25
 C-S7,F282,"longest head wait, major 1200 (s)",300,220,,<= 0,pass,"CS71200 arrivals 0-4, sim 1",physical,0.25
 C-S7,F281,"minor through, major 1800 (arrival count)",133,17.4,12..24,20%,FAIL,"CS71800 arrivals 0-4, sim 1",physical,0.25
@@ -97,31 +120,35 @@ LC1,F263,target cars passing a changer q 900 dv 3 (per s),0.075,0.0746,0.0705..0
 LC1,,"speed difference actually seen (m/s), forecast 3",,3.04,,,info,,physical,0.25
 LC2,F022,"share changed on the move, block 100 m",0.36,0.977,0.928..0.99,>= .1,pass,"LC2100 arrivals 0-4, sim 1",physical,0.25
 LC2,,"share changed only after stopping, block 100 m",,0.0227,,,info,,physical,0.25
-LC2,F022,"share changed on the move, block 300 m",0.74,0.967,0.887..1,>= .1,pass,"LC2300 arrivals 0-4, sim 1",physical,0.25
-LC2,,"share changed only after stopping, block 300 m",,0.033,,,info,,physical,0.25
-L7,F007,"lc2: inserted-arrived-running, contacts 10",exact,0,,1,pass,sim 1,physical,0.25
-LC3,F023,stopped at lane end q 900 tc 4 tf 2.5 (veh/h),724,980,927..1.02e+03,>= >= 15% below,pass,"LC3a arrivals 0-4, sim 1",physical,0.25
-LC3,F024,merge share both saturated,0.5,0.709,0.691..0.728,.1,FAIL,"LC3b arrivals 0-4, sim 1",physical,0.25
-LC3,,both saturated: total out (veh/h),,1383,,,info,,physical,0.25
-LC8,F028,"wait, closing lane last 100 m: p99 (s)",72.7,37.5,n=146,p99 <= 75,pass,"LC3c arrivals 0-4, sim 1",physical,0.25
-LC8,F028,same: max; a hold over 300 s is a fault,79,65,,<= 300,pass,"LC3c arrivals 0-4, sim 1",physical,0.25
-LC8,,"median wait (s), I-80 22.6",,13.5,,,info,,physical,0.25
-LC4,,two lanes from a released queue: no changes; a third change (veh/h),,"2812, 2785",,,info,,physical,0.25
-LC4,F025,capacity with lane changes eps .10 (share),0.91,0.99,0.88..1.05,5%,FAIL,"LC4b arrivals 0-4, sim 1",physical,0.25
+LC2,F022,"share changed on the move, block 300 m",0.74,0.953,0.814..1,>= .1,pass,"LC2300 arrivals 0-4, sim 1",physical,0.25
+LC2,,"share changed only after stopping, block 300 m",,0.0474,,,info,,physical,0.25
+L7,F007,"lc2: inserted-arrived-running, contacts 7",exact,0,,1,pass,sim 1,physical,0.25
+LC3,F023,stopped at lane end q 900 tc 4 tf 2.5 (veh/h),724,985,961..1.02e+03,>= >= 15% below,pass,"LC3a arrivals 0-4, sim 1",physical,0.25
+LC3,F024,merge share both saturated,0.5,0.701,0.674..0.714,.1,FAIL,"LC3b arrivals 0-4, sim 1",physical,0.25
+LC3,,both saturated: total out (veh/h),,1365,,,info,,physical,0.25
+LC8,F028,"wait, closing lane last 100 m: p99 (s)",72.7,32.5,n=123,p99 <= 75,pass,"LC3c arrivals 0-4, sim 1",physical,0.25
+LC8,F028,same: max; a hold over 300 s is a fault,79,40,,<= 300,pass,"LC3c arrivals 0-4, sim 1",physical,0.25
+LC8,,"median wait (s), I-80 22.6",,8.5,,,info,,physical,0.25
+LC4,,two lanes from a released queue: no changes; a third change (veh/h),,"2812, 2814",,,info,,physical,0.25
+LC4,F025,capacity with lane changes eps .10 (share),0.91,1,0.88..1.06,5%,FAIL,"LC4b arrivals 0-4, sim 1",physical,0.25
 LC5,,target lane alone from a released queue (veh/h),,1783,,,info,,physical,0.25
 LC5,F026,void loss k 30 dv 5 flow 300 (share),0.039,0.114,0.0879..0.137,25%,FAIL,"LC5 arrivals 0-4, sim 1",physical,0.25
 LC5,F264,void loss dv 10 over dv 5 (ratio),4,4.05,,25%,pass,"LC5 arrivals 0-4, sim 1",physical,0.25
-L7,F007,"drop: inserted-arrived-running, contacts 1",exact,0,,1,pass,sim 1,physical,0.25
-LC6,F027,capacity drop at a lane drop (%),5-15,27.3,20.1..31.2,never negative,FAIL,"LC6 arrivals 0-4, sim 1",physical,0.25
-LC6,,before; after; onset s,,3835; 2792; 1326,,,info,,physical,0.25
-L7,F007,"drop_city: inserted-arrived-running, contacts 2",exact,0,,1,pass,sim 1,physical,0.25
-C-S6,F036,lane drop 1300+1300 total (veh/h),1800,1386,1.34e+03..1.46e+03,10%,FAIL,"C-S6 arrivals 0-4, sim 1",physical,0.25
-C-S6,F036,share of the closing lane,0.5,0.71,0.677..0.726,.1,FAIL,"C-S6 arrivals 0-4, sim 1",physical,0.25
-C-S6,F036,longest wait last 100 m (s),80,42,,<= 0,pass,"C-S6 arrivals 0-4, sim 1",physical,0.25
+L7,F007,"drop: inserted-arrived-running, contacts 2",exact,0,,1,pass,sim 1,physical,0.25
+LC6,F027,capacity drop at a lane drop (%),5-15,28.3,22.7..32.7,never negative,FAIL,"LC6 arrivals 0-4, sim 1",physical,0.25
+LC6,,before; after; onset s,,3895; 2792; 1308,,,info,,physical,0.25
+L7,F007,"drop_city: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+C-S6,F036,lane drop 1300+1300 total (veh/h),1800,1374,1.33e+03..1.43e+03,10%,FAIL,"C-S6 arrivals 0-4, sim 1",physical,0.25
+C-S6,F036,share of the closing lane,0.5,0.702,0.685..0.723,.1,FAIL,"C-S6 arrivals 0-4, sim 1",physical,0.25
+C-S6,F036,longest wait last 100 m (s),80,44,,<= 0,pass,"C-S6 arrivals 0-4, sim 1",physical,0.25
 C-S4b,F035,give-ups at a real lane drop,0,0,,exact,pass,"C-S6 arrivals 0-4, sim 1",physical,0.25
 L7,F007,"slow: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
 LC7,,flow per lane ahead of the slow car by speed: 30:884 50:865 60:852 70:962 80:1143,,0,,,info,,physical,0.25
 LC7,F265,flow past the slow car rises with its speed,rises,865..1143,,3%,pass,"LC7 arrivals 0-4, sim 1",physical,0.25
+L7,F007,"net: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+N4,F030,merge both saturated: arm a (veh/h),928,1567,1.54e+03..1.59e+03,10%,FAIL,"N4 arrivals 0-4, sim 1",physical,0.25
+N4,F030,merge both saturated: arm b (veh/h),928,0,0..0,10%,FAIL,"N4 arrivals 0-4, sim 1",physical,0.25
+N4,F272,merge one arm at 300: the other takes (veh/h),1556,1564,1.52e+03..1.61e+03,10%,pass,"N4b arrivals 0-4, sim 1",physical,0.25
 N5,F273,diverge exit capacity 300 beta .2 total (veh/h),1500,1134,903..1.31e+03,10%,FAIL,"N5a arrivals 0-4, sim 1",physical,0.25
 N5,F274,one lane with exit closed total (veh/h),0,0,0..0,30,pass,"N5b arrivals 0-4, sim 1",physical,0.25
 N5,F275,"3 lanes, other two lanes (veh/h)",3712,3758,3.74e+03..3.78e+03,10%,pass,"N5c arrivals 0-4, sim 1",physical,0.25
@@ -168,20 +195,21 @@ N9,F295,"Hamburg, 2 lanes, lane wish: cars per cycle",13,16.1,16..16.3,>= 0,pass
 N9,F293,"Hamburg, 2 lanes, lane wish: longest stand on link or approach (s)",180,63.8,59..76,<= 0,pass,"N9 arrivals 0-4, sim 1",physical,0.25
 N9,F294,"Hamburg, 2 lanes, lane wish: cars left 1090 s after the feed ends",0,0,0..0,0,pass,"N9 arrivals 0-4, sim 1",physical,0.25
 N9,,"Hamburg, 2 lanes, lane wish: flow late over early (1 = no decay); link lane (m)",,1.02; 27.7,,,info,,physical,0.25
-N9,F295,"opposed, 2 lanes, lane wish: cars per cycle",13,8.15,8.1..8.23,>= 0,FAIL,"N9x arrivals 0-4, sim 1",physical,0.25
-N9,F293,"opposed, 2 lanes, lane wish: longest stand on link or approach (s)",180,58.2,37..78,<= 0,pass,"N9 arrivals 0-4, sim 1",physical,0.25
+N9,F295,"opposed, 2 lanes, lane wish: cars per cycle",13,8.14,8.04..8.23,>= 0,FAIL,"N9x arrivals 0-4, sim 1",physical,0.25
+N9,F293,"opposed, 2 lanes, lane wish: longest stand on link or approach (s)",180,59.2,37..78,<= 0,pass,"N9 arrivals 0-4, sim 1",physical,0.25
 N9,F294,"opposed, 2 lanes, lane wish: cars left 1090 s after the feed ends",0,0,0..0,0,pass,"N9 arrivals 0-4, sim 1",physical,0.25
 N9,,"opposed, 2 lanes, lane wish: flow late over early (1 = no decay); link lane (m)",,1.01; 27.7,,,info,,physical,0.25
-L7,F007,"miss60: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
-C-S3,,"lane 0 flow with no wrong-lane car (veh/h), C took 1800",,1270,,,info,,physical,0.25
-C-S3,F033,"lane 0 flow, f 0.05 patience 60: 3600/(h+fT), h 2.83",617,582,388..770,15%,pass,"C-S3 arrivals 0-4, sim 1",physical,0.25
-C-S3,F033,"lane 0 flow, f 0.1 patience 60: 3600/(h+fT), h 2.83",408,436,382..510,15%,pass,"C-S3 arrivals 0-4, sim 1",physical,0.25
-C-S4,,"lane 0 flow with no wrong-lane car (veh/h), C took 1800",,1037,,,info,,physical,0.25
-C-S4,F034,"lane 0 flow, f 0.05 patience 60: 3600/(h+fT), h 3.47",556,634,498..758,15%,pass,"C-S4 arrivals 0-4, sim 1",physical,0.25
-C-S4,F034,"lane 0 flow, f 0.1 patience 60: 3600/(h+fT), h 3.47",380,399,310..513,15%,pass,"C-S4 arrivals 0-4, sim 1",physical,0.25
-C-S3,,wrong-lane heads stand this far before the lane end (m),,62,,,info,,physical,0.25
-C-S4,,wrong-lane heads stand this far before the lane end (m),,45.3,,,info,,physical,0.25
-C-S4,,"patience 60: missed turns asked, rerouted, no way",,"{'asked': 286, 'rerouted': 286, 'no_way': 0}",,,info,,physical,0.25
+L7,F007,"n10: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+N10,F049,"a: longest standing still (s), limit 5 min",300,2947,2.9e+03..2.97e+03,<= 0,FAIL,"N10a arrivals 0-4, sim 1",physical,0.25
+N10,,a: longest on an internal lane (s),,13,,,info,,physical,0.25
+N10,F287,left across a saturated opposing stream: cars cleared per cycle at the phase end at least,1,0,0..0,>= 0,FAIL,"N10a arrivals 0-4, sim 1",physical,0.25
+N10,F049,"b: longest standing still (s), limit 5 min",300,2916,2.86e+03..2.96e+03,<= 0,FAIL,"N10b arrivals 0-4, sim 1",physical,0.25
+N10,,b: longest on an internal lane (s),,25,,,info,,physical,0.25
+N10,F049,"c: longest standing still (s), limit 5 min",300,2944,2.92e+03..2.95e+03,<= 0,FAIL,"N10c arrivals 0-4, sim 1",physical,0.25
+N10,,c: longest on an internal lane (s),,17,,,info,,physical,0.25
+N10,F049,"d: longest standing still (s), limit 5 min",300,2952,2.95e+03..2.96e+03,<= 0,FAIL,"N10d arrivals 0-4, sim 1",physical,0.25
+N10,,d: longest on an internal lane (s),,23,,,info,,physical,0.25
+miss60,,"batch failed: RuntimeError(""net loaded in 0.00s\ndemand loaded in 0.40s: 50790 trips, 95 routes, 2 vTypes; dropped DropCounts { unknown_edge: 0, unconnected: 0, banned_connection: 0, unknown_route: 0,",,,,,ERROR,,physical,0.25
 L7,F007,"miss120: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
 C-S3,,"lane 0 flow with no wrong-lane car (veh/h), C took 1800",,1276,,,info,,physical,0.25
 C-S3,F033,"lane 0 flow, f 0.1 patience 120: 3600/(h+fT), h 2.82",243,272,238..341,15%,pass,"C-S3 arrivals 0-4, sim 1",physical,0.25
@@ -205,47 +233,15 @@ C-S8,F283,cross capacity b .75 (exit_comply 1-b),675,935,916..947,5%,FAIL,"C-S8 
 C-S8,F283,"two lanes b .75, per lane",788,600,600..600,5%,FAIL,"C-S8 arrivals 0-4, sim 1",physical,0.25
 L7,F007,"block0: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
 C-S8,F283,cross capacity b 1 (exit_comply 1-b),600,930,916..941,5%,FAIL,"C-S8 arrivals 0-4, sim 1",physical,0.25
+L7,F007,"grid: inserted-arrived-running, contacts 26",exact,0.0,,1,pass,sim 1,physical,0.25
+C-S0,F031,priority k .10 kj,no lock,0/6 free in 2.0 h; locks at 0.05 0.05 0.05 0.07 0.13,,explain,FAIL,"GU 3 per (k,P_T), sim 1",physical,0.25
+C-S0,F031,priority k .20 kj,no lock,0/6 free in 2.0 h; locks at 0.05 0.05 0.05 0.07 0.10,,explain,FAIL,"GU 3 per (k,P_T), sim 1",physical,0.25
+C-S0,,priority k .25 kj: theirs hours,,0/6 free in 2.0 h; locks at 0.05 0.05 0.07 0.07 0.08,,,info,,physical,0.25
+C-S0,F278,priority k .30 kj: lock under 1 h,< 1 h,0/6 free in 2.0 h; locks at 0.03 0.03 0.05 0.05 0.07,,explain,pass,"GU 3 per (k,P_T), sim 1",physical,0.25
+C-S0,F278,priority k .40 kj: lock under 1 h,< 1 h,0/6 free in 2.0 h; locks at 0.03 0.03 0.03 0.05 0.05,,explain,pass,"GU 3 per (k,P_T), sim 1",physical,0.25
 L7,F007,"grid_sig: inserted-arrived-running, contacts 38",exact,0.0,,1,pass,sim 1,physical,0.25
-L7,F007,"give: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
-G1,F016,"HBS right, major 0",1200,958,948..965,10%,FAIL,"G10 arrivals 0-4, sim 1",physical,0.25
-G1,F016,"HBS right, major 400",736,487,458..535,10%,FAIL,"G1400 arrivals 0-4, sim 1",physical,0.25
-G1,F016,"HBS right, major 800",451,230,211..250,10%,FAIL,"G1800 arrivals 0-4, sim 1",physical,0.25
-G1,F016,"HBS right, major 1200",277,88.8,62.4..118,10%,FAIL,"G11200 arrivals 0-4, sim 1",physical,0.25
-G1,,capacity at major 0 400 800 1200 (F017 report 23 816 474 279 162; F018 its tf fixed 1200 696 404 234),,958 487 230 89,,,info,,physical,0.25
-G1,F258,follow-up time logged in one gap (s),3,3.8,3.71..3.99,10%,FAIL,G1 all,physical,0.25
-G1,F103,"Siegloch at own tc 5.9 tf 3.80, major 0",946,958,948..965,10%,pass,"G10 arrivals 0-4, sim 1",physical,0.25
-G1,F103,"Siegloch at own tc 5.9 tf 3.80, major 400",607,487,458..535,10%,FAIL,"G1400 arrivals 0-4, sim 1",physical,0.25
-G1,F103,"Siegloch at own tc 5.9 tf 3.80, major 800",389,230,211..250,10%,FAIL,"G1800 arrivals 0-4, sim 1",physical,0.25
-G1,F103,"Siegloch at own tc 5.9 tf 3.80, major 1200",250,88.8,62.4..118,10%,FAIL,"G11200 arrivals 0-4, sim 1",physical,0.25
-G1,F104,"follow-up from own following: E[T] + s/v_turn, v_turn 3.19",3.82,3.76,3.73..3.8,10%,pass,G1 all,physical,0.25
-G1,F288,"major delivered / offered, major 400",1,0.972,0.9..1.06,5%,pass,"G1400 arrivals 0-4, sim 1",physical,0.25
-G1,F288,"major delivered / offered, major 800",1,0.983,0.957..1.03,5%,pass,"G1800 arrivals 0-4, sim 1",physical,0.25
-G1,F288,"major delivered / offered, major 1200",1,0.972,0.884..1.05,5%,pass,"G11200 arrivals 0-4, sim 1",physical,0.25
-G1,,tf by major flow: 0:3.76 400:3.79 800:3.85 1200:3.83,,0,,,info,,physical,0.25
-G4,F257,critical gap recovered from gaps offered and taken right from minor (s),5.9,7.86,7.61..8.17,0.3 s,FAIL,G1 q 400 800,physical,0.25
-L7,F007,"n10: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
-N10,F049,"a: longest standing still (s), limit 5 min",300,2947,2.9e+03..2.97e+03,<= 0,FAIL,"N10a arrivals 0-4, sim 1",physical,0.25
-N10,,a: longest on an internal lane (s),,13,,,info,,physical,0.25
-N10,F287,left across a saturated opposing stream: cars cleared per cycle at the phase end at least,1,0,0..0,>= 0,FAIL,"N10a arrivals 0-4, sim 1",physical,0.25
-N10,F049,"b: longest standing still (s), limit 5 min",300,2916,2.86e+03..2.96e+03,<= 0,FAIL,"N10b arrivals 0-4, sim 1",physical,0.25
-N10,,b: longest on an internal lane (s),,25,,,info,,physical,0.25
-N10,F049,"c: longest standing still (s), limit 5 min",300,2944,2.92e+03..2.95e+03,<= 0,FAIL,"N10c arrivals 0-4, sim 1",physical,0.25
-N10,,c: longest on an internal lane (s),,17,,,info,,physical,0.25
-N10,F049,"d: longest standing still (s), limit 5 min",300,2952,2.95e+03..2.96e+03,<= 0,FAIL,"N10d arrivals 0-4, sim 1",physical,0.25
-N10,,d: longest on an internal lane (s),,23,,,info,,physical,0.25
-L7,F007,"sringon: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
-C-S2,,"N,P: in ring, flow 36,278:36.0,0 40,300:36.0,244 40,301:36.0,250 40,303:40.0,0",,0,,,info,,physical,0.25
-C-S2,F032,"one hole, N 36 of 277.5 m: flow against w/perimeter",74.8,0,0..0,20%,FAIL,"C-S2 arrivals 0-4, sim 1",physical,0.25
-C-S2,,"N 40 of 300 m: cars insertion placed (exact jam spacing, not scored)",,36,,,info,,physical,0.25
-C-S2,F032,N 40 of 301 m,40 in,36.0 in,,exact,FAIL,insertion refuses it,physical,0.25
-L7,F007,"net: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
-N4,F030,merge both saturated: arm a (veh/h),928,1573,1.55e+03..1.6e+03,10%,FAIL,"N4 arrivals 0-4, sim 1",physical,0.25
-N4,F030,merge both saturated: arm b (veh/h),928,0,0..0,10%,FAIL,"N4 arrivals 0-4, sim 1",physical,0.25
-N4,F272,merge one arm at 300: the other takes (veh/h),1556,1565,1.55e+03..1.59e+03,10%,pass,"N4b arrivals 0-4, sim 1",physical,0.25
-n10,,"batch failed: RuntimeError(""net loaded in 0.00s\ndemand loaded in 0.04s: 29438 trips, 50 routes, 2 vTypes; dropped DropCounts { unknown_edge: 0, unconnected: 0, banned_connection: 0, unknown_route: 0,",,,,,ERROR,,physical,0.25
-L7,F007,"grid: inserted-arrived-running, contacts 20",exact,0.0,,1,pass,sim 1,physical,0.25
-C-S0,F031,priority k .10 kj,no lock,0/6 free in 2.0 h; locks at 0.02 0.03 0.03 0.03 0.03,,explain,FAIL,"GU 3 per (k,P_T), sim 1",physical,0.25
-C-S0,F031,priority k .20 kj,no lock,0/6 free in 2.0 h; locks at 0.03 0.03 0.05 0.05 0.07,,explain,FAIL,"GU 3 per (k,P_T), sim 1",physical,0.25
-C-S0,,priority k .25 kj: theirs hours,,0/6 free in 2.0 h; locks at 0.05 0.07 0.12 0.13 0.15,,,info,,physical,0.25
-C-S0,F278,priority k .30 kj: lock under 1 h,< 1 h,0/6 free in 2.0 h; locks at 0.02 0.03 0.05 0.05 0.07,,explain,pass,"GU 3 per (k,P_T), sim 1",physical,0.25
-C-S0,F278,priority k .40 kj: lock under 1 h,< 1 h,0/6 free in 2.0 h; locks at 0.03 0.03 0.03 0.03 0.05,,explain,pass,"GU 3 per (k,P_T), sim 1",physical,0.25
+C-S0,F031,signals 60 s k .10 kj,no lock,6/6 free in 2.0 h; locks at none,,explain,pass,"GS 3 per (k,P_T), sim 1",physical,0.25
+C-S0,F031,signals 60 s k .20 kj,no lock,6/6 free in 2.0 h; locks at none,,explain,pass,"GS 3 per (k,P_T), sim 1",physical,0.25
+C-S0,,signals 60 s k .25 kj: theirs hours,,6/6 free in 2.0 h; locks at none,,,info,,physical,0.25
+C-S0,F278,signals 60 s k .30 kj: lock under 1 h,< 1 h,6/6 free in 2.0 h; locks at none,,explain,FAIL,"GS 3 per (k,P_T), sim 1",physical,0.25
+C-S0,F278,signals 60 s k .40 kj: lock under 1 h,< 1 h,1/6 free in 2.0 h; locks at 0.50 1.00 1.20 1.38 1.48,,explain,FAIL,"GS 3 per (k,P_T), sim 1",physical,0.25

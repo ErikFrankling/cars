@@ -1869,7 +1869,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
             atomicAdd(&C[C_CERT_FLOOR], 1u);
         }
         if (ph_b_follower() <= 0.05) { atomicAdd(&C[C_NO_BRAKE], 1u); }
-        if (hu_on) { nv = hu_start_hold(&e, speed, v_safe, nv); } else if (P.start_react > 0.0) { nv = ph_start_hold(&e, i, speed, nv, have_to_wait, n > 0u && items[base].link != NONE && links[items[base].link].tl != NONE); }
+        if (hu_on) { nv = hu_start_hold(&e, speed, v_safe, nv); } else if (P.start_react > 0.0) { nv = ph_start_hold(&e, i, speed, nv, have_to_wait, n > 0u && items[base].link != NONE && links[items[base].link].tl != NONE && link_state(items[base].link) != CH_g); }
         acc = (nv - speed) / dt;
         var ds: f32;
         if (nv > 0.0) {
@@ -2185,15 +2185,18 @@ fn ph_start_hold(e: ptr<function, Veh>, i: u32, speed: f32, nv: f32, held: bool,
     let front = i + 1u >= G.n_active || cur[i + 1u].lane != (*e).lane;
     let first = front && lanes[(*e).lane].length - (*e).pos < 10.0;
     var steps = (*e).hu_state & 255u;
-    // Creeping to a line it must stop at is not the way opening either.
-    if (still || (first && (nv <= 0.0 || held))) { steps = 0u; } else if (nv > 0.0) { steps = min(steps + 1u, 255u); }
+    // Creeping up to a line it must stop at is allowed, but is not the way opening: the clock stays at zero.
+    let creep = first && held;
+    if (still || creep || (first && nv <= 0.0)) { steps = 0u; } else if (nv > 0.0) { steps = min(steps + 1u, 255u); }
     (*e).hu_state = ((*e).hu_state & 0xffffff00u) | steps;
+    if (creep && !still) { return nv; }
     if (still || steps == 0u) { return 0.0; }
     // Inside a junction the driver watches the conflict, as at a give-way line: no added reaction.
     if (is_internal((*e).lane)) { return nv; }
     // G.step counts the step's end, so a light that changes at t is seen in the step ending at t: one step early.
     // A leader's start is seen one step after it began. Partial steps keep the reaction the same at any dt.
-    // At a give-way line the driver has watched the gap come: HBS's critical gap holds that reaction already.
+    // At a give-way line, or a green that must yield ('g'), the driver has watched the gap come: the critical gap
+    // holds that reaction already.
     if (first && !at_light) { return nv; }
     let react = select(P.start_react, P.first_react, first);
     let waited = f32(steps - 1u) * dt + select(dt, -dt, first);

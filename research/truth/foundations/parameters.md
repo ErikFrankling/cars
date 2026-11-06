@@ -51,3 +51,28 @@ Physical motion (Krauss with the physics certificate, `mu > 0`) with decisions o
 | Gate floor, certificate x 0.35 | fitted to I-80 / US-101 p25 lags | exiD and highD: lag and lead at the start of a mandatory change |
 | Launch a0 2.02 - 0.125 v | Long 2000, adapted; replay found main launching at 2.6 against DLR UT's 1.8 | SinD: first-car peak acceleration and time to 5 and 10 m/s after green |
 | Corner speed: physical curve limit with lateral median 2.2 m/s2 | report 19's turning set | inD and rounD: speed against radius through the junction |
+
+## Final table, with the measured driver (main aadf8f7, `measure/DRIVER.md`)
+
+This driver was not moved towards DRIVER.md in this job (orchestrator). The last column is what the next job sets it from.
+
+| Parameter | Value in this driver | Source | Status | Recording that measures it | DRIVER.md value |
+|---|---|---|---|---|---|
+| `tau`, time gap T of the median driver | 1.4 s, all speeds | B §1, report 19 pairs | Measured, but one T for all speeds | highD, DLR HT, TGSIM | 1.6 s at 3-10 m/s, 1.4 at 10-15, 1.2 at 15-20, 1.1 at 20-25, 0.95 at 25-35, 0.8 above 35 m/s; motorway median 0.98 s |
+| `gap_spread`, log-SD of T between drivers | 0.3 | report 19 p5, by eye | Provisional | highD, DLR HT | persistent log-SD 0.27; correlated with free speed r −0.41; a further part tied to the leader pair (e-folding 1.2 km) |
+| Standstill gap (minGap) | 2.5 m (jam spacing 7.5 m with a 5 m car) | report 19 | Measured on assumed 5 m lengths | rounD, inD queues | 1.7 m bumper gap (p10 1.0, p90 2.6) |
+| Response to gap and closing speed | Krauss safe speed towards its T (steers to the gap) | SUMO / Gipps | No measured source; F113 shows the bias | highD, DLR HT, TGSIM | closing speed linear, 0.11-0.2 m/s² per m/s (motorway); leader acceleration 0.25-0.65 passed on; gap error one-sided band, none from 0.5 s too close to 1.75 s too far |
+| Response lag | none beyond the step (Krauss) | – | Missing | highD, DLR HT, TGSIM | first-order time constant 0.48-0.56 s, dead time under 0.3 s |
+| `sigma`, dawdle | 0.2 | capacity band | Provisional, no source | highD free drivers | no perception threshold; noise not given as a sigma |
+| `start_react` | 1.0 s | report 05 DLR UT, leader start to follower start | Measured, one Sunday site | SinD | not given; first-car start 2.0 s (1.7-2.2) without red-yellow |
+| `first_react` | 1.62 s | report 05 DLR UT, with about 1 s of red-yellow | Measured | SinD | 2.0 s (1.7-2.2) to 1.5 m/s, no red-yellow |
+| Launch a0 − a1 v | 2.02 − 0.125 v m/s² | Long 2000 | Adapted | SinD | peak 1.77 m/s² (1.66-1.88), p5-p95 0.54-3.01 |
+| Free speed spread | speedDev 0.1 (scenes use 0) | SUMO default | No source | highD, exiD, DLR HT | CV 0.12-0.20 per driver, persistent over km (e-folding 4.9 km) |
+| `Link::tc` critical gap | HBS: right 5.9, left from major 5.5, through 6.7, left from minor 6.5 s | HBS 2015 S5 | Norm values | inD, rounD | minor left 6.9 s (6.4-7.5), minor straight 6.6, left off the priority road 3.9, right-before-left 3.9, roundabout entry 3.0 s |
+| Give-way follow-up | 3.8 s, from E[T] + s/v at the scene's 4 m corner | follows from T and corner speed | Consequence, not set | inD, rounD | straight 2.7, right 3.2, left 4.9 s; roundabout 2.76 s |
+| Impatience at give-way | none in this driver (SUMO's impatience term off in physical mode) | – | – | inD, rounD | none: no waiting effect |
+| Courtesy share | 0.4 with report 14's model | I-80 sweep | Provisional | exiD | 4 points over baseline (10.3% against 6.3%) slow for a merger |
+| Merge start law (report 18 B1 B2) | intercept 0.4, time-to-end −1.544, lag .133, lead .164 | report 18, I-80 US-101 | Coefficients measured; intercept and driver term provisional | exiD | merge at a median 49% of the acceleration lane, 4.7% in the last tenth |
+| Gate floor during a change | certificate × 0.35 | report 18 lags | Fitted to p25 lags | highD, exiD | accepted lag p5/p50 0.45/1.2-1.7 s, lead 0.30-0.38/1.5-1.7 s; on-ramp lag 0.45/1.81, lead 0.39/1.66 s |
+| Lane change duration | from the physics lateral speed 0.6 m/s | physics table | Adapted | exiD, highD | 10-90%: merge 5.4 s, motorway 4.4-5.0 s |
+| Free speed, motorway | lane limit × speedFactor | SUMO | – | highD, exiD | no limit 34.5 m/s; 120 km/h 30.7-32.2; 100 km/h 28.3 m/s |
