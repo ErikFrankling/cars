@@ -1,0 +1,244 @@
+{
+ "scene": "scene-d8-20181029-0900",
+ "entry_kinds": {
+  "boundary": 1455,
+  "off_net": 234,
+  "snapshot": 142,
+  "interior": 13,
+  "boundary_queued": 2
+ },
+ "runs": {
+  "0": {
+   "checked": 1704,
+   "waiting_at_end": 1,
+   "delay_s": {
+    "n": 1703,
+    "p50": 0.0,
+    "p95": 0.4,
+    "max": 19.2
+   },
+   "by_kind": {
+    "boundary": {
+     "n": 1455,
+     "p50": 0.0,
+     "p95": 0.2,
+     "max": 8.6
+    },
+    "boundary_queued": {
+     "n": 2,
+     "p50": 1.8,
+     "p95": 3.42,
+     "max": 3.6
+    },
+    "interior": {
+     "n": 12,
+     "p50": 0.0,
+     "p95": 10.58,
+     "max": 10.8
+    },
+    "off_net": {
+     "n": 234,
+     "p50": 0.0,
+     "p95": 2.47,
+     "max": 19.2
+    }
+   },
+   "by_approach": {
+    "10971776#4 \u039d\u03bf\u03c4\u03b1\u03c1\u03ac": {
+     "n": 19,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 0.0
+    },
+    "1447239028#0 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 114,
+     "p50": 0.0,
+     "p95": 1.88,
+     "max": 5.4
+    },
+    "1447459732 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 628,
+     "p50": 0.0,
+     "p95": 0.33,
+     "max": 4.8
+    },
+    "207979571#0 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 5,
+     "p50": 0.2,
+     "p95": 2.16,
+     "max": 2.4
+    },
+    "228109849#0 \u039c\u03c0\u03bf\u03c5\u03bc\u03c0\u03bf\u03c5\u03bb\u03af\u03bd\u03b1\u03c2": {
+     "n": 89,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 4.6
+    },
+    "243850915 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 116,
+     "p50": 0.0,
+     "p95": 0.8,
+     "max": 10.8
+    },
+    "249697226#1 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 6,
+     "p50": 1.1,
+     "p95": 3.35,
+     "max": 3.4
+    },
+    "31985292#0 \u039c\u03b1\u03c5\u03c1\u03bf\u03bc\u03b1\u03c4\u03b1\u03af\u03c9\u03bd": {
+     "n": 106,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 0.0
+    },
+    "50003888#0 \u0393\u03ba\u03c5\u03b9\u03bb\u03c6\u03cc\u03c1\u03b4\u03bf\u03c5": {
+     "n": 20,
+     "p50": 0.0,
+     "p95": 0.02,
+     "max": 0.4
+    },
+    "661184019 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 6,
+     "p50": 0.0,
+     "p95": 0.55,
+     "max": 0.6
+    },
+    "693488162#1 \u039c\u03b5\u03c4\u03c3\u03cc\u03b2\u03bf\u03c5": {
+     "n": 54,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 1.4
+    },
+    "712030314#0 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 499,
+     "p50": 0.0,
+     "p95": 0.4,
+     "max": 3.6
+    }
+   },
+   "log": [
+    "replay: 5475 tracks, 872079 keys, 0 tracks with no trip, 1704 checked entries",
+    "lane changes 7256, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 11900, items full 0; teleports jam 0 yield 0 wrong lane 0",
+    "replay: applied 879288, ended 4565, shadows_removed 0, lane_jumps 32897, released 0",
+    "physics: collisions 4211 incidents, 58077 contact samples (same lane 1847, neighbour lane 963, junction crossing 361, junction merge 38, junction diverge 173, lane start 474, other 355, crossed without grant 195, lost on a wrong lane 0); teleports 0; certificate floor hits 86938, no-brake 0, dead-end clamps 2103, crossed without grant 218; lost on a wrong lane 0; shadows 7256, refused 0, refused for room 25942; denied bids 44791"
+   ]
+  },
+  "1": {
+   "checked": 1704,
+   "waiting_at_end": 1,
+   "delay_s": {
+    "n": 1703,
+    "p50": 0.0,
+    "p95": 0.4,
+    "max": 19.2
+   },
+   "by_kind": {
+    "boundary": {
+     "n": 1455,
+     "p50": 0.0,
+     "p95": 0.2,
+     "max": 8.6
+    },
+    "boundary_queued": {
+     "n": 2,
+     "p50": 1.8,
+     "p95": 3.42,
+     "max": 3.6
+    },
+    "interior": {
+     "n": 12,
+     "p50": 0.0,
+     "p95": 10.58,
+     "max": 10.8
+    },
+    "off_net": {
+     "n": 234,
+     "p50": 0.0,
+     "p95": 2.47,
+     "max": 19.2
+    }
+   },
+   "by_approach": {
+    "10971776#4 \u039d\u03bf\u03c4\u03b1\u03c1\u03ac": {
+     "n": 19,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 0.0
+    },
+    "1447239028#0 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 114,
+     "p50": 0.0,
+     "p95": 1.88,
+     "max": 5.4
+    },
+    "1447459732 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 628,
+     "p50": 0.0,
+     "p95": 0.33,
+     "max": 4.8
+    },
+    "207979571#0 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 5,
+     "p50": 0.2,
+     "p95": 2.16,
+     "max": 2.4
+    },
+    "228109849#0 \u039c\u03c0\u03bf\u03c5\u03bc\u03c0\u03bf\u03c5\u03bb\u03af\u03bd\u03b1\u03c2": {
+     "n": 89,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 4.6
+    },
+    "243850915 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 116,
+     "p50": 0.0,
+     "p95": 0.8,
+     "max": 10.8
+    },
+    "249697226#1 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 6,
+     "p50": 1.1,
+     "p95": 3.35,
+     "max": 3.4
+    },
+    "31985292#0 \u039c\u03b1\u03c5\u03c1\u03bf\u03bc\u03b1\u03c4\u03b1\u03af\u03c9\u03bd": {
+     "n": 106,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 0.0
+    },
+    "50003888#0 \u0393\u03ba\u03c5\u03b9\u03bb\u03c6\u03cc\u03c1\u03b4\u03bf\u03c5": {
+     "n": 20,
+     "p50": 0.0,
+     "p95": 0.02,
+     "max": 0.4
+    },
+    "661184019 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 6,
+     "p50": 0.0,
+     "p95": 0.55,
+     "max": 0.6
+    },
+    "693488162#1 \u039c\u03b5\u03c4\u03c3\u03cc\u03b2\u03bf\u03c5": {
+     "n": 54,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 1.4
+    },
+    "712030314#0 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 499,
+     "p50": 0.0,
+     "p95": 0.4,
+     "max": 3.6
+    }
+   },
+   "log": [
+    "replay: 5475 tracks, 872079 keys, 0 tracks with no trip, 1704 checked entries",
+    "lane changes 7252, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 11900, items full 0; teleports jam 0 yield 0 wrong lane 0",
+    "replay: applied 879288, ended 4565, shadows_removed 0, lane_jumps 32897, released 0",
+    "physics: collisions 4211 incidents, 58079 contact samples (same lane 1848, neighbour lane 963, junction crossing 360, junction merge 38, junction diverge 173, lane start 475, other 354, crossed without grant 195, lost on a wrong lane 0); teleports 0; certificate floor hits 86905, no-brake 0, dead-end clamps 2103, crossed without grant 218; lost on a wrong lane 0; shadows 7252, refused 0, refused for room 25883; denied bids 44791"
+   ]
+  }
+ }
+}

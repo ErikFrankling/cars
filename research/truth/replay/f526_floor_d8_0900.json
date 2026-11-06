@@ -1,0 +1,105 @@
+{
+ "reference": "d8 20181029 0900",
+ "approaches": 40,
+ "halves": {
+  "delay": {
+   "n_keys": 21,
+   "vehicles": 1220,
+   "mae_s": 1.48,
+   "bias_s": 0.05,
+   "mean_a_s": 5.1
+  },
+  "delay_10": {
+   "n_keys": 35,
+   "vehicles": 1449,
+   "mae_s": 1.82,
+   "bias_s": 0.5,
+   "mean_a_s": 5.15
+  },
+  "travel_time": {
+   "n_keys": 20,
+   "vehicles": 525,
+   "mae_s": 7.64,
+   "bias_s": -2.84,
+   "mean_a_s": 72.36
+  }
+ },
+ "days": {
+  "20181024": {
+   "delay": {
+    "n_keys": 27,
+    "vehicles": 2511,
+    "mae_s": 10.44,
+    "bias_s": 10.43,
+    "mean_a_s": 5.34
+   },
+   "delay_10": {
+    "n_keys": 37,
+    "vehicles": 2742,
+    "mae_s": 10.09,
+    "bias_s": 9.41,
+    "mean_a_s": 5.66
+   },
+   "travel_time": {
+    "n_keys": 37,
+    "vehicles": 689,
+    "mae_s": 55.62,
+    "bias_s": 54.82,
+    "mean_a_s": 57.25
+   },
+   "mean_delay_s": 15.73,
+   "cars": 1646
+  },
+  "20181030": {
+   "delay": {
+    "n_keys": 31,
+    "vehicles": 2991,
+    "mae_s": 2.29,
+    "bias_s": 1.44,
+    "mean_a_s": 5.32
+   },
+   "delay_10": {
+    "n_keys": 36,
+    "vehicles": 3104,
+    "mae_s": 2.25,
+    "bias_s": 1.35,
+    "mean_a_s": 5.39
+   },
+   "travel_time": {
+    "n_keys": 42,
+    "vehicles": 1321,
+    "mae_s": 10.87,
+    "bias_s": 8.38,
+    "mean_a_s": 68.48
+   },
+   "mean_delay_s": 6.92,
+   "cars": 1820
+  },
+  "20181101": {
+   "delay": {
+    "n_keys": 30,
+    "vehicles": 2621,
+    "mae_s": 1.53,
+    "bias_s": 0.68,
+    "mean_a_s": 5.55
+   },
+   "delay_10": {
+    "n_keys": 36,
+    "vehicles": 2749,
+    "mae_s": 1.72,
+    "bias_s": 0.47,
+    "mean_a_s": 5.8
+   },
+   "travel_time": {
+    "n_keys": 26,
+    "vehicles": 747,
+    "mae_s": 9.84,
+    "bias_s": 7.59,
+    "mean_a_s": 72.97
+   },
+   "mean_delay_s": 6.3,
+   "cars": 1566
+  }
+ },
+ "reference_mean_delay_s": 5.53
+}
