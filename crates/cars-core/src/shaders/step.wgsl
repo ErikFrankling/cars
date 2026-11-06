@@ -943,7 +943,10 @@ fn lane_free_scan(@builtin(global_invocation_id) id: vec3u) {
             }
             lengths += vt.length + vt.min_gap;
         }
-        if (!stopped && (cur[end - 1u].flags & F_HAVE_TO_WAIT) != 0u) {
+        // On a ring the front car's next link is the ring itself: one slowed below its brakes by the curve is moving
+        // traffic, not a queue to come. Read as one, the ring looks full to every entry for good.
+        let front_waits = (cur[end - 1u].flags & F_HAVE_TO_WAIT) != 0u && (!roundabout || cur[end - 1u].speed < P.queue_speed);
+        if (!stopped && front_waits) {
             f.flags |= FREE_LAST_WAITS;
             f.space = lanes[lane].length - lengths;
         }

@@ -1288,14 +1288,34 @@ class Roundabout:
 
     @staticmethod
     def measure(run, book, st):
+        outs, vr, qc = {}, [], {}
         for i, q in enumerate(Roundabout.QS):
             out = []
+            qc[q] = []
             for r in range(SEEDS):
                 name = f'G8q{q}r{r}'
                 t = run.trips(name)
+                m = t[t.trip.str.contains(r'\.m')]
+                qc[q].append(((m.arrival >= 300) & (m.arrival < 1800)).sum() * 3600 / 1500)
                 t = t[t.trip.str.contains(r'\.s')]
                 out.append(((t.arrival >= 300) & (t.arrival < 1800)).sum() * 3600 / 1500)
+                if q:
+                    f = run.cell(name)
+                    z = f[(f.lane.astype(str) == f':{name}.n0_2_0') & (f.time >= 300)]
+                    if len(z):
+                        vr.append(float(z.speed.median()))
+            outs[q] = out
             book.check('G8', 'F261', i, out, quantity=f'roundabout entry, circulating {q}', seeds=seedtag(f'G8{q}'))
+        # The code's own entry: Tanner (HCM's form) with its tc, its follow-up from the empty ring, and the ring's
+        # bunching tm = E[T] + s / v at the speed cars pass the entry, at the circulating flow the ring carried: it
+        # runs at its own capacity at 1200 offered.
+        tf = 3600 / max(np.mean(outs[0]), 1.0)
+        tm = E_T + 7.5 / max(np.mean(vr), 0.5) if vr else float('nan')
+        tc = 5.9
+        for i, q in enumerate(Roundabout.QS[1:]):
+            qs = np.mean(qc[q]) / 3600
+            fc = 3600 * qs * max(1 - qs * tm, 0) * math.exp(-qs * (tc - tm)) / (1 - math.exp(-qs * tf))
+            book.check('G8', 'F402', i, outs[q], quantity=f'Tanner at own tc {tc} tf {tf:.2f} tm {tm:.2f}, circulating {q} (carried {np.mean(qc[q]):.0f})', forecast=fc, tol='15%', seeds=seedtag(f'G8{q}'))
 
 
 @scene('G9', 'give2')
