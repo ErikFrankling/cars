@@ -59,8 +59,8 @@ def build():
     print('queries', len(q))
 
 
-def run(seed):
-    out = f'{D}/main_s{seed}'
+def run(seed, tag='main'):
+    out = f'{D}/{tag}_s{seed}'
     end = T0 + (max(RELEASE) + H + 2) * 0.1
     run_cars(['--net', f'{D}/net.xml', '--routes', f'{D}/routes.xml', '--replay', f'{D}/q.rpl', '--dt', '0.1', '--begin', 0, '--end', end,
               '--seed', seed, '--time-to-teleport', '0', '--fcd', f'{out}.fcd.csv', '--fcd-begin', T0 - 0.05, '--fcd-interval', '0.1'], log=f'{out}.log')
@@ -80,10 +80,10 @@ def crps(ens, y):
     return np.mean(np.abs(ens - y)) - 0.5 * np.mean(np.abs(ens[:, None] - ens[None, :]))
 
 
-def score():
+def score(tag='main'):
     w, s, v, vl, xf = load()
     q = np.array(json.load(open(f'{D}/q.json'))['q'])
-    runs = sorted(glob.glob(f'{D}/main_s*.resp.npz'))
+    runs = sorted(glob.glob(f'{D}/{tag}_s*.resp.npz'))
     E = np.stack([np.load(p)['v_end'] for p in runs], 1)
     V0 = np.stack([np.load(p)['v_rel'] for p in runs], 1)
     i, r = q[:, 0], q[:, 1]
@@ -125,7 +125,7 @@ def score():
                crps_constant_speed=float(null_c.mean()), crps_null_ci95=ci(null_c), driver_minus_floor_ci95=ci(sim_c - floor),
                recorded_dv_sd=float(np.std(y)), driver_dv_sd=float(np.nanstd(sim)), driver_ensemble_spread_mean=float(np.nanmean(np.nanstd(sim, 1))))
     print(json.dumps(res, indent=1))
-    json.dump(res, open(os.path.join(REPO, 'research/truth/replay/f109.json'), 'w'), indent=1)
+    json.dump(res, open(os.path.join(REPO, 'research/truth/replay', 'f109.json' if tag == 'main' else f'f109_{tag}.json'), 'w'), indent=1)
 
 
 if __name__ == '__main__':
@@ -134,6 +134,6 @@ if __name__ == '__main__':
         build()
     elif c == 'run':
         for sd in sys.argv[3].split(',') if ',' in sys.argv[3] else range(int(sys.argv[3].split('..')[0]), int(sys.argv[3].split('..')[1]) + 1):
-            run(int(sd))
+            run(int(sd), sys.argv[2])
     elif c == 'score':
-        score()
+        score(sys.argv[2] if len(sys.argv) > 2 else 'main')
