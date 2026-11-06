@@ -58,9 +58,19 @@ def blind_checks(prep, run, c, real, classes, edges, netdir, out):
         r = pd.DataFrame(rows, index=['hm', 'med', 'model']).T.dropna()
         res[cl] = dict(mean_abs_pct_hm=round(float(((r.model - r.hm).abs() / r.hm).mean() * 100), 1), bias_pct_hm=round(float(((r.model - r.hm) / r.hm).mean() * 100), 1), dip_model=round(float(r.model.min() / r.model.max()), 2) if len(r) else None, dip_real_med=round(float(r.med.min() / r.med.max()), 2), by_hour={int(h): tuple(x) for h, x in r.iterrows() if h in (6, 8, 12, 16, 17, 20)})
     # jam list
-    jams = pd.read_csv(HERE.parents[1] / 'research/truth/berlin2019/real_jams.csv', low_memory=False)
+    jams = pd.read_csv(HERE.parents[1] / 'research/truth/berlin2019/real_jams.csv', low_memory=False, dtype={'head_edge': str})
     jams = jams[(jams.source == 'probe') & (jams.tier == 'A') & jams.in_district.astype(bool) & ~jams.flag_parallel_road.fillna(False).astype(bool)]
+    je = pd.read_csv(DATA / 'macro/real_jam_edges.csv', dtype=str)[['threshold', 'period', 'head_edge', 'edge_ids']]
+    jams = jams.merge(je, on=['threshold', 'period', 'head_edge'])
     pos = {k: i for i, k in enumerate(meta.id)}
+    base = {}
+    for k, i in pos.items():
+        base.setdefault(k.split('#')[0], []).append(i)
+    def mapped(e):
+        if e in pos:
+            return [pos[e]]
+        b = base.get(e.split('#')[0], [])
+        return b if len(b) <= 3 else []
     arcs = pd.read_csv(prep / 'arcs.tsv', sep='\t')
     succ = {}
     for a_, b_ in zip(arcs['from'], arcs['to']):
@@ -68,7 +78,14 @@ def blind_checks(prep, run, c, real, classes, edges, netdir, out):
     with np.errstate(invalid='ignore', divide='ignore'):
         v = np.where(vs > 0, vm / vs, np.nan)
         flow = np.where(Lm > 0, vm / np.maximum(Lm, 1), 0) * pph
-    free = np.nanpercentile(np.where(flow > 10, v, np.nan), 90, axis=0)
+    loaded = int((vs.sum(axis=1) > 0).sum())
+    if loaded >= 12 * pph:
+        free = np.nanpercentile(np.where(flow > 10, v, np.nan), 90, axis=0)
+    else:
+        # one or two hours: free is the edge's 05-06 h probe speed, the same reference the list uses
+        ev = pd.read_csv(prep / 'edges.tsv', sep='\t', keep_default_na=False, dtype={'id': str}).v.values
+        free = ev.astype(float)
+    res['jam_free_reference'] = 'model p90 over the day' if loaded >= 12 * pph else 'edge free speed, single-hour run'
     ismain = meta.type.isin(MAIN).values & inbox.values
     out_j = {}
     for name, frac in (('third', 1 / 3), ('half', .5)):
@@ -95,12 +112,12 @@ def blind_checks(prep, run, c, real, classes, edges, netdir, out):
                 if Lm[comp].sum() >= 200:
                     places.append(set(comp))
             pl = lst[lst.period == per]
-            list_edges = [set(pos[e] for e in str(r).split() if e in pos) for r in pl.edges]
+            list_edges = [set(i for e in str(r).split() for i in mapped(e)) for r in pl.edge_ids]
             lu = set().union(*list_edges) if list_edges else set()
             mu = set().union(*places) if places else set()
             caught = float(np.mean([bool(x & mu) for x in list_edges])) if list_edges else None
             false = float(np.mean([not (x & lu) for x in places])) if places else None
-            out_j[f'{name}_{per}'] = dict(list_places=len(pl), model_places=len(places), caught=round(caught, 3) if caught is not None else None, false=round(false, 3) if false is not None else None)
+            out_j[f'{name}_{per}'] = dict(list_places=len(pl), list_unmapped=sum(1 for x in list_edges if not x), model_places=len(places), caught=round(caught, 3) if caught is not None else None, false=round(false, 3) if false is not None else None)
     res['jams'] = out_j
     # timing, as R 4
     merged = real.groupby(['site', 'hour']).flow.median().reset_index().merge(c[['site', 'hour', 'flow']], on=['site', 'hour'], suffixes=('_r', '_m'))
