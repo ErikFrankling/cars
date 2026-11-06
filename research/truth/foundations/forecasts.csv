@@ -1,6 +1,6 @@
 id,rung,scene,quantity,forecast,tolerance,formula_or_source,written,result,verdict
 F001,2,L1,capacity 50 km/h T 1.4 s 7.5 (veh/h),1856,3%,q=1/(T+s/v) B§1,2026-11-02,,
-F002,2,L1,capacity 100 km/h (veh/h),2156,3%,q=1/(T+s/v) B§1,2026-11-02,,
+F002,2,L1,capacity 100 km/h (veh/h),2156,3%,"q=1/(T+s/v) B§1; CHANGED 2026-11-06: counted at 1200 m, not 300 m. From rest a car reaches 100 km/h after about 500 m (a 0.7 m/s2 above 20 m/s), so at 300 m the formula's v was never reached and the row tested acceleration, not capacity",2026-11-02,,
 F003,2,L1,capacity 30 km/h (veh/h),1565,3%,q=1/(T+s/v) B§1,2026-11-02,,
 F004,2,L3,jam spacing (m),7.5,3%,kj=1/s B§1,2026-11-02,,
 F005,2,L4,start wave (km/h),19.3,10%,w=s/T B§1,2026-11-02,,

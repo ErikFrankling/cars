@@ -381,7 +381,7 @@ class Lane:
             for r in range(SEEDS):
                 c = w.cell(f'L1k{kmh}r{r}', 50)
                 v = kmh / 3.6
-                c.line(0, 2000, ['a', 's', 'b'], types={'s': 'traffic_light'})
+                c.line(0, 3000, ['a', 's', 'b'], types={'s': 'traffic_light'})
                 w.nodes[-2] = f'<node id="{c.id("s")}" x="1500.00" y="{c.y0:.2f}" type="traffic_light"/>'
                 c.edge('in', 'a', 's', v=v)
                 c.edge('out', 's', 'b', v=v)
@@ -396,7 +396,8 @@ class Lane:
             for r in range(SEEDS):
                 name = f'L1k{kmh}r{r}'
                 f = run.cell(name)
-                t = pass_times(f, name, 'out_0', min(300.0, run.lane_len(name, 'out_0') - 5))
+                # a car from rest needs about 500 m to reach 100 km/h, so its flow is counted where it has
+                t = pass_times(f, name, 'out_0', 1200.0 if kmh == 100 else 300.0)
                 t = t[t > Lane.T].values
                 if len(t) > 20:
                     w = t[10:]
