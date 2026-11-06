@@ -1,18 +1,10 @@
 #!/bin/bash
-# On the homelab through `heavy`: sensitivity runs of model A at 08 h and 16 h (F074). sweep.sh
-set -e
-cargo build --release -p cars-macro 2>&1 | tail -1
-mkdir -p .macro-data/runs
-run() { name=$1; shift; target/release/macro .macro-data/${PREP:-prep_ft} .macro-data/runs/$name --iters 45 --reroute 3 --threads ${THREADS:-4} "$@" 2>&1 | tail -1; echo finished $name; }
-for h in 8 16; do
-  run sw_s1640_$h --hours $h --s 1640
-  run sw_s1900_$h --hours $h --s 1900
-  run sw_c75_$h --hours $h --cycle 75
-  run sw_c110_$h --hours $h --cycle 110
-  run sw_sat_$h --hours $h --split sat
-  run sw_main_$h --hours $h --split main
-  run sw_sig05_$h --hours $h --sigma .05
-  run sw_sig30_$h --hours $h --sigma .30
-  run sw_b0_$h --hours $h --beta-mult 0
-  run sw_b2_$h --hours $h --beta-mult 2
+# Sensitivity of model A (F074), never a search. sweep.sh PREP OUT
+prep=${1:-.macro-data/prep_ft}; out=${2:-.macro-data/runs}
+run() { name=$1; shift; [ -f $out/$name/shape.txt ] && return; target/release/macro $prep $out/$name --iters 30 --reroute 3 --threads ${THREADS:-2} "$@" > $out/$name.log 2>&1; echo "$name $(tail -1 $out/$name/iters.tsv)"; }
+for a in "s1640 --s 1640" "s1900 --s 1900" "c75 --cycle 75" "c110 --cycle 110" "sat --split sat" "main --split main" "sig05 --sigma .05" "sig30 --sigma .30" "b0 --beta-mult 0" "b2 --beta-mult 2" "base"; do
+  set -- $a; n=$1; shift; run sw_${n}_8 --hours 8 "$@"
+done
+for a in "s1640 --s 1640" "s1900 --s 1900" "b0 --beta-mult 0" "b2 --beta-mult 2" "base"; do
+  set -- $a; n=$1; shift; run sw_${n}_16 --hours 16 "$@"
 done
