@@ -998,7 +998,7 @@ def t_junction(w, name, qp, seed_key, tm=0.0, minor_end=1800, r=0, through=False
     return c
 
 
-def gaps_log(run, name, major_lanes=1):
+def gaps_log(run, name, major_lanes=1, heads=False):
     f = run.cell(name)
     a = f[f.trip.astype(str).str.contains(r'\.m')].copy()
     b = f[f.trip.astype(str).str.contains(r'\.s')].copy()
@@ -1006,7 +1006,16 @@ def gaps_log(run, name, major_lanes=1):
         a['trip'] = a.trip.astype(str).astype('category')
     b['trip'] = b.trip.astype(str).astype('category')
     tm = pd.concat([leave_times(a, name, f'we_{l}', run.lane_len(name, f'we_{l}')) for l in range(major_lanes)]).sort_values() if len(a) else pd.Series(dtype=float)
-    ts = leave_times(b, name, 'sc_0', run.lane_len(name, 'sc_0'))
+    L = run.lane_len(name, 'sc_0')
+    ts = leave_times(b, name, 'sc_0', L)
+    if heads:
+        # When each minor car first stood at the head of the queue: within 5 m of its line, where only the first fits.
+        z = b[(b.lane.astype(str) == f'{name}.sc_0') & (b.pos > L - 5.0)]
+        h = z.groupby(z.trip.astype(str)).time.min()
+        # Gaps as offered: major cars timed 60 m before the line and carried to it at free speed, before a minor that
+        # took the gap can make the next one brake and stretch it.
+        up = pd.concat([pass_times(a, name, f'we_{l}', run.lane_len(name, f'we_{l}') - 60.0) for l in range(major_lanes)]).sort_values() + 60.0 / V50
+        return up.values, ts.values, h.reindex(ts.index.astype(str)).to_numpy(dtype=float)
     return tm.values, ts.values
 
 
@@ -1020,18 +1029,25 @@ def follow_up(entries, major, t0=300):
     return float(np.mean(h)) if h else float('nan')
 
 
-def critical_gap(major, entries, t0=300):
-    """Maximum likelihood, one largest rejected and one accepted gap per driver, lognormal. Troutbeck, monograph ch. 8."""
+def critical_gap(major, entries, t0=300, heads=None):
+    """Maximum likelihood, one largest rejected and one accepted gap per driver, lognormal. Troutbeck, monograph ch. 8.
+    With heads (when each driver reached the line), only gaps that began while it stood there count: a gap that began
+    before is a lag, and reading it as a whole headway puts rejected 'gaps' the driver never saw whole into the sample."""
     major = major[major > t0]
     pairs = []
-    acc = np.searchsorted(major, entries[entries > t0])
+    sel = entries > t0
+    acc = np.searchsorted(major, entries[sel])
+    hs = heads[sel] if heads is not None else np.full(sel.sum(), -np.inf)
     prev_exit = t0
-    for e, k in zip(entries[entries > t0], acc):
+    for e, k, th in zip(entries[sel], acc, hs):
         if k == 0 or k >= len(major):
             prev_exit = e
             continue
         acc_gap = major[k] - major[k - 1]
-        head_from = prev_exit
+        if heads is not None and not (np.isfinite(th) and major[k - 1] >= th):
+            prev_exit = e
+            continue
+        head_from = max(prev_exit, th)
         idx = np.flatnonzero((major > head_from) & (major < major[k - 1]))
         rej = 0.0
         if len(idx):
@@ -1068,7 +1084,7 @@ class Give:
 
     @staticmethod
     def measure(run, book, st):
-        caps, tf, tc = {}, [], []
+        caps, tf, tc, tc_all = {}, [], [], []
         tfs = {}
         for q in Give.QS:
             caps[q] = []
@@ -1076,13 +1092,17 @@ class Give:
             for r in range(SEEDS):
                 name = f'G1q{q}r{r}'
                 major, entries = gaps_log(run, name)
+                offered, _, heads = gaps_log(run, name, heads=True)
                 e = entries[(entries >= 300) & (entries < 1800)]
                 caps[q].append(len(e) * 3600 / 1500)
                 tfs[q].append(follow_up(entries, major))
                 if q in (400, 800):
-                    v, n = critical_gap(major, entries)
+                    v, n = critical_gap(offered, entries, heads=heads)
                     if np.isfinite(v):
                         tc.append(v)
+                    v, n = critical_gap(major, entries)
+                    if np.isfinite(v):
+                        tc_all.append(v)
         st['G1'] = {q: float(np.mean(v)) for q, v in caps.items()}
         for i, q in enumerate(Give.QS):
             tag = seedtag(f'G1{q}')
@@ -1115,6 +1135,7 @@ class Give:
             book.check('G1', 'F288', 0, np.array(got) / q, quantity=f'major delivered / offered, major {q}', seeds=seedtag(f'G1{q}'))
         book.info('G1', 'tf by major flow: ' + ' '.join(f'{q}:{np.nanmean(v):.2f}' for q, v in tfs.items()), 0.0)
         book.check('G4', 'F257', 0, tc, seeds='G1 q 400 800')
+        book.info('G4', 'critical gap, old estimator: gaps at the line after a taker stretched them, lags read as whole gaps', float(np.mean(tc_all)) if tc_all else float('nan'))
 
 
 @scene('G2', 'give')
@@ -1291,14 +1312,34 @@ class Roundabout:
 
     @staticmethod
     def measure(run, book, st):
+        outs, vr, qc = {}, [], {}
         for i, q in enumerate(Roundabout.QS):
             out = []
+            qc[q] = []
             for r in range(SEEDS):
                 name = f'G8q{q}r{r}'
                 t = run.trips(name)
+                m = t[t.trip.str.contains(r'\.m')]
+                qc[q].append(((m.arrival >= 300) & (m.arrival < 1800)).sum() * 3600 / 1500)
                 t = t[t.trip.str.contains(r'\.s')]
                 out.append(((t.arrival >= 300) & (t.arrival < 1800)).sum() * 3600 / 1500)
+                if q:
+                    f = run.cell(name)
+                    z = f[(f.lane.astype(str) == f':{name}.n0_2_0') & (f.time >= 300)]
+                    if len(z):
+                        vr.append(float(z.speed.median()))
+            outs[q] = out
             book.check('G8', 'F261', i, out, quantity=f'roundabout entry, circulating {q}', seeds=seedtag(f'G8{q}'))
+        # The code's own entry: Tanner (HCM's form) with its tc, its follow-up from the empty ring, and the ring's
+        # bunching tm = E[T] + s / v at the speed cars pass the entry, at the circulating flow the ring carried: it
+        # runs at its own capacity at 1200 offered.
+        tf = 3600 / max(np.mean(outs[0]), 1.0)
+        tm = E_T + 7.5 / max(np.mean(vr), 0.5) if vr else float('nan')
+        tc = 5.9
+        for i, q in enumerate(Roundabout.QS[1:]):
+            qs = np.mean(qc[q]) / 3600
+            fc = 3600 * qs * max(1 - qs * tm, 0) * math.exp(-qs * (tc - tm)) / (1 - math.exp(-qs * tf))
+            book.check('G8', 'F402', i, outs[q], quantity=f'Tanner at own tc {tc} tf {tf:.2f} tm {tm:.2f}, circulating {q} (carried {np.mean(qc[q]):.0f})', forecast=fc, tol='15%', seeds=seedtag(f'G8{q}'))
 
 
 @scene('G9', 'give2')
@@ -1598,6 +1639,18 @@ class LC5:
         book.info('LC5', 'target lane alone from a released queue (veh/h)', float(base))
         book.check('LC5', 'F026', 0, d5, seeds=seedtag('LC5'))
         book.check('LC5', 'F264', 0, [np.mean(d10) / np.mean(d5)] if np.mean(d5) > 0.002 else [np.nan], seeds=seedtag('LC5'))
+
+        # The same void at the code's own acceleration, max(a0 - a1 v, a_floor) (world.rs physics table), not B's 1.5:
+        # a changer at v - dv catching up to v leaves behind it the integral of (v - u) / a(u) du, times the target
+        # lane's density at its discharge.
+        def void(dv, v=V50):
+            u = np.linspace(v - dv, v, 400)
+            return float(np.trapezoid((v - u) / np.maximum(2.02 - 0.125 * u, 0.7), u))
+        k = base / 3600 / V50
+        f5 = 300 / 3600 * k * void(5.0) / (base / 3600)
+        f10 = 300 / 3600 * k * void(10.0) / (base / 3600)
+        book.check('LC5', 'F403', 0, d5, quantity=f'void loss dv 5 at own a(v): void {void(5.0):.1f} m', forecast=f5, tol='25%', seeds=seedtag('LC5'))
+        book.check('LC5', 'F403', 1, d10, quantity=f'void loss dv 10 at own a(v): void {void(10.0):.1f} m', forecast=f10, tol='25%', seeds=seedtag('LC5'))
 
 
 @scene('LC6', 'drop')
@@ -1945,6 +1998,20 @@ class N5:
             c1.append(x[x.edge == f'N5c{r}.thr'].entered.sum() * 3600 / 850)
             c0.append(x[(x.edge == f'N5c{r}.ex1') & (x.begin >= 600)].entered.sum() * 3600 / 550)
         book.check('N5', 'F273', 0, a, seeds=seedtag('N5a'))
+        # The exit link holds only floor(L / s) cars, fewer than a green discharges: per cycle it passes what it stored
+        # plus what the blocked lane refills once the start wave has passed the stored cars (first_react + N start_react),
+        # one in 1/beta of them at the own discharge headway. FIFO: the total is that over beta.
+        ex, th = [], []
+        for r in range(SEEDS):
+            x = e[(e.begin >= 600) & (e.begin < 1150)]
+            ex.append(x[x.edge == f'N5a{r}.ex1'].entered.sum() * 3600 / 550)
+            th.append(x[x.edge == f'N5a{r}.thr'].entered.sum() * 3600 / 550)
+        Lx = run.lane_len(f'N5a0', 'ex1_0')
+        N = math.floor(Lx / 7.5)
+        refill = 0.2 * max(15 + 3 - 2.1 - (FIRST_REACT + N * START_REACT), 0) / 2.0
+        fx = (N + refill) * 3600 / 90
+        book.check('N5', 'F404', 0, ex, quantity=f'exit flow, {N} stored on {Lx:.0f} m + refill {refill:.2f} per cycle (veh/h)', forecast=fx, tol='10%', seeds=seedtag('N5a'))
+        book.check('N5', 'F404', 1, np.array(th) / np.maximum(ex, 1), quantity='FIFO: through over exit flow', forecast=4.0, tol='15%', seeds=seedtag('N5a'))
         book.check('N5', 'F274', 0, b, seeds=seedtag('N5b'), tol='30')
         book.check('N5', 'F275', 0, c1, quantity='3 lanes, other two lanes (veh/h)', seeds=seedtag('N5c'))
         book.check('N5', 'F275', 1, c0, quantity='3 lanes, closed lane (veh/h)', seeds=seedtag('N5c'), tol='30')
@@ -2013,8 +2080,13 @@ class N9:
                 g = {'z': 40, 'o': None, 'h': 26, 'i': 40}[label]
                 fc = o['S'] * (g + 3 - o['l']) / 3600 if g else 3.0
                 book.check('N9', fid, i, out, quantity=f'{text}: cars per cycle' + (', own S(g+y-l)' if g else ''), forecast=fc, seeds=seedtag('N9'))
-            else:
+            elif label == 'w':
                 book.check('N9', 'F295', 0, out, quantity=f'{text}: cars per cycle', seeds=seedtag(f'N9{label}'), mode='low', tol='0')
+            else:
+                # Opposed: nothing passes both lights in one green, so a cycle carries what the link stores when the
+                # downstream light turns green, as F047's one-lane case: whole bodies on each lane at jam spacing.
+                per_lane = math.floor((np.mean(L) - 5.0) / 7.5) + 1
+                book.check('N9', 'F405', 0, out, quantity=f'{text}: cars per cycle, storage {lanes} x {per_lane} on {np.mean(L):.1f} m', forecast=min(lanes * per_lane, N9_FEED[label] * 90 / 3600), tol='10%', seeds=seedtag(f'N9{label}'))
             book.check('N9', 'F293', 0, holds, quantity=f'{text}: longest stand on link or approach (s)', seeds=seedtag('N9'), mode='high', tol='0')
             book.check('N9', 'F294', 0, left, quantity=f'{text}: cars left {2890 - N9_END} s after the feed ends', seeds=seedtag('N9'), tol='0')
             book.info('N9', f'{text}: flow late over early (1 = no decay); link lane (m)', f'{np.mean(trend):.2f}; {np.mean(L):.1f}')
@@ -2457,6 +2529,14 @@ def block_scene(batch_name, idx, label):
             book.check('C-S8', 'F283', idx, [Block.flow(run, f'CS8{label}{r}', 1) for r in range(SEEDS)], quantity=f"cross capacity b {['0', '.75', '1'][idx]} (exit_comply 1-b)", seeds=seedtag('C-S8'))
             if idx == 1:
                 book.check('C-S8', 'F283', 3, [Block.flow(run, f'CS8T{r}', 2) for r in range(SEEDS)], quantity='two lanes b .75, per lane', seeds=seedtag('C-S8'))
+            if idx:
+                # A blocker leaves the box only when the start wave from the released hold has passed the cars stored
+                # between box and hold, and the cross head starts its own reaction after it: the code's own tau.
+                b = [0.0, 0.75, 1.0][idx]
+                Lc = run.lane_len(f'CS8{label}0', 'ch_0')
+                n = math.floor(max(Lc - 5.0, 0.0) / 7.5) + 1
+                tau = 10.0 + FIRST_REACT + n * START_REACT + START_REACT
+                book.check('C-S8', 'F406', idx - 1, [Block.flow(run, f'CS8{label}{r}', 1) for r in range(SEEDS)], quantity=f'cross capacity b {b:g}, own tau {tau:.1f} s ({n} stored on {Lc:.0f} m)', forecast=1800 * (30 - b * tau) / 60, tol='10%', seeds=seedtag('C-S8'))
     return B
 
 

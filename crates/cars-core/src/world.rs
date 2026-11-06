@@ -932,7 +932,9 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.sigma = cfg.tune("sigma", g.sigma);
     g.lc_strategic = cfg.tune("lc_strategic", g.lc_strategic);
     let automated = matches!(t.model, CfModel::Acc | CfModel::Cacc);
-    g.exit_comply = num("phys.exit_comply", if automated { 1.0 } else { cfg.tune("exit_comply", 0.9) });
+    // Share of drivers who keep a junction box clear. The old 0.9 had no source and never acted: check_rewind held
+    // everyone back. 1.0 keeps what traffic has done; a measured share (foundations C §7) replaces it.
+    g.exit_comply = num("phys.exit_comply", if automated { 1.0 } else { cfg.tune("exit_comply", 1.0) });
     // Gipps' two decelerations: what the driver plans with, and what it expects of the leader.
     if t.model == CfModel::Krauss {
         g.decel = num("phys.b_plan", cfg.tune("driver_b", 3.0));
