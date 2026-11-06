@@ -144,7 +144,7 @@ def lanelets(ds, site, construction=False):
         if np.hypot(*(L[0] - R[0])) > np.hypot(*(L[0] - R[-1])) and np.hypot(*(L[-1] - R[-1])) > np.hypot(*(L[-1] - R[0])):
             R = R[::-1]
         out[int(r.get('id'))] = dict(left=L, right=R, centre=_centre(L, R), tags=tags,
-                                     left_nodes=ways[mem['left']], right_nodes=ways[mem['right']])
+                                     left_nodes=ways[mem['left']], right_nodes=ways[mem['right']], left_way=mem['left'], right_way=mem['right'])
     return out
 
 

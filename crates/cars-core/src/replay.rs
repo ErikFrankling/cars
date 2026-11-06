@@ -1,8 +1,9 @@
 //! Recorded tracks for replay with recorded boundaries, research/truth/replay/README.md.
 //!
 //! A `.rpl` file, little endian, written by scripts/replay/rpl.py:
-//! `RPL1`, u32 lanes, per lane (u16 length, id bytes), u32 tracks, per track (u16 length, trip id bytes,
-//! f32 t0, f32 key_dt, f32 release (seconds, as --begin), u32 keys, per key (u32 lane in the list above, f32 pos, f32 speed)).
+//! `RPL1` or `RPL2`, u32 lanes, per lane (u16 length, id bytes), u32 tracks, per track (u16 length, trip id bytes,
+//! f32 t0, f32 key_dt, f32 release (seconds, as --begin), u32 keys, per key (u32 lane in the list above, f32 pos, f32 speed,
+//! and in `RPL2` f32 lateral offset from the lane's centreline, left positive)).
 //! A track with no keys only forces its trip's insertion; it is simulated from its depart on.
 
 use crate::demand::Demand;
@@ -54,9 +55,11 @@ pub fn attach(world: &mut World, net: &Net, demand: &Demand, path: &std::path::P
     }
     let bytes = std::fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
     let mut r = Reader { b: &bytes, at: 0 };
-    if r.take(4)? != b"RPL1" {
-        return Err("not a replay file".into());
-    }
+    let lateral = match r.take(4)? {
+        b"RPL1" => false,
+        b"RPL2" => true,
+        _ => return Err("not a replay file".into()),
+    };
     let n_lanes = r.u32()? as usize;
     let mut lane_of = Vec::with_capacity(n_lanes);
     for _ in 0..n_lanes {
@@ -79,6 +82,7 @@ pub fn attach(world: &mut World, net: &Net, demand: &Demand, path: &std::path::P
         let mut at = route_start;
         for _ in 0..n {
             let (l, pos, speed) = (r.u32()?, r.f32()?, r.f32()?);
+            let lat = if lateral { r.f32()? } else { 0.0 };
             let lane = *lane_of.get(l as usize).ok_or("replay key names a lane past the list")?;
             if wt.is_some() && world.lanes[lane as usize].flags & 1 == 0 {
                 let edge = world.lanes[lane as usize].edge;
@@ -87,7 +91,7 @@ pub fn attach(world: &mut World, net: &Net, demand: &Demand, path: &std::path::P
                     None => return Err(format!("trip {name}: lane {} is not on its route", net.lanes[lane as usize].id)),
                 }
             }
-            rw.keys.push(GpuReplayKey { lane, pos, speed, route_i: at });
+            rw.keys.push(GpuReplayKey { lane, pos, speed, route_i: at, lat });
         }
         let Some(wt) = wt else {
             missing += 1;

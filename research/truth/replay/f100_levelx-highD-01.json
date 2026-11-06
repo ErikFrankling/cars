@@ -1,0 +1,55 @@
+{
+ "scene": "levelx-highD-01",
+ "dataset": "highD",
+ "recording": 1,
+ "dt": 0.2,
+ "replay_log": [
+  "replay: 1047 tracks, 348750 keys, 0 tracks with no trip",
+  "replay: applied 68660, ended 1047, shadows_removed 0, lane_jumps 747, released 0"
+ ],
+ "insertion_steps_left_out": 1047,
+ "insertion_delay_s": {
+  "p50": 0.0,
+  "p90": 0.0,
+  "p99": 0.0,
+  "p100": 0.6
+ },
+ "samples_on_grid": 69725,
+ "in_output": 68660,
+ "missing": 1065,
+ "missing_first_or_last_key_of_piece": 1047,
+ "lane_mismatch": 9e-05,
+ "lane_mismatch_within_1m_of_marking": 1.0,
+ "harness_pos_abs_m": {
+  "p50": 0.0003,
+  "p90": 0.001,
+  "p99": 0.0019,
+  "p100": 0.0027
+ },
+ "harness_lat_abs_m": {
+  "p50": 0.0,
+  "p90": 0.0,
+  "p99": 0.0,
+  "p100": 0.0001
+ },
+ "centre_2d_m": {
+  "p50": 0.0206,
+  "p90": 0.0272,
+  "p99": 0.0308,
+  "p100": 0.0326
+ },
+ "centre_on_its_lane_share": 1.0,
+ "front_2d_m": {
+  "p50": 0.0009,
+  "p90": 0.0055,
+  "p99": 0.0066,
+  "p100": 0.0077
+ },
+ "map_lateral_abs_m": {
+  "p50": 0.26,
+  "p90": 0.64,
+  "p99": 1.5641,
+  "p100": 2.04
+ },
+ "pieces_per_vehicle": 1.0
+}

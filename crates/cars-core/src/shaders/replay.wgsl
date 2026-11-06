@@ -25,6 +25,7 @@ struct ReplayKey {
     pos: f32,
     speed: f32,
     route_i: u32,
+    lat: f32,         // offset from the lane's centreline, left positive
 }
 
 @group(1) @binding(10) var<uniform> rcfg: ReplayCfg;
@@ -45,7 +46,11 @@ fn replay_apply(@builtin(global_invocation_id) id: vec3u) {
     // Track times are relative to --begin: seconds of day in f32 would cost centimetres.
     let t = f32(G.step) * P.dt;
     if (t >= tr.release || tr.n == 0u) {
-        if (t < tr.release + P.dt * 1.5) { atomicAdd(&rstats[4], 1u); }
+        if (t < tr.release + P.dt * 1.5) {
+            // Handed to the driver on its lane's centreline: lc_edge means an edge creep to the driver.
+            cur[i].lc_edge = 0.0;
+            atomicAdd(&rstats[4], 1u);
+        }
         return;
     }
     if ((e.flags & F_SHADOW) != 0u) {
@@ -65,13 +70,34 @@ fn replay_apply(@builtin(global_invocation_id) id: vec3u) {
     let b = rkeys[tr.first + min(j + 1u, tr.n - 1u)];
     let f = clamp(u - f32(j), 0.0, 1.0);
     var key = a;
+    var lat = mix(a.lat, b.lat, f);
     if (a.lane == b.lane) {
         key.pos = mix(a.pos, b.pos, f);
         key.speed = mix(a.speed, b.speed, f);
-    } else if (f >= 0.5) {
-        key = b;
+    } else {
+        let la = lanes[a.lane];
+        let lb = lanes[b.lane];
+        let d = i32(lb.index) - i32(la.index);
+        if (la.edge == lb.edge && abs(d) == 1) {
+            // One lane over on the same edge: move sideways as recorded, on whichever lane the centre is over.
+            let off = f32(d) * 0.5 * (la.width + lb.width);
+            let l = mix(a.lat, b.lat + off, f);
+            key.pos = mix(a.pos, b.pos, f);
+            key.speed = mix(a.speed, b.speed, f);
+            lat = l;
+            if (f32(d) * l > 0.5 * la.width) {
+                key.lane = b.lane;
+                key.route_i = b.route_i;
+                lat = l - off;
+            }
+        } else if (f >= 0.5) {
+            key = b;
+            lat = b.lat;
+        } else {
+            lat = a.lat;
+        }
     }
-    if (u < 0.0) { key.pos = a.pos + a.speed * u * tr.key_dt; }
+    if (u < 0.0) { key.pos = a.pos + a.speed * u * tr.key_dt; lat = a.lat; }
     if (key.lane != e.lane) {
         e.prev_lane = e.lane;
         e.flags |= F_LANE_CHANGED | F_BEST_DIRTY;
@@ -84,6 +110,7 @@ fn replay_apply(@builtin(global_invocation_id) id: vec3u) {
     e.speed = key.speed;
     e.v_next = key.speed;
     e.route_i = key.route_i;
+    e.lc_edge = lat;
     e.phys = e.phys & 0xffffu;
     e.flags &= ~F_HAS_SHADOW;
     cur[i] = e;

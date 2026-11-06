@@ -9,20 +9,25 @@ INF = 3.0e38
 
 
 def write_rpl(path, lanes, tracks):
-    """lanes: list of lane ids. tracks: list of (trip_id, t0, key_dt, release, lane_idx[], pos[], speed[])."""
+    """lanes: list of lane ids. tracks: list of (trip_id, t0, key_dt, release, lane_idx[], pos[], speed[] [, lat[]]),
+    lat the offset from the lane's centreline, left positive. With any lat the file is RPL2 (missing ones are 0)."""
+    lateral = any(len(t) > 7 for t in tracks)
     with open(path, 'wb') as f:
-        f.write(b'RPL1')
+        f.write(b'RPL2' if lateral else b'RPL1')
         f.write(struct.pack('<I', len(lanes)))
         for l in lanes:
             b = l.encode(); f.write(struct.pack('<H', len(b))); f.write(b)
         f.write(struct.pack('<I', len(tracks)))
-        for tid, t0, kdt, rel, li, pos, spd in tracks:
+        for tr in tracks:
+            tid, t0, kdt, rel, li, pos, spd = tr[:7]
             b = str(tid).encode(); f.write(struct.pack('<H', len(b))); f.write(b)
             n = len(li)
             f.write(struct.pack('<fffI', t0, kdt, min(rel, INF), n))
             if n:
-                k = np.zeros(n, dtype=[('l', '<u4'), ('p', '<f4'), ('v', '<f4')])
+                k = np.zeros(n, dtype=[('l', '<u4'), ('p', '<f4'), ('v', '<f4')] + ([('a', '<f4')] if lateral else []))
                 k['l'] = li; k['p'] = pos; k['v'] = spd
+                if lateral and len(tr) > 7:
+                    k['a'] = tr[7]
                 f.write(k.tobytes())
 
 

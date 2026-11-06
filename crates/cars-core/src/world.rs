@@ -771,6 +771,8 @@ pub struct GpuReplayKey {
     pub pos: f32,
     pub speed: f32,
     pub route_i: u32,
+    /// Offset from the lane's centreline, left positive; drawn and detected through `Veh::lc_edge`.
+    pub lat: f32,
 }
 
 #[derive(Default, Clone)]
