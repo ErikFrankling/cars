@@ -1,0 +1,49 @@
+{
+ "scene": "scene-d6-20181029-0900",
+ "log": [
+  "replay: 5565 tracks, 1408359 keys, 0 tracks with no trip, 0 checked entries",
+  "lane changes 1975, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 30849, items full 0; teleports jam 0 yield 0 wrong lane 0",
+  "replay: applied 1401680, ended 4518, shadows_removed 0, lane_jumps 32717, released 0",
+  "physics: collisions 9367 incidents, 156451 contact samples (same lane 4576, neighbour lane 2142, junction crossing 381, junction merge 50, junction diverge 315, lane start 1116, other 787, crossed without grant 382, lost on a wrong lane 0); teleports 0; certificate floor hits 137588, no-brake 0, dead-end clamps 31, crossed without grant 420; lost on a wrong lane 0; shadows 1975, refused 0, refused for room 6437; denied bids 69666"
+ ],
+ "samples_on_grid": 1415982,
+ "in_output": 1401680,
+ "missing": 14302,
+ "lane_mismatch": 0.00137,
+ "harness_pos_abs_m": {
+  "p50": 0.0002,
+  "p90": 0.0077,
+  "p99": 0.0167,
+  "p100": 0.1228
+ },
+ "harness_lat_abs_m": {
+  "p50": 0.0,
+  "p90": 0.0006,
+  "p99": 0.0031,
+  "p100": 0.0495
+ },
+ "front_2d_m": {
+  "p50": 0.1859,
+  "p90": 1.0876,
+  "p99": 2.7392,
+  "p100": 7.4371
+ },
+ "front_2d_m_on_edges": {
+  "p50": 0.1877,
+  "p90": 1.043,
+  "p99": 2.8726,
+  "p100": 6.0618
+ },
+ "front_2d_m_internal": {
+  "p50": 0.1825,
+  "p90": 1.1371,
+  "p99": 2.6182,
+  "p100": 7.4371
+ },
+ "lateral_abs_m": {
+  "p50": 0.62,
+  "p90": 2.719
+ },
+ "off_net_share": 0.1499,
+ "pieces_per_vehicle": 1.82
+}
