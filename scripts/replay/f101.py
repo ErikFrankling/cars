@@ -21,11 +21,18 @@ D = os.path.join(OUT, 'f101' if SITE == 'I90mov' else f'f101_{SITE}')
 MAXN = int(os.environ.get('F101_MAXN', '0')) or None
 T0 = 1.0          # window start in simulation time
 X0 = 20.0         # follower's start on its edge
-W = 300           # 30 s at 0.1 s, as report 05
+W = int(os.environ.get('F101_W', '300'))   # 30 s at 0.1 s, as report 05; highD's 13 s tracks take 100
 
 
 def windows():
-    """Report 05's I-90/94 moving test set, cut by its own code from its own pair cache."""
+    """Report 05's I-90/94 moving test set, cut by its own code from its own pair cache, or windows prepared by
+    heldout_windows.py (source.npz in the folder)."""
+    if os.path.exists(f'{D}/source.npz'):
+        from types import SimpleNamespace
+        z = np.load(f'{D}/source.npz')
+        n = z['s'].shape[1]
+        return SimpleNamespace(N=n, s=z['s'], v=z['v'], vl=z['vl'], xl=z['xl'],
+                               meta=dict(vref=np.full(n, float(z['vref'])), run=z['run'], t=z['t'], fid=z['fid'], lid=z['lid']))
     os.chdir(REPO)
     sys.path.insert(0, os.path.join(REPO, 'research/truth/scripts'))
     from opus_windows import windows as cut

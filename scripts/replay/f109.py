@@ -16,10 +16,10 @@ import numpy as np, pandas as pd
 SITE = os.environ.get('F101_SITE', 'I90mov')
 F101D = os.path.join(OUT, 'f101' if SITE == 'I90mov' else f'f101_{SITE}')
 D = os.path.join(OUT, 'f109' if SITE == 'I90mov' else f'f109_{SITE}')
-T0, X0, W = 1.0, 20.0, 300
-RELEASE = (30, 80, 130, 180, 230)   # samples into the window: 3, 8, 13, 18, 23 s
+T0, X0, W = 1.0, 20.0, int(os.environ.get('F101_W', '300'))
+RELEASE = tuple(int(x) for x in os.environ.get('F109_RELEASE', '30,80,130,180,230').split(','))   # samples into the window: 3, 8, 13, 18, 23 s
 H = 10                               # one second ahead
-NW = 1000
+NW = int(os.environ.get("F109_NW", "1000"))
 
 
 def load():
@@ -64,11 +64,11 @@ def build():
     print('queries', len(q))
 
 
-def run(seed, tag='main'):
+def run(seed, tag='main', gpu=False):
     out = f'{D}/{tag}_s{seed}'
     end = T0 + (max(RELEASE) + H + 2) * 0.1
     run_cars(['--net', f'{D}/net.xml', '--routes', f'{D}/routes.xml', '--replay', f'{D}/q.rpl', '--dt', '0.1', '--begin', 0, '--end', end,
-              '--seed', seed, '--time-to-teleport', '0', '--fcd', f'{out}.fcd.csv', '--fcd-begin', T0 - 0.05, '--fcd-interval', '0.1'] + os.environ.get('F101_FLAGS', '').split(), log=f'{out}.log')
+              '--seed', seed, '--time-to-teleport', '0', '--fcd', f'{out}.fcd.csv', '--fcd-begin', T0 - 0.05, '--fcd-interval', '0.1'] + os.environ.get('F101_FLAGS', '').split(), gpu=gpu, log=f'{out}.log')
     f = pd.read_csv(f'{out}.fcd.csv', usecols=['time', 'trip', 'speed'])
     f = f[f.trip.str[0] == 'F']
     f['k'] = np.round((f.time - T0) * 10).astype(int); f['c'] = f.trip.str[1:].astype(int)
@@ -140,6 +140,6 @@ if __name__ == '__main__':
         build()
     elif c == 'run':
         for sd in sys.argv[3].split(',') if ',' in sys.argv[3] else range(int(sys.argv[3].split('..')[0]), int(sys.argv[3].split('..')[1]) + 1):
-            run(int(sd), sys.argv[2])
+            run(int(sd), sys.argv[2], gpu='--gpu' in sys.argv)
     elif c == 'score':
         score(sys.argv[2] if len(sys.argv) > 2 else 'main')

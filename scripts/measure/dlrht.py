@@ -132,7 +132,7 @@ def leaders(d):
 
 def block(z, fs, k, refs):
     names = fs[k * 4:k * 4 + 4]
-    if any(fs.index(n) >= HELD_FIRST_FILE for n in names):
+    if any(fs.index(n) >= HELD_FIRST_FILE for n in names) and '--holdout' not in sys.argv:
         raise SystemExit('block reaches the held-out files (HOLDOUT.md)')
     d = pd.concat([read(z, n) for n in names], ignore_index=True)
     if refs is None:
@@ -150,3 +150,4 @@ if __name__ == '__main__':
     refs = None
     for k in range(int(sys.argv[1]), int(sys.argv[2])):
         refs = block(z, fs, k, refs)
+    # python3 -I scripts/measure/dlrht.py 24 26 --holdout   reads the held-out 14:00-14:40 UTC, for the replay test only

@@ -1,6 +1,6 @@
 # The measured driver: model
 
-7 November 2026, written before the kernel code. Every number comes from [DRIVER.md](DRIVER.md) or is fitted on recordings that are not held out ([HOLDOUT.md](HOLDOUT.md)). The fit is `scripts/measure/fit_driver.py`, its numbers are in [model_fit.json](model_fit.json). The kernel twin is `md_*` in `crates/cars-core/src/shaders/common.wgsl`.
+7 November 2026, written before the kernel code. Every number comes from [DRIVER.md](DRIVER.md) or is fitted on recordings that are not held out ([HOLDOUT.md](HOLDOUT.md)). The fit is `scripts/measure/fit_driver.py`, its numbers are in [model_fit.json](model_fit.json). The kernel twin is `md_*` in `crates/cars-core/src/shaders/common.wgsl`. Held-out and T0 results: [MODEL_RESULTS.md](MODEL_RESULTS.md).
 
 ## Why a new law
 
