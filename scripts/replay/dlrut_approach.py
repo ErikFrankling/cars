@@ -15,6 +15,7 @@ import sys, os, json, glob
 HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.abspath(os.path.join(HERE, '..', '..'))
 sys.path.insert(0, HERE)
 from rpl import *
+import overlaps
 import numpy as np, pandas as pd
 
 CACHE = '/home/erikf/projects/personal/cars-data/truth/trajectories/opus-20261031-cache'
@@ -91,15 +92,19 @@ def build():
     ch = np.r_[0, np.where(np.diff(st) != 0)[0] + 1]
     ts, ss = t[ch], st[ch]
     k0 = np.searchsorted(ts, BEGIN, side='right') - 1
+    # Change times on the 0.1 s step grid, cumulatively: the engine rounds each phase to whole steps, and per-phase
+    # rounding drifts by seconds over three hours. The controller log is at 1 Hz, so a change is known to within 1 s.
     phases = []
     cur_t, cur_s = BEGIN, ss[k0]
     for k in range(k0 + 1, len(ts)):
         if ts[k] > END + 200:
             break
-        phases.append((round(ts[k] - cur_t, 3), STATE[int(cur_s)])); cur_t, cur_s = ts[k], ss[k]
+        tk = round(float(ts[k]), 1)
+        phases.append((round(tk - cur_t, 1), STATE[int(cur_s)])); cur_t, cur_s = tk, ss[k]
     phases.append((600.0, STATE[int(cur_s)]))
     with open(f'{D}/tls.add.xml', 'w') as f:
-        f.write('<additional>\n  <tlLogic id="sg6" type="static" programID="recorded" offset="0">\n')
+        # The engine starts a static program at (begin - offset) mod cycle: offset = begin starts it at its first phase.
+        f.write(f'<additional>\n  <tlLogic id="sg6" type="static" programID="recorded" offset="{BEGIN}">\n')
         for dur, s in phases:
             if dur > 0:
                 f.write(f'    <phase duration="{dur}" state="{s}"/>\n')
@@ -233,7 +238,7 @@ def crossings_sim(f, len_in):
     return out
 
 
-def point_queue(entries, greens, len_in, v_free):
+def point_queue(entries, greens, len_in, v_free, lenient=False):
     """Null model: each simulated car reaches the line at free speed; a queue discharges at H_SAT after LOST."""
     out = {}; prev = -1e9
     for tid, t0, pos0 in sorted(entries, key=lambda r: r[1] + (len_in - r[2]) / v_free):
@@ -243,7 +248,8 @@ def point_queue(entries, greens, len_in, v_free):
             if g1 + 3.0 <= d:
                 continue
             start = g0 + LOST + H_SAT if prev < g0 else -1e9      # first of a queue that stood through red
-            cand = max(d, start if ta < g0 + LOST + H_SAT else d)
+            held = ta < g0 if lenient else ta < g0 + LOST + H_SAT     # lenient: only a car that met red waits out the lost time
+            cand = max(d, start if held else d)
             if cand < g1 + 3.0:
                 d = cand; break
         out[tid] = d; prev = d
@@ -272,8 +278,9 @@ def score():
         return np.array([sum(1 for t in cross.values() if g0 <= t < g1 + 3.0) for g0, g1 in sat_g])
 
     rc = per_cycle(rec); nc = per_cycle(null)
-    def cmp(cross):
-        ids = [t for t in rec if t in cross and rec[t] >= SCORE_FROM]
+    def cmp(cross, cut=None):
+        # A car that met a replayed one before its line is out of the comparison: a harness artefact.
+        ids = [t for t in rec if t in cross and rec[t] >= SCORE_FROM and not (cut and cut.get(t, 1e18) <= cross[t])]
         e = np.array([cross[t] - rec[t] for t in ids]); tt = np.array([rec[t] for t in ids])
         bins = {}
         for b0 in np.arange(SCORE_FROM, END, 1800):
@@ -282,9 +289,12 @@ def score():
                 bins[f'{int(b0 // 3600):02d}:{int(b0 % 3600 // 60):02d}'] = round(float(np.mean(np.abs(e[k]))), 2)
         return dict(n=len(ids), crossing_mae_s=float(np.mean(np.abs(e))), crossing_bias_s=float(np.mean(e)), mae_by_half_hour=bins)
     res['null_point_queue'] = dict(**cmp(null), discharge_per_sat_cycle_mae=float(np.mean(np.abs(nc - rc))), discharge_bias=float(np.mean(nc - rc)))
+    null2 = point_queue([(tid, r.ti / 5, r.pos) for tid, r in ent.iterrows()], greens, len_in, v_free, lenient=True); nc2 = per_cycle(null2)
+    res['null_point_queue_lenient'] = dict(**cmp(null2), discharge_per_sat_cycle_mae=float(np.mean(np.abs(nc2 - rc))), discharge_bias=float(np.mean(nc2 - rc)))
     res['recorded'] = dict(saturated_cycles=len(sat_g), discharge_mean=float(rc.mean()), vehicles_simulated=int(len(ent)), crossing_recorded=len(rec))
     for p in sorted(glob.glob(f'{D}/mix_s*.fcd.csv')):
-        f = pd.read_csv(p, usecols=['time', 'trip', 'lane', 'pos', 'speed', 'depart_step'])
+        f = pd.read_csv(p, usecols=['time', 'trip', 'lane', 'pos', 'speed', 'depart_step', 'length'])
+        ov = overlaps.find(f, m)
         sim_ids = set(ent.index)
         fs = f[f.trip.isin(sim_ids)]
         cross = crossings_sim(fs, len_in)
@@ -293,7 +303,7 @@ def score():
         delay = np.array([first[t] - ent.loc[t].ti / 5 for t in first.index])
         # overlaps of a simulated car with a replayed one on the same lane: a harness artefact, counted
         fr = f[~f.trip.isin(sim_ids)]
-        res['runs'][os.path.basename(p)] = dict(**cmp(cross), discharge_per_sat_cycle_mae=float(np.mean(np.abs(sc - rc))), discharge_bias=float(np.mean(sc - rc)),
+        res['runs'][os.path.basename(p)] = dict(**cmp(cross, ov['first_overlap_with_replayed']), overlaps=dict(pairs=ov['pairs_by_kind'], sim_cars_ended=len(ov['first_overlap_with_replayed'])), discharge_per_sat_cycle_mae=float(np.mean(np.abs(sc - rc))), discharge_bias=float(np.mean(sc - rc)),
                                                 never_entered=int(len(sim_ids - set(first.index))), entry_delay_s=dict(p50=float(np.median(delay)), p95=float(np.percentile(delay, 95)), max=float(delay.max())),
                                                 replayed_vehicle_samples=int(len(fr)))
     print(json.dumps(res, indent=1))
