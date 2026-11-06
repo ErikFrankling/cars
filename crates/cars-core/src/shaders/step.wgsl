@@ -1331,7 +1331,18 @@ fn zipper_speed(link: u32, dist: f32, v_in: f32, a: f32, speed: f32, vl: f32, va
             let v_end = min(min(vmax, v_acc), max(u_end, v_dec));
             let v_avg = (speed + v_end) / 2.0;
             let te = max(1.0, ceil(dist / max(EPS, v_avg) / dt) * dt);
-            let t_target = tf + ty.tau;
+            var t_target = tf + ty.tau;
+            if (mu > 0.0) {
+                // Fall in behind the foe: cross the line one own time gap after its rear and the standstill gap have.
+                // SUMO's tf + tau ignores the body, so at crawl speed two heads reach their lines side by side.
+                let d = r.dist + ty.length + ty.min_gap;
+                let v0 = r.speed;
+                let vm = max(vmax, v0 + EPS);
+                let d_acc = (vm * vm - v0 * v0) / (2.0 * ty.accel);
+                var tc = (vm - v0) / ty.accel + (d - d_acc) / vm;
+                if (d < d_acc) { tc = (sqrt(v0 * v0 + 2.0 * ty.accel * d) - v0) / ty.accel; }
+                t_target = max(tf, ceil(tc / dt) * dt) + ty.ph_tau * select(ph_gap_f, 1.0, ph_gap_f <= 0.0);
+            }
             var acc: f32;
             if (dist <= 0.0) {
                 acc = -ty.decel;
@@ -1619,6 +1630,13 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
         if (it.link == NONE) { break; }
         let k = links[it.link];
         let next = k.next_lane;
+        // A zipper's order is its own rule: each falls in behind whoever reaches the line first. Denied here, a
+        // head stops announcing itself, the other arm's next car no longer falls in behind it, and one arm takes all.
+        if (link_state(it.link) == CH_Z) {
+            chain_from = NONE;
+            chained = false;
+            continue;
+        }
         if (!is_internal(next) || lanes[next].zone_count == 0u) {
             if (!chained || !is_internal(next)) { chain_from = NONE; }
             chained = false;
