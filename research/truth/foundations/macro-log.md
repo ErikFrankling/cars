@@ -47,8 +47,22 @@ Revised 6 November from the reality table, before any score on it. Scores F058-F
 Signals, all controllers, no site-level change, counts not used:
 - Cycle 90 s **05:00-20:59**, 75 s otherwise. R 5: Hamburg's 90 s runs 05-20 h, not 07-20 h as report 26 said. Cycle sweep 75-110 s (`--cycle`), sensitivity only.
 - Which movements share a stage: the map's program.
-- Stage greens by equal degree of saturation on macro's own flows, per time block (05-10, 10-15, 15-21, rest). Each stage .11-.76 of the cycle (R 5: any connection p10 .11, longest per light p90 .76); the most loaded stage at least .47 (p10 of Hamburg's main phase, median .62). Transitions keep their map length; 3 s lost per green start.
+- Stage greens: **the map's stage shares, stretched to the cycle** (`--split map`), each stage .11-.76 of the cycle (R 5). Transitions keep their map length; effective green is green minus 1 s per start (3 s amber counted, 4 s lost, B 5.2). Changed after looking, at rung 3; see below.
 - Saturation **1,750** through (R 2: 1,285 is rejected by Berlin's flows), sweep 1,640-1,900.
 - Through signal pairs under 50 m, R 6: same cycle, downstream green +2 s, overlap .65 of the upstream green. In the engine: a through movement into a short link between two signals passes `s · .65 · g/C` plus what the link stores per cycle; a through movement out of a short link gets .35 of Webster's uniform delay, as linked. Turns into short links stay as the map's program has them.
+
+### Why the greens don't follow macro's flows (rung 3, 6 November)
+
+The upper test (F072) was run on the greens each rule gives on region model A at 08 h and 16 h, before any macro score. Share of 11,948 tuning site-hours over 1.1 × table capacity at s 1,640 / 1,750 / 1,900:
+
+| Stage split | Over | Sites at 1,750 | What goes wrong |
+|---|---|---|---|
+| Map's program as is, its own cycle | .13% / .06% / .03% | 1 | |
+| Equal degree of saturation on macro's flows, most loaded stage ≥ .47 | 3.16% / 2.64% / 2.25% | 7 | Gertraudenstraße gets g/C .18 at 16 h: macro carries 942 there against 2,338 real, so the cross street looks busier and takes the green |
+| Same, the floor on the stage of the highest road class | 1.47% / 1.20% / 0.92% | 6 | Secondaries crossing a primary: Lietzenburger Straße .24, Kochstraße .20 |
+| Highest class's stage fixed at .62, the rest by saturation | 3.02% / 2.62% / 2.37% | 5 | Secondaries carrying the main flow starve: Schöneberger Ufer .14, Tiergartenstraße .11 |
+| **Map's stage shares, cycle 90 s 05-21 h and 75 s otherwise** | **.33% / .18% / .12%** | **1** | TE562 Potsdamer Straße needs g/C .40, has .31 protected: inside Hamburg's main-phase range, a named invented-program cause |
+
+Greens set on assigned flows feed back: a road macro under-loads loses green, so it costs more and loses more flow. Smith (1979) showed equisaturation policies can cut a network's capacity this way. Class doesn't say which road carries the flow. So the rule takes no flow and no class: the map's stage shares, on the measured cycle. This was chosen with real counts at rung 3's exit test, as the ladder says to fix a failing table, by one named cause, and it is fixed now, before any rung 4 score. `--split sat` and `--split main` stay as sensitivity runs.
 
 Route cost: real free speeds per class from probes with junction delay left out; `β` residential and living street +.30, unclassified and tertiary +.10, other 0; perception noise σ .15 per edge and draw (D step 3, order of 10-20%). PCE car 1, van 1.2, trucks 2. Free speed per edge from probes at 05-06 h (R 3) where the edge has 40 or more probes over 60 m and doesn't end at a signal, else class and limit ratio from those edges.

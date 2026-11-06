@@ -26,10 +26,11 @@ SAT = (1640.0, 1750.0, 1900.0)
 
 
 def load_greens(path):
-    out = {}
+    """With an hour column, a dict per hour."""
+    out = collections.defaultdict(dict)
     for r in csv.DictReader(open(path)):
-        out[(r['ctrl'], int(r['idx']))] = (float(r['gp']), float(r['gq']), float(r['C']), int(r['nst']))
-    return out
+        out[int(r.get('hour', -1))][(r['ctrl'], int(r['idx']))] = (float(r['gp']), float(r['gq']), float(r['C']), int(r['nst']))
+    return out[-1] if list(out) == [-1] else dict(out)
 
 
 def load_flows(path):
@@ -143,8 +144,9 @@ def no_model(T, name, flows, gr, sensors, real, sites, out):
                 Q = None
                 if flows:
                     Q = {T['index'][k]: v for k, v in flows[int(h)].items() if k in T['index']} if int(h) in flows else None
-                cap_d, cs, where = downstream_bound(T, e, n_lanes, s, Q, gr)
-                cap_u = upstream_bound(T, e, s, Q, gr) if whole else None
+                grh = gr.get(int(h), {}) if gr and isinstance(next(iter(gr)), int) else gr
+                cap_d, cs, where = downstream_bound(T, e, n_lanes, s, Q, grh)
+                cap_u = upstream_bound(T, e, s, Q, grh) if whole else None
                 cap_m = n_lanes * mt.midblock(T['edges'][e]['v'])
                 cap = min(x for x in (cap_d, cap_u, cap_m) if x is not None)
                 bound = 'stop_line' if cap == cap_d else 'feed' if cap == cap_u else 'mid_block'
@@ -163,9 +165,10 @@ def no_model(T, name, flows, gr, sensors, real, sites, out):
             w = max(vs[site], key=lambda r: r[1] / max(r[2], 1))
             ed = T['edges'][w[4]]
             lanes = min(len(ls), len(T['edges'][e]['car']))
-            _, cs, _ = downstream_bound(T, e, lanes, s, None, gr)
+            grh = gr.get(w[0], {}) if gr and isinstance(next(iter(gr)), int) else gr
+            _, cs, _ = downstream_bound(T, e, lanes, s, None, grh)
             kinds = sorted({mt.kind(c) for c in cs if c})
-            sh = sorted({round((c['gp'] + c['gq']) / c['C'], 2) for c in cs if c and c['ctrl']})
+            sh = sorted({round((c['gp'] + c['gq']) / c['C'], 2) if not grh or (c['ctrl'], c['idx']) not in grh else round((grh[(c['ctrl'], c['idx'])][0] + grh[(c['ctrl'], c['idx'])][1]) / grh[(c['ctrl'], c['idx'])][2], 2) for c in cs if c and c['ctrl']})
             rows.append(dict(map=name, s=int(s), site=site, street=sites.street.get(site, ''), road_class=sites.road_class.get(site, ''), edge=e, lanes_used=lanes, map_lanes=len(T['edges'][e]['car']), det=int(sites.n_det.get(site, 0)), hours_over=viol[site], worst_hour=w[0], worst_real=round(w[1]), cap=round(w[2]), ratio=round(w[1] / max(w[2], 1), 2), bound=w[3], at=w[4], kinds='+'.join(kinds), gc=';'.join(map(str, sh)), need_gc=round(w[1] / (lanes * s), 2)))
     pd.DataFrame(rows).to_csv(out, index=False)
     return res

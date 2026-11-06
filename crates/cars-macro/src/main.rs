@@ -1,6 +1,6 @@
 //! Macroscopic assignment on the movement table: rung 4, D step 3. No simulation.
 //!
-//!   macro DIR OUT [--model a|b] [--hours 8] [--iters 40] [--s 1750] [--greens rule|map] [--green-scale 1] [--sigma .15] [--reroute 4] [--period 1800] [--cycle 90] [--cycle-night 75] [--threads 3]
+//!   macro DIR OUT [--model a|b] [--hours 8] [--iters 40] [--s 1750] [--greens rule|map] [--green-scale 1] [--sigma .15] [--reroute 4] [--period 1800] [--split map|sat|main] [--cycle 90] [--cycle-night 75] [--threads 3]
 //!
 //! Movement costs: free run plus Webster's uniform delay plus Akcelik's overflow, per lane group. Conflicts make it non-separable, so capacity
 //! and greens are held for a load and updated after it, and the gap is not expected to fall monotonically (D 4.2).
@@ -37,6 +37,7 @@ fn main() -> Result<(), String> {
         save_paths: get("save-paths", "0") == "1",
         cycle_day: get("cycle", "90").parse().unwrap(),
         cycle_night: get("cycle-night", "75").parse().unwrap(),
+        split: match get("split", "map").as_str() { "sat" => 0, "main" => 1, _ => 2 },
     };
     model::run(&a[1], &a[2], &p)
 }

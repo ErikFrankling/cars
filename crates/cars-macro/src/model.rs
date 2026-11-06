@@ -26,6 +26,7 @@ pub struct Params {
     pub save_paths: bool,
     pub cycle_day: f32,
     pub cycle_night: f32,
+    pub split: u8, // 0 equal degree of saturation on macro's flows, 1 main road's stage .62, 2 map's stage shares
 }
 
 struct Edge {
@@ -38,6 +39,7 @@ struct Edge {
     mask: u8,
     rev: u32,
     midblock: f32,
+    rank: u8, // road class: 4 motorway and trunk, 3 primary, 2 secondary, 1 tertiary, 0 other
 }
 
 struct Conn {
@@ -105,8 +107,25 @@ fn ids(s: &str) -> Vec<u32> {
 fn load_net(dir: &str) -> Net {
     let edges: Vec<Edge> = tsv(&format!("{dir}/edges.tsv"))
         .into_iter()
-        .map(|r| Edge { id: r[0].clone(), len: r[1].parse().unwrap(), v: r[2].parse().unwrap(), lanes: r[3].parse().unwrap(), motorway: r[4] == "1", beta: r[5].parse().unwrap(), mask: r[6].parse().unwrap(), rev: r[7].parse::<i64>().map(|x| if x < 0 { NONE } else { x as u32 }).unwrap(), midblock: r[8].parse().unwrap() })
+        .map(|r| Edge { id: r[0].clone(), len: r[1].parse().unwrap(), v: r[2].parse().unwrap(), lanes: r[3].parse().unwrap(), motorway: r[4] == "1", beta: r[5].parse().unwrap(), mask: r[6].parse().unwrap(), rev: r[7].parse::<i64>().map(|x| if x < 0 { NONE } else { x as u32 }).unwrap(), midblock: r[8].parse().unwrap(), rank: 0 })
         .collect();
+    let mut edges = edges;
+    if let Ok(t) = std::fs::read_to_string(format!("{dir}/edge_meta.csv")) {
+        let pos: FxHashMap<String, usize> = edges.iter().enumerate().map(|(i, e)| (e.id.clone(), i)).collect();
+        for l in t.lines().skip(1) {
+            let mut it = l.splitn(3, ',');
+            let (Some(id), Some(ty)) = (it.next(), it.next()) else { continue };
+            if let Some(&i) = pos.get(id) {
+                edges[i].rank = match ty.trim_end_matches("_link") {
+                    "motorway" | "trunk" => 4,
+                    "primary" => 3,
+                    "secondary" => 2,
+                    "tertiary" => 1,
+                    _ => 0,
+                };
+            }
+        }
+    }
     let mut arcs: Vec<(u32, Arc)> = tsv(&format!("{dir}/arcs.tsv")).into_iter().map(|r| (r[0].parse().unwrap(), Arc { from: r[1].parse().unwrap(), to: r[2].parse().unwrap(), mask: r[3].parse().unwrap(), group: r[4].parse().unwrap(), uturn: r[5] == "1" })).collect();
     arcs.sort_by_key(|x| x.0);
     let arcs: Vec<Arc> = arcs.into_iter().map(|x| x.1).collect();
@@ -175,7 +194,7 @@ fn siegloch(qp: f32, tg: f32, tf: f32) -> f32 {
 }
 
 /// Greens per connection and block. Rule fixed in macro-log.md: map's stages, equal degree of saturation on macro's flows, cycle by time of day.
-fn retime(net: &Net, sup: &mut Supply, flow: &[f32], periods_of_block: &[Vec<usize>], s: f32, rule: bool, scale: f32, cycles: (f32, f32)) {
+fn retime(net: &Net, sup: &mut Supply, flow: &[f32], periods_of_block: &[Vec<usize>], s: f32, rule: bool, scale: f32, cycles: (f32, f32), split: u8) {
     let na = net.arcs.len();
     let nc = net.conns.len();
     let mut per_ctrl: Vec<Vec<u32>> = vec![Vec::new(); net.ctrls.len()];
@@ -221,15 +240,27 @@ fn retime(net: &Net, sup: &mut Supply, flow: &[f32], periods_of_block: &[Vec<usi
                         y[greens[0]] = y[greens[0]].max(r);
                     }
                 }
-                // R 5: a stage .11-.76 of the cycle; the main stage, most loaded, at least .47
+                // R 5: the main road's stage .62 of the cycle, Hamburg's median main phase: highest road class it serves protected, then load. Others .11-.76 by equal degree of saturation
                 let (gmin, gmax) = (0.11 * cyc, 0.76 * cyc);
                 let green_total = (cyc - fixed).max(gmin * stages.len() as f32);
                 let tot: f32 = y.iter().sum();
                 let map_g: f32 = stages.iter().map(|&p| ctrl.phases[p].0).sum();
-                let want: Vec<f32> = stages.iter().map(|&p| if tot > 1e-3 { y[p] / tot } else { ctrl.phases[p].0 / map_g.max(1.0) }).collect();
-                let main = (0..stages.len()).max_by(|&a, &b| want[a].total_cmp(&want[b])).unwrap();
-                let lo: Vec<f32> = (0..stages.len()).map(|i| if i == main && stages.len() > 1 && 0.47 * cyc + gmin * (stages.len() - 1) as f32 <= green_total { 0.47 * cyc } else { gmin }).collect();
+                let want: Vec<f32> = stages.iter().map(|&p| if tot > 1e-3 && split != 2 { y[p] / tot } else { ctrl.phases[p].0 / map_g.max(1.0) }).collect();
+                let mut rank = vec![0u8; stages.len()];
+                for &cc in &per_ctrl[ci] {
+                    let c = &net.conns[cc as usize];
+                    let r = net.edges[net.arcs[c.arc as usize].from as usize].rank;
+                    for (i, &p) in stages.iter().enumerate() {
+                        if ctrl.phases[p].1.get(c.idx as usize) == Some(&b'G') {
+                            rank[i] = rank[i].max(r);
+                        }
+                    }
+                }
+                let main = (0..stages.len()).max_by(|&a, &b| rank[a].cmp(&rank[b]).then(want[a].total_cmp(&want[b]))).unwrap();
                 let mut fixed_g = vec![None; stages.len()];
+                if stages.len() > 1 && split == 1 {
+                    fixed_g[main] = Some((0.62 * cyc).min(green_total - gmin * (stages.len() - 1) as f32).max(gmin));
+                }
                 for _ in 0..stages.len() + 1 {
                     let left: f32 = green_total - fixed_g.iter().flatten().sum::<f32>();
                     let w: f32 = want.iter().zip(&fixed_g).filter(|(_, f)| f.is_none()).map(|(a, _)| *a).sum();
@@ -237,8 +268,8 @@ fn retime(net: &Net, sup: &mut Supply, flow: &[f32], periods_of_block: &[Vec<usi
                     for i in 0..stages.len() {
                         if fixed_g[i].is_none() {
                             let v = if w > 0.0 { left * want[i] / w } else { left / stages.len() as f32 };
-                            if v < lo[i] {
-                                fixed_g[i] = Some(lo[i]);
+                            if v < gmin {
+                                fixed_g[i] = Some(gmin);
                                 changed = true;
                             } else if v > gmax {
                                 fixed_g[i] = Some(gmax);
@@ -848,7 +879,7 @@ pub fn run(dir: &str, out: &str, prm: &Params) -> Result<(), String> {
         periods_of_block[b].push(p);
     }
     let mut flow = vec![0f32; pn * na];
-    retime(&net, &mut sup, &flow, &periods_of_block, prm.s, prm.rule_greens, prm.green_scale, (prm.cycle_day, prm.cycle_night));
+    retime(&net, &mut sup, &flow, &periods_of_block, prm.s, prm.rule_greens, prm.green_scale, (prm.cycle_day, prm.cycle_night), prm.split);
     update_supply(&net, &mut sup, &flow, &block_of_period, period / 3600.0, prm.s, dynamic, 1.0);
 
     // legs grouped by origin (either side), class, departure period
@@ -990,7 +1021,7 @@ pub fn run(dir: &str, out: &str, prm: &Params) -> Result<(), String> {
                 *f = *a * to_h;
             }
             if prm.rule_greens && (it % prm.retime_every == 0) && inner == 0 {
-                retime(&net, &mut sup, &flow, &periods_of_block, prm.s, true, prm.green_scale, (prm.cycle_day, prm.cycle_night));
+                retime(&net, &mut sup, &flow, &periods_of_block, prm.s, true, prm.green_scale, (prm.cycle_day, prm.cycle_night), prm.split);
             }
             update_supply(&net, &mut sup, &flow, &block_of_period, period / 3600.0, prm.s, dynamic, alpha);
         }
