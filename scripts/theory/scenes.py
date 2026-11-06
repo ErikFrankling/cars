@@ -31,7 +31,8 @@ BINS = {'measured': ROOT / 'target/release/cars', 'physical': ROOT / 'target/rel
 # The measured driver (research/truth/measure/MODEL.md) is --tune measured=1; the one driver of scenes-log section 3 is --tune measured=0.
 FLAGS = {'measured': '--tune measured=1', 'physical': '--tune measured=0', 'human': '--humans'}
 # Lines the measured driver replaces with forecasts from its own equations (F312-F321), and rows it reports as emergent (F322).
-MD_FID = {'F003': 'F312', 'F004': 'F313', 'F008': 'F314', 'F009': 'F315', 'F232': 'F316', 'F234': 'F317', 'F251': 'F318', 'F252': 'F319', 'F253': 'F320', 'F296': 'F321'}
+# Round 2 (F620-F629, md_platoon_r2.json) replaces round 1's F312-F321 for the same scene lines.
+MD_FID = {'F003': 'F620', 'F004': 'F621', 'F008': 'F622', 'F009': 'F623', 'F232': 'F624', 'F234': 'F625', 'F251': 'F626', 'F252': 'F627', 'F253': 'F628', 'F296': 'F629'}
 MD_INFO = {'F001', 'F002', 'F005', 'F231'}
 MD_EF = math.exp((0.27 * math.sqrt(1 - 0.41 ** 2)) ** 2 / 2)
 
@@ -278,7 +279,7 @@ class Book:
         if self.driver == 'measured' and fid in MD_FID:
             fid = MD_FID[fid]
             mode = 'two'
-            if fid != 'F317':
+            if fid != 'F625':
                 forecast, tol, quantity = None, None, None
         ln = self.lines[fid]
         fn = self.nums(ln['forecast'])
@@ -1123,8 +1124,9 @@ class Give:
         if vt:
             if book.driver == 'measured':
                 vt_ = float(np.mean(vt))
-                book.check('G1', 'F234', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: E[f] T(v) - 0.25 + 5/v_turn, v_turn {vt_:.2f}',
-                           forecast=MD_EF * md_tgap(vt_) - 0.25 + 5.0 / vt_, tol='0.3 s', seeds='G1 all')
+                vv = max(vt_, 6.5)
+                book.check('G1', 'F234', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: (L + s0)/v + E[f] Tc(v) - 0.25, v_turn {vt_:.2f}',
+                           forecast=6.7 / vt_ + MD_EF * (md_tgap(vv) - 1.7 / vv) - 0.25, tol='0.3 s', seeds='G1 all')
             else:
                 book.check('G1', 'F234', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: E[T] + s/v_turn, v_turn {np.mean(vt):.2f}', forecast=1.4 * math.exp(0.045) + 7.5 / np.mean(vt), tol='10%', seeds='G1 all')
         for q in Give.QS[1:]:
@@ -1335,7 +1337,7 @@ class Roundabout:
         # runs at its own capacity at 1200 offered.
         tf = 3600 / max(np.mean(outs[0]), 1.0)
         tm = E_T + 7.5 / max(np.mean(vr), 0.5) if vr else float('nan')
-        tc = 5.9
+        tc = 3.0   # rounD (DRIVER.md), both physical drivers since round 2 of the measured driver
         for i, q in enumerate(Roundabout.QS[1:]):
             qs = np.mean(qc[q]) / 3600
             fc = 3600 * qs * max(1 - qs * tm, 0) * math.exp(-qs * (tc - tm)) / (1 - math.exp(-qs * tf))

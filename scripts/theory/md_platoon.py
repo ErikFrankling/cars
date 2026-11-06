@@ -14,7 +14,7 @@ import fit_driver as FD
 J = json.load(open(FD.OUTJ))
 K, CA, KG, KP = (J['pooled'][k] for k in ('K', 'c_a', 'k_g', 'k_p'))
 TV = J['slow']['T_v']
-SIG, TN = J['noise']['sigma'], J['noise']['corr_time_s']
+SIG, TN = (J['round2']['noise_sigma'], J['round2']['noise_tau']) if 'round2' in J else (J['noise']['sigma'], J['noise']['corr_time_s'])
 R1, START = J['launch']['first_react'], 1.0
 L, S0, MU = 5.0, 1.7, 0.85
 GAP_SD = 0.27 * math.sqrt(1 - 0.41 ** 2)   # scenes set speedDev 0: only the part of the gap factor not tied to speed
@@ -69,7 +69,8 @@ def platoon(x0, v0, vdes, T, dt=0.25, green=0.0, seed=0, noise=True, lead_trace=
         eng = ph_force(v + 0.5 * np.maximum(ph_force(v), 0) * dt)
         free = np.minimum((vd - v) / TV, eng)
         free = np.where(alone, np.minimum(free, np.maximum(2.02 - 0.125 * v, 0.7)), free)
-        gs = np.maximum(S0, f * FD.t_gap(v) * v)
+        vt = np.maximum(v, 6.5)
+        gs = S0 + f * (FD.t_gap(vt) - S0 / vt) * v
         e = (g - gs) / np.maximum(v, 1.0)
         af = K * np.minimum(vl - v, FD.DV_MAX) / np.maximum(g, 1.0) + CA * al + KP * np.maximum(e, 0) - KG * np.maximum(-e - 0.5, 0)
         cmd = np.where(lead, np.minimum(af, free), free)
@@ -164,7 +165,8 @@ def main():
     out['W1_dips_by_seed'] = [round(d, 2) for d in dips]; out['W1_tol'] = se5(dips)
     # Steady states at the band centre e = -0.25 s, with the half band 0.25 s as the spread (E[f] over the gap factor).
     def spacing(v, e=-0.25):
-        return L + max(S0, (EF * float(FD.t_gap(v)) + e) * v)
+        vt = max(v, 6.5)
+        return L + S0 + (EF * (float(FD.t_gap(vt)) - S0 / vt) + e) * v
     out['band'] = dict(EF=EF)
     v50 = 50 / 3.6
     out['L2_kc'] = 1000 / spacing(v50); out['L2_kc_band'] = [1000 / spacing(v50, 0), 1000 / spacing(v50, -0.5)]
@@ -181,7 +183,7 @@ def main():
     out['L6_q_at_1_63'] = 3600 * 1.63 / spacing(1.63); out['L6_band'] = [3600 * 1.63 / spacing(1.63, 0), 3600 * 1.63 / spacing(1.63, -0.5)]
     out['G1_followup_at_v'] = {f'{v:.1f}': round(spacing(v) / v, 3) for v in (2.5, 3.0, 3.5, 4.0)}
     print(json.dumps(out, indent=1))
-    json.dump(out, open(os.path.join(REPO, 'research/truth/foundations/md_platoon.json'), 'w'), indent=1)
+    json.dump(out, open(os.path.join(REPO, 'research/truth/foundations/md_platoon' + ('_r2' if 'round2' in J else '') + '.json'), 'w'), indent=1)
 
 
 if __name__ == '__main__':

@@ -683,8 +683,10 @@ pub const MD_K: f32 = 2.687;
 pub const MD_CA: f32 = 0.508;
 pub const MD_KG: f32 = 0.284;
 pub const MD_KP: f32 = 0.0253;
-pub const MD_NOISE_SD: f32 = 0.968;
-pub const MD_NOISE_T: f32 = 0.1;
+/// Command noise: the driver's part of the next-second residual once the trackers' speed error is split off
+/// (research/truth/measure/noise2.json, F615): median of the five tables, sigma 0.24-0.41 m/s2, tau 0.5-2 s.
+pub const MD_NOISE_SD: f32 = 0.38;
+pub const MD_NOISE_T: f32 = 0.75;
 /// Free driving relaxes to the desired speed with this time, fitted on 30 s rollouts (F311).
 pub const MD_TV: f32 = 1.0;
 /// DRIVER.md: response time constant, standstill gap, gap spread between drivers and its link to free speed, desired speed spread.
@@ -1560,7 +1562,8 @@ impl World {
                     before: l.internal_before.map(|b| b + lane0).unwrap_or(NONE),
                     state: l.state as u32,
                     from_lane: l.from_lane + lane0,
-                    tc: if cfg.mu <= 0.0 { 0.0 } else if cfg.humans { (critical_gap(net, topo, l) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { if cfg.measured() && roundabout[l.to_edge as usize] && !roundabout[net.lanes[l.from_lane as usize].edge as usize] && critical_gap_hbs(net, topo, l, true) > 0.0 { cfg.tune("tc_roundabout", 3.0) } else { critical_gap_hbs(net, topo, l, cfg.measured()) * cfg.tune("tc_scale", 1.0) } },
+                    // Roundabout entries take rounD's measured 3.0 s (DRIVER.md) for both physical drivers.
+                    tc: if cfg.mu <= 0.0 { 0.0 } else if cfg.humans { (critical_gap(net, topo, l) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { if roundabout[l.to_edge as usize] && !roundabout[net.lanes[l.from_lane as usize].edge as usize] && critical_gap_hbs(net, topo, l, true) > 0.0 { cfg.tune("tc_roundabout", 3.0) } else { critical_gap_hbs(net, topo, l, cfg.measured()) * cfg.tune("tc_scale", 1.0) } },
                 });
             }
         }
