@@ -1,0 +1,9 @@
+scene,id,quantity,forecast,measured,spread,tolerance,verdict,seeds,driver,dt
+L7,F007,"give: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+G8,F261,"roundabout entry, circulating 0",1380,1010,1e+03..1.02e+03,15%,FAIL,"G80 arrivals 0-4, sim 1",physical,0.25
+G8,F261,"roundabout entry, circulating 400",916,636,586..706,15%,FAIL,"G8400 arrivals 0-4, sim 1",physical,0.25
+G8,F261,"roundabout entry, circulating 800",608,268,156..413,15%,FAIL,"G8800 arrivals 0-4, sim 1",physical,0.25
+G8,F261,"roundabout entry, circulating 1200",404,137,0..494,15%,FAIL,"G81200 arrivals 0-4, sim 1",physical,0.25
+G8,F402,"Tanner at own tc 3.0 tf 3.56 tm 3.23, circulating 400 (carried 376)",821,636,586..706,15%,FAIL,"G8400 arrivals 0-4, sim 1",physical,0.25
+G8,F402,"Tanner at own tc 3.0 tf 3.56 tm 3.23, circulating 800 (carried 758)",483,268,156..413,15%,FAIL,"G8800 arrivals 0-4, sim 1",physical,0.25
+G8,F402,"Tanner at own tc 3.0 tf 3.56 tm 3.23, circulating 1200 (carried 898)",315,137,0..494,15%,FAIL,"G81200 arrivals 0-4, sim 1",physical,0.25
