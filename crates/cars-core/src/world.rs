@@ -472,9 +472,11 @@ pub const LCM_AT: f32 = -1.119;
 /// speed, lead over own speed, both floored at 1 m/s. Same fit; drawn afresh every 0.5 s as the fit assumes.
 pub const LCM_LAG: [f32; 3] = [-0.908, 0.551, 1.676];
 pub const LCM_LEAD: [f32; 3] = [-2.004, 0.453, 1.374];
-/// Share of new followers who slow 0.3 m/s2 or more beyond matched followers in the 3 s before the start: 11.9% against
-/// a 6.4% baseline (exiD, 1,044 merges, F707).
-pub const LCM_COURTESY: f32 = 0.055;
+/// Share of followers who open a gap when a blocked must-changer is alongside: report 14's 0.4, provisional (swept on
+/// I-80). F707 measures something else: per merge, 11.9% of new followers slow 0.3 m/s2 beyond matched ones against
+/// 6.4% (exiD), mostly in free flow where nobody is blocked. Taking 0.055 for the share made lane-end waits three times
+/// I-80's (LC8 p99 187 s against 72.7); 0.4 gives 76.5 s, median 24 against 22.6.
+pub const LCM_COURTESY: f32 = 0.4;
 /// Sideways speed of the physical change (1 s ends): the 1.4 m from 10% of the lane to its marking in the measured
 /// 1.96-2.0 s from the start to the centre crossing, and the 2.3 m to a body clear of the old lane in 3.2-3.3 s
 /// (exiD merges 1,480 at 20-25 m/s, highD 1,124 at 25-30 m/s; both give 0.71). DLR HT gives 0.47-0.52.
