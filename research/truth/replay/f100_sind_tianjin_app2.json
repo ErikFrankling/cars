@@ -1,0 +1,27 @@
+{
+ "log": [
+  "replay: 246 tracks, 11209 keys, 0 tracks with no trip",
+  "replay: applied 4192, ended 234, shadows_removed 0, lane_jumps 185, released 0"
+ ],
+ "samples": 2248,
+ "in_output": 2088,
+ "lane_mismatch": 0.00192,
+ "harness_pos_abs_m": {
+  "p50": 0.0,
+  "p90": 0.0001,
+  "p99": 0.0003,
+  "p100": 0.0005
+ },
+ "harness_lat_abs_m": {
+  "p50": 0.0,
+  "p90": 0.0,
+  "p99": 0.0001,
+  "p100": 0.0004
+ },
+ "front_2d_m": {
+  "p50": 0.3289,
+  "p90": 1.2136,
+  "p99": 1.94,
+  "p100": 2.9989
+ }
+}
