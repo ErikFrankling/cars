@@ -1016,6 +1016,9 @@ fn foe_on_last_approach(link: u32, a: f32, va: f32, vl: f32, ego: Veh) -> bool {
 fn check_rewind(ego: Veh, base: u32, n: u32, lengths_in_front: f32) {
     if ((lanes[ego.lane].flags & LANE_ROUNDABOUT) != 0u || n == 0u) { return; }
     if (P.mu > 0.0 && (P.safety & 16u) == 0u) { return; }
+    // A driver who does not keep the box clear (the 1 - exit_comply share, by the same draw as ph_bid) enters with no
+    // room past it. Without this the rule held every driver back and exit_comply did nothing.
+    if (P.mu > 0.0 && f32(pcg(ego.trip ^ 0x51ed270bu) >> 8u) / 16777216.0 >= ty.exit_comply) { return; }
     let need = ty.length + ty.min_gap;
     var seen = -lengths_in_front;
     var found = false;

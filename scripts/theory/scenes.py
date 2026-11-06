@@ -2505,6 +2505,14 @@ def block_scene(batch_name, idx, label):
             book.check('C-S8', 'F283', idx, [Block.flow(run, f'CS8{label}{r}', 1) for r in range(SEEDS)], quantity=f"cross capacity b {['0', '.75', '1'][idx]} (exit_comply 1-b)", seeds=seedtag('C-S8'))
             if idx == 1:
                 book.check('C-S8', 'F283', 3, [Block.flow(run, f'CS8T{r}', 2) for r in range(SEEDS)], quantity='two lanes b .75, per lane', seeds=seedtag('C-S8'))
+            if idx:
+                # A blocker leaves the box only when the start wave from the released hold has passed the cars stored
+                # between box and hold, and the cross head starts its own reaction after it: the code's own tau.
+                b = [0.0, 0.75, 1.0][idx]
+                Lc = run.lane_len(f'CS8{label}0', 'ch_0')
+                n = math.floor(max(Lc - 5.0, 0.0) / 7.5) + 1
+                tau = 10.0 + FIRST_REACT + n * START_REACT + START_REACT
+                book.check('C-S8', 'F406', idx - 1, [Block.flow(run, f'CS8{label}{r}', 1) for r in range(SEEDS)], quantity=f'cross capacity b {b:g}, own tau {tau:.1f} s ({n} stored on {Lc:.0f} m)', forecast=1800 * (30 - b * tau) / 60, tol='10%', seeds=seedtag('C-S8'))
     return B
 
 
