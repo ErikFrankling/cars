@@ -11,6 +11,8 @@ Thresholds come from research/truth/11-vehicle-physics.md, which grades them: dr
 measured, comfort targets are design values. Nothing here decides what is acceptable.
 """
 import argparse
+import os
+import subprocess
 import json
 import math
 import re
@@ -642,7 +644,8 @@ def invariants(a, df, prev, steady, same_lane, lanes, out, interval, gaps, overl
     # On one lane: a car may finish one change and start the next in a step.
     in_change = step_ok & same_lane & (lat_dir != 0) & (prev_dir >= 2 ** 30)
     v_lat = np.where(in_change, np.abs(off - prev_off) / h, 0.0)
-    record('I11 lateral speed', in_change, v_lat - 1.2)
+    # A human's quintic peaks at 1.875 w / D, with D down to 4 s, or less where the lane is running out.
+    record('I11 lateral speed', in_change, v_lat - np.where(t['v_lat'].to_numpy(dtype=float) < 0, 2.0, 1.2))
     record('I11 heading', in_change & (v1 > 0.5), np.degrees(np.arctan2(v_lat, np.maximum(v1, 0.5))) - 13.0, is_hard=False)
     u = ((phys_bits >> 16) & 0x3fff) / 16383.0
     u0 = ((prev['phys'].to_numpy(dtype=float).astype(np.int64) >> 16) & 0x3fff) / 16383.0
@@ -732,6 +735,29 @@ def invariants(a, df, prev, steady, same_lane, lanes, out, interval, gaps, overl
     return hard
 
 
+def screen_jumps(net, trace, out, cars=None, slack=0.5):
+    """Each car, between consecutive frames: what is drawn against what it drove. A clip that jumps fails here."""
+    cars = cars or os.environ.get('CARS_BIN') or str(Path(__file__).resolve().parents[1] / 'target/release/cars')
+    poses = Path(out) / 'poses.csv'
+    subprocess.run([cars, 'replay', '--net', str(net), '--trace', str(trace), '--poses', str(poses)], check=True, capture_output=True)
+    d = pd.read_csv(poses).sort_values(['trip', 'time'])
+    same = d['trip'].values[1:] == d['trip'].values[:-1]
+    dt = np.diff(d['time'].values)
+    moved = np.hypot(np.diff(d['x'].values), np.diff(d['y'].values))
+    driven = 0.5 * (d['speed'].values[1:] + d['speed'].values[:-1]) * dt
+    # Sideways at the top of a real change, 1.3 m/s, is on top of what the speed says.
+    excess = moved - np.hypot(driven, 1.5 * dt)
+    head = np.arctan2(d['dy'].values, d['dx'].values)
+    turn = np.abs((np.diff(head) + np.pi) % (2 * np.pi) - np.pi)
+    jump = same & (dt > 0) & (excess > slack + 0.5 * driven)
+    spin = same & (dt > 0) & (turn / np.maximum(dt, 1e-3) > 1.0)
+    rows = d.iloc[1:].assign(moved=moved, driven=driven, excess=excess, turn_deg=np.degrees(turn), from_lane=d['lane'].values[:-1])
+    rows[jump | spin].to_csv(Path(out) / 'screen_jumps.csv', index=False, float_format='%.3f')
+    summary = dict(pairs=int((same & (dt > 0)).sum()), jumps=int(jump.sum()), worst_excess_m=float(excess[same].max()) if same.any() else 0.0,
+                   spins=int(spin.sum()), worst_turn_deg_per_s=float((turn[same] / np.maximum(dt[same], 1e-3)).max() * 180 / np.pi) if same.any() else 0.0)
+    return summary
+
+
 def table_md(frame):
     return table(frame)
 
@@ -745,6 +771,8 @@ def main():
     p.add_argument('--begin', type=float, help='with --trace, the first time to look at')
     p.add_argument('--end', type=float, help='with --trace, the last time to look at')
     p.add_argument('--out', required=True)
+    p.add_argument('--no-screen', action='store_true', help='skip the check of every drawn move against the speed, which exits non-zero on a jump')
+    p.add_argument('--cars', help='the binary for the screen check. Default CARS_BIN, then target/release/cars')
     p.add_argument('--log', help='stderr of cars run, for its counters')
     p.add_argument('--top', type=int, default=20, help='rows in each table of the report')
     p.add_argument('--pair-limit', type=int, default=3_000_000)
@@ -752,7 +780,14 @@ def main():
     p.add_argument('--report', help='JSON from cars run --report-json')
     p.add_argument('--trips', help='CSV from cars run --trip-csv, for energy')
     p.add_argument('--other-fcd', help='FCD of the same scene at another dt, for Q11')
-    analyse(p.parse_args())
+    a = p.parse_args()
+    analyse(a)
+    if a.trace and not a.no_screen:
+        s = screen_jumps(a.net, a.trace, a.out, a.cars)
+        (Path(a.out) / 'screen.json').write_text(json.dumps(s, indent=1))
+        print('screen', json.dumps(s))
+        if s['jumps']:
+            raise SystemExit(f"{s['jumps']} jumps on screen: {a.out}/screen_jumps.csv")
 
 
 if __name__ == '__main__':

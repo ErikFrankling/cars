@@ -665,6 +665,39 @@ fn inform_leader(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f32,
     return min(tgt2, planned);
 }
 
+// Aimsun's two-leader car following: before changing, adapt to the leader in the target lane too, with a
+// negative gap if it is alongside, at a limited deceleration so that speed stays continuous as it passes.
+fn hu_two_leaders(e: Veh, n: LcNeighbors, vmax: f32) -> f32 {
+    var planned = min(e.speed, stop_speed(e.speed, lc_left_space - lc_blocker, ty.decel, true, vmax));
+    // Report 18 B6: ease towards the middle of the gap. Small, and it is enough to clear a car alongside.
+    if ((P.hu_flags & HS_STEER) != 0u && hu_tte(e) < 30.0) {
+        let l = clamp(select(60.0, n.f_gap + types[n.f_vtype].min_gap, n.follower != NONE), -10.0, 60.0);
+        let d = clamp(select(60.0, n.gap + ty.min_gap, n.gap < 1e8), -10.0, 60.0);
+        lc_bias_out += P.hm_c.w * clamp((d - l) / (abs(d + l) + 5.0), -1.0, 1.0);
+    }
+    // Alongside and not getting ahead of us, there is nothing to adapt to: the stop offsets break that tie.
+    if (n.gap > 1e8 || (n.gap + ty.min_gap < 0.0 && n.speed <= e.speed)) { return planned; }
+    let persona = trips[e.trip].persona;
+    hu_load(persona, 0.0, 0.0, 1.0, P.hu_d.z, P.hu_d.w);
+    let a = hu_target(e.speed, n.gap + ty.min_gap, n.speed, vmax, hu_s0);
+    hu_on = false;
+    if ((P.hu_flags & HS_MATCH) != 0u) {
+        // Report 18 B5: a weight both ways, not a minimum, which fits real tracks worse than ignoring the lane.
+        let lead = n.gap + ty.min_gap;
+        if (lead > 0.0 && lead < 60.0) {
+            let diff = a - e.acc;
+            // The weight rises as its own change nears: 0.35-0.72 in the last 3 s at four sites.
+            let close = (e.hu_state & HU_ENGAGED) != 0u;
+            if (diff < 0.0) { lc_advice(e.trip, e.speed + (e.acc + select(P.hm_c.y, P.hu_i.z, close) * diff) * dt); }
+            else { lc_bias_out += select(P.hm_c.z, P.hu_i.z, close) * diff; }
+        }
+        return planned;
+    }
+    let adapted = max(e.speed + a * dt, e.speed - P.hu_b.w * dt);
+    if (adapted < e.speed) { lc_advice(e.trip, adapted); }
+    return min(planned, adapted);
+}
+
 fn inform_follower(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f32, planned_in: f32) {
     if (n.follower == NONE) { return; }
     let self_ty = ty;
@@ -674,7 +707,16 @@ fn inform_follower(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f3
     let v = n.f_speed;
     let gap = n.f_gap;
     let limit = lanes[e.lane].speed;
+    // Report 18: a follower does a share of what following the merger asks, never all of it. That is hu_follower.
+    if (hu_courteous(ft) && (P.hu_flags & HS_FOLLOW) != 0u && ft.model == MODEL_HUMAN) { return; }
     if ((blocked & LCA_BLOCK_FOLLOWER) != 0u) {
+        // A human follower is not told. It sees the blinker and decides, in hu_request.
+        if (hu_courteous(ft)) {
+            if (gap + ft.min_gap > S_MIN + 0.2) { return; }
+            lc_advice(f_trip, max(v, e.speed + HELP_OVERTAKE));
+            atomicOr(&adv_flags[f_trip], dir | LCA_AM_FOLLOWER);
+            return;
+        }
         ty = ft;
         if (planned - v >= HELP_OVERTAKE) {
             let need = secure_gap(v, planned, self_ty.decel);
@@ -920,7 +962,9 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
     let check_otr = avoid_overtake_right(e.speed, lane.speed);
     let tl = 0.2 / max(1e-6, ty.lc_speed_gain);
     let tr = tl / max(1e-6, ty.lc_speed_gain_right);
-    if (change_to_best && best_offset == curr_offset && usable / f32(abs(best_offset)) < la_dist) {
+    // Report 18 B1: must-change by time left. At speed that is the start of the lane, not the last 150 m.
+    let by_time = (ty.model == MODEL_HUMAN || hd_phys(ty)) && (P.hu_flags & HS_TTE) != 0u && usable / f32(abs(best_offset)) / max(e.speed, 1.0) < P.hm_a.x;
+    if (change_to_best && best_offset == curr_offset && (by_time || usable / f32(abs(best_offset)) < la_dist)) {
         ret |= lca | LCA_STRATEGIC | LCA_URGENT;
     } else {
         if (has_neigh && neigh.leader_trip != NONE && check_otr && !right) {
@@ -966,10 +1010,12 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
             if (room <= potential) { lc_blocker = max(room, lc_blocker); }
         }
         // Physical mode: a change can't start with the tail still on the lane before, so never hold a car back there.
-        if (mu > 0.0) { lc_blocker = min(lc_blocker, max(current_dist - ty.length - 1.5, 0.0)); }
+        if (mu > 0.0 && ty.model != MODEL_HUMAN) { lc_blocker = min(lc_blocker, max(current_dist - ty.length - 1.5, 0.0)); }
         let lanes_left = f32(max(1, abs(best_offset)));
         let remaining = max(dt, lc_left_space / max(lc_look, EPS) / lanes_left / 2.0);
-        let planned = inform_leader(e, neigh, blocked, my_lca, remaining, vmax, lane.speed);
+        var planned: f32;
+        if (ty.model == MODEL_HUMAN && (P.hu_flags & HS_ANTICIPATE) != 0u) { planned = hu_two_leaders(e, neigh, vmax); }
+        else { planned = inform_leader(e, neigh, blocked, my_lca, remaining, vmax, lane.speed); }
         if (planned >= 0.0) { inform_follower(e, neigh, blocked, my_lca, remaining, planned); }
         return ret | blocked;
     }
@@ -1064,8 +1110,229 @@ fn hold_follower_for_blocked(e: Veh, n: LcNeighbors) {
     ty = self_ty;
 }
 
+// ---------------------------------------------------------------- human lane changing
+
+const S_MIN: f32 = 0.5;
+const HU_GAP_GATE: f32 = 1.0;
+const HU_B_GATE: f32 = 4.5;
+const P_SIG_ANY: f32 = 0.93;
+const ETA_NOSIGNAL: f32 = -1.0;
+const B0: f32 = 2.14;
+const B_V: f32 = 1.73;
+const B_C: f32 = -1.44;
+const B_L: f32 = 1.24;
+const B_R: f32 = -2.08;
+const B_YIELD: f32 = 1.5;
+
+fn h01(a: u32, b: u32) -> f32 {
+    return (f32(pcg(a * 2654435761u ^ pcg(b)) >> 8u) + 0.5) / 16777216.0;
+}
+
+fn logit01(u: f32) -> f32 { return log(u / (1.0 - u)); }
+
+// The one driver: physical motion, and the human's measured lane-change decisions (report 14, report 18 B1 B2).
+fn hd_phys(t: VType) -> bool { return mu > 0.0 && t.model == MODEL_KRAUSS && (P.hu_flags & HS_PHYS) != 0u; }
+
+fn hu_courteous(t: VType) -> bool { return (t.model == MODEL_HUMAN || hd_phys(t)) && (P.hu_flags & HS_COURTESY) != 0u; }
+
+// How pressed the driver is: 1 at the end of the road. Distance only, as Rao, Lee and I-80 say.
+// Report 18: time left to the end of the lane, the form that carries from one site to another.
+fn hu_tte(e: Veh) -> f32 {
+    let rem = max(e.best_cur - e.pos, 0.0) / f32(max(1, abs(unpack_off(e.best_off))));
+    return min(rem / max(e.speed, 1.0), 60.0);
+}
+
+fn hu_urgency(e: Veh) -> f32 {
+    if ((P.hu_flags & HS_SHRINK) == 0u || (e.lc_own & LCA_URGENT) == 0u) { return 0.0; }
+    if ((P.hu_flags & HS_TTE) != 0u) { return clamp(1.0 - hu_tte(e) / P.hm_a.x, 0.0, 1.0); }
+    let rem = max(e.best_cur - e.pos, 0.0) / f32(max(1, abs(unpack_off(e.best_off))));
+    return clamp(1.0 - rem / P.hu_b.z, 0.0, 1.0);
+}
+
+// Bumper gap a human accepts behind a car at va when going vb. Shrinks with urgency.
+fn hu_gap_need(vb: f32, va: f32, u: f32, k: f32) -> f32 {
+    let tau_e = mix(P.hu_c.x * k, P.hu_c.y, u);
+    let b_e = mix(HU_B_GATE, P.hu_c.z, u);
+    return mix(HU_GAP_GATE, S_MIN, u) + max(0.0, vb * tau_e + (vb * vb - va * va) / (2.0 * b_e));
+}
+
+// The follower in the lane we want sees us signal, and decides by its own draw and how close it all is.
+// The driver's draw is fixed for the trip, so a refusal does not turn to yes by asking again.
+fn hu_request(e: Veh, n: LcNeighbors, dir: u32) {
+    if (n.follower == NONE) { return; }
+    let ft = types[n.f_vtype];
+    if (!hu_courteous(ft)) { return; }
+    if ((P.hu_flags & HS_FOLLOW) != 0u && ft.model == MODEL_HUMAN) { hu_follower(e, n, ft, dir); return; }
+    let style = h01(e.trip, 3u);
+    let blinks = style < P_SIG_ANY;
+    if (blinks && e.lc_wait < P.hu_b.y) { return; }
+    let lag = n.f_gap + ft.min_gap;
+    if (lag <= S_MIN + 0.2) { return; }
+    let vf = n.f_speed;
+    let rem = min(max(e.best_cur - e.pos, 0.0) / f32(max(1, abs(unpack_off(e.best_off)))), 200.0);
+    var eta = B0 + B_V * vf / 10.0 + B_C * (vf - e.speed) / 3.0 + B_L * lag / 10.0 + B_R * rem / 50.0;
+    if (!blinks) { eta += ETA_NOSIGNAL; }
+    // A share of drivers cooperates, as Aimsun and MITSIMLab have it. In report 14's model, that share
+    // scales its fitted let-in chance. Fixed per driver, so asking again does not change the answer.
+    var chance = P.hu_a.x;
+    if (P.hu_c.w < 0.5) { chance /= 1.0 + exp(-eta); }
+    if (h01(n.f_trip, 1u) >= chance) { return; }
+    let u = hu_urgency(e);
+    let self_ty = ty;
+    ty = ft;
+    let limit = lanes[e.lane].speed;
+    let by = mix(B_YIELD, P.hu_b.w, u);
+    let tgt = follow_speed(vf, lag - S_MIN - 0.5, e.speed, self_ty.decel, false, limit, limit);
+    ty = self_ty;
+    lc_advice(n.f_trip, max(tgt, vf - by * dt));
+    atomicOr(&adv_flags[n.f_trip], dir | LCA_AM_FOLLOWER);
+    atomicAdd(&C[C_HU_YIELD], 1u);
+}
+
+// Report 18 B7: a follower does a share of the braking that following the merger would ask, less when very close or
+// closing fast, once it can see the body moving over. Nothing shows up before that, so no response to a blinker alone.
+fn hu_follower(e: Veh, n: LcNeighbors, ft: VType, dir: u32) {
+    // 10% of a lane, or as far as this driver goes: a timid edge that has stopped moving is as plain to see.
+    let w = lanes[e.lane].width;
+    let goal = min(P.hm_d.x * exp(0.65 * hu_normal(e.trip, 35u)) * w, max(w - ty.width - 0.2, 0.0));
+    if (abs(e.lc_edge) < min(0.1 * w, 0.95 * goal)) { return; }
+    let lag = n.f_gap + ft.min_gap;
+    // Alongside it is not behind the merger yet, and a car edging can wait there a long time.
+    if (lag <= 0.0) { return; }
+    let vf = n.f_speed;
+    let self_ty = ty;
+    ty = ft;
+    hu_load(trips[n.f_trip].persona, 0.0, 0.0, 1.0, P.hu_d.z, P.hu_d.w);
+    let limit = lanes[e.lane].speed;
+    let mer = hu_target(vf, max(lag, 0.5), e.speed, limit, hu_s0);
+    // What it would do anyway: follow the car beyond the merger.
+    var own = hu_a_up(vf, limit);
+    if (n.gap < 1e8) { own = hu_target(vf, lag + self_ty.length + n.gap + self_ty.min_gap, n.speed, limit, hu_s0); }
+    hu_on = false;
+    ty = self_ty;
+    let a_new = own + hu_follower_share(n.f_trip, lag, vf - e.speed) * min(mer - own, 0.0);
+    lc_advice(n.f_trip, vf + max(a_new, -P.hm_c.x) * dt);
+    atomicOr(&adv_flags[n.f_trip], dir | LCA_AM_FOLLOWER);
+    atomicAdd(&C[C_HU_YIELD], 1u);
+}
+
+// Report 18 B2, B3: the start of a must-change is a chance per step, from time left and time gaps. Then the gaps are read
+// as they will be a moment on, so a car can start before the gap exists. Bodies must still not overlap.
+fn hu_merge_gate(e: Veh, n: LcNeighbors, dest: u32, i: u32) -> u32 {
+    let side = i32(dest) - i32(e.lane);
+    let wanted = sign(f32(unpack_off(e.best_off))) == f32(side);
+    var engaged = (e.hu_state & HU_ENGAGED) != 0u;
+    let has_f = n.follower != NONE;
+    let ft = types[n.f_vtype];
+    let lag = select(1e6, n.f_gap + ft.min_gap, has_f);
+    let lead = select(1e6, n.gap + ty.min_gap, n.gap < 1e8);
+    let tau = clamp(P.hm_d.z + P.hm_d.w * hu_normal(e.trip, 33u), 0.0, 4.0);
+    let lag_a = lag + (e.speed - n.f_speed) * tau + 0.5 * (e.acc - n.f_acc) * tau * tau;
+    let lead_a = lead + (n.speed - e.speed) * tau + 0.5 * (n.acc - e.acc) * tau * tau;
+    if (!engaged && wanted) {
+        // The law was fitted on the body reaching the line, so it reads the gaps as they will be by then.
+        let tlag = clamp(select(lag, lag_a, (P.hu_flags & HS_EDGE) != 0u) / max(n.f_speed, 1.0), -3.0, 8.0);
+        let tlead = clamp(select(lead, lead_a, (P.hu_flags & HS_EDGE) != 0u) / max(e.speed, 1.0), -3.0, 8.0);
+        let d01 = clamp(h01(e.trip, 37u), 0.001, 0.999);
+        let eta = P.hm_a.y + P.hm_b.y * log(d01 / (1.0 - d01)) + P.hm_a.z * hu_tte(e) / 10.0 + P.hm_a.w * tlag + P.hm_b.x * tlead;
+        let p_step = 1.0 - pow(1.0 - 1.0 / (1.0 + exp(-eta)), dt);
+        if (h01(e.trip ^ pcg(G.step), 31u) < p_step) {
+            engaged = true;
+            cur[i].hu_state = e.hu_state | HU_ENGAGED;
+        }
+    }
+    if (!engaged) { return LCA_BLOCK_LEADER; }
+    var blocked = 0u;
+    if (has_f) {
+        let self_ty = ty;
+        ty = ft;
+        let floor_lag = max(P.hu_e.z * ph_gap_required(n.f_speed, e.speed, min(self_ty.apparent, ty.b_lo), n.f_acc), S_MIN);
+        ty = self_ty;
+        if (lag < 0.0 || lag_a < floor_lag || (lag < 1.0 && e.speed < n.f_speed)) { blocked |= LCA_BLOCK_FOLLOWER; }
+    }
+    if (n.gap < 1e8) {
+        let floor_lead = max(P.hu_e.z * ph_gap_required(e.speed, n.speed, min(n.decel, ty.b_lo), e.acc), S_MIN);
+        if (lead < 0.0 || lead_a < floor_lead) { blocked |= LCA_BLOCK_LEADER; }
+    }
+    return blocked;
+}
+
+// B3: while waiting for the gap a slow car drifts towards the line, keeping clear of a car alongside. No sideways motion
+// at a stand.
+fn hu_edge(i: u32, e: Veh, side: f32) {
+    // Once it has started over, the edge is part of the change and stays until the change ends.
+    if ((P.hu_flags & HS_EDGE) == 0u || (e.phys >> 30u) != 0u) { return; }
+    let w = lanes[e.lane].width;
+    var goal = 0.0;
+    if (side != 0.0 && (cur[i].hu_state & HU_ENGAGED) != 0u && e.speed < P.hm_d.y) {
+        let q = P.hm_d.x * exp(0.65 * hu_normal(e.trip, 35u));
+        goal = side * min(q * w, max(w - ty.width - 0.2, 0.0));
+    }
+    let rate = min(0.4, 0.5 * e.speed) * dt;
+    cur[i].lc_edge = e.lc_edge + clamp(goal - e.lc_edge, -rate, rate);
+}
+
+fn hu_normal(a: u32, b: u32) -> f32 {
+    return sqrt(-2.0 * log(h01(a, b))) * cos(6.2831853 * h01(a, b + 1000u));
+}
+
+// Published critical gaps, in metres: lognormal, one driver term, a new draw each second. A mandatory
+// change uses Lee 2006 table 5.1 (I-80), where the end of the lane acts through the remaining distance.
+// Any other uses Ahmed 1999's discretionary model (I-93, Lee's table 2.3).
+fn hu_critical_lead(e: Veh, n: LcNeighbors, dest: u32, mandatory: bool, d: f32, nu: f32, second: u32, shift: f32) -> f32 {
+    let eps = hu_normal(e.trip ^ second, 23u);
+    let min_dv = min(0.0, n.speed - e.speed);
+    if (!mandatory) { return exp(0.508 - 0.420 * min_dv + 0.488 * eps); }
+    var avg = e.speed;
+    if (lane_occupied(dest)) { avg = lane_free[dest].mean_speed; }
+    return exp(shift + 0.182 + 1.45 / (1.0 + exp(-max(0.0, avg - e.speed))) - 0.571 * min_dv + 1.03 * d / (1.0 + exp(-0.492 + 0.798 * nu)) + 4.28 * eps);
+}
+
+fn hu_critical_lag(e: Veh, n: LcNeighbors, mandatory: bool, d: f32, nu: f32, second: u32, shift: f32) -> f32 {
+    let eps = hu_normal(e.trip ^ second, 25u);
+    let dv = n.f_speed - e.speed;
+    if (!mandatory) { return exp(0.508 + 0.153 * min(0.0, dv) + 0.188 * max(0.0, dv) + 0.526 * eps); }
+    return exp(shift + 0.379 + 0.179 * max(0.0, dv) + 0.0909 * min(0.0, dv) + 0.179 * d / (1.0 + exp(-2.22 + 2.88 * nu)) + 0.0766 * max(0.0, n.f_acc) + 0.91 * eps);
+}
+
+fn check_blocked_human(e: Veh, n: LcNeighbors, dest: u32) -> u32 {
+    if ((P.hu_flags & HS_START) != 0u && (e.lc_own & LCA_URGENT) != 0u) { return hu_merge_gate(e, n, dest, lc_i); }
+    var blocked = 0u;
+    let published = P.hu_c.w > 0.5;
+    let u = hu_urgency(e);
+    let mandatory = (e.lc_own & LCA_URGENT) != 0u;
+    let rem = max(e.best_cur - e.pos, 0.0) / f32(max(1, abs(unpack_off(e.best_off))));
+    let d = select(10.0, min(rem, 300.0) / 10.0, (P.hu_flags & HS_SHRINK) != 0u);
+    let nu = hu_normal(e.trip, 21u);
+    let second = pcg(u32(f32(G.step) * dt));
+    if (n.follower != NONE) {
+        let self_ty = ty;
+        ty = types[n.f_vtype];
+        let lag = n.f_gap + ty.min_gap;
+        // Vissim scales the safety distance by 0.6 during a change.
+        var need = max(P.hu_e.z * ph_gap_required(n.f_speed, e.speed, min(self_ty.apparent, ty.b_lo), n.f_acc), S_MIN);
+        if (ty.model == MODEL_HUMAN) {
+            if (published) { need = max(need, hu_critical_lag(e, n, mandatory, d, nu, second, mix(P.hu_h.z, P.hu_e.y, u))); }
+            else { need = max(need, hu_gap_need(n.f_speed, e.speed, u, 0.7 + 0.6 * h01(n.f_trip, 7u))); }
+        } else {
+            need = max(need, ty.min_gap + secure_gap_lc(n.f_speed, e.speed, self_ty.apparent, n.f_acc, 1.0, false));
+        }
+        ty = self_ty;
+        if (lag < 0.0 || lag < need) { blocked |= LCA_BLOCK_FOLLOWER; }
+    }
+    if (n.gap < 1e8) {
+        let g = n.gap + ty.min_gap;
+        var need = max(P.hu_e.z * ph_gap_required(e.speed, n.speed, min(n.decel, ty.b_lo), e.acc), S_MIN);
+        if (published) { need = max(need, hu_critical_lead(e, n, dest, mandatory, d, nu, second, mix(P.hu_h.y, P.hu_e.x, u))); }
+        else { need = max(need, hu_gap_need(e.speed, n.speed, u, 0.7 + 0.6 * h01(e.trip, 7u))); }
+        if (g < 0.0 || g < need) { blocked |= LCA_BLOCK_LEADER; }
+    }
+    return blocked;
+}
+
 // MSLaneChanger::checkChange: the gaps a change into `dest` would have to respect.
-fn check_blocked(e: Veh, n: LcNeighbors) -> u32 {
+fn check_blocked(e: Veh, n: LcNeighbors, dest: u32) -> u32 {
+    if ((ty.model == MODEL_HUMAN || hd_phys(ty)) && (P.hu_flags & HS_GATE) != 0u) { return check_blocked_human(e, n, dest); }
     var blocked = 0u;
     let safety = 1.0 / max(EPS, ty.lc_assertive);
     if (n.follower != NONE) {
@@ -1101,6 +1368,7 @@ fn check_blocked(e: Veh, n: LcNeighbors) -> u32 {
 fn lc_decide(@builtin(global_invocation_id) id: vec3u) {
     if (id.x >= G.n_active) { return; }
     lc_plan[id.x].side = 0;
+    lc_first_look = true;
     lc_evaluate(id.x);
 }
 
@@ -1119,8 +1387,8 @@ fn lc_decide_helpers(@builtin(global_invocation_id) id: vec3u) {
 fn ph_lc_path(e: Veh, own: LcNeighbors, n: LcNeighbors, dest: u32) -> bool {
     if ((P.safety & 8u) == 0u) { return true; }
     let half = 0.5 * (lanes[dest].width + ty.width);
-    let travel = half / 0.21256;
-    let t = half / ty.v_lat;
+    let travel = half / select(0.21256, P.hu_g.y, ty.v_lat <= 0.0);
+    let t = half / select(ty.v_lat, 0.7, ty.v_lat <= 0.0);
     return own.gap >= 1e8 || own.gap + ty.min_gap + own.speed * t >= travel;
 }
 
@@ -1129,6 +1397,9 @@ fn ph_lc_room(e: Veh, dest: u32) -> bool {
     if ((e.phys >> 30u) != 0u || (e.flags & F_HAS_SHADOW) != 0u || e.pos < min(ty.length, lanes[e.lane].length - 1.0)) { return false; }
     let w = lanes[dest].width;
     let road = ph_lc_road(e, dest);
+    // Report 18: real bodies reach the line about at the end, and the centre crosses after it. The rest of the move carries
+    // on along the lane it joins. Time to the line, on the quintic of ph_lateral: 0.22 of the way takes a third of the time.
+    if (ty.v_lat <= 0.0) { return 0.33 * 1.875 * max(w - abs(e.lc_edge), 0.0) / 1.3 * e.speed <= lanes[e.lane].length - e.pos; }
     if (road < 0.0) {
         let left = lanes[e.lane].length - e.pos;
         if (e.speed < 0.5) { return true; }
@@ -1165,6 +1436,10 @@ fn ph_abreast(n: LcNeighbors, wants_my_lane: u32) -> i32 {
     return 0;
 }
 
+var<private> lc_first_look: bool;
+var<private> lc_i: u32;
+var<private> lc_bias_out: f32;
+
 fn lc_evaluate(i: u32) {
     let e = cur[i];
     if ((e.flags & (F_REMOVED | F_SHADOW)) != 0u || is_internal(e.lane)) { return; }
@@ -1195,6 +1470,8 @@ fn lc_evaluate(i: u32) {
     lc_pr = e.lc_right;
     lc_pl = e.lc_left;
     lc_pk = e.lc_keep;
+    lc_i = i;
+    lc_bias_out = 0.0;
     let back = e.pos - ty.length;
     var own = lc_neighbors(e.lane, e.pos, i, back);
     lc_leader_ahead(&own, e.lane, e.pos, e.route_i, e.route_end, e.speed);
@@ -1208,14 +1485,15 @@ fn lc_evaluate(i: u32) {
         if ((lanes[dest].allow & ty.vclass) == ty.vclass && (lanes[e.lane].pad1 & ty.vclass) == ty.vclass) {
             var n = lc_neighbors(dest, e.pos, i, back);
             lc_leader_ahead(&n, dest, e.pos, e.route_i, e.route_end, e.speed);
-            var b = check_blocked(e, n);
+            var b = check_blocked(e, n, dest);
             if (mu > 0.0 && !ph_lc_path(e, own, n, dest)) { b |= LCA_BLOCK_LEADER; }
             state_r = wants_change(-1, e, own, n, b, dest, i);
             if (b == 0u && (state_r & LCA_WANTS) != 0u && unsafe_link_ahead(e, dest, i)) { state_r |= LCA_BLOCK_LEADER; }
             if ((state_r & LCA_RIGHT) != 0u && (state_r & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) == 0u) { chosen = -1; }
             else if ((state_r & LCA_RIGHT) != 0u && (state_r & LCA_URGENT) != 0u) {
-                hold_follower_for_blocked(e, n);
-                if (mu > 0.0) { abreast = ph_abreast(n, LCA_LEFT); }
+                if (n.follower != NONE && hu_courteous(types[n.f_vtype])) { hu_request(e, n, LCA_M_RIGHT); }
+                else { hold_follower_for_blocked(e, n); }
+                if (mu > 0.0 && P.abreast_b > 0.0) { abreast = ph_abreast(n, LCA_LEFT); }
             }
         }
     }
@@ -1224,14 +1502,15 @@ fn lc_evaluate(i: u32) {
         if ((lanes[dest].allow & ty.vclass) == ty.vclass && (lanes[e.lane].pad0 & ty.vclass) == ty.vclass) {
             var n = lc_neighbors(dest, e.pos, i, back);
             lc_leader_ahead(&n, dest, e.pos, e.route_i, e.route_end, e.speed);
-            var b = check_blocked(e, n);
+            var b = check_blocked(e, n, dest);
             if (mu > 0.0 && !ph_lc_path(e, own, n, dest)) { b |= LCA_BLOCK_LEADER; }
             state_l = wants_change(1, e, own, n, b, dest, i);
             if (b == 0u && (state_l & LCA_WANTS) != 0u && unsafe_link_ahead(e, dest, i)) { state_l |= LCA_BLOCK_LEADER; }
             if ((state_l & LCA_LEFT) != 0u && (state_l & (LCA_BLOCK_LEADER | LCA_BLOCK_FOLLOWER)) == 0u) { chosen = 1; }
             else if ((state_l & LCA_LEFT) != 0u && (state_l & LCA_URGENT) != 0u) {
-                hold_follower_for_blocked(e, n);
-                if (mu > 0.0 && abreast == 0) { abreast = ph_abreast(n, LCA_RIGHT); }
+                if (n.follower != NONE && hu_courteous(types[n.f_vtype])) { hu_request(e, n, LCA_M_LEFT); }
+                else { hold_follower_for_blocked(e, n); }
+                if (mu > 0.0 && P.abreast_b > 0.0 && abreast == 0) { abreast = ph_abreast(n, LCA_RIGHT); }
             }
         }
     }
@@ -1251,7 +1530,7 @@ fn lc_evaluate(i: u32) {
     cur[i].lc_own = state;
     cur[i].left_space = lc_left_space;
     cur[i].blocker = lc_blocker;
-    if (mu > 0.0) {
+    if (mu > 0.0 && P.abreast_b > 0.0) {
         cur[i].flags &= ~F_ABREAST;
         if (chosen == 0 && abreast < 0) {
             cur[i].flags |= F_ABREAST;
@@ -1260,6 +1539,20 @@ fn lc_evaluate(i: u32) {
             cur[i].blocker = 0.0;
             atomicStore(&advice[e.trip], NONE);
         }
+    }
+    if (lc_first_look) {
+        // Not only the step's own state: a wish that was urgent stays so until a change or until gone.
+        let wishes = (state & LCA_WANTS) != 0u && (state & LCA_URGENT) != 0u;
+        cur[i].lc_wait = select(0.0, e.lc_wait + dt, wishes);
+    }
+    if (hd_phys(ty) && (state & LCA_URGENT) == 0u) { cur[i].hu_state &= ~HU_ENGAGED; }
+    if (ty.model == MODEL_HUMAN && mu > 0.0) {
+        cur[i].lc_bias = clamp(lc_bias_out, -0.8, 0.8);
+        var side = 0.0;
+        if ((state_r & (LCA_RIGHT | LCA_URGENT)) == (LCA_RIGHT | LCA_URGENT)) { side = -1.0; }
+        else if ((state_l & (LCA_LEFT | LCA_URGENT)) == (LCA_LEFT | LCA_URGENT)) { side = 1.0; }
+        if (side == 0.0) { cur[i].hu_state &= ~HU_ENGAGED; }
+        if (chosen == 0) { hu_edge(i, e, side); }
     }
     if (chosen == 0) { return; }
     let urgent = (state & LCA_URGENT) != 0u;
@@ -1305,8 +1598,15 @@ fn lc_commit(@builtin(global_invocation_id) id: vec3u) {
         cur[i].phys = (cur[i].phys & 0xffffu) | (dir << 30u);
         cur[i].flags |= F_HAS_SHADOW;
         let w = lanes[dest].width;
-        ty = vt;
-        if ((w / vt.v_lat + 1.0) * cur[i].speed > ph_lc_road(cur[i], dest)) { cur[i].flags |= F_LAT_FAST; }
+        if (vt.v_lat <= 0.0) {
+            // Measured duration if the lane is long enough for it, otherwise as fast as drivers go.
+            let room = lanes[cur[i].lane].length - cur[i].pos;
+            let d = clamp(min(hu_persona_d(trips[cur[i].trip].persona), room / max(cur[i].speed, 0.1)), 4.0, 22.0);
+            cur[i].hu_state = (cur[i].hu_state & 0xffff00ffu) | (u32(d * 10.0) << 8u);
+        } else {
+            ty = vt;
+            if ((w / vt.v_lat + 1.0) * cur[i].speed > ph_lc_road(cur[i], dest)) { cur[i].flags |= F_LAT_FAST; }
+        }
     }
     lc_plan[i].first = 0xffffffffu;
     cur[i].lane = dest;
@@ -1318,6 +1618,10 @@ fn lc_commit(@builtin(global_invocation_id) id: vec3u) {
     cur[i].lc_own = 0u;
     cur[i].look_v = 0.0;
     cur[i].blocker = 0.0;
+    cur[i].lc_wait = 0.0;
+    cur[i].lc_wait = 0.0;
+    cur[i].lc_bias = 0.0;
+    cur[i].hu_state &= ~HU_ENGAGED;
     atomicStore(&advice[cur[i].trip], NONE);
     atomicStore(&adv_flags[cur[i].trip], 0u);
     atomicMin(&tail[dest], pack_back(cur[i].pos - types[cur[i].vtype].length, cur[i].speed, 0u));

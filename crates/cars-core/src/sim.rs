@@ -8,7 +8,7 @@ use wgpu::util::DeviceExt;
 use crate::gpu::Gpu;
 use crate::world::*;
 
-const COMMON: &str = include_str!("shaders/common.wgsl");
+pub const COMMON: &str = include_str!("shaders/common.wgsl");
 const STEP: &str = include_str!("shaders/step.wgsl");
 const LC: &str = include_str!("shaders/lc.wgsl");
 const CONTROL: &str = include_str!("shaders/control.wgsl");
@@ -91,6 +91,10 @@ pub struct Sim {
 }
 
 pub struct Buffers {
+    pub routes: wgpu::Buffer,
+    pub route_patch: wgpu::Buffer,
+    /// Where routes handed out during the run begin in `routes`.
+    pub route_arena_at: u64,
     pub params: wgpu::Buffer,
     pub globals: wgpu::Buffer,
     pub counters: wgpu::Buffer,
@@ -105,10 +109,6 @@ pub struct Buffers {
     pub tls: wgpu::Buffer,
     pub queues: wgpu::Buffer,
     pub items: wgpu::Buffer,
-    pub routes: wgpu::Buffer,
-    pub route_patch: wgpu::Buffer,
-    /// Where routes handed out during the run begin in `routes`.
-    pub route_arena_at: u64,
     pub trips: wgpu::Buffer,
     pub queue_trips: wgpu::Buffer,
     /// What `Sim::reset` clears, to zero and to all ones.
@@ -267,15 +267,17 @@ impl Sim {
         let slots = init("slots", &slots_init, storage);
         let link_count = empty("link_count", p.n_links as u64 * 4);
         let ones = vec![0xffu8; p.n_lanes as usize * 4];
+        let entrant_ones = vec![0xffu8; p.n_lanes as usize * if p.mu > 0.0 { 8 } else { 4 }];
         let partial = init("partial", &ones, storage);
         let tail = init("tail", &ones, storage);
-        let entrant = init("entrant", &ones, storage);
+        let entrant = init("entrant", &entrant_ones, storage);
         let trip_out = empty(
             "trip_out",
             p.n_trips as u64 * std::mem::size_of::<GpuTripOut>() as u64,
         );
         let series = empty("series", p.n_samples as u64 * p.n_replicas as u64 * 16);
         let edge_acc = empty("edge_acc", p.n_edges as u64 * 32 + p.n_lanes as u64 * 16);
+        // Second half in physical mode: the hard limits, per trip. llvmpipe caps storage buffers per stage at 48.
         let advice_init = vec![0xffu8; p.n_trips as usize * 4 * if p.mu > 0.0 { 2 } else { 1 }];
         let advice = init("advice", &advice_init, storage);
         let adv_flags = empty("adv_flags", p.n_trips as u64 * 4);
@@ -287,15 +289,16 @@ impl Sim {
         let lane_free = empty("lane_free", p.n_lanes as u64 * 16);
         let physical = p.mu > 0.0;
         let when = |on: bool, bytes: u64| if on { bytes } else { 16 };
+        // Per trip the route waiting for it, then the log of requests.
+        let route_patch = init("route_patch", &vec![0u8; when(physical, (p.n_trips as u64 + 2 * REROUTE_LOG) * 8) as usize], storage | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC);
         let mirror = empty("mirror", when(physical, p.n_trips as u64 * MIRROR_BYTES));
         let energy = empty("energy", when(physical, p.n_trips as u64 * std::mem::size_of::<GpuTripEnergy>() as u64));
         let ph_lane = empty("ph_lane", when(physical, p.n_lanes as u64 * 20));
-        // Per trip the route waiting for it, then the log of requests.
-        let route_patch = init("route_patch", &vec![0u8; when(physical, (p.n_trips as u64 + 2 * crate::world::REROUTE_LOG) * 8) as usize], storage | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC);
         let zones = init("zones", bytemuck::cast_slice(&world.zones), storage);
         let speed_trace = init("speed_trace", bytemuck::cast_slice(&world.speed_trace), storage);
         let detecting = p.detect_every > 0;
         let poses = empty("poses", when(detecting, cap * POSE_BYTES));
+        // The grid's heads, then each vehicle's next in its cell.
         let grid_head = empty("grid_head", when(detecting, (p.grid_mask as u64 + 1) * 4));
         let grid_next = empty("grid_next", when(detecting, cap * 4));
         let shape_points = init("shape_points", bytemuck::cast_slice(&world.shape_points), storage);
@@ -582,7 +585,7 @@ impl Sim {
             counters.clone(), veh[0].clone(), veh[1].clone(), keys[0].clone(), keys[1].clone(), vals[0].clone(), vals[1].clone(),
             hist.clone(), totals.clone(), seg.clone(), items.clone(), link_count.clone(), trip_out.clone(), series.clone(),
             edge_acc.clone(), adv_flags.clone(), last_detect.clone(), lc_plan.clone(), lane_free.clone(), indirect.clone(),
-            mirror.clone(), energy.clone(), ph_lane.clone(), poses.clone(), grid_head.clone(), grid_next.clone(), contacts.clone(),
+            mirror.clone(), energy.clone(), ph_lane.clone(), poses.clone(), grid_head.clone(), grid_next.clone(), contacts.clone(), route_patch.clone(),
         ];
         reset_zero.retain(|b| b.size() > 0);
         let reset_ones = vec![slots.clone(), partial.clone(), tail.clone(), entrant.clone(), advice.clone(), claims.clone()];

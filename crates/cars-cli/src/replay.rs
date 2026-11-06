@@ -27,6 +27,42 @@ pub struct Args {
     /// File from `cars run --trace`.
     #[arg(long)]
     trace: PathBuf,
+    /// Write what would be drawn to this CSV and stop, at every frame of the trace. Needs no GPU. For scripts/physics_qa.py.
+    #[arg(long)]
+    poses: Option<PathBuf>,
+}
+
+/// The pose code of the renderer, at each frame of the trace, as `time,trip,lane,pos,speed,x,y,dx,dy`.
+fn write_poses(r: &Args, trace: &Trace, out: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+    use std::io::Write;
+    let a = &r.common;
+    let mut net = Net::load(&a.net)?;
+    for p in &a.additional {
+        net.load_additional(p)?;
+    }
+    let hash = trace::net_hash(&net);
+    if hash != trace.header.net_hash {
+        return Err(format!("this trace is from another net: file {} here {hash}", trace.header.net_hash).into());
+    }
+    let dt = trace.header.dt;
+    let mut world = World::build(&net, &Demand::default(), &SimConfig { dt, begin_seconds: trace.header.sim_begin as f32, end_seconds: 1e6, ..Default::default() }, &[]);
+    world.vtypes = trace.header.vtypes.iter().map(|t| GpuVType { model: t.model, length: t.length, min_gap: t.min_gap, decel: t.decel, emergency: t.emergency, ..GpuVType::zeroed() }).collect();
+    let widths: Vec<f32> = trace.header.vtypes.iter().map(|t| t.width).collect();
+    let tables = render::tables(&world, &net, false);
+    let mut source = TraceSource { trace, world: &world, tables: &tables, widths, interpolate: false, next: 0, cur: None, prev_step: 0, step: 0, records: Vec::new(), scratch: Vec::new(), phases: Vec::new(), passed: Vec::new(), passed_count: 0, slots: Vec::new(), history: Vec::new(), instances: Vec::new(), signals: Vec::new(), snapped: None };
+    let mut f = std::io::BufWriter::new(std::fs::File::create(out)?);
+    writeln!(f, "time,trip,lane,pos,speed,x,y,dx,dy")?;
+    for i in 0..trace.frames.len() {
+        source.feed(i)?;
+        let time = trace.time_of(trace.frames[i].step);
+        source.pose_all(1.0, source.step as f32 * dt, 0);
+        for (r, p) in source.records.iter().zip(&source.instances) {
+            if p.alive > 0.0 {
+                writeln!(f, "{time:.3},{},{},{:.3},{:.3},{:.3},{:.3},{:.4},{:.4}", r.trip(), r.lane(), r.pos(), r.speed(), p.xy[0], p.xy[1], p.dir[0], p.dir[1])?;
+            }
+        }
+    }
+    Ok(())
 }
 
 type V2 = [f32; 2];
@@ -123,6 +159,9 @@ struct History {
     cur_dir: V2,
     drawn: V2,
     lat: f32,
+    prev_lat: f32,
+    cur_lat: f32,
+    dlat: f32,
     changed: f32,
     time: f32,
     lane: u32,
@@ -181,7 +220,7 @@ impl TraceSource<'_> {
             }
             if self.slots[t] == NONE {
                 self.slots[t] = self.history.len() as u32;
-                self.history.push(History { prev_xy: center, prev_dir: dir, cur_xy: center, cur_dir: dir, drawn: center, lat: 0.0, changed: -1e9, time: step_time, lane: r.lane() });
+                self.history.push(History { prev_xy: center, prev_dir: dir, cur_xy: center, cur_dir: dir, drawn: center, lat: 0.0, prev_lat: r.lat(), cur_lat: r.lat(), dlat: 0.0, changed: -1e9, time: step_time, lane: r.lane() });
                 continue;
             }
             let h = &mut self.history[self.slots[t] as usize];
@@ -189,6 +228,14 @@ impl TraceSource<'_> {
                 continue;
             }
             let elapsed = step_time - h.time;
+            // From where the car really went: the offset alone jumps by a lane when its lane changes, with no motion.
+            let was = add(h.cur_xy, scale(perp(h.cur_dir), h.cur_lat));
+            let now = add(center, scale(perp(dir), r.lat()));
+            // A car turns over about half a second; the sideways rate can change within a step.
+            h.dlat += (dot(sub(now, was), perp(dir)) / elapsed.max(0.01) - h.dlat) * (1.0 - (-elapsed / 0.5).exp());
+            h.prev_lat = h.cur_lat;
+            h.cur_lat = r.lat();
+            let traced_lat = h.prev_lat != 0.0 || h.cur_lat != 0.0;
             h.prev_xy = h.cur_xy;
             h.prev_dir = h.cur_dir;
             let n = perp(dir);
@@ -197,7 +244,7 @@ impl TraceSource<'_> {
                 h.prev_xy = center;
                 h.prev_dir = dir;
                 h.lat = 0.0;
-            } else if h.lane != r.lane() && lanes[h.lane as usize].edge == lanes[r.lane() as usize].edge {
+            } else if !traced_lat && h.lane != r.lane() && lanes[h.lane as usize].edge == lanes[r.lane() as usize].edge {
                 let u = ((h.time - h.changed) / CHANGE_SECONDS).clamp(0.0, 1.0);
                 let old = add(h.cur_xy, scale(perp(h.cur_dir), h.lat * (1.0 - u * u * (3.0 - 2.0 * u))));
                 h.lat = dot(sub(old, center), n);
@@ -227,9 +274,11 @@ impl TraceSource<'_> {
             d = if length(d) > 0.2 { scale(d, 1.0 / length(d)) } else { h.cur_dir };
             let dn = perp(d);
             let u = ((time - h.changed) / CHANGE_SECONDS).clamp(0.0, 1.0);
-            let xy = add(b, scale(dn, h.lat * (1.0 - u * u * (3.0 - 2.0 * u))));
+            let traced = h.prev_lat + (h.cur_lat - h.prev_lat) * blend;
+            let xy = add(add(b, scale(dn, h.lat * (1.0 - u * u * (3.0 - 2.0 * u)))), scale(dn, traced));
             let speed = r.speed();
-            let yaw = (-h.lat * 6.0 * u * (1.0 - u) / CHANGE_SECONDS).atan2(speed.max(2.0)).clamp(-0.35, 0.35);
+            let dlat = h.dlat;
+            let yaw = (-h.lat * 6.0 * u * (1.0 - u) / CHANGE_SECONDS + dlat).atan2(speed.max(2.0)).clamp(-0.35, 0.35);
             let drawn_dir = add(scale(d, yaw.cos()), scale(dn, yaw.sin()));
             h.drawn = xy;
             let lane = &world.lanes[r.lane() as usize];
@@ -473,6 +522,9 @@ pub fn run(mut r: Args) -> Result<(), Box<dyn std::error::Error>> {
     let (Some(first), Some(last)) = (trace.frames.first(), trace.frames.last()) else {
         return Err("trace has no frames".into());
     };
+    if let Some(p) = &r.poses {
+        return write_poses(&r, &trace, p);
+    }
     let dt = trace.header.dt;
     let sim_begin = trace.header.sim_begin as f32;
     let begin = r.common.begin.unwrap_or(trace.time_of(first.step));

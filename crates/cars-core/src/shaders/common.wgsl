@@ -15,6 +15,7 @@ const MODEL_IDM: u32 = 1u;
 const MODEL_ACC: u32 = 2u;
 const MODEL_CACC: u32 = 3u;
 const MODEL_AV: u32 = 4u;
+const MODEL_HUMAN: u32 = 5u;      // gap-speed feedback, research/truth/05-real-human-driving.md
 
 // Vehicle flags.
 const F_REMOVED: u32 = 1u;        // arrived or teleported away, gone at the next sort
@@ -36,7 +37,26 @@ const F_LAT_FAST: u32 = 65536u;    // this lane change runs at the raised latera
 const F_DENIED: u32 = 131072u;     // held at a junction lane in the last step: not coming for now
 const F_REROUTE: u32 = 524288u;    // asked for a new route, waiting for route_patch
 const F_ABREAST: u32 = 8388608u;   // falling behind the car alongside: each wants the other's lane
+const F_LEAD_STILL: u32 = 16777216u; // the car ahead on the lane, within 15 m, stands: no reason to start yet
 const F_GRANTED: u32 = 262144u;    // won a junction lane in the last step, and goes on holding it
+const HU_ENGAGED: u32 = 1073741824u; // hu_state: has decided to go, is edging or waiting for the gap
+const F_YELLOW_GO: u32 = 1048576u;  // decided at yellow to carry on through the junction
+
+// Human lane change rules, each one switchable: P.hu_flags.
+const HS_COURTESY: u32 = 1u;
+const HS_SHRINK: u32 = 2u;     // accepted gaps shrink towards the end of the lane
+const HS_OFFSET: u32 = 4u;     // neighbouring lanes stop at different places
+const HS_ANTICIPATE: u32 = 8u; // two-leader car following before a change
+const HS_MISS: u32 = 16u;
+const HS_GATE: u32 = 32u;
+const HS_YELLOW: u32 = 64u;
+const HS_TTE: u32 = 128u;
+const HS_START: u32 = 256u;
+const HS_EDGE: u32 = 512u;
+const HS_FOLLOW: u32 = 1024u;
+const HS_MATCH: u32 = 2048u;
+const HS_STEER: u32 = 4096u;
+const HS_PHYS: u32 = 8192u;    // the physical driver takes the human's lane-change decisions: gate, merge start, courtesy
 
 // Link flags.
 const L_CONT: u32 = 1u;
@@ -103,14 +123,35 @@ struct Params {
     lc_carry: u32,
     meter_n: u32,
     lateral_median: f32,
+    hu_k: f32,        // response lag factor over one step
+    hu_rho: f32,      // noise correlation over one step
+    hu_nscale: f32,
+    hu_flags: u32,
+    hu_a: vec4f,      // cooperation, t_miss, exit-clear compliance, stop base
+    hu_b: vec4f,      // stop offset, blinker reaction, urgency distance, cooperative deceleration
+    hu_c: vec4f,      // gate tau, minimum tau, urgent braking, gap model
+    hu_d: vec4f,      // time gap minor at junctions, in roundabouts, T scale, s0 scale
+    hu_e: vec4f,      // critical gap constant shift: lead, lag; safety factor during a change; lowest speed in a corner
+    hu_f: vec4f,      // approach deceleration, its reaction term, stop margin, speed below which a leader counts as standing
+    hu_g: vec4f,      // sees a give-way line from, steering slope at a crawl, standing target at a stop line, slowing for a limit ahead
+    hu_i: vec4f,      // Gipps limit behind a moving leader: deceleration, reaction term. 0 off
+    hu_h: vec4f,      // shortest lane a driver expects to change on; critical gap shifts far from the lane end, lead, lag
+    hm_a: vec4f,      // report 18: urgency time scale; start law constant, time to end, lag
+    hm_b: vec4f,      // start law lead, driver spread; follower weight, its delay
+    hm_c: vec4f,      // follower's braking limit; speed match down, up; gap steering
+    hm_d: vec4f,      // edge median share of a lane, top speed; anticipation time mean, spread
     vis_floor: f32,
     lc_patience: f32,
     gap_spread: f32,
     abreast_b: f32,
     miss_patience: f32,
     miss_short: f32,
-    pad_e: f32,
+    start_react: f32,
+    first_react: f32,
     pad_f: f32,
+    pad_g: f32,
+    pad_h: f32,
+    pad_i: f32,
 }
 
 struct Globals {
@@ -165,6 +206,12 @@ struct Veh {
     occ_right: f32,
     occ_best: f32,
     phys: u32,
+    hu_acc: f32,      // the human's filtered acceleration
+    hu_noise: f32,
+    lc_wait: f32,     // seconds of continuous urgent wish, which is also the blinker's age
+    hu_state: u32,    // bits 0-7 start timer in 1/16 s, 8-15 this lane change's duration in 0.1 s
+    lc_bias: f32,     // extra acceleration while looking for a gap, report 18 B5, B6
+    lc_edge: f32,     // sideways offset before a lane change, left positive, B3
     cj_t_line: f32,    // scheduled time at the stop line
     cj_v_line: f32,    // scheduled speed at the stop line
     cj_v_cruise: f32,
@@ -203,6 +250,7 @@ struct Lane {
     gz: f32,
     curve_v: f32,
     sqrt_r: f32,
+    sqrt_path_r: f32,
     s_curve: f32,
     s_curve_end: f32,
     width: f32,
@@ -366,6 +414,8 @@ struct Trip {
     script: u32,
     best_mask: u32,
     phys: u32,
+    persona: u32,     // unorm8: T, s0, amax, lane change duration
+    persona2: u32,    // unorm8: critical gap factor, yellow time to line, 2 spare
 }
 
 struct TripOut {
@@ -717,6 +767,7 @@ var<private> ph_gap_f: f32;
 var<private> ph_load: f32;
 var<private> ph_power: f32;
 var<private> ph_curved: f32;
+var<private> ph_cert_bound: f32;
 
 fn ph_force(u: f32) -> f32 {
     return ty.i_inv * (min(ty.pw_kg * ph_power / (ph_load * max(u, ty.v_corner)), mu * ty.trac) - ty.road_a - ty.road_c * u * u / ph_load) - ph_gz;
@@ -738,6 +789,20 @@ fn ph_b_follower() -> f32 {
 
 fn ph_b_leader(b_hi: f32) -> f32 {
     return max(min(b_hi, 1.35 * mu * G_ACC) + max(ph_gz, ph_gz_lead), 0.05);
+}
+
+// The sideways distance done at phase u. No v_lat means a human's smooth curve, a quintic.
+fn ph_lateral_u(u: f32, w: f32, v_lat: f32) -> f32 {
+    if (v_lat <= 0.0) { return w * u * u * u * (10.0 + u * (6.0 * u - 15.0)); }
+    return ph_lateral_done(u * (w / v_lat + 1.0), w, v_lat);
+}
+
+fn ph_lateral_done(t: f32, w: f32, v_lat: f32) -> f32 {
+    let total = w / v_lat + 1.0;
+    if (t < 1.0) { return v_lat * (t * 0.5 - sin(3.14159265 * t) / 6.2831853); }
+    if (t <= total - 1.0) { return v_lat * (t - 0.5); }
+    let r = max(total - t, 0.0);
+    return w - v_lat * (r * 0.5 - sin(3.14159265 * r) / 6.2831853);
 }
 
 fn ph_jerk(b: f32) -> f32 {
@@ -790,6 +855,7 @@ fn ph_v_insert(gap_bumper: f32, vl: f32, b_hi: f32) -> f32 {
 fn ph_limit(driver: f32, cert: f32) -> f32 {
     if (!cert_on) { return max(driver, 0.0); }
     if (cert <= 0.0) { return STOP_NOW; }
+    if (cert < driver) { ph_cert_bound = min(ph_cert_bound, cert); }
     return min(max(driver, 0.0), cert);
 }
 
@@ -798,12 +864,13 @@ fn ph_stop_driver(gap_total: f32, v: f32, b: f32, tau: f32) -> f32 {
     if (gap_total <= 0.0) { return 0.0; }
     // At dt above the reaction time the law alone runs past the gap in a step and stops short of nothing.
     // What is driven this step, and what stopping takes in the next, have to fit in the gap.
-    let fits = max(gap_total - v * dt * 0.5, 0.0) / dt;
+    // A human stops by the Gipps rule of hu_target. Under it this limit brought back rear-end contacts at dt 1.
+    let fits = select(max(gap_total - v * dt * 0.5, 0.0) / dt, 1e9, ty.model == MODEL_HUMAN);
     if (gap_total <= v * tau * 0.5) { return min(fits, max(0.0, v - v * v / (2.0 * gap_total) * dt)); }
     let bt = b * tau * 0.5;
     let v1 = -bt + sqrt(bt * bt + b * (2.0 * gap_total - tau * v));
     // The law has its reaction time in it already. Speeding up is limited by the engine and the driver's a_des, not again here.
-    if (v1 > v) { return min(fits, v1); }
+    if (v1 > v && ty.model != MODEL_HUMAN) { return min(fits, v1); }
     return min(fits, max(0.0, v + (v1 - v) * min(dt / tau, 1.0)));
 }
 
@@ -847,6 +914,125 @@ fn tail_b() -> f32 {
     return ty.apparent;
 }
 
+// ---------------------------------------------------------------- human driver
+
+const HU_K1: f32 = 0.011;
+const HU_K2: f32 = 0.52;
+const HU_BMAX: f32 = 4.5;
+const HU_T_START: f32 = 0.6;
+
+var<private> hu_on: bool;
+var<private> hu_t: f32;
+var<private> hu_s0: f32;
+var<private> hu_amax: f32;
+var<private> hu_af: f32;
+var<private> hu_n: f32;
+var<private> hu_k: f32;
+var<private> hu_v0: f32;
+var<private> hu_gap: f32;      // this driver's minor road time gap, at the link being judged
+// Invented numbers, see HUMAN.md. The kernels load them from P, the replay keeps these.
+var<private> hu_standing: f32 = 0.5;
+var<private> hu_tau_approach: f32 = 2.0;
+var<private> hu_overshoot: f32 = 1.4;
+var<private> hu_b_approach: f32 = 1.2;
+var<private> hu_comfort: f32 = 1.5;
+var<private> hu_stop_s0: f32 = 1.0;
+var<private> pl_bias: f32 = 0.0;
+var<private> pl_w_lead: f32 = 1.0;
+var<private> hu_gipps_b: f32 = 3.0;
+var<private> hu_gipps_tau: f32 = 0.5;
+
+// The persona as stored by world.rs: T 0.6-3 s, s0 0.5-6 m, amax 1-3 m/s2. Places have their own medians.
+
+fn hu_load(persona: u32, af: f32, n: f32, k: f32, t_scale: f32, s0_scale: f32) {
+    hu_on = true;
+    let p = unpack4x8unorm(persona);
+    hu_t = (0.6 + p.x * 2.4) * t_scale;
+    hu_s0 = (0.5 + p.y * 5.5) * s0_scale;
+    hu_amax = 1.0 + p.z * 2.0;
+    if (ty.a0 > 0.0) { hu_amax = min(hu_amax, ty.a0); }
+    hu_af = af;
+    hu_n = n;
+    hu_k = k;
+}
+
+fn hu_persona_d(persona: u32) -> f32 { return 4.0 + unpack4x8unorm(persona).w * 18.0; }
+fn hu_critical(persona2: u32) -> f32 { return 0.4 + unpack4x8unorm(persona2).x * 2.1; }
+fn hu_yellow_ttl(persona2: u32) -> f32 { return 2.0 + unpack4x8unorm(persona2).y * 7.0; }
+
+fn hu_a_up(v: f32, v0: f32) -> f32 {
+    let r = min(v, 1.5 * v0) / max(v0, 0.1);
+    let r2 = r * r;
+    return min(hu_amax * max(1.0 - r2 * r2, -1.0) - ph_gz, ph_a_cap(v));
+}
+
+// What the driver wants for a leader `g` ahead by bumper.
+fn hu_target(v: f32, g: f32, vl: f32, v0: f32, s0: f32) -> f32 {
+    if (vl < hu_standing) {
+        // Report 05's feedback was fitted on following moving cars. Up to a queue or a stop line it would
+        // crawl the last few hundred metres and stop short. Gipps' rule for a stopped obstacle does neither.
+        let b = hu_b_approach * hu_tau_approach;
+        let vs = -b + sqrt(b * b + max(hu_b_approach * (2.0 * max(g - s0 - hu_overshoot, 0.0) - v * hu_tau_approach) + vl * vl, 0.0));
+        return clamp(vs - v, -HU_BMAX, hu_a_up(v, v0));
+    }
+    let dv = vl - v;
+    let k2e = HU_K2 * sqrt(15.0 / max(g, 2.0));
+    var a = clamp(HU_K1 * (g - s0 - hu_t * v) + k2e * dv, -HU_BMAX, hu_a_up(v, v0));
+    if (dv < 0.0) { a = min(a, -dv * dv / (2.0 * max(g - 0.5, 0.3))); }
+    return a;
+}
+
+// Report 19 fix 10: pulling away, drivers use what the car has, not the gap feedback, once the gap has opened by about a
+// metre. Sooner, and the start of motion runs back through a queue at 42 km/h, against a real 16-28. With the feedback alone
+// a follower stays 3 m/s under its leader all the way up, and the gap keeps opening.
+fn hu_launch(v: f32, g: f32, vl: f32, v0: f32, s0: f32) -> f32 {
+    if (v >= 7.0 || vl <= v || g <= s0 + 1.0 + hu_t * v) { return 0.0; }
+    return hu_next(v, hu_a_up(v, v0));
+}
+
+// Gipps behind a moving leader: room to stop if it stops, which holds s0 while a queue forms. Apart from hu_target,
+// as only the plan and the replay need it: inlined in every lane change kernel, llvmpipe's JIT took minutes.
+fn hu_leader_limit(v: f32, g: f32, vl: f32, s0: f32) -> f32 {
+    if (hu_gipps_b <= 0.0 || vl >= v || vl < hu_standing) { return 1e9; }
+    let bt = hu_gipps_b * hu_gipps_tau;
+    let vs = -bt + sqrt(bt * bt + max(hu_gipps_b * (2.0 * max(g - s0, 0.0) - v * hu_gipps_tau) + vl * vl, 0.0));
+    return hu_next(v, max(vs - v, -HU_BMAX));
+}
+
+// Every constraint passes through the same filter from the same state, so taking the lowest speed
+// afterwards is the same as taking the lowest target before it.
+fn hu_next(v: f32, a_t: f32) -> f32 {
+    return max(0.0, v + (hu_af + hu_k * (a_t - hu_af) + hu_n) * dt);
+}
+
+// What the driver asked for, from the speed it came out as.
+fn hu_implied(speed: f32, v_safe: f32) -> f32 {
+    return ((max(v_safe, 0.0) - speed) / dt - hu_n - (1.0 - hu_k) * hu_af) / hu_k;
+}
+
+// A stopped driver goes a moment after there is reason to. Noise moves nobody at a stand. Counts steps.
+fn hu_timer(state: u32, speed: f32, v_safe: f32) -> u32 {
+    var steps = 0u;
+    if (hu_implied(speed, v_safe) > 0.05) { steps = min((state & 255u) + 1u, 255u); }
+    return (state & 0xffffff00u) | steps;
+}
+
+fn hu_waiting_to_start(state: u32) -> bool { return f32(state & 255u) * dt < HU_T_START; }
+
+fn hu_filtered(speed: f32, v_safe: f32, v1: f32) -> f32 {
+    if (v1 > 0.0) { return (v1 - speed) / dt - hu_n; }
+    // Held at a stand, the response still builds up towards the start.
+    let a_t = hu_implied(speed, v_safe);
+    return select(0.0, hu_af + hu_k * (a_t - hu_af), a_t > 0.05);
+}
+
+fn hu_noise_next(n: f32, trip: u32, step: u32, rho: f32, nscale: f32) -> f32 {
+    let r = pcg(trip * 2654435761u ^ step);
+    let u1 = (f32(r >> 8u) + 0.5) / 16777216.0;
+    let u2 = f32(pcg(r) >> 8u) / 16777216.0;
+    return rho * n + nscale * sqrt(-2.0 * log(u1)) * cos(6.2831853 * u2);
+}
+
 fn pcg(state: u32) -> u32 {
     let s = state * 747796405u + 2891336453u;
     let w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u;
@@ -859,7 +1045,10 @@ fn rand01(rng: ptr<private, u32>) -> f32 {
 }
 
 fn max_next_speed(v: f32) -> f32 {
-    if (mu > 0.0) { return max(0.0, min(v + ph_a_drv(v) * dt, ty.max_speed)); }
+    if (mu > 0.0) {
+        if (ty.model == MODEL_HUMAN && hu_on) { return min(hu_next(v, hu_a_up(v, hu_v0)), ty.max_speed); }
+        return max(0.0, min(v + ph_a_drv(v) * dt, ty.max_speed));
+    }
     return min(v + ty.accel * dt, ty.max_speed);
 }
 
@@ -1035,7 +1224,10 @@ fn follow_speed(v: f32, gap: f32, vp: f32, bp: f32, leader_cacc: bool, lane_vmax
         var d = follow_driver(v, gap, vp, bp, leader_cacc, lane_vmax, lane_limit);
         // Gipps behind what moves, and where a slowing leader would come to rest is stopped for as drivers stop.
         if (vp < v && ty.model == MODEL_KRAUSS) { d = min(d, ph_stop_comfort(gap + vp * vp / 2.6, v)); }
-        return ph_limit(d, ph_v_cert(gap + ty.min_gap, v, vp, bp, ego_acc));
+        // A human does not leave room for a leader braking harder than the human itself can: at speed that
+        // alone would hold time gaps above 1.2 s, against 0.8 s measured at the 5th percentile on the A39.
+        let leader_b = select(bp, min(bp, ty.b_lo), ty.model == MODEL_HUMAN);
+        return ph_limit(d, ph_v_cert(gap + ty.min_gap, v, vp, leader_b, ego_acc));
     }
     return follow_driver(v, gap, vp, bp, leader_cacc, lane_vmax, lane_limit);
 }
@@ -1064,6 +1256,11 @@ fn follow_driver(v: f32, gap: f32, vp: f32, bp: f32, leader_cacc: bool, lane_vma
             if (vsafe + ov < vc) { return max(0.0, vsafe + ov); }
             return vc;
         }
+        case MODEL_HUMAN: {
+            // Lane change reasoning and advice to others ask what is safe, not what this driver would do.
+            if (!hu_on) { return min(safe_follow(gap, v, vp, bp, false), max_next_speed(v)); }
+            return hu_next(v, hu_target(v, gap + ty.min_gap, vp, lane_vmax, hu_s0));
+        }
         default: {
             return min(safe_follow(gap, v, vp, bp, false), max_next_speed(v));
         }
@@ -1075,9 +1272,18 @@ fn stop_speed(v: f32, gap: f32, decel: f32, relax: bool, lane_vmax: f32) -> f32 
     if (mu > 0.0) {
         var d = min(ph_stop_comfort(gap, v), max_next_speed(v));
         if (ty.model == MODEL_IDM) { d = min(d, stop_driver_idm(v, gap, decel, lane_vmax)); }
+        if (ty.model == MODEL_HUMAN && hu_on) { d = hu_next(v, hu_target(v, gap + 0.5, 0.0, lane_vmax, hu_stop_s0)); }
         return ph_limit(d, ph_v_cert(gap, v, 0.0, 0.0, ego_acc));
     }
     return stop_driver(v, gap, decel, relax, lane_vmax);
+}
+
+// What each model wants for a stop line, in physical mode. The certificate bounds it after.
+fn stop_wish(v: f32, gap: f32, decel: f32, lane_vmax: f32) -> f32 {
+    if (ty.model == MODEL_HUMAN && hu_on) { return hu_next(v, hu_target(v, gap + 0.5, 0.0, lane_vmax, hu_stop_s0)); }
+    var d = min(ph_stop_driver(gap, v, decel, ty.ph_tau), max_next_speed(v));
+    if (ty.model == MODEL_IDM) { d = min(d, stop_driver_idm(v, gap, decel, lane_vmax)); }
+    return d;
 }
 
 fn stop_driver_idm(v: f32, gap: f32, decel: f32, lane_vmax: f32) -> f32 {
@@ -1102,7 +1308,7 @@ fn stop_driver(v: f32, gap: f32, decel: f32, relax: bool, lane_vmax: f32) -> f32
 fn insertion_follow(speed: f32, gap: f32, vp: f32, bp: f32, vmax: f32, leader_cacc: bool) -> f32 {
     if (mu > 0.0) {
         var v = min(speed, ph_v_insert(gap + ty.min_gap, vp, bp));
-        if (ty.model != MODEL_KRAUSS) { v = min(v, insertion_driver(speed, gap, vp, bp, vmax, leader_cacc)); }
+        if (ty.model != MODEL_KRAUSS && ty.model != MODEL_HUMAN) { v = min(v, insertion_driver(speed, gap, vp, bp, vmax, leader_cacc)); }
         return max(v, 0.0);
     }
     return insertion_driver(speed, gap, vp, bp, vmax, leader_cacc);
@@ -1183,8 +1389,9 @@ fn idm_secure_gap(v: f32, vl: f32) -> f32 {
 fn free_speed(v: f32, seen: f32, vt: f32, lane_vmax: f32) -> f32 {
     if (vt < 0.0) { return vt; }
     if (mu > 0.0) {
-        let bh = ty.decel * dt * 0.5;
-        return max(vt, -bh + sqrt(bh * bh + vt * vt + 2.0 * ty.decel * max(seen - v * dt * 0.5, 0.0)));
+        let d = select(ty.decel, hu_comfort, ty.model == MODEL_HUMAN);
+        let bh = d * dt * 0.5;
+        return max(vt, -bh + sqrt(bh * bh + vt * vt + 2.0 * d * max(seen - v * dt * 0.5, 0.0)));
     }
     if (ty.model == MODEL_IDM) {
         let sec = idm_secure_gap(vt, 0.0);

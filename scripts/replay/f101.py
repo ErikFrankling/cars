@@ -67,7 +67,7 @@ def build():
 def run(tag, seed, gpu=False):
     out = f'{D}/{tag}_s{seed}'
     flags = ['--sumo-compat'] if tag == 'sumo' else []
-    log = run_cars(['--net', f'{D}/net.xml', '--routes', f'{D}/routes_{tag}.xml', '--replay', f'{D}/windows.rpl', '--dt', '0.1',
+    log = run_cars(['--net', f'{D}/net.xml', '--routes', f'{D}/routes_{"sumo" if tag == "sumo" else "main"}.xml', '--replay', f'{D}/windows.rpl', '--dt', '0.1',
                     '--begin', 0, '--end', T0 + W * 0.1, '--seed', seed, '--time-to-teleport', '0', '--fcd', f'{out}.fcd.csv',
                     '--fcd-begin', T0 - 0.05, '--fcd-interval', '0.1'] + flags, gpu=gpu, log=f'{out}.log')
     print(log[-600:])
@@ -112,7 +112,7 @@ def score():
         per['spacing_ci95'] = [float(x) for x in np.percentile(bs, [2.5, 97.5])]
         res[name] = per
         print(name, json.dumps(per))
-    for tag in ('main', 'sumo'):
+    for tag in sorted({k.rsplit('_s', 1)[0] for k in res}):
         vals = [r['spacing_rmse_30s'] for k, r in res.items() if k.startswith(tag + '_')]
         if vals:
             res[f'{tag}_over_seeds'] = dict(n=len(vals), mean=float(np.mean(vals)), min=float(np.min(vals)), max=float(np.max(vals)))

@@ -245,7 +245,7 @@ def main():
     res['F102_two_days_mmd'] = mmd_test(XR, XD, gR, gD, False, rng)
     res['F102_two_days_w1'] = w1_table(XR, XD)
     print(json.dumps(res, indent=1), flush=True)
-    for tag in ('main_s0', 'sumo_s0'):
+    for tag in (sys.argv[1:] or ['main_s0', 'sumo_s0']):
         p = f'{D}/{tag}.roll.npz'
         if not os.path.exists(p):
             continue

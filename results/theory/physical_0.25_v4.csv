@@ -1,0 +1,46 @@
+scene,id,quantity,forecast,measured,spread,tolerance,verdict,seeds,driver,dt
+L7,F007,"signal: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+S1,F008,saturation headway from car 10 (s),1.94,2.02,1.92..2.16,5%,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S1,,speed at the line from car 11 on (km/h),,39,,,info,,physical,0.25
+S1,,first car stop distance d0 (m),,1.5,,,info,,physical,0.25
+S2,F009,"t1 after green, own reactions",2.91,2.87,2.86..2.89,0.2 s,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 2, own reactions and E[T]",2.87,2.94,2.91..2.99,0.2 s,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 3, own reactions and E[T]",2.44,2.32,2.22..2.43,0.2 s,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 4, own reactions and E[T]",2.27,2.04,1.95..2.14,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 5, own reactions and E[T]",2.17,2.1,2..2.45,0.2 s,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 6, own reactions and E[T]",2.1,1.93,1.84..2.05,0.2 s,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 7, own reactions and E[T]",2.04,1.79,1.61..1.97,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 8, own reactions and E[T]",2,1.89,1.59..2.16,0.2 s,pass,"S1 arrivals 0-4, sim 1",physical,0.25
+S2,F009,"headway car 9, own reactions and E[T]",2,1.76,1.55..1.94,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.25
+S3,F010,start-up lost time first four cars 50 km/h (s),2.74,2.1,1.43..2.57,0.5 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.25
+L7,F007,"give: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+G1,F016,"HBS right, major 0",1200,959,955..965,10%,FAIL,"G10 arrivals 0-4, sim 1",physical,0.25
+G1,F016,"HBS right, major 400",736,487,461..521,10%,FAIL,"G1400 arrivals 0-4, sim 1",physical,0.25
+G1,F016,"HBS right, major 800",451,230,199..259,10%,FAIL,"G1800 arrivals 0-4, sim 1",physical,0.25
+G1,F016,"HBS right, major 1200",277,87.8,69.6..115,10%,FAIL,"G11200 arrivals 0-4, sim 1",physical,0.25
+G1,,capacity at major 0 400 800 1200 (F017 report 23 816 474 279 162; F018 its tf fixed 1200 696 404 234),,959 487 230 88,,,info,,physical,0.25
+G1,F258,follow-up time logged in one gap (s),3,3.82,3.73..4.1,10%,FAIL,G1 all,physical,0.25
+G1,F103,"Siegloch at own tc 5.9 tf 3.82, major 0",942,959,955..965,10%,pass,"G10 arrivals 0-4, sim 1",physical,0.25
+G1,F103,"Siegloch at own tc 5.9 tf 3.82, major 400",605,487,461..521,10%,FAIL,"G1400 arrivals 0-4, sim 1",physical,0.25
+G1,F103,"Siegloch at own tc 5.9 tf 3.82, major 800",388,230,199..259,10%,FAIL,"G1800 arrivals 0-4, sim 1",physical,0.25
+G1,F103,"Siegloch at own tc 5.9 tf 3.82, major 1200",249,87.8,69.6..115,10%,FAIL,"G11200 arrivals 0-4, sim 1",physical,0.25
+G1,F104,"follow-up from own following: E[T] + s/v_turn, v_turn 3.19",3.81,3.76,3.73..3.77,10%,pass,G1 all,physical,0.25
+G1,F288,"major delivered / offered, major 400",1,0.972,0.9..1.06,5%,pass,"G1400 arrivals 0-4, sim 1",physical,0.25
+G1,F288,"major delivered / offered, major 800",1,0.983,0.957..1.03,5%,pass,"G1800 arrivals 0-4, sim 1",physical,0.25
+G1,F288,"major delivered / offered, major 1200",1,0.972,0.884..1.05,5%,pass,"G11200 arrivals 0-4, sim 1",physical,0.25
+G1,,tf by major flow: 0:3.76 400:3.79 800:3.84 1200:3.90,,0,,,info,,physical,0.25
+G4,F257,critical gap recovered from gaps offered and taken right from minor (s),5.9,8,7.61..8.17,0.3 s,FAIL,G1 q 400 800,physical,0.25
+G3,,"minor through q 800: one major lane, two (veh/h); HBS 355",,"231, 264",,,info,,physical,0.25
+G3,F256,minor through capacity two major lanes over one major lane q 800 (ratio),1,1.14,0.904..1.28,15%,pass,"G3a arrivals 0-4, sim 1; G3b",physical,0.25
+L7,F007,"give2: inserted-arrived-running, contacts 0",exact,-13.7,,1,FAIL,sim 1,physical,0.25
+C-S7,F281,"minor through, major 1200 (arrival count)",277,93.6,69..147,20%,FAIL,"CS71200 arrivals 0-4, sim 1",physical,0.25
+C-S7,F282,"longest head wait, major 1200 (s)",300,220,,<= 0,pass,"CS71200 arrivals 0-4, sim 1",physical,0.25
+C-S7,F281,"minor through, major 1800 (arrival count)",133,17.4,12..27,20%,FAIL,"CS71800 arrivals 0-4, sim 1",physical,0.25
+C-S7,F282,"longest head wait, major 1800 (s)",300,467,,<= 0,FAIL,"CS71800 arrivals 0-4, sim 1",physical,0.25
+C-S7,,"P(head wait>120 s) at 1800, %: table fixed 4.3, falling 0.6 (n=24)",,62.5,,,info,,physical,0.25
+C-S7,F281,"minor through, major 2400 (arrival count)",64,2.4,0..6,20%,FAIL,"CS72400 arrivals 0-4, sim 1",physical,0.25
+C-S7,F282,"longest head wait, major 2400 (s)",300,532,,<= 0,FAIL,"CS72400 arrivals 0-4, sim 1",physical,0.25
+L7,F007,"lc: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.25
+LC1,F021,mean wait to change q 900 v 10 dv 3 h 3.3 (s),32,10.1,8.7..12.2,<= 20%,pass,"LC1 arrivals 0-4, sim 1",physical,0.25
+LC1,F263,target cars passing a changer q 900 dv 3 (per s),0.075,0,0..0,10%,FAIL,"LC1 arrivals 0-4, sim 1",physical,0.25
+LC1,,"speed difference actually seen (m/s), forecast 3",,3.04,,,info,,physical,0.25

@@ -20,6 +20,7 @@ pub enum CfModel {
     /// The automated car of research/truth/09, for coordinated junctions.
     Av,
     Eidm,
+    Human,
 }
 #[derive(Clone, Debug)]
 pub struct VType {
@@ -145,6 +146,7 @@ impl VType {
             "ACC" => CfModel::Acc,
             "CACC" => CfModel::Cacc,
             "EIDM" => CfModel::Eidm,
+            "Human" => CfModel::Human,
             "CarsAV" => CfModel::Av,
             _ => CfModel::Krauss,
         };
@@ -858,4 +860,10 @@ fn procedures(a: &Attrs) -> Result<Trip, String> {
         depart_speed: speed,
         arrival_pos: arrival,
     })
+}
+
+impl Default for VType {
+    fn default() -> Self {
+        Self::parse(&Attrs::default())
+    }
 }

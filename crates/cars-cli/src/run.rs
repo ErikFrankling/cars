@@ -64,6 +64,12 @@ pub struct Args {
     /// One desired speed per step in m/s, one per line, for every vehicle: drive a cycle.
     #[arg(long)]
     speed_trace: Option<PathBuf>,
+    /// Every vehicle type drives as a human: the model of research/truth/05, the rules of research/truth/14.
+    #[arg(long)]
+    humans: bool,
+    /// Human rules to switch off, for measuring each one: courtesy, shrink, offset, anticipate, miss, gate, yellow.
+    #[arg(long, value_delimiter = ',')]
+    human_off: Vec<String>,
     /// Seconds before a stuck lane head teleports. 0 turns it off. Default 300 under --sumo-compat, else off.
     #[arg(long)]
     time_to_teleport: Option<f32>,
@@ -202,6 +208,15 @@ pub fn run(args: Args) {
         ignore_blocker: args.ignore_junction_blocker,
         capacity: args.capacity,
         use_actuation: !args.static_tls,
+        humans: args.humans && !args.sumo_compat,
+        human_flags: cars_core::world::human_flags(&args.human_off),
+        human: {
+            match args.region.as_deref() {
+                Some("sweden") => cars_core::world::HumanParams::sweden(),
+                Some(other) => panic!("no region {other}"),
+                None => cars_core::world::HumanParams::default(),
+            }
+        },
         ..Default::default()
     };
     let t = Instant::now();
@@ -363,6 +378,11 @@ pub fn run(args: Args) {
                 let items: Vec<[f32; 10]> = sim.read(&gpu, &sim.buffers.items, vs.len() as u64 * 8);
                 if let Some((i, v)) = vs.iter().enumerate().filter(|(_, v)| v.lane == lane).max_by(|a, b| a.1.pos.total_cmp(&b.1.pos)) {
                     println!("t={now:.1} {} pos {:.2} v {:.2} acc {:.2} wait {:.1} flags {:#x} own {:#x} n_items {} best_off {} left_space {:.1} blocker {:.1}", demand.ids[demand.trips[world.trip_source[v.trip as usize] as usize].id as usize], v.pos, v.speed, v.acc, v.wait, v.flags, v.lc_own, v.n_items, v.best_off, v.left_space, v.blocker);
+                    let route: Vec<u32> = sim.read(&gpu, &sim.buffers.routes, v.route_end as u64);
+                    let ahead: Vec<&str> = route[v.route_i as usize..v.route_end as usize].iter().take(5).map(|&e| net.edges[e as usize].id.as_str()).collect();
+                    println!("      route {} of {}: {ahead:?}", v.route_i, v.route_end);
+                    let near: Vec<String> = vs.iter().filter(|o| o.lane == lane).map(|o| format!("{:.1}/{:.2}b{:.2}e{:.2}a{:.2}", o.pos, o.speed, o.lc_bias, o.lc_edge, o.acc)).collect();
+                    println!("      detail {near:?}");
                     let ed = net.lanes[lane as usize].edge as usize;
                     for li in 0..net.edges[ed].lane_count {
                         let l2 = net.edges[ed].first_lane + li;
@@ -562,6 +582,7 @@ pub fn run(args: Args) {
     if mu > 0.0 {
         let mut finished = physics.finish(&sim, &gpu, &net, &world, &heavy, &c, done, vehicle_updates as f64 / wall / 1e6, wall);
         eprintln!("{}", finished.text);
+        finished.json["stuck_like_teleports"] = serde_json::json!({"jam": c[13], "yield": c[14], "waiting_for_a_gap": c[15]});
         if let Some(r) = &rerouter {
             let missed = serde_json::json!({
                 "asked": c[cars_core::world::C_HU_REROUTE], "rerouted": r.patched, "sent_out": r.lost_outside, "no_way": r.failed, "cars": r.lost_cars(),
@@ -569,6 +590,16 @@ pub fn run(args: Args) {
             });
             eprintln!("missed turns: {missed}");
             finished.json["missed_turns"] = missed;
+        }
+        if let (true, Some(r)) = (args.humans, &rerouter) {
+            let h = serde_json::json!({
+                "yield_steps": c[cars_core::world::C_HU_YIELD],
+                "missed_turns": c[cars_core::world::C_HU_REROUTE], "lost_inside": r.patched, "lost_outside": r.lost_outside, "lost_stuck": r.failed, "lost_cars": r.lost_cars(),
+                "lost_per_1000_trips": 1000.0 * r.lost_cars() as f64 / (c[2] as f64).max(1.0), "arena_edges": r.arena_used(),
+                "guard_steps": c[cars_core::world::C_HU_GUARD], "human_steps": c[cars_core::world::C_HU_STEPS], "rules_off": args.human_off,
+            });
+            eprintln!("humans: {h}");
+            finished.json["humans"] = h;
         }
         if let Some(p) = &args.report_json {
             std::fs::write(p, serde_json::to_string_pretty(&finished.json).unwrap()).expect("report json");
