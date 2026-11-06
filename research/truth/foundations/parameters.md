@@ -36,3 +36,18 @@ Physical motion (Krauss with the physics certificate, `mu > 0`) with decisions o
 | Yellow decision `hu_can_stop` | Physical's `ph_yellow_go` uses the same report 05 logistic | none |
 | Corner speed `hu_corner` | Physical's curve limit gives 2.9 m/s at the 5.6 m corner of G1, report 19 measures 2.8 at 5-8 m | G1 F234 |
 | Swedish free speed table | Region only | none |
+
+### Provisional values and the levelX / SinD measurement that would replace each
+
+| Parameter | Provisional because | Replaced by |
+|---|---|---|
+| `sigma` 0.2 (dawdle) | set for a capacity band, no source | highD: speed noise of free drivers and of steady followers (residual about a smooth speed profile); exiD the same at lower speeds |
+| `gap_spread` 0.3 | fitted by eye to a p5 of report 19 | highD: per-driver median time gap over stable following episodes, its spread across drivers (and with it a second check of `tau` 1.4 against the 2.3 s median F109 measured on I-90/94) |
+| `start_react` 1.0 s, `first_react` 1.62 s | measured at one German site on a Sunday (DLR UT) | SinD: four signalised intersections with signal logs, leader-start to follower-start and green to first start; inD for give-way starts (no signals) |
+| HBS critical gaps 5.9 / 5.5 / 6.7 / 6.5 s | norm values, not measured on our data | inD (Aachen priority junctions): gaps offered and taken per movement, maximum likelihood (the estimator G4 uses); rounD for roundabout entry (report 05's 2.95 s from Swiss sites to be checked) |
+| Give-way follow-up (now 3.8 s from following at a 4 m corner) | follows from T and corner speed; HBS 3.0 is a norm | inD: headway between successive minor cars entering in one major gap, and their speed in the corner |
+| Courtesy share 0.4, report 14 let-in model | swept on I-80 for the human driver | exiD and highD on-ramps: share of target-lane followers that open a gap per merge chance, braking they apply |
+| Merge start law intercept 0.4, driver term 0.5 | intercept tuned in closed loop on I-80/US-101, driver term invented | exiD entries and lane drops: start of sideways motion against time to the lane end and gaps, refit on held-out sites |
+| Gate floor, certificate x 0.35 | fitted to I-80 / US-101 p25 lags | exiD and highD: lag and lead at the start of a mandatory change |
+| Launch a0 2.02 - 0.125 v | Long 2000, adapted; replay found main launching at 2.6 against DLR UT's 1.8 | SinD: first-car peak acceleration and time to 5 and 10 m/s after green |
+| Corner speed: physical curve limit with lateral median 2.2 m/s2 | report 19's turning set | inD and rounD: speed against radius through the junction |
