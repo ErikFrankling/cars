@@ -63,3 +63,11 @@ Most new fails have one cause, the same as the 30 s drift: **the law closes an o
 3. **Noise:** German drone tables and TGSIM disagree (F305). The classifier's jerk cue says the white part is too much.
 4. **N9 cars left standing** and the extra C-S0 locks: find the mechanism (`cars why`).
 5. SinD Xi'an launch; classifier floors for DLR HT and highD.
+
+## Round 2, 7 November ([ROUND2.md](ROUND2.md))
+
+Noise 0.38 m/s² over 0.75 s (the tracker's part removed), desired gap s0 + T v from standstill, k_p kept at 0.025 (1, 10 and 30 s agree), roundabout critical gap 4.97 s. T0 at dt 0.25: 100 pass, 99 fail of 199, against round 1's 91/95 and the one driver's 142/60. L1 1,104 / 1,052 veh/h, S1 2.98 s. Responsible: the follower's acceleration in the first 4 s of a launch, which falls 1.5-2 m behind recorded followers behind the same leaders. Not tuned. Held-out set not opened. Not the default.
+
+## Round 3, 7 November ([STRUCTURE.md](STRUCTURE.md))
+
+Seven structures, each fitted on all non-held-out patterns jointly, scored against F800's intervals. None survives (7-33 misses each; round 2's own law misses 13). The best: two regimes, with 7 misses; the saturating closing gain K/(g + g_1), with 9 misses, gives L1 1,776 / 1,639 veh/h at 50 / 100 km/h and S1 2.06 s in the twin, but closes open gaps at speed twice as fast as recorded and stops 2.1 m behind a stopped leader. Nothing went into the kernel; the held-out set was not opened; the measured driver stays off.

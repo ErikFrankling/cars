@@ -386,7 +386,8 @@ def residual_cycles(S, greens, cycle):
     return out
 
 
-def signals_file(day, drone, hhmm, E, J, apps):
+def signals_file(day, drone, hhmm, E, J, apps, windows=None):
+    """windows: edge -> (cmin, cmax), the cycle range to fit in (a controller's cycle known from its other approaches)."""
     import signals as SG
     from scipy.spatial import cKDTree
     A = samples(day, drone, hhmm)
@@ -405,7 +406,7 @@ def signals_file(day, drone, hhmm, E, J, apps):
         for v in veh:
             v['s'] = v['s'] + shift
         C, S = SG.events(veh)
-        fx = SG.fit_fixed(C, S, D_START, dict(arc=D_END_ARC, p80=0.0), t0 + 60, t1 - 60)
+        fx = SG.fit_fixed(C, S, D_START, dict(arc=D_END_ARC, p80=0.0), t0 + 60, t1 - 60, *((windows or {}).get(eid, (40.0, 180.0))))
         if not fx:
             continue
         greens = [g for g in fx['greens']['arc'] if t0 + 30 < g[0] < t1 - 120]

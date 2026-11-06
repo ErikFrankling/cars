@@ -27,6 +27,7 @@ DV_MAX = 1.5        # closing response flattens above +1.5 m/s
 E_NEAR = 0.5        # no braking until 0.5 s too close
 G_MIN = 1.0         # the inverse time-to-collision term is not evaluated closer than this, m
 A0, A1, AF = 2.02, 0.125, 0.7   # vehicle table (Long 2000); a0 refitted on launches below
+LOWGAP = os.environ.get('MD_LOWGAP', '1') == '1'   # round 2's low-speed desired gap; 0 gives round 1's law
 
 
 def t_gap(v):
@@ -35,7 +36,12 @@ def t_gap(v):
 
 def command(v, g, vl, al, p, f=1.0, a_cap=None):
     K, ca, kg, kp = p[:4]
-    gstar = np.maximum(S0, f * t_gap(v) * v)
+    if LOWGAP:
+        # round 2 (queues.json, F611): spacing s0 + T v from standstill; equal to T(v) v above 6.5 m/s
+        vt = np.maximum(v, 6.5)
+        gstar = S0 + f * (t_gap(vt) - S0 / vt) * v
+    else:
+        gstar = np.maximum(S0, f * t_gap(v) * v)
     e = (g - gstar) / np.maximum(v, 1.0)
     G = -kg * np.maximum(0.0, -e - E_NEAR) + kp * np.maximum(0.0, e)
     a = K * np.minimum(vl - v, DV_MAX) / np.maximum(g, G_MIN) + ca * al + G

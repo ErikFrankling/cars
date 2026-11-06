@@ -1,0 +1,32 @@
+scene,id,quantity,forecast,measured,spread,tolerance,verdict,seeds,driver,dt
+L7,F007,"n9: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+N9,F047,"offset 0: cars per cycle, own S(g+y-l)",21.5,13.1,12.9..13.2,10%,FAIL,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F293,offset 0: longest stand on link or approach (s),180,48.4,47..53,<= 0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F294,offset 0: cars left 1090 s after the feed ends,0,101,99..103,0,FAIL,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,,offset 0: flow late over early (1 = no decay); link lane (m),,1.03; 20.0,,,info,,measured,0.25
+N9,,"offset 0: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)",,"500, 397, 101; 1.00",,,info,,measured,0.25
+N9,F047,opposed: cars per cycle,3,3.01,2.89..3.09,10%,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F293,opposed: longest stand on link or approach (s),180,59.6,54..63,<= 0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F294,opposed: cars left 1090 s after the feed ends,0,0.2,0..1,0,FAIL,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,,opposed: flow late over early (1 = no decay); link lane (m),,0.96; 20.0,,,info,,measured,0.25
+N9,,"opposed: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)",,"90, 90, 0; 0.95",,,info,,measured,0.25
+N9,F291,"Hamburg +2 overlap .65: cars per cycle, own S(g+y-l)",14.5,9.21,9..9.51,10%,FAIL,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F293,Hamburg +2 overlap .65: longest stand on link or approach (s),180,60.6,60..61,<= 0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F294,Hamburg +2 overlap .65: cars left 1090 s after the feed ends,0,44,40..48,0,FAIL,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,,Hamburg +2 overlap .65: flow late over early (1 = no decay); link lane (m),,0.99; 20.0,,,info,,measured,0.25
+N9,,"Hamburg +2 overlap .65: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)",,"325, 281, 44; 0.99",,,info,,measured,0.25
+N9,F292,"Hamburg +2 end +4: cars per cycle, own S(g+y-l)",21.5,13.4,13.1..13.7,10%,FAIL,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F293,Hamburg +2 end +4: longest stand on link or approach (s),180,47.6,47..48,<= 0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F294,Hamburg +2 end +4: cars left 1090 s after the feed ends,0,87.4,76..94,0,FAIL,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,,Hamburg +2 end +4: flow late over early (1 = no decay); link lane (m),,0.99; 20.0,,,info,,measured,0.25
+N9,,"Hamburg +2 end +4: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)",,"500, 413, 87; 1.05",,,info,,measured,0.25
+N9,F295,"Hamburg, 2 lanes, lane wish: cars per cycle",13,15.3,14.7..15.8,>= 0,pass,"N9w arrivals 0-4, sim 1",measured,0.25
+N9,F293,"Hamburg, 2 lanes, lane wish: longest stand on link or approach (s)",180,61.6,60..65,<= 0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F294,"Hamburg, 2 lanes, lane wish: cars left 1090 s after the feed ends",0,0,0..0,0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,,"Hamburg, 2 lanes, lane wish: flow late over early (1 = no decay); link lane (m)",,1.07; 27.7,,,info,,measured,0.25
+N9,,"Hamburg, 2 lanes, lane wish: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)",,"325, 326, 0; 0.00",,,info,,measured,0.25
+N9,F295,"opposed, 2 lanes, lane wish: cars per cycle",13,7.89,7.84..7.97,>= 0,FAIL,"N9x arrivals 0-4, sim 1",measured,0.25
+N9,F293,"opposed, 2 lanes, lane wish: longest stand on link or approach (s)",180,67.4,60..73,<= 0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F294,"opposed, 2 lanes, lane wish: cars left 1090 s after the feed ends",0,0,0..0,0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,,"opposed, 2 lanes, lane wish: flow late over early (1 = no decay); link lane (m)",,1.06; 27.7,,,info,,measured,0.25
+N9,,"opposed, 2 lanes, lane wish: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)",,"180, 180, 0; 0.04",,,info,,measured,0.25

@@ -118,6 +118,13 @@ Three fixes were needed before this, each found by F100:
 
 **F515**, a first all-cars-simulated run, fails as a harness check: forced boundary entries stack onto full edges, and unforced ones mostly never get in (29-32% enter). Details and the next step are in RESULTS.md.
 
+**Third round (7 November, RESULTS.md).** The scene builder now also:
+- reads the signals of every incoming edge of a signalised junction of the scene's own net (`signals_scene.csv`), with straight-on predecessors put in front of edges under 60 m, and refits a read whose cycle is off its controller's by more than 1 s at the controller's cycle. Drone 8: 70 of 95 links read (17 of 87 before). Every link has a class in `links.csv`: read, no traffic, no conflicting traffic and nobody stops, never stopped, unreadable;
+- adds lane connections that 3 or more recorded cars use and the net lacks (`observed.con.xml`, 12 on drone 8), then matches again: car movements from a lane with no connection to their exit fall from 609 to 110 of 12,583;
+- keeps a replayed vehicle on a lane only while it is on a car path (README, "Vehicles off the car path"): 21% of motorcycle samples and 8.5% of the rest are off it;
+- stitches a simulated car's later pieces onto its route (650 of 1,091 on drone 8);
+- writes `entry.rpl` (F520), `mix.rpl` and `mix_keep2w.rpl` with checked entries, `entries.csv` (where and when each simulated car enters, and why), `stitched.csv` (route, joined pieces, recorded exit point).
+
 ## Rerun
 
 ```sh
@@ -130,4 +137,13 @@ python3 -I scripts/replay/pneuma.py oversaturation
 python3 -I scripts/replay/pneuma_scene.py build 8 20181029 0900
 python3 -I scripts/replay/pneuma_scene.py f100 8 20181029 0900 --gpu
 python3 -I scripts/replay/pneuma_scene.py mix 8 20181029 0900
+# third round (RESULTS.md); build reads signals the first time or with --signals, and rebuilds once with observed connections
+python3 -I scripts/replay/pneuma_scene.py build 8 20181029 0900 --signals
+python3 -I scripts/replay/pneuma_scene.py f100 8 20181029 0900 --gpu
+python3 -I scripts/replay/pneuma_scene.py entry 8 20181029 0900                      # F520
+python3 -I scripts/replay/pneuma_scene.py mix 8 20181029 0900 --name=mix             # F524 (5 seeds; --seeds=0,1 for fewer; --score rescoring)
+python3 -I scripts/replay/pneuma_scene.py mix 8 20181029 0900 --name=mix_keep2w      # F521 (b)
+python3 -I scripts/replay/pneuma_scene.py build 6 20181029 0900 --signals && python3 -I scripts/replay/pneuma_scene.py mix 6 20181029 0900 --name=mix   # F525
+for d in 20181024 20181030 20181101; do python3 -I scripts/replay/pneuma_scene.py build 8 $d 0900 --signals; done
+python3 -I scripts/replay/t3_floor.py 8 0900 20181029 20181024,20181030,20181101      # F526
 ```

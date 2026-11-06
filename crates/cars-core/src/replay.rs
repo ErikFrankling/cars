@@ -3,8 +3,9 @@
 //! A `.rpl` file, little endian, written by scripts/replay/rpl.py:
 //! `RPL1` or `RPL2`, u32 lanes, per lane (u16 length, id bytes), u32 tracks, per track (u16 length, trip id bytes,
 //! f32 t0, f32 key_dt, f32 release (seconds, as --begin), u32 keys, per key (u32 lane in the list above, f32 pos, f32 speed,
-//! and in `RPL2` f32 lateral offset from the lane's centreline, left positive)).
-//! A track with no keys only forces its trip's insertion; it is simulated from its depart on.
+//! and in `RPL2` and `RPL3` f32 lateral offset from the lane's centreline, left positive)). `RPL3` adds a u32 of flags
+//! after the release time: bit 0, a checked entry (`DEPART_CHECKED`), else the insertion is forced.
+//! A track with no keys only sets its trip's insertion; it is simulated from its depart on.
 
 use crate::demand::Demand;
 use crate::net::Net;
@@ -13,6 +14,9 @@ use rustc_hash::FxHashMap;
 
 /// `Trip::depart_speed_mode` of a replayed trip: recorded speed, inserted without any check.
 pub const DEPART_REPLAY: u32 = 7;
+/// A recorded entry at the area's edge: recorded lane and speed, the speed lowered to a safe one if need be,
+/// refused only when the spot is taken. It waits in its lane's own queue; the delay is a result.
+pub const DEPART_CHECKED: u32 = 8;
 const NONE: u32 = u32::MAX;
 
 struct Reader<'a> {
@@ -46,6 +50,7 @@ pub struct Attached {
     pub keys: usize,
     pub missing_trips: usize,
     pub forced: usize,
+    pub checked: usize,
 }
 
 /// Reads `path` and puts its tracks on `world`: replayed trips insert unchecked and get their own queues.
@@ -55,9 +60,10 @@ pub fn attach(world: &mut World, net: &Net, demand: &Demand, path: &std::path::P
     }
     let bytes = std::fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
     let mut r = Reader { b: &bytes, at: 0 };
-    let lateral = match r.take(4)? {
-        b"RPL1" => false,
-        b"RPL2" => true,
+    let (lateral, flagged) = match r.take(4)? {
+        b"RPL1" => (false, false),
+        b"RPL2" => (true, false),
+        b"RPL3" => (true, true),
         _ => return Err("not a replay file".into()),
     };
     let n_lanes = r.u32()? as usize;
@@ -72,10 +78,13 @@ pub fn attach(world: &mut World, net: &Net, demand: &Demand, path: &std::path::P
     }
     let mut rw = ReplayWorld { trip_track: vec![NONE; world.trips.len()], ..Default::default() };
     let mut missing = 0;
+    let mut n_checked = 0;
     let n_tracks = r.u32()?;
     for _ in 0..n_tracks {
         let name = r.str()?;
-        let (t0, key_dt, release, n) = (r.f32()?, r.f32()?, r.f32()?, r.u32()?);
+        let (t0, key_dt, release) = (r.f32()?, r.f32()?, r.f32()?);
+        let flags = if flagged { r.u32()? } else { 0 };
+        let n = r.u32()?;
         let first = rw.keys.len() as u32;
         let wt = trip_of_name.get(name.as_str()).copied();
         let (route_start, route_end) = wt.map_or((0, 0), |t| (world.trips[t as usize].route_start, world.trips[t as usize].route_end));
@@ -101,14 +110,30 @@ pub fn attach(world: &mut World, net: &Net, demand: &Demand, path: &std::path::P
         rw.trip_track[wt as usize] = rw.tracks.len() as u32;
         let rel = |t: f32| if t >= 1e37 { t } else { (t as f64 - begin as f64) as f32 };
         rw.tracks.push(GpuReplayTrack { first, n, t0: rel(t0), key_dt: key_dt.max(1e-3), release: rel(release), pad: [0; 3] });
-        world.trips[wt as usize].depart_speed_mode = DEPART_REPLAY;
+        let checked = flags & 1 != 0;
+        world.trips[wt as usize].depart_speed_mode = if checked { DEPART_CHECKED } else { DEPART_REPLAY };
+        if checked {
+            n_checked += 1;
+        }
     }
-    // Replayed trips get queues of their own, so a blocked simulated entry never holds one back.
+    // Forced trips get queues of their own, so a blocked entry never holds one back; checked entries get one
+    // per lane, so a car waiting on one lane holds back only the cars behind it on that lane.
     let (old_q, old_t) = (std::mem::take(&mut world.queues), std::mem::take(&mut world.queue_trips));
+    let modes: Vec<(u32, i32)> = world.trips.iter().map(|t| (t.depart_speed_mode, t.depart_lane)).collect();
+    let mode = |t: u32| modes[t as usize].0;
     for q in old_q {
         let list = &old_t[q.next as usize..q.end as usize];
-        for forced in [true, false] {
-            let part: Vec<u32> = list.iter().copied().filter(|&t| (rw.trip_track[t as usize] != NONE) == forced).collect();
+        let mut parts: Vec<Vec<u32>> = vec![
+            list.iter().copied().filter(|&t| rw.trip_track[t as usize] != NONE && mode(t) == DEPART_REPLAY).collect(),
+            list.iter().copied().filter(|&t| rw.trip_track[t as usize] == NONE).collect(),
+        ];
+        let mut lanes: Vec<i32> = list.iter().filter(|&&t| mode(t) == DEPART_CHECKED).map(|&t| modes[t as usize].1).collect();
+        lanes.sort_unstable();
+        lanes.dedup();
+        for l in lanes {
+            parts.push(list.iter().copied().filter(|&t| mode(t) == DEPART_CHECKED && modes[t as usize].1 == l).collect());
+        }
+        for part in parts {
             if part.is_empty() {
                 continue;
             }
@@ -119,7 +144,7 @@ pub fn attach(world: &mut World, net: &Net, demand: &Demand, path: &std::path::P
     }
     world.params.n_queues = world.queues.len() as u32;
     rw.cfg = GpuReplayCfg { begin, n_tracks: rw.tracks.len() as u32, n_trips: world.trips.len() as u32, pad: 0 };
-    let out = Attached { tracks: rw.tracks.len(), keys: rw.keys.len(), missing_trips: missing, forced: rw.tracks.len() };
+    let out = Attached { tracks: rw.tracks.len(), keys: rw.keys.len(), missing_trips: missing, forced: rw.tracks.len() - n_checked, checked: n_checked };
     world.replay = Some(rw);
     Ok(out)
 }

@@ -2790,6 +2790,8 @@ fn try_insert(q: u32, trip_i: u32, t: Trip) -> bool {
     var patch_speed = false;
     switch t.depart_speed_mode {
         case 1u, 7u: { speed = t.depart_speed; }
+        // A recorded entry at a replay area's edge: lowered if unsafe, refused only when the spot is taken.
+        case 8u: { speed = t.depart_speed; patch_speed = true; }
         case 2u: { speed = rand01(&ins_rng) * vmax; patch_speed = true; }
         case 3u: { speed = vmax; patch_speed = true; }
         case 4u: { speed = vmax; }

@@ -178,7 +178,10 @@ Branch t3/f0bdfad3, dt 0.25, llvmpipe, 5 seeds unless said. Driver values (T, re
 - Which fixes change ordinary traffic: the give-way rule (F401) at every link with a critical gap (priority, stop, right-before-left, 'g' greens); the zipper rule (F400) at zipper nodes; the ring rule (F402) at roundabout entries; exit_comply (F406) only through the arbiter's keep-clear test, which now applies to the 10% of drivers the old 0.9 skipped (check_rewind holds them as before). Lanes and signals without such links are byte for byte the same as before (S1-S8 and L1-L4 traces compared, same binary).
 - Open, with what was tried: lane-drop share 0.70 (C-S6, LC3; two rounds in lc.wgsl, reverted); LC6 drop 22% (friction at the queue head, no line found); LC5 dv 10; G1 and G8 capacity short by the 1.7 s start of the first car of a gap (merge hold plus launch, the launch is the other job's); C-S8 at b 1; G9 right-before-left 525 against 230.
 
-## 6. Measured lane changes, 7 November
+## 6. The measured driver, round 2, 7 November
+
+`scenes.py --driver measured` now passes `--tune measured=1`: the merge made the driver off by default and the flag had been left empty. N9's "cars left" line counted FCD rows (about ten per car); it counts cars now, and the measured driver's 95-101 left on offset 0 are backlog from its lower discharge, not a lock (F600, F601). Round 2 driver (noise without the tracker, desired gap s0 + T v from standstill, roundabout critical gap 4.97 s for both physical drivers): 100 pass, 99 fail of 199. L1 is 1,104 / 1,052 veh/h. The part responsible is the follower's acceleration in the first 4 s of a launch. Details: `research/truth/measure/ROUND2.md`.
+## 7. Measured lane changes, 7 November
 
 Branch t3/7c78c015, dt 0.25, GPU, `--tune lc_measured=1` (off by default); `measure/LANECHANGE.md` has the model, F720-F728 the forecasts.
 
