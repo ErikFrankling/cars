@@ -1974,6 +1974,20 @@ class N5:
             c1.append(x[x.edge == f'N5c{r}.thr'].entered.sum() * 3600 / 850)
             c0.append(x[(x.edge == f'N5c{r}.ex1') & (x.begin >= 600)].entered.sum() * 3600 / 550)
         book.check('N5', 'F273', 0, a, seeds=seedtag('N5a'))
+        # The exit link holds only floor(L / s) cars, fewer than a green discharges: per cycle it passes what it stored
+        # plus what the blocked lane refills once the start wave has passed the stored cars (first_react + N start_react),
+        # one in 1/beta of them at the own discharge headway. FIFO: the total is that over beta.
+        ex, th = [], []
+        for r in range(SEEDS):
+            x = e[(e.begin >= 600) & (e.begin < 1150)]
+            ex.append(x[x.edge == f'N5a{r}.ex1'].entered.sum() * 3600 / 550)
+            th.append(x[x.edge == f'N5a{r}.thr'].entered.sum() * 3600 / 550)
+        Lx = run.lane_len(f'N5a0', 'ex1_0')
+        N = math.floor(Lx / 7.5)
+        refill = 0.2 * max(15 + 3 - 2.1 - (FIRST_REACT + N * START_REACT), 0) / 2.0
+        fx = (N + refill) * 3600 / 90
+        book.check('N5', 'F404', 0, ex, quantity=f'exit flow, {N} stored on {Lx:.0f} m + refill {refill:.2f} per cycle (veh/h)', forecast=fx, tol='10%', seeds=seedtag('N5a'))
+        book.check('N5', 'F404', 1, np.array(th) / np.maximum(ex, 1), quantity='FIFO: through over exit flow', forecast=4.0, tol='15%', seeds=seedtag('N5a'))
         book.check('N5', 'F274', 0, b, seeds=seedtag('N5b'), tol='30')
         book.check('N5', 'F275', 0, c1, quantity='3 lanes, other two lanes (veh/h)', seeds=seedtag('N5c'))
         book.check('N5', 'F275', 1, c0, quantity='3 lanes, closed lane (veh/h)', seeds=seedtag('N5c'), tol='30')
