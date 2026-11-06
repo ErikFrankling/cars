@@ -5,6 +5,9 @@ Each window runs on its own one-lane edge, so all 4,955 run side by side in one 
     python3 -I scripts/replay/f101.py run main 0 [--gpu]    # main's driver, physical mode, seed 0
     python3 -I scripts/replay/f101.py run sumo 0            # --sumo-compat Krauss with speedDev 0: the F105 cross-check
     python3 -I scripts/replay/f101.py score                 # every run in the folder
+    F101_SITE=I294L1 python3 -I scripts/replay/f101.py build  # the same windows from another TGSIM site, in f101_I294L1/
+    F101_FLAGS='--tune measured=0' ...                      # extra flags for cars run
+    F101_COND=1 ...                                         # desired speed cut below at the release speed (routes_cond.xml)
 """
 import sys, os, json, glob
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -13,18 +16,27 @@ sys.path.insert(0, HERE)
 from rpl import *
 import numpy as np, pandas as pd
 
-D = os.path.join(OUT, 'f101')
+SITE = os.environ.get('F101_SITE', 'I90mov')
+D = os.path.join(OUT, 'f101' if SITE == 'I90mov' else f'f101_{SITE}')
+MAXN = int(os.environ.get('F101_MAXN', '0')) or None
 T0 = 1.0          # window start in simulation time
 X0 = 20.0         # follower's start on its edge
-W = 300           # 30 s at 0.1 s, as report 05
+W = int(os.environ.get('F101_W', '300'))   # 30 s at 0.1 s, as report 05; highD's 13 s tracks take 100
 
 
 def windows():
-    """Report 05's I-90/94 moving test set, cut by its own code from its own pair cache."""
+    """Report 05's I-90/94 moving test set, cut by its own code from its own pair cache, or windows prepared by
+    heldout_windows.py (source.npz in the folder)."""
+    if os.path.exists(f'{D}/source.npz'):
+        from types import SimpleNamespace
+        z = np.load(f'{D}/source.npz')
+        n = z['s'].shape[1]
+        return SimpleNamespace(N=n, s=z['s'], v=z['v'], vl=z['vl'], xl=z['xl'],
+                               meta=dict(vref=np.full(n, float(z['vref'])), run=z['run'], t=z['t'], fid=z['fid'], lid=z['lid']))
     os.chdir(REPO)
     sys.path.insert(0, os.path.join(REPO, 'research/truth/scripts'))
     from opus_windows import windows as cut
-    return cut('I90mov')
+    return cut(SITE, maxn=MAXN)
 
 
 def build():
@@ -60,14 +72,25 @@ def build():
             for t, tid, vt, i, pos, v in sorted(trips, key=lambda r: (r[0], r[1])):
                 f.write(f'  <trip id="{tid}" type="{vt}" depart="{t:.1f}" from="w{i}" to="w{i}" departLane="0" departPos="{pos:.3f}" departSpeed="{max(v, 0):.3f}"/>\n')
             f.write('</routes>\n')
+    # The follower drew its desired speed from the population, but it is one who drove at its release speed: the measured
+    # spread (DRIVER.md, CV 0.17) cut below at that speed over the lane's. Nothing after the release is used.
+    with open(f'{D}/routes_cond.xml', 'w') as f:
+        f.write('<routes>\n  <vType id="lead" length="5" lcStrategic="-1" lcCooperative="0" lcSpeedGain="0" lcKeepRight="0"/>\n')
+        for i in range(N):
+            lo = min(max(float(b.v[0, i]), 0.0) / vref, 1.3)
+            f.write(f'  <vType id="drv{i}" carFollowModel="Krauss" speedFactor="normc(1,0.17,{lo:.4f},2)"/>\n')
+        for t, tid, vt, i, pos, v in sorted(trips, key=lambda r: (r[0], r[1])):
+            f.write(f'  <trip id="{tid}" type="{vt if vt == "lead" else f"drv{i}"}" depart="{t:.1f}" from="w{i}" to="w{i}" departLane="0" departPos="{pos:.3f}" departSpeed="{max(v, 0):.3f}"/>\n')
+        f.write('</routes>\n')
     np.savez_compressed(f'{D}/windows.npz', s=b.s[:W], v=b.v[:W], vl=b.vl[:W], run=b.meta['run'], t=b.meta['t'], fid=b.meta['fid'], lid=b.meta['lid'], vref=vref)
     print('windows', N, 'vref', vref)
 
 
 def run(tag, seed, gpu=False):
     out = f'{D}/{tag}_s{seed}'
-    flags = ['--sumo-compat'] if tag == 'sumo' else []
-    log = run_cars(['--net', f'{D}/net.xml', '--routes', f'{D}/routes_{"sumo" if tag == "sumo" else "main"}.xml', '--replay', f'{D}/windows.rpl', '--dt', '0.1',
+    flags = (['--sumo-compat'] if tag == 'sumo' else []) + os.environ.get('F101_FLAGS', '').split()
+    routes = 'sumo' if tag == 'sumo' else ('cond' if os.environ.get('F101_COND') else 'main')
+    log = run_cars(['--net', f'{D}/net.xml', '--routes', f'{D}/routes_{routes}.xml', '--replay', f'{D}/windows.rpl', '--dt', '0.1',
                     '--begin', 0, '--end', T0 + W * 0.1, '--seed', seed, '--time-to-teleport', '0', '--fcd', f'{out}.fcd.csv',
                     '--fcd-begin', T0 - 0.05, '--fcd-interval', '0.1'] + flags, gpu=gpu, log=f'{out}.log')
     print(log[-600:])
@@ -118,7 +141,7 @@ def score():
             res[f'{tag}_over_seeds'] = dict(n=len(vals), mean=float(np.mean(vals)), min=float(np.min(vals)), max=float(np.max(vals)))
             print(tag, res[f'{tag}_over_seeds'])
     os.makedirs(os.path.join(REPO, 'research/truth/replay'), exist_ok=True)
-    json.dump(res, open(os.path.join(REPO, 'research/truth/replay/f101.json'), 'w'), indent=1)
+    json.dump(res, open(os.path.join(REPO, 'research/truth/replay', 'f101.json' if SITE == 'I90mov' else f'f101_{SITE}.json'), 'w'), indent=1)
 
 
 if __name__ == '__main__':

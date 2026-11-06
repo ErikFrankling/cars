@@ -78,6 +78,7 @@ const C_HU_GUARD: u32 = 37u;
 const C_HU_STEPS: u32 = 39u;
 const STUCK_AFTER: f32 = 300.0;   // SUMO's time to teleport, for counting what would have
 const F_STUCK_COUNTED: u32 = 2097152u;
+const F_GAP_TAKEN: u32 = 4194304u; // stood at a give-way line and took a gap: keeps it while it pulls away
 const CONTACT_LOG: u32 = 65536u;
 const WIDEST: f32 = 2.55;
 
@@ -158,7 +159,36 @@ fn hu_corner(l: Lane, trip: u32) -> f32 {
     return min(l.sqrt_path_r * sqrt(a_y), road);
 }
 
+// The measured driver (research/truth/measure/MODEL.md) drives every Krauss type in physical mode unless switched off.
+fn md_setup(e: Veh) {
+    md_on = mu > 0.0 && P.md_b.w > 0.0 && ty.model == MODEL_KRAUSS && (e.flags & F_SHADOW) == 0u;
+    md_al = 0.0;
+    if (!md_on) { return; }
+    md_k = P.md_a.x;
+    md_ca = P.md_a.y;
+    md_kg = P.md_a.z;
+    md_kp = P.md_a.w;
+    md_beta = P.md_b.x;
+    md_s0 = P.md_c.x;
+    md_near = P.md_c.y;
+    md_dvmax = P.md_c.z;
+    md_tv = P.md_c.w;
+    md_t = P.md_t;
+    md_u = P.md_u.xy;
+    md_f = select(1.0, trips[e.trip].gap_f, trips[e.trip].gap_f > 0.0);
+    md_v0 = lane_vmax(e.lane, e.sf);
+    // Noise moves nobody at a stand.
+    md_noise = select(0.0, e.hu_noise * P.md_b.z, e.speed >= 0.5);
+}
+
+// No car within 100 m ahead on this lane: the range the measured following law was fitted on.
+fn md_alone(i: u32, e: Veh) -> bool {
+    if (i + 1u >= G.n_active || cur[i + 1u].lane != e.lane) { return true; }
+    return cur[i + 1u].pos - types[cur[i + 1u].vtype].length - e.pos > 100.0;
+}
+
 fn hu_setup(e: Veh) {
+    md_setup(e);
     hu_on = false;
     if (ty.model != MODEL_HUMAN || mu <= 0.0) { return; }
     hu_load(trips[e.trip].persona, e.hu_acc, e.hu_noise, P.hu_k, P.hu_d.z, P.hu_d.w);
@@ -432,7 +462,9 @@ fn adapt_to_lane(lane: u32, seen: f32, first: bool, leader_index: u32, ego_pos: 
                 pl_own_a = hu_target(pl_speed, g2, o.speed, pl_lane_vmax, hu_s0);
             }
         }
+        md_al = lead.acc;
         adapt_to_leader(gap, seen, l_len, lead.speed, lt.apparent, lt.model == MODEL_CACC, back >= 0.0, extra);
+        md_al = 0.0;
         pl_w_lead = 1.0;
     }
     let p = atomicLoad(&partial_occ[lane]);
@@ -712,6 +744,7 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     }
     apply_script(ego.flags, cur[i].v_next);
     hu_setup(ego);
+    md_launch = md_alone(i, ego);
     ph_cert_bound = 1e9;
     pl_i = i;
     pl_base = i * MAX_ITEMS;
@@ -729,7 +762,7 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     var route_i = ego.route_i;
     pl_limit = lanes[lane].speed;
     pl_lane_vmax = lane_vmax(lane, ego.sf);
-    var lane_max = max(pl_lane_vmax, select(v_min_comfort, max_v, hu_on));
+    var lane_max = max(pl_lane_vmax, select(v_min_comfort, max_v, hu_on || md_on));
     pl_v = min(max_v + max(pl_bias, 0.0), lane_max);
     let horizon = max_v * dt + brake_gap(max_v, ty.decel, ty.tau);
     var seen = lanes[lane].length - ego.pos;
@@ -942,7 +975,10 @@ fn lane_free_scan(@builtin(global_invocation_id) id: vec3u) {
             }
             lengths += vt.length + vt.min_gap;
         }
-        if (!stopped && (cur[end - 1u].flags & F_HAVE_TO_WAIT) != 0u) {
+        // On a ring the front car's next link is the ring itself: one slowed below its brakes by the curve is moving
+        // traffic, not a queue to come. Read as one, the ring looks full to every entry for good.
+        let front_waits = (cur[end - 1u].flags & F_HAVE_TO_WAIT) != 0u && (!roundabout || cur[end - 1u].speed < P.queue_speed);
+        if (!stopped && front_waits) {
             f.flags |= FREE_LAST_WAITS;
             f.space = lanes[lane].length - lengths;
         }
@@ -1012,6 +1048,9 @@ fn foe_on_last_approach(link: u32, a: f32, va: f32, vl: f32, ego: Veh) -> bool {
 fn check_rewind(ego: Veh, base: u32, n: u32, lengths_in_front: f32) {
     if ((lanes[ego.lane].flags & LANE_ROUNDABOUT) != 0u || n == 0u) { return; }
     if (P.mu > 0.0 && (P.safety & 16u) == 0u) { return; }
+    // A driver who does not keep the box clear (the 1 - exit_comply share, by the same draw as ph_bid) enters with no
+    // room past it. Without this the rule held every driver back and exit_comply did nothing.
+    if (P.mu > 0.0 && f32(pcg(ego.trip ^ 0x51ed270bu) >> 8u) / 16777216.0 >= ty.exit_comply) { return; }
     let need = ty.length + ty.min_gap;
     var seen = -lengths_in_front;
     var found = false;
@@ -1114,6 +1153,12 @@ fn approach(@builtin(global_invocation_id) id: vec3u) {
     let base = i * MAX_ITEMS;
     let n = ego.n_items;
     let s = seg[ego.lane];
+    // When each link was last crossed, from the latest entrant of its junction lane: the start of the gap a
+    // waiting minor driver sees. Read in exec, after this kernel, so all see the same value.
+    if (mu > 0.0 && s.first == i && is_internal(ego.lane) && ego.entry_step != NONE) {
+        let el = lanes[ego.lane].entry_link;
+        if (el != NONE && !is_internal(links[el].from_lane)) { last_detect[P.n_lanes + el] = ego.entry_step; }
+    }
     check_rewind(ego, base, n, f32(s.end - i - 1u) * (ty.length + ty.min_gap));
     var wants = false;
     for (var j = 0u; j < n; j++) {
@@ -1224,6 +1269,9 @@ fn blocked_by_foe(r: Approach, a: f32, l: f32, va: f32, vl: f32, same_target: bo
     return true;
 }
 
+var<private> lo_taken: bool;
+var<private> lo_head: bool;
+
 fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f32, decel: f32, wait: f32, trip: u32) -> bool {
     let k = links[link];
     if (hu_on) { hu_set_gap(link, trip); }
@@ -1231,9 +1279,27 @@ fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f3
     if (have_red(state)) { return false; }
     if ((k.flags & L_CONT) != 0u) { return true; }
     var l = a + (k.length + veh_len) / max((va + vl) * 0.5, EPS);
-    // Physical mode: go when the next foe arrives a critical gap (HBS, by movement) after we would reach the line,
-    // or after now for a driver already waiting there: HBS takes the gap from the waiting driver's departure.
-    if (mu > 0.0 && k.tc > 0.0) { l = select(max(a, 0.0), 0.0, wait > 0.0) + k.tc - ty.timegap_minor; }
+    // Physical mode: HBS's critical gap is the major headway a driver waiting at the line accepts. One arriving
+    // judges the lag from its arrival. One standing at the line counts the time since the last foe crossed, or since
+    // it stopped if later, but no more than that foe can hold it there (its time over the link and the minor time
+    // gap): that time is part of the gap. One that took a gap from the line keeps it while it pulls away; foes that
+    // cannot stop still hold it.
+    if (mu > 0.0 && k.tc > 0.0) {
+        var lag = max(a, 0.0) + k.tc;
+        if (lo_taken) {
+            lag = -1e6;
+        } else if (wait > 0.0 && lo_head) {
+            var last = 0u;
+            var hold = 0.0;
+            for (var f = 0u; f < k.foe_count; f++) {
+                let fl = foes[k.foe_start + f];
+                last = max(last, last_detect[P.n_lanes + fl]);
+                hold = max(hold, (links[fl].length + veh_len) / max(lanes[links[fl].from_lane].speed, 1.0));
+            }
+            lag = k.tc - min(min(f32(G.step - min(last, G.step)) * dt, hold + ty.timegap_minor), wait);
+        }
+        l = lag - ty.timegap_minor;
+    }
     let e_is_major_green = (k.flags & (L_EXIT_AFTER_IJ | L_INTERNAL_JUNCTION)) != 0u && link_state(k.entry) == CH_G;
     if ((have_priority(state) || e_is_major_green) && state != CH_Z) { return true; }
     if (state == CH_w && wait < dt) { return false; }
@@ -1331,7 +1397,18 @@ fn zipper_speed(link: u32, dist: f32, v_in: f32, a: f32, speed: f32, vl: f32, va
             let v_end = min(min(vmax, v_acc), max(u_end, v_dec));
             let v_avg = (speed + v_end) / 2.0;
             let te = max(1.0, ceil(dist / max(EPS, v_avg) / dt) * dt);
-            let t_target = tf + ty.tau;
+            var t_target = tf + ty.tau;
+            if (mu > 0.0) {
+                // Fall in behind the foe: cross the line one own time gap after its rear and the standstill gap have.
+                // SUMO's tf + tau ignores the body, so at crawl speed two heads reach their lines side by side.
+                let d = r.dist + ty.length + ty.min_gap;
+                let v0 = r.speed;
+                let vm = max(vmax, v0 + EPS);
+                let d_acc = (vm * vm - v0 * v0) / (2.0 * ty.accel);
+                var tc = (vm - v0) / ty.accel + (d - d_acc) / vm;
+                if (d < d_acc) { tc = (sqrt(v0 * v0 + 2.0 * ty.accel * d) - v0) / ty.accel; }
+                t_target = max(tf, ceil(tc / dt) * dt) + ty.ph_tau * select(ph_gap_f, 1.0, ph_gap_f <= 0.0);
+            }
             var acc: f32;
             if (dist <= 0.0) {
                 acc = -ty.decel;
@@ -1361,7 +1438,7 @@ fn finalize_speed(v_pos: f32, old_v: f32, lane_vmax_: f32, rng: ptr<private, u32
     fin_min = v_min;
     fin_max = v_max;
     if (mu > 0.0) {
-        if (ty.model == MODEL_KRAUSS) { return max(v_min, ph_dawdle(v_max, ph_a_drv(old_v), ex_trip)); }
+        if (ty.model == MODEL_KRAUSS && !md_on) { return max(v_min, ph_dawdle(v_max, ph_a_drv(old_v), ex_trip)); }
         return v_max;
     }
     if (ty.model == MODEL_KRAUSS) {
@@ -1451,7 +1528,13 @@ fn walk_links(e: ptr<function, Veh>, base: u32, n: u32, speed: f32, vmax_lane: f
             if (can_brake) { imp = impat; }
             var my_wait = (*e).wait;
             if (((*e).flags & F_HAVE_STOPPED) != 0u) { my_wait = 1e9; }
+            // Only the car standing at the line, first on its lane, has watched the gap since it began.
+            let me = base / MAX_ITEMS;
+            lo_head = j == 0u && it.dist < 10.0 && (me + 1u >= G.n_active || cur[me + 1u].lane != (*e).lane);
+            // A gap taken counts once the car moves on it: one held there by anything else decides again.
+            lo_taken = ((*e).flags & F_GAP_TAKEN) != 0u && (*e).wait <= 0.0;
             let opened = yellow || through || link_opened(it.link, it.arrival, it.arr_speed, leave, ty.length, imp, ty.decel, my_wait, (*e).trip);
+            if (opened && mu > 0.0 && links[it.link].tc > 0.0 && my_wait > 0.0 && lo_head) { (*e).flags |= F_GAP_TAKEN; }
             let k = links[it.link];
             let kvis = select(max(k.visibility, P.vis_floor), k.visibility, ty.model == MODEL_HUMAN);
             let determined = it.dist <= select(kvis, max(kvis, P.hu_g.x), hu_on);
@@ -1619,6 +1702,13 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
         if (it.link == NONE) { break; }
         let k = links[it.link];
         let next = k.next_lane;
+        // A zipper's order is its own rule: each falls in behind whoever reaches the line first. Denied here, a
+        // head stops announcing itself, the other arm's next car no longer falls in behind it, and one arm takes all.
+        if (link_state(it.link) == CH_Z) {
+            chain_from = NONE;
+            chained = false;
+            continue;
+        }
         if (!is_internal(next) || lanes[next].zone_count == 0u) {
             if (!chained || !is_internal(next)) { chain_from = NONE; }
             chained = false;
@@ -1816,6 +1906,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     apply_script(e.flags, e.v_next);
     ph_setup(e);
     hu_setup(e);
+    md_launch = md_alone(i, e);
     if (mu > 0.0) { ego_acc = e.acc; }
     if (P.trace_len > 0u && (e.flags & F_SCRIPTED) != 0u) { ty.max_speed = speed_trace[min(G.step + 1u, P.trace_len - 1u)]; }
     let base = i * MAX_ITEMS;
@@ -1889,6 +1980,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         e.pos += ds;
         e.speed = v_next;
         if (hu_on) { hu_advance(&e, speed, v_safe, v_next); }
+        if (md_on) { e.hu_noise = hu_noise_next(e.hu_noise, trips[e.trip].rng, G.step, P.md_b.y, sqrt(max(1.0 - P.md_b.y * P.md_b.y, 0.0))); }
         ph_account(&e, speed, v_next, ds);
         ph_lateral(&e, speed, v_next);
     } else {
@@ -1947,7 +2039,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         if (!is_internal(e.lane)) { atomicAdd(&edge_acc[lanes[e.lane].edge * 8u + 4u], 1u); }
         e.prev_lane = e.lane;
         e.lane = k.next_lane;
-        e.flags &= ~(F_HAVE_STOPPED | F_YELLOW_GO);
+        e.flags &= ~(F_HAVE_STOPPED | F_YELLOW_GO | F_GAP_TAKEN);
         if ((k.flags & L_HAS_VIA) == 0u) { e.route_i += 1u; }
         if (is_internal(e.lane) && !is_internal(e.prev_lane)) { e.entry_step = G.step; }
         if (!is_internal(e.lane)) {
