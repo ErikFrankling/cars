@@ -1,0 +1,46 @@
+scene,id,quantity,forecast,measured,spread,tolerance,verdict,seeds,driver,dt
+L7,F007,"lane: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.1
+L1,F001,capacity 50 km/h T 1.4 s 7.5 (veh/h),1856,2266,2.23e+03..2.29e+03,3%,FAIL,"L1 arrivals 0-4, sim 1",physical,0.1
+L1,F002,capacity 100 km/h (veh/h),2156,2933,2.87e+03..2.98e+03,3%,FAIL,"L1 arrivals 0-4, sim 1",physical,0.1
+L1,F003,capacity 30 km/h (veh/h),1565,1837,1.81e+03..1.87e+03,3%,FAIL,"L1 arrivals 0-4, sim 1",physical,0.1
+L1,F089,saturation 50 km/h: real read 1750 sweep 1640-1900,1750,2266,,1640-1900,FAIL,"L1 arrivals 0-4, sim 1",physical,0.1
+L3,F004,jam spacing (m),7.5,7.5,7.5..7.5,3%,pass,"L1 arrivals 0-4, sim 1",physical,0.1
+L4,F005,start wave (km/h),19.3,34.5,32.6..35.8,10%,FAIL,"L1 arrivals 0-4, sim 1",physical,0.1
+L4,,T from s/w (s),,0.783,,,info,,physical,0.1
+L1,F050,capacity 50 km/h from the driver own measured s and wave speed (veh/h),2722,2266,2.23e+03..2.29e+03,3%,FAIL,"L1 arrivals 0-4, sim 1",physical,0.1
+L7,F007,distance: trajectories against edge counters (rel),exact,0.0124,,1%,FAIL,"L1 arrivals 0-4, sim 1",physical,0.1
+L7,F007,"signal: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.1
+S1,F008,saturation headway from car 10 (s),1.94,1.61,1.54..1.73,5%,FAIL,"S1 arrivals 0-4, sim 1",physical,0.1
+S1,,speed at the line from car 11 on (km/h),,40,,,info,,physical,0.1
+S1,,first car stop distance d0 (m),,1.5,,,info,,physical,0.1
+S2,F009,t1 after green,2.49,1.18,1.17..1.2,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.1
+S2,F009,headway car 2,3.16,2.66,2.6..2.72,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.1
+S2,F009,headway car 3,2.5,1.93,1.75..2.05,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.1
+S2,F009,headway car 4,2.27,1.64,1.49..1.81,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.1
+S2,F009,headway car 5,2.15,1.72,1.48..2,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.1
+S2,F009,headway car 6,2.06,1.62,1.56..1.69,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.1
+S2,F009,headway car 7,2,1.44,1.27..1.66,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.1
+S2,F009,headway car 8,1.96,1.56,1.35..1.74,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.1
+S2,F009,headway car 9,1.94,1.47,1.35..1.57,0.2 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.1
+S3,F010,start-up lost time first four cars 50 km/h (s),2.74,0.954,0.382..1.43,0.5 s,FAIL,"S1 arrivals 0-4, sim 1",physical,0.1
+L7,F007,"ring: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.1
+L2,,"P of the ring (m), cars placed at N=100",,"999, 100",,,info,,physical,0.1
+L2,,q(k): 15:749 25:1125 33:1554 37:1744 41:1903 50:2142 67:1720 83:1283 100:848,,0,,,info,,physical,0.1
+L2,F051,critical density (free and congested branch meet),37.1,47,,5%,FAIL,"L2 3 per density, sim 1",physical,0.1
+L2,F052,peak ring flow 50 km/h (veh/h),1856,2142,2.1e+03..2.21e+03,5%,FAIL,"L2 3 per density, sim 1",physical,0.1
+L2,F053,congested speed at spacing 10 m,1.79,2.36,2.31..2.44,5%,FAIL,"L2 3 per density, sim 1",physical,0.1
+L2,F053,congested speed at spacing 12 m,3.21,4.29,4.19..4.48,5%,FAIL,"L2 3 per density, sim 1",physical,0.1
+L2,F053,congested speed at spacing 15 m,5.36,7.13,6.84..7.44,5%,FAIL,"L2 3 per density, sim 1",physical,0.1
+L2,F053,congested speed at spacing 20 m,8.93,11.9,11.7..12.2,5%,FAIL,"L2 3 per density, sim 1",physical,0.1
+L7,F007,"give: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,physical,0.1
+G1,F016,"HBS right, major 0",1200,1080,1.07e+03..1.09e+03,10%,FAIL,"G10 arrivals 0-4, sim 1",physical,0.1
+G1,F016,"HBS right, major 400",736,1076,1.07e+03..1.08e+03,10%,FAIL,"G1400 arrivals 0-4, sim 1",physical,0.1
+G1,F016,"HBS right, major 800",451,1068,1.04e+03..1.08e+03,10%,FAIL,"G1800 arrivals 0-4, sim 1",physical,0.1
+G1,F016,"HBS right, major 1200",277,1073,1.06e+03..1.08e+03,10%,FAIL,"G11200 arrivals 0-4, sim 1",physical,0.1
+G1,,capacity at major 0 400 800 1200 (F017 report 23 816 474 279 162; F018 its tf fixed 1200 696 404 234),,1080 1076 1068 1073,,,info,,physical,0.1
+G1,F058,follow-up time logged in one gap (s),3,3.34,3.31..3.36,10%,FAIL,G1 all,physical,0.1
+G1,F088,"major delivered / offered, major 400",1,0.006,0..0.03,5%,FAIL,"G1400 arrivals 0-4, sim 1",physical,0.1
+G1,F088,"major delivered / offered, major 800",1,0.0132,0..0.066,5%,FAIL,"G1800 arrivals 0-4, sim 1",physical,0.1
+G1,F088,"major delivered / offered, major 1200",1,0.0068,0..0.018,5%,FAIL,"G11200 arrivals 0-4, sim 1",physical,0.1
+G1,,tf by major flow: 0:3.33 400:3.34 800:3.34 1200:3.34,,0,,,info,,physical,0.1
+G4,F057,critical gap recovered from gaps offered and taken right from minor (s),5.9,none,,0.3 s,FAIL,G1 q 400 800,physical,0.1

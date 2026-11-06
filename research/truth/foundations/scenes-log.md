@@ -47,3 +47,25 @@ Passing now that C expected to fail: C-S3 and C-S4 on main. Heads held 43-60 m b
 ### Human driver, where it differs
 
 Jam spacing 5.79 m against 7.5 and capacity flat with speed (1,741 at 50, 1,759 at 100); 280 veh/h at 1.63 m/s; its gaps (0.65 × TRVMB × lognormal) give G1 476/222/103 against 736/451/277 and holds up to 585 s in C-S7; LC4 0.43; merges 700 per arm; 29 cars unaccounted in batch give2. Its lane end (LC3, LC8) and start wave pass where the physical driver fails.
+
+## 2. Time step, main's physical driver, 6 November
+
+L1-L4, S1-S3, G1 at dt 1, 0.5, 0.25, 0.1 (`--tag dtfreeze`, tables `results/theory/physical_<dt>_dtfreeze.csv`).
+
+| Quantity | dt 1 | 0.5 | 0.25 | 0.1 | Forecast |
+|---|---:|---:|---:|---:|---:|
+| L1 capacity 50 / 100 / 30 km/h | 1,941 / 2,055 / 1,685 | 2,226 / 2,636 / 1,814 | 2,258 / 2,858 / 1,830 | 2,266 / 2,933 / 1,837 | 1,856 / 2,156 / 1,565 |
+| L4 start wave, km/h (T from s/w) | 22.3 (1.21) | 30.6 (0.88) | 35.7 | 34.5 (0.78) | 19.3 (1.4) |
+| S1 headway from car 10, s | 1.91 | 1.65 | 1.62 | 1.61 | 1.94 |
+| S2 first car after green, s | 0.24 | 0.78 | 1.03 | 1.18 | 2.49 |
+| S3 lost time, s | 0.50 | 0.76 | 0.90 | 0.95 | 2.74 |
+| L2 peak ring flow | 1,808 | 2,083 | 2,133 | 2,142 | 1,856 |
+| G1 minor at major 0 / 400 / 800 / 1,200 | 912 / 678 / 497 / 290 | 1,010 / 1,008 / 1,006 / 1,007 | 1,057 / 1,056 / 1,055 / 1,056 | 1,080 / 1,076 / 1,068 / 1,073 | 1,200 / 736 / 451 / 277 |
+| G1 major delivered over offered | .91-.94 | 0 | 0 | .006-.013 | 1 |
+
+Reading:
+
+- **dt 1 is not a coarse version of the same driver.** A step of 1 s acts as a reaction time of about 1 s: followers start one step after their leader, which is what put T at 1.21 s and saturation near 1,900. Below dt 0.5 the driver converges to T 0.78-0.88 s and 2,266 veh/h at 50 km/h, 20% over the real band.
+- **Give-way breaks below dt 1.** The minor runs at its free turning flow and the major delivers nothing: once a major car has slowed for a minor that took a 2.3 s gap (`tc` = 0.7 × TRVMB − 1.2), it stands, its arrival from rest looks far off to the next minor, and minors go one after another. At dt 1 the coarse step leaves holes in that chain.
+- **Converged:** 0.25 against 0.1 moves L1 by 0.4% at 50 km/h and 2.6% at 100, the start wave 3%, G1 1-2%, and the first car 0.15 s. 0.5 against 0.1 moves 100 km/h by 10% and the start wave by 11%. Cost for this set on 2 llvmpipe threads, contended: 60 s at 0.5, 106 s at 0.25, 145 s at 0.1.
+- **So no dt is frozen yet.** The driver has to be fixed at a converged step, since today's dt-1 numbers borrow a reaction time from the step. Work goes on at dt 0.25, and the freeze is repeated on the final driver.
