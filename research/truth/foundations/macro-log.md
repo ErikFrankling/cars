@@ -80,4 +80,30 @@ The upper test (F072) was run on the greens each rule gives on region model A at
 
 Greens set on assigned flows feed back: a road macro under-loads loses green, so it costs more and loses more flow. Smith (1979) showed equisaturation policies can cut a network's capacity this way. Class doesn't say which road carries the flow. So the rule takes no flow and no class: the map's stage shares, on the measured cycle. This was chosen with real counts at rung 3's exit test, as the ladder says to fix a failing table, by one named cause, and it is fixed now, before any rung 4 score. `--split sat` and `--split main` stay as sensitivity runs.
 
-Route cost: real free speeds per class from probes with junction delay left out; `β` residential and living street +.30, unclassified and tertiary +.10, other 0; perception noise σ .15 per edge and draw (D step 3, order of 10-20%). PCE car 1, van 1.2, trucks 2. Free time per edge from probes at 05-06 h (R 3), `scripts/macro/free_time.py`: L over v_hm, on every edge with 40 or more probes and 30 m or more, else the median probe ratio of its class, apart for edges ending at a signal. The signal's low-flow delay is then in the free time, so the engine adds only Webster's uniform delay above the through movement's zero-flow value, plus overflow. Changed after looking (F077): the first version used probes only on edges not ending at a signal, and Webster with random arrivals put 17.5 s at each of 4.2 signal passes a km on arterials, where real 05 h speeds imply about 5 s, HCM's arrival type 5. That makes 05 h a consistency check, not a blind one; it still misses by 16% (F078).
+Route cost: free time from probes as above; `β` residential and living street +.30, unclassified and tertiary +.10, other 0; perception noise σ .15 per edge and draw (D step 3, order of 10-20%). PCE car 1, van 1.2, trucks 2. Free time per edge from probes at 05-06 h (R 3), `scripts/macro/free_time.py`: L over v_hm, on every edge with 40 or more probes and 30 m or more, else the median probe ratio of its class, apart for edges ending at a signal. The signal's low-flow delay is then in the free time, so the engine adds only Webster's uniform delay above the through movement's zero-flow value, plus overflow. Changed after looking (F077): the first version used probes only on edges not ending at a signal, and Webster with random arrivals put 17.5 s at each of 4.2 signal passes a km on arterials, where real 05 h speeds imply about 5 s, HCM's arrival type 5. That makes 05 h a consistency check, not a blind one; it still misses by 16% (F078).
+
+## Rung 4 (6 November)
+
+Region model A, 100% demand, movement detail in the district, on the committed rule. Runs in `cars-data/berlin2019/macro/runs6/`, scores in `cars-data/berlin2019/runs/macro_*`. Scored with the frozen `metrics.py` on tuning sites and days.
+
+**First scores** (F073 08 h, F066 16 h), before the free-time change:
+
+| | 08 h | 16 h |
+|---|---|---|
+| Arterial / local km/h, model against v_hm | 20.0 / 18.9 against 23.7 / 20.4 | 17.3 / 14.7 against 21.8 / 18.4 |
+| RMSN, R², slope, GEH<5 | .49, .20, .38, 38% | .42, .30, .56, 31% |
+| Class bias primary, secondary, tertiary | −40%, +2%, +42% | −17%, +15%, +69% |
+
+**Free speed hour** (F077): at 05 h arterials ran 23.7 km/h against 35.6 real. Webster with random arrivals gave 17.5 s at each of 4.2 signal passes a km; real speeds imply about 5 s, HCM's arrival type 5 (PF .43 at g/C .46). The brief's "free speed from 05-06 h per edge" had been applied only to edges not ending at a signal. Now on all (F078):
+
+| | 05 h | 08 h | 16 h |
+|---|---|---|---|
+| Arterial km/h, model against v_hm | 29.9 / 35.6 | 23.4 / 23.7 | 19.9 / 21.8 |
+| Local | 26.8 / 32.8 | 22.1 / 20.4 | 16.0 / 18.4 |
+| Motorway | 74.1 / 80.4 | 54.1 / 43.6 | 47.2 / 32.0 |
+| RMSN, R², slope | | .454, .243, .434 | .409, .331, .603 |
+| Class bias primary, tertiary | | −31%, +42% | −10%, +76% |
+
+**Route choice alone can reach the counts** (F076, `route_bound.py`, a diagnostic whose splits are thrown away): on macro's kept paths at 08 h, moving 3.9% of vehicle-km brings RMSN .50 to .30 and R² .21 to .65; 5.8% gives R² .78, slope .79, GEH<5 64%. So the kill rule doesn't fire at 08 h: the demand can produce the counts with small route changes, and the fault is in route cost.
+
+**Where flow goes wrong, read by D's flow-and-speed table.** Primary under-load sits on the central east-west corridors: Leipziger Straße .29-.66 of real, Potsdamer Straße .45-.77. Their own edges run at free speed in macro, so it isn't capacity there: "flow low, speed high: traffic goes elsewhere". It goes to parallel streets with no signal arc on the map and no flow-dependent delay: Französische Straße, one lane, 2.2-2.7× real at free speed 35 km/h, where probes show 24 km/h at 08 h on 490 real cars. Lindenstraße 1.4-1.7×, Lennéstraße 3×. Macro has no mid-block friction on urban streets, and the map may be missing signals or priority rules on them. Motorways run 25-47% too fast: no spillback, no merge queue in a static model, as D expected.
