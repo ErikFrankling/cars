@@ -9,7 +9,7 @@ Good science: a simulator whose every behaviour is tested against recordings whe
 | Tier | State | Number that says so |
 |---|---|---|
 | T0 Verification | Running: theory scenes, one driver, frozen time step | Scenes passing; baseline 74 pass, 98 fail (physical), 79, 99 (human) |
-| T1 One driver | Harness merged (`replay/RESULTS.md`). Measuring the driver's parts from highD, inD, rounD, exiD, SinD | Main's driver fails: 30 s spacing error 6.30 m; classifier 0.89 against a real floor of 0.64-0.68; next-second response 0.68 m/s, worse than constant speed (0.37). It steers to its own 1 s gap; real followers keep 2.3 s and let it drift |
+| T1 One driver | Harness merged (`replay/RESULTS.md`). Driver's parts measured (`measure/DRIVER.md`, held-out list in `measure/HOLDOUT.md`). Next: build the driver from that table, test on the held-out recordings | Main's driver fails: 30 s spacing error 6.30 m; classifier 0.89 against a real floor of 0.64-0.68; next-second response 0.68 m/s, worse than constant speed (0.37). It steers to its own 1 s gap; real followers keep 2.3 s and let it drift |
 | T2 Streams | DLR UT approach replays with its recorded signals | Discharge per cycle off by 0.14-0.32 cars of 7.3 (harness check, not independent). Cars cross the stop line 2.1-2.4 s early: launch at 2.6 m/s² against 1.8 measured. F120 on SinD needs stop lines inferred first |
 | T3 Areas, recorded demand | pNEUMA on disk (15 GB); Songdo downloading | |
 | T4 Cities | Berlin macro merged, parked: `foundations/macro-log.md` ("Pick it up cold") | Movement table passes (0.18% of site-hours over). Whole day: arterial speed bias -5.6%, dip .66 against .69; motorways, jam list (0-17% caught) and counts (RMSN .43) fail. Route choice alone reaches RMSN .30, so next is route cost on unsignalled streets |
@@ -31,6 +31,21 @@ Car following and lane changes: highD and exiD (`datasets/levelx/`), TGSIM (5 si
 | Berlin: movements over capacity on MATSim's routes, 100 / 50 / 30% | 311-365 / 11-20 / 0 | D §2.4 |
 | Berlin real saturation flow | 1,750, sweep 1,640-1,900 | R §2 |
 | Real day against real day, Berlin jam places | caught 67%, false 33% | Report 22 |
+
+## The driver as measured (`measure/DRIVER.md`)
+| Part | Value | Today's driver |
+|---|---|---|
+| Time gap, steady following | falls with speed: 1.6 s at 3-10 m/s to 0.8 s over 35 m/s; median 0.98 s at 25-35 m/s | one value |
+| Personal part of the time gap | log-SD 0.27, kept over at least 5 km | redrawn or none |
+| Gap error response | one-sided: none from 0.5 s too close to 1.75 s too far, braking beyond 0.75 s too close | steers to its own gap |
+| Closing-speed response | linear, no dead zone, 0.1-0.4 /s; 0.25-0.65 of the leader's acceleration shows within 1 s | |
+| Response lag | time constant 0.5 s, dead time under 0.3 s; report 05's 1.0 s does not stand | |
+| Standstill bumper gap | 1.7 m | 2.5-2.8 m |
+| Desired speed spread | coefficient of variation 0.12-0.20, keeps r 0.5 over 3 km; fast drivers follow closer (r -0.41) | 0.1 |
+| Give-way follow-up | straight 2.7, right 3.2, left 4.9 s; roundabout 2.76 s | 4.41 s (physical driver) |
+| Critical gap | minor left 6.9 s, left off the priority road 3.9 s, roundabout about 3.0 s; no impatience found | |
+| Lane change | gaps p5 0.45 s behind, 0.3-0.4 s ahead; duration 5.0-5.4 s; merges at 49% of the acceleration lane | |
+| Launch at green, weekdays | first car 2.0 s after green, peak 1.77 m/s² | 2.6 m/s² |
 
 ## Data access
 - highD, exiD, inD, rounD: downloaded 6 November, manifest with checksums and licence in `datasets/levelx/manifest.json`.
