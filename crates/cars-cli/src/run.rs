@@ -223,7 +223,7 @@ pub fn run(args: Args) {
     let mut world = World::build(&net, &demand, &cfg, &[]);
     if let Some(p) = &args.replay {
         let a = cars_core::replay::attach(&mut world, &net, &demand, p, args.begin).expect("replay");
-        eprintln!("replay: {} tracks, {} keys, {} tracks with no trip", a.tracks, a.keys, a.missing_trips);
+        eprintln!("replay: {} tracks, {} keys, {} tracks with no trip, {} checked entries", a.tracks, a.keys, a.missing_trips, a.checked);
     }
     if !speed_trace.is_empty() {
         // Only the types marked phys.trace follow it, or everyone if none is marked.

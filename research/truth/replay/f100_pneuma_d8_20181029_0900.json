@@ -1,49 +1,49 @@
 {
  "scene": "scene-d8-20181029-0900",
  "log": [
-  "replay: 4349 tracks, 968628 keys, 0 tracks with no trip",
-  "lane changes 9207, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 14814, items full 0; teleports jam 0 yield 0 wrong lane 0",
-  "replay: applied 963795, ended 3411, shadows_removed 0, lane_jumps 34099, released 0",
-  "physics: collisions 4757 incidents, 67104 contact samples (same lane 2258, neighbour lane 1093, junction crossing 303, junction merge 26, junction diverge 68, lane start 579, other 430, crossed without grant 116, lost on a wrong lane 0); teleports 0; certificate floor hits 102352, no-brake 0, dead-end clamps 3064, crossed without grant 131; lost on a wrong lane 0; shadows 9207, refused 0, refused for room 29511; denied bids 41828"
+  "replay: 4291 tracks, 966289 keys, 0 tracks with no trip, 0 checked entries",
+  "lane changes 7646, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 17847, items full 0; teleports jam 0 yield 0 wrong lane 0",
+  "replay: applied 961300, ended 3440, shadows_removed 0, lane_jumps 36314, released 0",
+  "physics: collisions 4789 incidents, 66782 contact samples (same lane 2186, neighbour lane 1054, junction crossing 387, junction merge 46, junction diverge 188, lane start 507, other 421, crossed without grant 205, lost on a wrong lane 0); teleports 0; certificate floor hits 102840, no-brake 0, dead-end clamps 2254, crossed without grant 224; lost on a wrong lane 0; shadows 7646, refused 0, refused for room 26908; denied bids 48034"
  ],
- "samples_on_grid": 972250,
- "in_output": 963795,
- "missing": 8455,
- "lane_mismatch": 0.00147,
+ "samples_on_grid": 970082,
+ "in_output": 961300,
+ "missing": 8782,
+ "lane_mismatch": 0.00145,
  "harness_pos_abs_m": {
   "p50": 0.0005,
-  "p90": 0.0102,
+  "p90": 0.0101,
   "p99": 0.0209,
   "p100": 0.0585
  },
  "harness_lat_abs_m": {
   "p50": 0.0,
-  "p90": 0.0005,
-  "p99": 0.0029,
+  "p90": 0.0006,
+  "p99": 0.0027,
   "p100": 0.052
  },
  "front_2d_m": {
-  "p50": 0.1078,
-  "p90": 0.6625,
-  "p99": 1.8081,
-  "p100": 8.9473
+  "p50": 0.1112,
+  "p90": 0.6477,
+  "p99": 1.7909,
+  "p100": 8.9376
  },
  "front_2d_m_on_edges": {
-  "p50": 0.1019,
-  "p90": 0.5742,
+  "p50": 0.1032,
+  "p90": 0.5716,
   "p99": 1.6187,
-  "p100": 8.9473
+  "p100": 8.9376
  },
  "front_2d_m_internal": {
-  "p50": 0.1318,
-  "p90": 0.9647,
-  "p99": 2.3435,
-  "p100": 6.7017
+  "p50": 0.1384,
+  "p90": 0.9709,
+  "p99": 2.223,
+  "p100": 6.3106
  },
  "lateral_abs_m": {
-  "p50": 0.521,
-  "p90": 1.907
+  "p50": 0.517,
+  "p90": 1.805
  },
- "off_net_share": 0.1095,
- "pieces_per_vehicle": 1.56
+ "off_net_share": 0.1096,
+ "pieces_per_vehicle": 1.54
 }

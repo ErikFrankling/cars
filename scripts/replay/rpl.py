@@ -8,12 +8,13 @@ OUT = os.path.join(DATA, 'replay')
 INF = 3.0e38
 
 
-def write_rpl(path, lanes, tracks):
+def write_rpl(path, lanes, tracks, flags=None):
     """lanes: list of lane ids. tracks: list of (trip_id, t0, key_dt, release, lane_idx[], pos[], speed[] [, lat[]]),
-    lat the offset from the lane's centreline, left positive. With any lat the file is RPL2 (missing ones are 0)."""
-    lateral = any(len(t) > 7 for t in tracks)
+    lat the offset from the lane's centreline, left positive. With any lat the file is RPL2 (missing ones are 0).
+    flags: trip_id -> u32 (bit 0: checked entry, replay.rs DEPART_CHECKED); with flags the file is RPL3."""
+    lateral = any(len(t) > 7 for t in tracks) or flags is not None
     with open(path, 'wb') as f:
-        f.write(b'RPL2' if lateral else b'RPL1')
+        f.write(b'RPL3' if flags is not None else b'RPL2' if lateral else b'RPL1')
         f.write(struct.pack('<I', len(lanes)))
         for l in lanes:
             b = l.encode(); f.write(struct.pack('<H', len(b))); f.write(b)
@@ -22,7 +23,10 @@ def write_rpl(path, lanes, tracks):
             tid, t0, kdt, rel, li, pos, spd = tr[:7]
             b = str(tid).encode(); f.write(struct.pack('<H', len(b))); f.write(b)
             n = len(li)
-            f.write(struct.pack('<fffI', t0, kdt, min(rel, INF), n))
+            f.write(struct.pack('<fff', t0, kdt, min(rel, INF)))
+            if flags is not None:
+                f.write(struct.pack('<I', flags.get(tid, 0)))
+            f.write(struct.pack('<I', n))
             if n:
                 k = np.zeros(n, dtype=[('l', '<u4'), ('p', '<f4'), ('v', '<f4')] + ([('a', '<f4')] if lateral else []))
                 k['l'] = li; k['p'] = pos; k['v'] = spd
