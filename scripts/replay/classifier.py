@@ -172,26 +172,78 @@ def two_sample(X0, X1, g0, g1, seed=0, folds=5):
                 blocks=int(len(u)), top_features={n: round(float(v), 3) for n, v in top})
 
 
+def mmd_test(XA, XB, gA, gB, paired, rng, n_max=2500, perms=200):
+    """Unbiased MMD^2 with a Gaussian kernel (median bandwidth) on standardised features. The permutation swaps labels
+    per vehicle: paired (real and simulated windows of one follower swap together) or by vehicle groups."""
+    mu, sd = XA.mean(0), XA.std(0) + 1e-9
+    A, B = (XA - mu) / sd, (XB - mu) / sd
+    ia = rng.choice(len(A), min(n_max, len(A)), replace=False); ib = rng.choice(len(B), min(n_max, len(B)), replace=False)
+    X = np.vstack([A[ia], B[ib]]); g = np.r_[gA[ia], gB[ib]]; lab = np.r_[np.zeros(len(ia)), np.ones(len(ib))].astype(bool)
+    sq = (X ** 2).sum(1); D2 = np.maximum(sq[:, None] + sq[None, :] - 2 * X @ X.T, 0)
+    h = np.median(D2[np.triu_indices(len(X), 1)])
+    K = np.exp(-D2 / h); np.fill_diagonal(K, 0)
+    def stat(l):
+        a, b = ~l, l; na, nb = a.sum(), b.sum()
+        return K[np.ix_(a, a)].sum() / (na * (na - 1)) + K[np.ix_(b, b)].sum() / (nb * (nb - 1)) - 2 * K[np.ix_(a, b)].mean()
+    obs = stat(lab)
+    ug, gi = np.unique(g, return_inverse=True)
+    null = []
+    for _ in range(perms):
+        if paired:
+            flip = rng.random(len(ug)) < 0.5
+            l = lab ^ flip[gi]
+        else:
+            # labels move with the vehicle: each vehicle's windows take the label of a random vehicle's
+            vl = np.zeros(len(ug), bool); vl[np.unique(gi[lab])] = True
+            l = rng.permutation(vl)[gi]
+        null.append(stat(l))
+    return dict(mmd2=float(obs), p=float((1 + np.sum(np.array(null) >= obs)) / (1 + perms)), null_p95=float(np.percentile(null, 95)))
+
+
+def w1_table(XA, XB):
+    """Wasserstein-1 per feature, in units of the first sample's standard deviation."""
+    out = {}
+    for j, n in enumerate(NAMES):
+        qa = np.quantile(XA[:, j], np.linspace(0.01, 0.99, 99)); qb = np.quantile(XB[:, j], np.linspace(0.01, 0.99, 99))
+        out[n] = round(float(np.mean(np.abs(qa - qb)) / (XA[:, j].std() + 1e-9)), 3)
+    return dict(sorted(out.items(), key=lambda r: -r[1]))
+
+
+def real_set(s, v, vl, rng):
+    N = s.shape[1]
+    xf = np.vstack([np.zeros((1, N)), np.cumsum((v[1:] + v[:-1]) * 0.05, 0)]); xl = xf + s
+    sigma = tracker_noise(xl - xf)
+    return feats(*instrument(xf, xl, 0.0, rng)), sigma
+
+
 def main():
     w = np.load(f'{D}/windows.npz')
     s, v, vl = w['s'].astype(float), w['v'].astype(float), w['vl'].astype(float)
     N = s.shape[1]
-    xf = np.vstack([np.zeros((1, N)), np.cumsum((v[1:] + v[:-1]) * 0.05, 0)]); xl = xf + s
-    blk = np.array([f'{r}:{int(t // 60)}' for r, t in zip(w['run'], w['t'])])  # 60 s chunks: the day has only 7 blocks of 300 s
     rng = np.random.default_rng(3)
-    sigma = tracker_noise(xl - xf)
-    sR, vR, vlR = instrument(xf, xl, 0.0, rng)
-    XR = feats(sR, vR, vlR); gR = np.tile(blk, 3); runR = np.tile(w['run'], 3)
-    res = dict(tracker_leftover_noise_m=sigma, features=list(NAMES))
-    # F102: real against real. Exchangeable halves (blocks drawn at random), and the harder one: other runs, other times.
-    ub = np.unique(blk); reps = []
+    XR, sigma = real_set(s, v, vl, rng)
+    # Groups are follower vehicles: all windows of one vehicle sit in one fold and permute together.
+    gR = np.tile(np.array([f'mov:{r}:{f}' for r, f in zip(w['run'], w['fid'])]), 3); runR = np.tile(w['run'], 3)
+    res = dict(tracker_leftover_noise_m=sigma, features=list(NAMES), split='by follower vehicle (and run); never by window')
+    # F102 pairings. Two halves of one recording: vehicles drawn at random into two halves.
+    ug = np.unique(gR); reps = []
     for rep in range(5):
-        half = dict(zip(ub, rng.permutation(len(ub)) % 2)); h = np.array([half[b] for b in gR])
+        half = dict(zip(ug, rng.permutation(len(ug)) % 2)); h = np.array([half[x] for x in gR])
         reps.append(two_sample(XR[h == 0], XR[h == 1], gR[h == 0], gR[h == 1], seed=rep))
     acc = [r['accuracy'] for r in reps]
-    res['F102_real_vs_real_random_halves'] = dict(accuracy_mean=float(np.mean(acc)), accuracy_each=acc, ci95_each=[r['ci95'] for r in reps], top_features_first=reps[0]['top_features'])
+    res['F102_two_halves_by_vehicle'] = dict(accuracy_mean=float(np.mean(acc)), accuracy_each=acc, ci95_each=[r['ci95'] for r in reps], top_features_first=reps[0]['top_features'])
     a = np.isin(runR, [1, 2])
-    res['real_vs_real_runs_1_2_vs_3_4'] = two_sample(XR[a], XR[~a], gR[a], gR[~a])
+    res['F102_two_runs_1_2_vs_3_4'] = two_sample(XR[a], XR[~a], gR[a], gR[~a])
+    # Two days: the same road on 6 October 2021 (stationary cameras, report 05's held-out run 6) against 27 May 2022.
+    os.chdir(REPO); sys.path.insert(0, os.path.join(REPO, 'research/truth/scripts'))
+    from opus_windows import windows as cut
+    st = cut('I90stat'); m6 = st.meta['run'] == 6
+    XD, sigma_d = real_set(st.s[:300, m6], st.v[:300, m6], st.vl[:300, m6], rng)
+    gD = np.tile(np.array([f'stat:{f}' for f in st.meta['fid'][m6]]), 3)
+    res['tracker_leftover_noise_m_I90stat'] = sigma_d
+    res['F102_two_days_I90mov_vs_I90stat_run6'] = two_sample(XR, XD, gR, gD)
+    res['F102_two_days_mmd'] = mmd_test(XR, XD, gR, gD, False, rng)
+    res['F102_two_days_w1'] = w1_table(XR, XD)
     print(json.dumps(res, indent=1), flush=True)
     for tag in ('main_s0', 'sumo_s0'):
         p = f'{D}/{tag}.roll.npz'
@@ -202,12 +254,12 @@ def main():
         xfs = np.vstack([np.zeros((1, N)), np.cumsum((V[1:] + V[:-1]) * 0.05, 0)])
         xls = xfs + S
         k = np.tile(ok, 3)
-        sS, vS, vlS = instrument(xfs[:, ok], xls[:, ok], sigma, rng)
-        XS = feats(sS, vS, vlS); gS = np.tile(blk[ok], 3)
+        XS = feats(*instrument(xfs[:, ok], xls[:, ok], sigma, rng)); gS = gR[k]
         res[f'F103_{tag}_vs_real_instrument'] = two_sample(XR[k], XS, gR[k], gS)
-        XS0 = feats(S[:, ok], V[:, ok], vl[:, ok])
-        XR0 = feats(s, v, vl)
-        res[f'F106_{tag}_vs_real_no_instrument'] = two_sample(XR0[k], XS0, gR[k], gS)
+        res[f'F108_{tag}_mmd_paired_by_vehicle'] = mmd_test(XR[k], XS, gR[k], gS, True, rng)
+        res[f'F108_{tag}_w1'] = w1_table(XR[k], XS)
+        XS0 = feats(S[:, ok], V[:, ok], vl[:, ok]); XR0 = feats(s[:, ok], v[:, ok], vl[:, ok])
+        res[f'F106_{tag}_vs_real_no_instrument'] = two_sample(XR0, XS0, gR[k], gS)
         print(tag, json.dumps({x: res[x] for x in res if tag in x}, indent=1), flush=True)
     json.dump(res, open(os.path.join(REPO, 'research/truth/replay/classifier.json'), 'w'), indent=1)
 
