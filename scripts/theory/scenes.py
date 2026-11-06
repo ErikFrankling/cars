@@ -1992,7 +1992,7 @@ class N9:
     @staticmethod
     def measure(run, book, st):
         for label, text, off, g2, lanes in N9_CASES:
-            out, L, trend, holds, left, why = [], [], [], [], [], []
+            out, L, trend, holds, left, why, fed, done, late_r = [], [], [], [], [], [], [], [], []
             for r in range(SEEDS):
                 name = f'N9{label}{r}'
                 x = run.trips(name)
@@ -2005,7 +2005,10 @@ class N9:
                 L.append(run.lane_len(name, 'lk_0'))
                 f = run.cell(name).sort_values(['trip', 'time'], kind='stable')
                 holds.append(longest_stand(f, on=('.lk_', '.up_')))
-                left.append(len(f[f.time >= 2890]))
+                # distinct cars, not FCD rows (F600: the line counted about ten rows per car)
+                left.append(f[f.time >= 2890].trip.nunique())
+                fed.append(N9_FEED[label] * N9_END / 3600); done.append(int((a < 2890).sum()))
+                late_r.append(((a >= 2290) & (a < 2890)).sum() / 600 / max(((a >= 400) & (a < N9_END)).sum() / (N9_END - 400), 1e-9))
             q = [f"{np.mean(out):.1f}"]
             if lanes == 1:
                 fid, i = {'z': ('F047', 0), 'o': ('F047', 1), 'h': ('F291', 0), 'i': ('F292', 0)}[label]
@@ -2018,6 +2021,8 @@ class N9:
             book.check('N9', 'F293', 0, holds, quantity=f'{text}: longest stand on link or approach (s)', seeds=seedtag('N9'), mode='high', tol='0')
             book.check('N9', 'F294', 0, left, quantity=f'{text}: cars left {2890 - N9_END} s after the feed ends', seeds=seedtag('N9'), tol='0')
             book.info('N9', f'{text}: flow late over early (1 = no decay); link lane (m)', f'{np.mean(trend):.2f}; {np.mean(L):.1f}')
+            book.info('N9', f'{text}: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)',
+                      f'{np.mean(fed):.0f}, {np.mean(done):.0f}, {np.mean(left):.0f}; {np.mean(late_r):.2f}')
 
 
 def longest_stand(f, on=None):

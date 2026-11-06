@@ -1,0 +1,140 @@
+{
+ "per_table": {
+  "highD": {
+   "residual_sd": 0.1967,
+   "acf": [
+    0.822,
+    0.453,
+    0.154,
+    -0.042
+   ],
+   "fit_acf": [
+    0.762,
+    0.437,
+    0.232,
+    0.068
+   ],
+   "sse": 0.022,
+   "driver_share": 1.0,
+   "tau_n": 1.5,
+   "tau_m": 0.01,
+   "sigma_n": 0.237,
+   "instrument_sd_of_1s_change": 0.0
+  },
+  "HT": {
+   "residual_sd": 0.278,
+   "acf": [
+    0.721,
+    0.254,
+    -0.065,
+    -0.144
+   ],
+   "fit_acf": [
+    0.622,
+    0.231,
+    0.071,
+    0.013
+   ],
+   "sse": 0.0536,
+   "driver_share": 1.0,
+   "tau_n": 0.75,
+   "tau_m": 0.01,
+   "sigma_n": 0.388,
+   "instrument_sd_of_1s_change": 0.0
+  },
+  "I90stat": {
+   "residual_sd": 0.3478,
+   "acf": [
+    0.002,
+    0.086,
+    -0.067,
+    -0.057
+   ],
+   "fit_acf": [
+    -0.003,
+    0.071,
+    0.015,
+    0.004
+   ],
+   "sse": 0.0107,
+   "driver_share": 0.48,
+   "tau_n": 0.5,
+   "tau_m": 0.01,
+   "sigma_n": 0.38,
+   "instrument_sd_of_1s_change": 0.251
+  },
+  "I294L1": {
+   "residual_sd": 0.3983,
+   "acf": [
+    0.101,
+    0.225,
+    -0.18,
+    0.059
+   ],
+   "fit_acf": [
+    0.106,
+    0.125,
+    0.038,
+    0.007
+   ],
+   "sse": 0.0605,
+   "driver_share": 0.54,
+   "tau_n": 0.75,
+   "tau_m": 0.01,
+   "sigma_n": 0.409,
+   "instrument_sd_of_1s_change": 0.27
+  },
+  "I395": {
+   "residual_sd": 0.2987,
+   "acf": [
+    0.324,
+    0.364,
+    0.229,
+    0.092
+   ],
+   "fit_acf": [
+    0.338,
+    0.338,
+    0.209,
+    0.081
+   ],
+   "sse": 0.0014,
+   "driver_share": 0.64,
+   "tau_n": 2.0,
+   "tau_m": 0.01,
+   "sigma_n": 0.277,
+   "instrument_sd_of_1s_change": 0.179
+  }
+ },
+ "speed_about_2s_quadratic": {
+  "highD": {
+   "sd_m_s": 0.0028,
+   "mad_sd": 0.003,
+   "samples": 870084
+  },
+  "HT": {
+   "sd_m_s": 0.0064,
+   "mad_sd": 0.0038,
+   "samples": 3343237
+  },
+  "I90stat": {
+   "sd_m_s": 0.0447,
+   "mad_sd": 0.023,
+   "samples": 1517616
+  },
+  "I294L1": {
+   "sd_m_s": 0.0286,
+   "mad_sd": 0.0061,
+   "samples": 298619
+  },
+  "I395": {
+   "sd_m_s": 0.1068,
+   "mad_sd": 0.0162,
+   "samples": 1392014
+  }
+ },
+ "driver_noise_pooled": {
+  "sigma_n_median": 0.38,
+  "tau_n_median": 0.75
+ }
+}
