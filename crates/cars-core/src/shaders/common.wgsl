@@ -157,6 +157,9 @@ struct Params {
     md_c: vec4f,      // standstill gap, braking edge of the band (s), closing response cap (m/s), free relaxation time (s)
     md_t: vec4f,      // time gap at 6.5, 12.5, 17.5, 22.5 m/s
     md_u: vec4f,      // time gap at 30, 40 m/s, spare, spare
+    lcm_a: vec4f,     // measured lane change (measure/LANECHANGE.md): start law constant, per 10 s to the end; critical lag log median, per m/s closing
+    lcm_b: vec4f,     // critical lag log-SD; critical lead log median, per m/s closing, log-SD
+    lcm_c: vec4f,     // share of followers who open a gap; on; spare; spare
 }
 
 struct Globals {

@@ -654,7 +654,7 @@ fn inform_leader(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f32,
             return planned;
         }
         // Overtake: ask the leader to hold its speed.
-        if (n.leader_trip != NONE && n.leader_wait <= 5.0) {
+        if (n.leader_trip != NONE && n.leader_wait <= 5.0 && !lcm_on(types[n.leader_vtype])) {
             lc_advice(n.leader_trip, n.speed);
             atomicOr(&adv_flags[n.leader_trip], dir | LCA_AM_LEADER);
         }
@@ -709,6 +709,8 @@ fn inform_follower(e: Veh, n: LcNeighbors, blocked: u32, dir: u32, remaining: f3
     let limit = lanes[e.lane].speed;
     // Report 18: a follower does a share of what following the merger asks, never all of it. That is hu_follower.
     if (hu_courteous(ft) && (P.hu_flags & HS_FOLLOW) != 0u && ft.model == MODEL_HUMAN) { return; }
+    // F707: before the start a follower does nothing measurable beyond the share who open a gap (hu_request).
+    if (lcm_on(ft) && (blocked & LCA_BLOCK_FOLLOWER) == 0u) { return; }
     if ((blocked & LCA_BLOCK_FOLLOWER) != 0u) {
         // A human follower is not told. It sees the blinker and decides, in hu_request.
         if (hu_courteous(ft)) {
@@ -1078,7 +1080,7 @@ fn wants_change(side: i32, e: Veh, own: LcNeighbors, neigh: LcNeighbors, blocked
             var req = ret | lca | LCA_SPEEDGAIN;
             if (lc_pl > 50.0) {
                 req |= LCA_URGENT;
-                if ((blocked & LCA_BLOCK_FOLLOWER) != 0u && neigh.follower != NONE) {
+                if ((blocked & LCA_BLOCK_FOLLOWER) != 0u && neigh.follower != NONE && !lcm_on(types[neigh.f_vtype])) {
                     let self_ty = ty;
                     ty = types[neigh.f_vtype];
                     let help = max(min_next_speed(neigh.f_speed), e.speed - 1.0);
@@ -1135,6 +1137,41 @@ fn hd_phys(t: VType) -> bool { return mu > 0.0 && t.model == MODEL_KRAUSS && (P.
 
 fn hu_courteous(t: VType) -> bool { return (t.model == MODEL_HUMAN || hd_phys(t)) && (P.hu_flags & HS_COURTESY) != 0u; }
 
+// Measured lane changes (research/truth/measure/LANECHANGE.md): the one driver's decisions with numbers from exiD.
+fn lcm_on(t: VType) -> bool { return hd_phys(t) && P.lcm_c.y > 0.5; }
+
+// A critical time gap, lognormal, drawn afresh every 0.5 s as the fit assumes; it rises with the closing speed.
+fn lcm_critical(trip: u32, key: u32, ln_med: f32, per_close: f32, sd: f32, close: f32) -> f32 {
+    let second = pcg(u32(f32(G.step) * dt * 2.0));
+    return exp(ln_med + per_close * max(close, 0.0) + sd * hu_normal(trip ^ second, key));
+}
+
+// Gaps a change into `n` takes: lag over the follower's speed, lead over ours, each at least its critical gap.
+// A body alongside refuses.
+fn lcm_gate(e: Veh, n: LcNeighbors) -> u32 {
+    var blocked = 0u;
+    if (n.follower != NONE) {
+        let lag = n.f_gap + types[n.f_vtype].min_gap;
+        if (lag <= 0.0 || lag / max(n.f_speed, 1.0) < lcm_critical(e.trip, 41u, P.lcm_a.z, P.lcm_a.w, P.lcm_b.x, n.f_speed - e.speed)) { blocked |= LCA_BLOCK_FOLLOWER; }
+    }
+    if (n.gap < 1e8) {
+        let lead = n.gap + ty.min_gap;
+        if (lead <= 0.0 || lead / max(e.speed, 1.0) < lcm_critical(e.trip, 43u, P.lcm_b.y, P.lcm_b.z, P.lcm_b.w, e.speed - n.speed)) { blocked |= LCA_BLOCK_LEADER; }
+    }
+    return blocked;
+}
+
+// The start of a must-change: a chance per 0.5 s from the time left to the end of the lane, then the gaps.
+fn lcm_must(e: Veh, n: LcNeighbors, dest: u32) -> u32 {
+    var blocked = lcm_gate(e, n);
+    let side = i32(dest) - i32(e.lane);
+    if (sign(f32(unpack_off(e.best_off))) == f32(side)) {
+        let p = 1.0 / (1.0 + exp(-(P.lcm_a.x + P.lcm_a.y * hu_tte(e) / 10.0)));
+        if (h01(e.trip ^ pcg(G.step), 31u) >= 1.0 - pow(1.0 - p, dt / 0.5)) { blocked |= LCA_BLOCK_LEADER; }
+    }
+    return blocked;
+}
+
 // How pressed the driver is: 1 at the end of the road. Distance only, as Rao, Lee and I-80 say.
 // Report 18: time left to the end of the lane, the form that carries from one site to another.
 fn hu_tte(e: Veh) -> f32 {
@@ -1176,6 +1213,7 @@ fn hu_request(e: Veh, n: LcNeighbors, dir: u32) {
     // scales its fitted let-in chance. Fixed per driver, so asking again does not change the answer.
     var chance = P.hu_a.x;
     if (P.hu_c.w < 0.5) { chance /= 1.0 + exp(-eta); }
+    if (lcm_on(ft)) { chance = P.lcm_c.x; }
     if (h01(n.f_trip, 1u) >= chance) { return; }
     let u = hu_urgency(e);
     let self_ty = ty;
@@ -1296,6 +1334,10 @@ fn hu_critical_lag(e: Veh, n: LcNeighbors, mandatory: bool, d: f32, nu: f32, sec
 }
 
 fn check_blocked_human(e: Veh, n: LcNeighbors, dest: u32) -> u32 {
+    if (lcm_on(ty)) {
+        if ((e.lc_own & LCA_URGENT) != 0u) { return lcm_must(e, n, dest); }
+        return lcm_gate(e, n);
+    }
     if ((P.hu_flags & HS_START) != 0u && (e.lc_own & LCA_URGENT) != 0u) { return hu_merge_gate(e, n, dest, lc_i); }
     var blocked = 0u;
     let published = P.hu_c.w > 0.5;
@@ -1409,6 +1451,23 @@ fn ph_lc_room(e: Veh, dest: u32) -> bool {
     return (w / 1.0 + 1.0) * e.speed <= road;
 }
 
+// A link with no junction box behind it: no internal lane, no foes, no signal. A change may run on over it.
+fn link_plain(k: u32) -> bool { return k != NONE && (links[k].flags & (L_HAS_VIA | L_HAS_FOES)) == 0u && links[k].tl == NONE; }
+
+fn plain_run(start: u32, route_i: u32, route_end: u32) -> f32 {
+    var l = start;
+    var r = route_i;
+    var total = 0.0;
+    for (var d = 0u; d < 8u; d++) {
+        total += lanes[l].length;
+        let k = pick_link(l, r, route_end);
+        if (total > 1000.0 || !link_plain(k)) { return total; }
+        l = links[k].to_lane;
+        r += 1u;
+    }
+    return total;
+}
+
 // Road left for a change into `dest`. Sideways motion carries over lane ends as long as the route goes on from
 // `dest`. Negative when it does not, as a change that cannot finish before the lane ends would stop halfway for good.
 fn ph_lc_road(e: Veh, dest: u32) -> f32 {
@@ -1418,7 +1477,11 @@ fn ph_lc_road(e: Veh, dest: u32) -> f32 {
         if (e.route_i + 1u >= e.route_end) { return remaining; }
         return -1.0;
     }
-    if (P.lc_carry == 0u) { return remaining; }
+    if (P.lc_carry == 0u) {
+        // A lane cut into sections with nothing between them is one lane to a driver.
+        if (lcm_on(ty) && link_plain(k)) { return remaining + plain_run(links[k].to_lane, e.route_i + 1u, e.route_end); }
+        return remaining;
+    }
     return remaining + continuation_length(links[k].to_lane, e.route_i + 1u, e.route_end);
 }
 
