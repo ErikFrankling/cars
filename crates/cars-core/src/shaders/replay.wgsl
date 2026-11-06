@@ -42,9 +42,10 @@ fn replay_apply(@builtin(global_invocation_id) id: vec3u) {
     let k = rtrip[e.trip];
     if (k == NONE) { return; }
     let tr = rtracks[k];
-    let t = rcfg.begin + f32(G.step) * P.dt;
+    // Track times are relative to --begin: seconds of day in f32 would cost centimetres.
+    let t = f32(G.step) * P.dt;
     if (t >= tr.release || tr.n == 0u) {
-        if (t < tr.release + P.dt * 0.5) { atomicAdd(&rstats[4], 1u); }
+        if (t < tr.release + P.dt * 1.5) { atomicAdd(&rstats[4], 1u); }
         return;
     }
     if ((e.flags & F_SHADOW) != 0u) {
@@ -53,7 +54,7 @@ fn replay_apply(@builtin(global_invocation_id) id: vec3u) {
         return;
     }
     let u = (t - tr.t0) / tr.key_dt;
-    if (u > f32(tr.n - 1u) + 1e-3) {
+    if (u > f32(tr.n - 1u) + 0.05) {
         // The recording loses it here: it leaves the area, or the tracker lost it.
         cur[i].flags |= F_REMOVED;
         atomicAdd(&rstats[1], 1u);

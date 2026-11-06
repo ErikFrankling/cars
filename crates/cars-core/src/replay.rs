@@ -2,7 +2,7 @@
 //!
 //! A `.rpl` file, little endian, written by scripts/replay/rpl.py:
 //! `RPL1`, u32 lanes, per lane (u16 length, id bytes), u32 tracks, per track (u16 length, trip id bytes,
-//! f32 t0, f32 key_dt, f32 release, u32 keys, per key (u32 lane in the list above, f32 pos, f32 speed)).
+//! f32 t0, f32 key_dt, f32 release (seconds, as --begin), u32 keys, per key (u32 lane in the list above, f32 pos, f32 speed)).
 //! A track with no keys only forces its trip's insertion; it is simulated from its depart on.
 
 use crate::demand::Demand;
@@ -95,7 +95,8 @@ pub fn attach(world: &mut World, net: &Net, demand: &Demand, path: &std::path::P
             continue;
         };
         rw.trip_track[wt as usize] = rw.tracks.len() as u32;
-        rw.tracks.push(GpuReplayTrack { first, n, t0, key_dt: key_dt.max(1e-3), release, pad: [0; 3] });
+        let rel = |t: f32| if t >= 1e37 { t } else { (t as f64 - begin as f64) as f32 };
+        rw.tracks.push(GpuReplayTrack { first, n, t0: rel(t0), key_dt: key_dt.max(1e-3), release: rel(release), pad: [0; 3] });
         world.trips[wt as usize].depart_speed_mode = DEPART_REPLAY;
     }
     // Replayed trips get queues of their own, so a blocked simulated entry never holds one back.

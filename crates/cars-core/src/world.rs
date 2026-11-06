@@ -547,6 +547,7 @@ pub struct GpuReplayCfg {
 }
 
 /// Twin of `ReplayTrack` in replay.wgsl. Keys `first..first + n` at `t0 + k * key_dt`; replayed while time < `release`.
+/// Times in seconds after `--begin`.
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Debug, Default)]
 pub struct GpuReplayTrack {
