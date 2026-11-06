@@ -118,3 +118,7 @@ The error is batch miss60 killed by the desktop watchdog (disk IO), not a fault.
 | F113 next-second CRPS, 10 seeds | 0.45-0.70, above constant speed 0.37 | **0.649** | 0.68 |
 
 All three pass their bands. The spacing error reaches the real-real floor (5.67); the response is still Krauss's, worse than constant speed, as DRIVER.md's gap band and 0.5 s lag say it must be.
+
+## 4. The measured driver, 7 November
+
+`scenes.py --driver measured --dt 0.25` (research/truth/measure/MODEL.md; `--driver physical` is now the one driver above, through `--tune measured=0`). Forecasts F312-F321 come from the driver's own equations: a platoon twin of the kernel (`scripts/theory/md_platoon.py`) and the band centre of its zero-force band. 91 pass, 95 fail of 186, against 124/62. L1 1,155 / 1,098 veh/h at 50 / 100 km/h, start wave 26.7 km/h, W1 damped (car 30 dips 2.6 m/s less than the leader). The new fails share one cause: the law closes an open gap at 0.025 m/s² per s of time gap, so placed queues, rings and discharge stay open. Details and what is left: `research/truth/measure/MODEL_RESULTS.md`.

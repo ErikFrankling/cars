@@ -92,6 +92,15 @@ pub struct GpuParams {
     pub pad_g: f32,
     pub pad_h: f32,
     pub pad_i: f32,
+    /// The measured driver, research/truth/measure/MODEL.md: closing gain K (m/s), leader share, braking k_g, pull k_p.
+    pub md_a: [f32; 4],
+    /// Response share per step, noise correlation per step, noise scale per step, on (1) or off (0).
+    pub md_b: [f32; 4],
+    /// Standstill bumper gap (m), braking edge of the band (s), closing response cap (m/s), spare.
+    pub md_c: [f32; 4],
+    /// Median steady time gap at 6.5, 12.5, 17.5, 22.5 m/s, then 30 and 40 m/s.
+    pub md_t: [f32; 4],
+    pub md_u: [f32; 4],
 }
 
 #[repr(C)]
@@ -336,6 +345,8 @@ pub struct GpuTrip {
     pub pad: [u32; 3],
     pub persona: u32,
     pub persona2: u32,
+    /// The measured driver's own time gap factor, 0 for every other driver.
+    pub gap_f: f32,
 }
 
 #[repr(C)]
@@ -657,6 +668,34 @@ impl SimConfig {
     pub fn tune(&self, name: &str, default: f32) -> f32 {
         self.tune.iter().rev().find(|(k, _)| k == name).map_or(default, |(_, v)| *v)
     }
+
+    /// `--tune measured=1` drives Krauss types by the measured driver of research/truth/measure/MODEL.md in physical mode.
+    /// Off by default until it passes its held-out tests and T0 (measure/MODEL_RESULTS.md); the default is the one driver
+    /// of foundations/scenes-log.md section 3.
+    pub fn measured(&self) -> bool {
+        self.mu > 0.0 && !self.humans && self.tune("measured", 0.0) > 0.0
+    }
+}
+
+/// The measured driver's numbers, research/truth/measure/model_fit.json: fitted on highD (without location 6), DLR HT
+/// 06-14 UTC and TGSIM I-90/94 stationary, I-294 L1, I-395, frozen before any held-out recording was read.
+pub const MD_K: f32 = 2.687;
+pub const MD_CA: f32 = 0.508;
+pub const MD_KG: f32 = 0.284;
+pub const MD_KP: f32 = 0.0253;
+pub const MD_NOISE_SD: f32 = 0.968;
+pub const MD_NOISE_T: f32 = 0.1;
+/// Free driving relaxes to the desired speed with this time, fitted on 30 s rollouts (F311).
+pub const MD_TV: f32 = 1.0;
+/// DRIVER.md: response time constant, standstill gap, gap spread between drivers and its link to free speed, desired speed spread.
+pub const MD_TAU_R: f32 = 0.5;
+pub const MD_S0: f32 = 1.7;
+pub const MD_GAP_SD: f64 = 0.27;
+pub const MD_GAP_SPEED_R: f64 = -0.41;
+pub const MD_SPEED_DEV: f32 = 0.17;
+
+fn md_type(t: &VType, cfg: &SimConfig) -> bool {
+    cfg.measured() && t.model == CfModel::Krauss
 }
 
 impl Default for SimConfig {
@@ -880,6 +919,10 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
     g.v_lat = num("phys.v_lat", cfg.tune("v_lat", 0.6));
     g.width = t.width;
+    // DRIVER.md: real cars stand 1.7 m apart in rounD and inD queues, measured on real box lengths. SUMO's 2.5 had no source.
+    if md_type(t, cfg) {
+        g.min_gap = num("phys.min_gap", if t.min_gap == 2.5 { cfg.tune("md_s0", MD_S0) } else { t.min_gap });
+    }
     // The human driver keeps the physics it was fitted on: tau 0.65, sigma as given, leader braking 4.5.
     let human = cfg.humans || t.model == CfModel::Human;
     // Newell's T, the median driver: real medians fit 1.4 s at any speed (foundations/B §1, report 19's pairs).
@@ -1156,11 +1199,22 @@ impl World {
             miss_short: cfg.tune("miss_short", 15.0),
             // Report 05, DLR UT: position 2 moves 1.0 s after its predecessor, the first car 1.62 s after green.
             start_react: if cfg.humans { 0.0 } else { cfg.tune("start_react", 1.0) },
-            first_react: if cfg.humans { 0.0 } else { cfg.tune("first_react", 1.62) },
+            // The measured driver: SinD weekdays pass 1.5 m/s 2.0 s after green, of which its 0.5 s response takes 1.22 s.
+            first_react: if cfg.humans { 0.0 } else { cfg.tune("first_react", if cfg.measured() { 0.78 } else { 1.62 }) },
             pad_f: 0.0,
             pad_g: 0.0,
             pad_h: 0.0,
             pad_i: 0.0,
+            md_a: [cfg.tune("md_k", MD_K), cfg.tune("md_ca", MD_CA), cfg.tune("md_kg", MD_KG), cfg.tune("md_kp", MD_KP)],
+            md_b: {
+                // An OU noise averaged over the step: the same noise at any dt, down to a correlation time under one step.
+                let (sd, tn, dt) = (cfg.tune("md_noise", MD_NOISE_SD), cfg.tune("md_noise_t", MD_NOISE_T), cfg.dt);
+                let avg = (2.0 * (tn / dt).powi(2) * (dt / tn - 1.0 + (-dt / tn).exp())).sqrt();
+                [1.0 - (-cfg.dt / cfg.tune("md_tau_r", MD_TAU_R)).exp(), (-dt / tn).exp(), sd * avg, if cfg.measured() { 1.0 } else { 0.0 }]
+            },
+            md_c: [cfg.tune("md_s0", MD_S0), cfg.tune("md_near", 0.5), cfg.tune("md_dv_max", 1.5), cfg.tune("md_tv", MD_TV)],
+            md_t: [1.6, 1.4, 1.2, 1.1],
+            md_u: [0.95, 0.8, 0.0, 0.0],
         };
         w
     }
@@ -1504,7 +1558,7 @@ impl World {
                     before: l.internal_before.map(|b| b + lane0).unwrap_or(NONE),
                     state: l.state as u32,
                     from_lane: l.from_lane + lane0,
-                    tc: if cfg.mu <= 0.0 { 0.0 } else if cfg.humans { (critical_gap(net, topo, l) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { critical_gap_hbs(net, topo, l) * cfg.tune("tc_scale", 1.0) },
+                    tc: if cfg.mu <= 0.0 { 0.0 } else if cfg.humans { (critical_gap(net, topo, l) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { if cfg.measured() && roundabout[l.to_edge as usize] && !roundabout[net.lanes[l.from_lane as usize].edge as usize] && critical_gap_hbs(net, topo, l, true) > 0.0 { cfg.tune("tc_roundabout", 3.0) } else { critical_gap_hbs(net, topo, l, cfg.measured()) * cfg.tune("tc_scale", 1.0) } },
                 });
             }
         }
@@ -1571,7 +1625,23 @@ impl World {
                     uniform(&mut rng_state) as f32 * len
                 }
             };
-            let sf = speed_factor(vt, &mut rng_state);
+            let md = md_type(vt, cfg);
+            let sf = if md && vt.speed_factor_dev == 0.1 {
+                // DRIVER.md: desired speed spreads by a CV of 0.12-0.20 between drivers; SUMO's 0.1 is too narrow.
+                speed_factor(&VType { speed_factor_dev: cfg.tune("md_speed_dev", MD_SPEED_DEV), ..vt.clone() }, &mut rng_state)
+            } else {
+                speed_factor(vt, &mut rng_state)
+            };
+            // DRIVER.md: each driver keeps a time gap factor (log-SD 0.27) for the trip, lower for drivers who are fast when free.
+            let gap_f = if md {
+                let dev = if vt.speed_factor_dev == 0.1 { cfg.tune("md_speed_dev", MD_SPEED_DEV) } else { vt.speed_factor_dev } as f64;
+                let zv = if dev > 0.0 { (sf as f64 - vt.speed_factor_mean as f64) / (dev * vt.speed_factor_mean as f64) } else { 0.0 };
+                let r = cfg.tune("md_gap_speed_r", MD_GAP_SPEED_R as f32) as f64;
+                let z = r * zv + (1.0 - r * r).sqrt() * normal(&mut rng_state);
+                (cfg.tune("md_gap_sd", MD_GAP_SD as f32) as f64 * z).exp() as f32
+            } else {
+                0.0
+            };
             let (persona, persona2) = if cfg.mu > 0.0 && (cfg.humans || matches!(vt.model, CfModel::Human)) { draw_persona(&mut rng_state) } else { (0, 0) };
             let mask = match t.depart_lane {
                 DepartLane::Best | DepartLane::BestProb => {
@@ -1601,6 +1671,7 @@ impl World {
                 } else { 0 }],
                 persona,
                 persona2,
+                gap_f,
             });
             match t.depart_lane {
                 DepartLane::Index(l) if cfg.per_lane_queues => by_lane.entry((route[0], l)).or_default().push(id),
@@ -1656,7 +1727,10 @@ fn critical_gap(net: &Net, topo: &Topology, l: &crate::topology::Link) -> f32 {
 /// HBS 2015 S5, urban give-way, critical gap by movement: right from the minor road 5.9 s, left from the major 5.5,
 /// through 6.7, left from the minor 6.5 (KNOBEL form of HBS 2015; foundations/B §3). Stop sign and a fast major road
 /// as TRVMB adds them: 0.7 s and up to 0.9 s.
-fn critical_gap_hbs(net: &Net, topo: &Topology, l: &crate::topology::Link) -> f32 {
+/// HBS 2015 S5 by movement, or with `measured` the critical gaps of DRIVER.md (inD Bendplatz, rounD): minor road left
+/// 6.9 s, minor road straight 6.6, left off the priority road 3.9, roundabout entry 3.0. Right from a minor road was not
+/// measurable and keeps HBS's 5.9; the stop sign and fast major terms stay HBS's.
+fn critical_gap_hbs(net: &Net, topo: &Topology, l: &crate::topology::Link, measured: bool) -> f32 {
     let entry = &topo.links[l.entry as usize];
     let foes = if l.foe_links.is_empty() { &entry.foe_links } else { &l.foe_links };
     if foes.is_empty() {
@@ -1669,10 +1743,10 @@ fn critical_gap_hbs(net: &Net, topo: &Topology, l: &crate::topology::Link) -> f3
     let stop = matches!(entry.state, b's' | b'w');
     let major_left = topo.lane_links[entry.from_lane as usize].iter().any(|&k| matches!(topo.links[k as usize].state, b'M' | b'O'));
     let base = match entry.dir {
-        b'l' | b'L' | b't' if major_left => 5.5,
+        b'l' | b'L' | b't' if major_left => if measured { 3.9 } else { 5.5 },
         b'r' | b'R' => 5.9,
-        b'l' | b'L' | b't' => 6.5,
-        _ => 6.7,
+        b'l' | b'L' | b't' => if measured { 6.9 } else { 6.5 },
+        _ => if measured { 6.6 } else { 6.7 },
     };
     let fast = foes.iter().map(|&f| net.lanes[topo.links[f as usize].from_lane as usize].speed).fold(0.0f32, f32::max);
     base + if stop { 0.7 } else { 0.0 } + 0.9 * ((fast - 50.0 / 3.6) / (20.0 / 3.6)).clamp(0.0, 1.0)

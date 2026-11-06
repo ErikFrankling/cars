@@ -158,7 +158,36 @@ fn hu_corner(l: Lane, trip: u32) -> f32 {
     return min(l.sqrt_path_r * sqrt(a_y), road);
 }
 
+// The measured driver (research/truth/measure/MODEL.md) drives every Krauss type in physical mode unless switched off.
+fn md_setup(e: Veh) {
+    md_on = mu > 0.0 && P.md_b.w > 0.0 && ty.model == MODEL_KRAUSS && (e.flags & F_SHADOW) == 0u;
+    md_al = 0.0;
+    if (!md_on) { return; }
+    md_k = P.md_a.x;
+    md_ca = P.md_a.y;
+    md_kg = P.md_a.z;
+    md_kp = P.md_a.w;
+    md_beta = P.md_b.x;
+    md_s0 = P.md_c.x;
+    md_near = P.md_c.y;
+    md_dvmax = P.md_c.z;
+    md_tv = P.md_c.w;
+    md_t = P.md_t;
+    md_u = P.md_u.xy;
+    md_f = select(1.0, trips[e.trip].gap_f, trips[e.trip].gap_f > 0.0);
+    md_v0 = lane_vmax(e.lane, e.sf);
+    // Noise moves nobody at a stand.
+    md_noise = select(0.0, e.hu_noise * P.md_b.z, e.speed >= 0.5);
+}
+
+// No car within 100 m ahead on this lane: the range the measured following law was fitted on.
+fn md_alone(i: u32, e: Veh) -> bool {
+    if (i + 1u >= G.n_active || cur[i + 1u].lane != e.lane) { return true; }
+    return cur[i + 1u].pos - types[cur[i + 1u].vtype].length - e.pos > 100.0;
+}
+
 fn hu_setup(e: Veh) {
+    md_setup(e);
     hu_on = false;
     if (ty.model != MODEL_HUMAN || mu <= 0.0) { return; }
     hu_load(trips[e.trip].persona, e.hu_acc, e.hu_noise, P.hu_k, P.hu_d.z, P.hu_d.w);
@@ -432,7 +461,9 @@ fn adapt_to_lane(lane: u32, seen: f32, first: bool, leader_index: u32, ego_pos: 
                 pl_own_a = hu_target(pl_speed, g2, o.speed, pl_lane_vmax, hu_s0);
             }
         }
+        md_al = lead.acc;
         adapt_to_leader(gap, seen, l_len, lead.speed, lt.apparent, lt.model == MODEL_CACC, back >= 0.0, extra);
+        md_al = 0.0;
         pl_w_lead = 1.0;
     }
     let p = atomicLoad(&partial_occ[lane]);
@@ -712,6 +743,7 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     }
     apply_script(ego.flags, cur[i].v_next);
     hu_setup(ego);
+    md_launch = md_alone(i, ego);
     ph_cert_bound = 1e9;
     pl_i = i;
     pl_base = i * MAX_ITEMS;
@@ -729,7 +761,7 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     var route_i = ego.route_i;
     pl_limit = lanes[lane].speed;
     pl_lane_vmax = lane_vmax(lane, ego.sf);
-    var lane_max = max(pl_lane_vmax, select(v_min_comfort, max_v, hu_on));
+    var lane_max = max(pl_lane_vmax, select(v_min_comfort, max_v, hu_on || md_on));
     pl_v = min(max_v + max(pl_bias, 0.0), lane_max);
     let horizon = max_v * dt + brake_gap(max_v, ty.decel, ty.tau);
     var seen = lanes[lane].length - ego.pos;
@@ -1361,7 +1393,7 @@ fn finalize_speed(v_pos: f32, old_v: f32, lane_vmax_: f32, rng: ptr<private, u32
     fin_min = v_min;
     fin_max = v_max;
     if (mu > 0.0) {
-        if (ty.model == MODEL_KRAUSS) { return max(v_min, ph_dawdle(v_max, ph_a_drv(old_v), ex_trip)); }
+        if (ty.model == MODEL_KRAUSS && !md_on) { return max(v_min, ph_dawdle(v_max, ph_a_drv(old_v), ex_trip)); }
         return v_max;
     }
     if (ty.model == MODEL_KRAUSS) {
@@ -1816,6 +1848,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     apply_script(e.flags, e.v_next);
     ph_setup(e);
     hu_setup(e);
+    md_launch = md_alone(i, e);
     if (mu > 0.0) { ego_acc = e.acc; }
     if (P.trace_len > 0u && (e.flags & F_SCRIPTED) != 0u) { ty.max_speed = speed_trace[min(G.step + 1u, P.trace_len - 1u)]; }
     let base = i * MAX_ITEMS;
@@ -1889,6 +1922,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         e.pos += ds;
         e.speed = v_next;
         if (hu_on) { hu_advance(&e, speed, v_safe, v_next); }
+        if (md_on) { e.hu_noise = hu_noise_next(e.hu_noise, trips[e.trip].rng, G.step, P.md_b.y, sqrt(max(1.0 - P.md_b.y * P.md_b.y, 0.0))); }
         ph_account(&e, speed, v_next, ds);
         ph_lateral(&e, speed, v_next);
     } else {
