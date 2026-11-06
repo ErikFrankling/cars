@@ -39,6 +39,7 @@ struct Edge {
     mask: u8,
     rev: u32,
     midblock: f32,
+    sig_free: bool, // free time measured with the signal at low flow in it: add only delay above Webster's zero-flow value
     rank: u8, // road class: 4 motorway and trunk, 3 primary, 2 secondary, 1 tertiary, 0 other
 }
 
@@ -107,7 +108,7 @@ fn ids(s: &str) -> Vec<u32> {
 fn load_net(dir: &str) -> Net {
     let edges: Vec<Edge> = tsv(&format!("{dir}/edges.tsv"))
         .into_iter()
-        .map(|r| Edge { id: r[0].clone(), len: r[1].parse().unwrap(), v: r[2].parse().unwrap(), lanes: r[3].parse().unwrap(), motorway: r[4] == "1", beta: r[5].parse().unwrap(), mask: r[6].parse().unwrap(), rev: r[7].parse::<i64>().map(|x| if x < 0 { NONE } else { x as u32 }).unwrap(), midblock: r[8].parse().unwrap(), rank: 0 })
+        .map(|r| Edge { id: r[0].clone(), len: r[1].parse().unwrap(), v: r[2].parse().unwrap(), lanes: r[3].parse().unwrap(), motorway: r[4] == "1", beta: r[5].parse().unwrap(), mask: r[6].parse().unwrap(), rev: r[7].parse::<i64>().map(|x| if x < 0 { NONE } else { x as u32 }).unwrap(), midblock: r[8].parse().unwrap(), sig_free: r.get(9).map(|x| x == "1").unwrap_or(false), rank: 0 })
         .collect();
     let mut edges = edges;
     if let Ok(t) = std::fs::read_to_string(format!("{dir}/edge_meta.csv")) {
@@ -451,6 +452,34 @@ fn update_supply(net: &Net, sup: &mut Supply, flow: &[f32], block_of_period: &[u
         new_x[p * ng..(p + 1) * ng].copy_from_slice(&xg);
         new_cap[p * ng..(p + 1) * ng].copy_from_slice(&cg);
     }
+    // zero-flow uniform delay of the edge's through movement (any movement if it has none), per block
+    let mut u0 = vec![f32::INFINITY; ne * BLOCKS];
+    let mut u0_any = vec![f32::INFINITY; ne * BLOCKS];
+    for (i, c) in net.conns.iter().enumerate() {
+        if c.kind != 1 {
+            continue;
+        }
+        let e = net.arcs[c.arc as usize].from as usize;
+        if !net.edges[e].sig_free {
+            continue;
+        }
+        for b in 0..BLOCKS {
+            let j = i * BLOCKS + b;
+            let cy = sup.cyc[j].max(1.0);
+            let gc = ((sup.prot[j] + sup.perm[j]) / cy).clamp(0.02, 1.0);
+            let v = 0.5 * cy * (1.0 - gc).powi(2) * if c.pair_inner { 0.35 } else { 1.0 };
+            let k = e * BLOCKS + b;
+            u0_any[k] = u0_any[k].min(v);
+            if c.f >= 0.99 {
+                u0[k] = u0[k].min(v);
+            }
+        }
+    }
+    for k in 0..u0.len() {
+        if !u0[k].is_finite() {
+            u0[k] = u0_any[k];
+        }
+    }
     // queues through time, then delays
     let mut res_e = vec![0f32; p_n * ne];
     for g in 0..ng {
@@ -479,7 +508,10 @@ fn update_supply(net: &Net, sup: &mut Supply, flow: &[f32], block_of_period: &[u
                         let cy = sup.cyc[j].max(1.0);
                         let gc = ((sup.prot[j] + sup.perm[j]) / cy).clamp(0.02, 1.0);
                         let u = 0.5 * cy * (1.0 - gc).powi(2) / (1.0 - x_rand.min(1.0) * gc).max(0.02);
-                        d += if con.pair_inner { u * 0.35 } else { u };
+                        let u = if con.pair_inner { u * 0.35 } else { u };
+                        let e0 = net.arcs[m as usize].from as usize;
+                        let z = u0[e0 * BLOCKS + b];
+                        d += if z.is_finite() { (u - z).max(0.0) } else { u };
                         d += over.max(0.0) + det;
                     }
                     2 => {

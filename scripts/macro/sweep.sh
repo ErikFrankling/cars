@@ -3,7 +3,7 @@
 set -e
 cargo build --release -p cars-macro 2>&1 | tail -1
 mkdir -p .macro-data/runs
-run() { name=$1; shift; target/release/macro .macro-data/prep_region .macro-data/runs/$name --iters 45 --reroute 3 --threads ${THREADS:-4} "$@" 2>&1 | tail -1; echo finished $name; }
+run() { name=$1; shift; target/release/macro .macro-data/${PREP:-prep_ft} .macro-data/runs/$name --iters 45 --reroute 3 --threads ${THREADS:-4} "$@" 2>&1 | tail -1; echo finished $name; }
 for h in 8 16; do
   run sw_s1640_$h --hours $h --s 1640
   run sw_s1900_$h --hours $h --s 1900
