@@ -9,14 +9,14 @@ Good science: a simulator whose every behaviour is tested against recordings whe
 | Tier | State | Number that says so |
 |---|---|---|
 | T0 Verification | Running: theory scenes, one driver, frozen time step | Scenes passing; baseline 74 pass, 98 fail (physical), 79, 99 (human) |
-| T1 One driver | Next: replay harness | F101 spacing error; F102-F103 classifier |
-| T2 Streams | Next, same harness | F104 discharge per cycle against a point queue |
-| T3 Networks, recorded demand | Data downloading: pNEUMA, Songdo | |
+| T1 One driver | Harness merged (`replay/RESULTS.md`). Measuring the driver's parts from highD, inD, rounD, exiD, SinD | Main's driver fails: 30 s spacing error 6.30 m; classifier 0.89 against a real floor of 0.64-0.68; next-second response 0.68 m/s, worse than constant speed (0.37). It steers to its own 1 s gap; real followers keep 2.3 s and let it drift |
+| T2 Streams | DLR UT approach replays with its recorded signals | Discharge per cycle off by 0.14-0.32 cars of 7.3 (harness check, not independent). Cars cross the stop line 2.1-2.4 s early: launch at 2.6 m/s² against 1.8 measured. F120 on SinD needs stop lines inferred first |
+| T3 Areas, recorded demand | pNEUMA on disk (15 GB); Songdo downloading | |
 | T4 Cities | Berlin macro merged, parked: `foundations/macro-log.md` ("Pick it up cold") | Movement table passes (0.18% of site-hours over). Whole day: arterial speed bias -5.6%, dip .66 against .69; motorways, jam list (0-17% caught) and counts (RMSN .43) fail. Route choice alone reaches RMSN .30, so next is route cost on unsignalled streets |
 | T5 Self-driving | Waits for T3 | |
 
 ## Recordings on disk
-Car following and lane changes: highD and exiD (`datasets/levelx/`), TGSIM (5 sites), DLR HT (A39), HIGH-SIM sample, NGSIM (4 sites), DRaT, HDSVT. Junctions: inD and rounD (`datasets/levelx/`), DLR UT (24 h, controller signal states), SinD (4 cities, signal states), OpenDD, Swiss roundabouts, Songdo one junction-day. Whole areas: pNEUMA one file (full set downloading). Junction sets downloading: Songdo (20 junctions), Helsinki (Jätkäsaari drones, 2024-2025, the Nordic contrast), LADDMS stage 1 (lidar at a Nashville corridor). Cities: Xuancheng, Cambridge one day, Jinan. All under `/home/erikf/projects/personal/cars-data/truth/trajectories/` and `datasets/`.
+Car following and lane changes: highD and exiD (`datasets/levelx/`), TGSIM (5 sites), DLR HT (A39), HIGH-SIM sample, NGSIM (4 sites), DRaT, HDSVT. Junctions: inD and rounD (`datasets/levelx/`), DLR UT (24 h, controller signal states), SinD (4 cities, signal states), OpenDD, Swiss roundabouts, Songdo one junction-day. Whole areas: pNEUMA (`datasets/pneuma-full`). Junction sets: Helsinki (`datasets/helsinki-drones-full`, Jätkäsaari 2024-2025, the Nordic contrast), LADDMS stage 1 (`datasets/laddms-stage1`, lidar at a Nashville corridor), Songdo (20 junctions, downloading to `datasets/songdo-full`). Cities: Xuancheng, Cambridge one day, Jinan. All under `/home/erikf/projects/personal/cars-data/truth/trajectories/` and `datasets/`.
 
 ## What is known, measured or computed
 | Fact | Value | Source |
