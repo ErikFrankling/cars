@@ -1562,8 +1562,9 @@ impl World {
                     before: l.internal_before.map(|b| b + lane0).unwrap_or(NONE),
                     state: l.state as u32,
                     from_lane: l.from_lane + lane0,
-                    // Roundabout entries take rounD's measured 3.0 s (DRIVER.md) for both physical drivers.
-                    tc: if cfg.mu <= 0.0 { 0.0 } else if cfg.humans { (critical_gap(net, topo, l) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { if roundabout[l.to_edge as usize] && !roundabout[net.lanes[l.from_lane as usize].edge as usize] && critical_gap_hbs(net, topo, l, true) > 0.0 { cfg.tune("tc_roundabout", 3.0) } else { critical_gap_hbs(net, topo, l, cfg.measured()) * cfg.tune("tc_scale", 1.0) } },
+                    // Roundabout entries take rounD's measured critical gap of drivers who stopped at the line, 4.97 s (gaps_rounD.json):
+                    // the give-way rule counts gaps for a head standing there. The 3.0 s of all seen arrivals is mostly rolling drivers (F631, F634).
+                    tc: if cfg.mu <= 0.0 { 0.0 } else if cfg.humans { (critical_gap(net, topo, l) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { if roundabout[l.to_edge as usize] && !roundabout[net.lanes[l.from_lane as usize].edge as usize] && critical_gap_hbs(net, topo, l, true) > 0.0 { cfg.tune("tc_roundabout", 4.97) } else { critical_gap_hbs(net, topo, l, cfg.measured()) * cfg.tune("tc_scale", 1.0) } },
                 });
             }
         }

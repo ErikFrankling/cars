@@ -1026,5 +1026,124 @@
     27313
    ]
   }
+ },
+ "launch_fit": {
+  "rounD": {
+   "c_a": 0.301,
+   "ci95": [
+    0.255,
+    0.344
+   ],
+   "queries": 1662,
+   "launches": 204,
+   "rmse_round1_ca": 0.5539,
+   "rmse_fitted": 0.5396,
+   "rmse_constant_speed": 1.0881
+  },
+  "inD": {
+   "c_a": 0.366,
+   "ci95": [
+    0.312,
+    0.441
+   ],
+   "queries": 984,
+   "launches": 99,
+   "rmse_round1_ca": 0.4398,
+   "rmse_fitted": 0.4322,
+   "rmse_constant_speed": 1.0203
+  },
+  "SinD Changchun": {
+   "c_a": 0.444,
+   "ci95": [
+    0.399,
+    0.465
+   ],
+   "queries": 4906,
+   "launches": 292,
+   "rmse_round1_ca": 0.4971,
+   "rmse_fitted": 0.4957,
+   "rmse_constant_speed": 1.0481
+  },
+  "SinD Chongqing": {
+   "c_a": 0.619,
+   "ci95": [
+    0.55,
+    0.82
+   ],
+   "queries": 124,
+   "launches": 10,
+   "rmse_round1_ca": 0.3954,
+   "rmse_fitted": 0.3893,
+   "rmse_constant_speed": 1.1574
+  },
+  "SinD Tianjin": {
+   "c_a": 0.32,
+   "ci95": [
+    0.0,
+    0.62
+   ],
+   "queries": 85,
+   "launches": 7,
+   "rmse_round1_ca": 0.4059,
+   "rmse_fitted": 0.3938,
+   "rmse_constant_speed": 0.9359
+  },
+  "Lankershim": {
+   "c_a": 0.113,
+   "ci95": [
+    0.025,
+    0.449
+   ],
+   "queries": 3500,
+   "launches": 225,
+   "rmse_round1_ca": 2.0844,
+   "rmse_fitted": 1.4809,
+   "rmse_constant_speed": 1.8882
+  },
+  "pooled": {
+   "c_a": 0.129,
+   "median_of_sites": 0.343
+  }
+ },
+ "launch_rollout_8s": {
+  "rounD": {
+   "launches": 38,
+   "gap_recorded_8s": 2.55,
+   "gap_model_8s": 4.57,
+   "speed_recorded_8s": 0.58,
+   "speed_model_8s": 1.08,
+   "gap_bias_by_s": {
+    "2": 0.59,
+    "4": 1.66,
+    "6": 1.82,
+    "8": 1.91
+   }
+  },
+  "inD": {
+   "launches": 22,
+   "gap_recorded_8s": 6.14,
+   "gap_model_8s": 8.49,
+   "speed_recorded_8s": 4.23,
+   "speed_model_8s": 4.21,
+   "gap_bias_by_s": {
+    "2": 0.64,
+    "4": 1.54,
+    "6": 1.43,
+    "8": 1.45
+   }
+  },
+  "SinD Changchun": {
+   "launches": 162,
+   "gap_recorded_8s": 10.95,
+   "gap_model_8s": 16.48,
+   "speed_recorded_8s": 5.99,
+   "speed_model_8s": 6.09,
+   "gap_bias_by_s": {
+    "2": 0.63,
+    "4": 1.99,
+    "6": 3.25,
+    "8": 3.4
+   }
+  }
  }
 }

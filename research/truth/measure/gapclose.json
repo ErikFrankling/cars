@@ -1817,5 +1817,31 @@
     "half_time_s": 13.7
    }
   }
+ },
+ "round2_30s": {
+  "HT": {
+   "round1": 21.575,
+   "round2": 21.568,
+   "constant_speed": 71.504
+  },
+  "I90stat": {
+   "round1": 5.365,
+   "round2": 5.275,
+   "constant_speed": 69.678
+  },
+  "I294L1": {
+   "round1": 16.493,
+   "round2": 16.191,
+   "constant_speed": 104.059
+  },
+  "I395": {
+   "round1": 9.484,
+   "round2": 9.46,
+   "constant_speed": 68.073
+  },
+  "pooled": {
+   "round1": 13.229,
+   "round2": 13.124
+  }
  }
 }

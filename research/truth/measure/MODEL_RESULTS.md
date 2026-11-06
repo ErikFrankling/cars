@@ -63,3 +63,7 @@ Most new fails have one cause, the same as the 30 s drift: **the law closes an o
 3. **Noise:** German drone tables and TGSIM disagree (F305). The classifier's jerk cue says the white part is too much.
 4. **N9 cars left standing** and the extra C-S0 locks: find the mechanism (`cars why`).
 5. SinD Xi'an launch; classifier floors for DLR HT and highD.
+
+## Round 2, 7 November ([ROUND2.md](ROUND2.md))
+
+Noise 0.38 m/s² over 0.75 s (the tracker's part removed), desired gap s0 + T v from standstill, k_p kept at 0.025 (1, 10 and 30 s agree), roundabout critical gap 4.97 s. T0 at dt 0.25: 100 pass, 99 fail of 199, against round 1's 91/95 and the one driver's 142/60. L1 1,104 / 1,052 veh/h, S1 2.98 s. Responsible: the follower's acceleration in the first 4 s of a launch, which falls 1.5-2 m behind recorded followers behind the same leaders. Not tuned. Held-out set not opened. Not the default.

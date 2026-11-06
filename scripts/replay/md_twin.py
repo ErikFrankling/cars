@@ -99,7 +99,7 @@ def main(gpu=False):
     out = f'{D}/twin'
     run_cars(['--net', f'{D}/net.xml', '--routes', f'{D}/routes_twin.xml', '--replay', f'{D}/windows.rpl', '--dt', '0.1', '--begin', 0,
               '--end', f101.T0 + f101.W * 0.1, '--seed', 0, '--time-to-teleport', '0', '--fcd', f'{out}.fcd.csv', '--fcd-begin', f101.T0 - 0.05,
-              '--fcd-interval', '0.1', '--tune', 'md_noise=0', '--tune', 'md_gap_sd=0', '--tune', 'md_speed_dev=0'], gpu=gpu, log=f'{out}.log')
+              '--fcd-interval', '0.1', '--tune', 'measured=1', '--tune', 'md_noise=0', '--tune', 'md_gap_sd=0', '--tune', 'md_speed_dev=0'], gpu=gpu, log=f'{out}.log')
     f101.rollout(out)
     r = np.load(f'{out}.roll.npz'); S, V = r['S'], r['V']
     # The twin from the same leader track the harness replays.

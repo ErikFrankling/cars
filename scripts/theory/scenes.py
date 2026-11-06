@@ -1337,7 +1337,7 @@ class Roundabout:
         # runs at its own capacity at 1200 offered.
         tf = 3600 / max(np.mean(outs[0]), 1.0)
         tm = E_T + 7.5 / max(np.mean(vr), 0.5) if vr else float('nan')
-        tc = 3.0   # rounD (DRIVER.md), both physical drivers since round 2 of the measured driver
+        tc = 4.97   # rounD drivers who stopped at the line (gaps_rounD.json), both physical drivers since round 2 (F634)
         for i, q in enumerate(Roundabout.QS[1:]):
             qs = np.mean(qc[q]) / 3600
             fc = 3600 * qs * max(1 - qs * tm, 0) * math.exp(-qs * (tc - tm)) / (1 - math.exp(-qs * tf))

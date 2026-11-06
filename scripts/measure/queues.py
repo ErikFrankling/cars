@@ -33,6 +33,7 @@ RES = os.path.join(HERE, '..', '..', 'research', 'truth', 'measure')
 OUT = os.path.join(RES, 'queues.json')
 WORK = '/home/erikf/projects/personal/cars-data/measure/queues'
 rng = np.random.default_rng(20261109)
+LAUNCH = []
 FT = 0.3048
 VSTAND, VGO = 0.3, 1.0
 
@@ -257,6 +258,12 @@ def events(f, hz, ds):
                 c_f = cross(b, e, L[k])
                 hw = c_f - c_l
             starts_ev.append((ds, ids[k], lid[k], t[k], tf - tl, pos[kq] if pos[kq] > 0 else np.nan, pk, g5, g8, hw, gap[k]))
+            # F635: the launch as a following time series, from the follower's start until 10 s past 1 m/s, same leader
+            r1 = min(seg_end, m + 10 * hz, e)
+            rr = np.arange(k, r1)
+            if len(rr) > 2 * hz:
+                LAUNCH.append(pd.DataFrame(dict(ds=ds, ev=f'{ds}:{ids[k]}:{t[k]:.1f}', t=t[rr], v=v[rr], gap=gap[rr], vl=vl[rr],
+                                                al=a[np.maximum(li[rr], 0)], lok=(li[rr] >= 0) & (lid[rr] == lid[k]))))
             break_k = True
         # low-speed quasi-steady following
         m = (lid[b:e] >= 0) & lcar[b:e] & np.isfinite(vl[b:e]) & (np.abs(vl[b:e] - v[b:e]) < 0.5) & (v[b:e] >= 0.5) & (v[b:e] < 12)
@@ -355,6 +362,8 @@ def collect(name):
     elif name == 'tgsim':
         out.append(tgsim())
     S = pd.concat([o[0] for o in out]); E = pd.concat([o[1] for o in out]); Lw = pd.concat([o[2] for o in out])
+    if LAUNCH:
+        pd.concat(LAUNCH).to_csv(f'{WORK}/{name}_launch.csv', index=False); LAUNCH.clear()
     S.to_csv(f'{WORK}/{name}_stops.csv', index=False); E.to_csv(f'{WORK}/{name}_starts.csv', index=False); Lw.to_csv(f'{WORK}/{name}_low.csv', index=False)
 
 
@@ -402,6 +411,56 @@ def summary():
     json.dump(res, open(OUT, 'w'), indent=1)
 
 
+
+def launch_fit():
+    """F635: c_a alone on launch phases, the rest of the law as frozen (fit_driver.command with the round 2 desired gap),
+    one second ahead from the recorded state behind the recorded leader, 5 Hz."""
+    import fit_driver as FD
+    from scipy.optimize import least_squares
+    R = json.load(open(FD.OUTJ))['pooled']
+    sets = {}
+    for name in ('rounD', 'inD', 'sind', 'lankershim'):
+        pth = f'{WORK}/{name}_launch.csv'
+        if not os.path.exists(pth):
+            continue
+        d = pd.read_csv(pth)
+        for ds, g0 in d.groupby('ds'):
+            Q = dict(v=[], a=[], g=[], VL=[], AL=[], y=[], ev=[])
+            for ev, g in g0.groupby('ev'):
+                g = g.sort_values('t')
+                step = int(round(0.2 / max(np.median(np.diff(g.t.to_numpy())), 1e-3))) if len(g) > 2 else 1
+                g = g.iloc[::max(step, 1)]
+                v, gap, vl, al, ok = (g[c].to_numpy(float) for c in ('v', 'gap', 'vl', 'al', 'lok'))
+                for i in range(2, len(g) - 5, 2):
+                    if not ok[i:i + 6].all() or v[i] < 0.5 or v[i] > 12 or not np.isfinite(gap[i]) or not np.isfinite(al[i:i + 6]).all():
+                        continue
+                    Q['v'].append(v[i]); Q['a'].append((v[i] - v[i - 2]) / 0.4); Q['g'].append(gap[i]); Q['VL'].append(vl[i:i + 6]); Q['AL'].append(al[i:i + 6])
+                    Q['y'].append(v[i + 5] - v[i]); Q['ev'].append(ev)
+            if len(Q['v']) >= 50:
+                sets[ds] = {k: np.array(x) for k, x in Q.items()}
+    def resid(ca, Q):
+        p = [R['K'], ca[0], R['k_g'], R['k_p']]
+        return FD.rollout(Q['v'], Q['a'], Q['g'], Q['VL'], Q['AL'], p)[:, -1] - Q['v'] - Q['y']
+    out = {}
+    for ds, Q in sets.items():
+        r = least_squares(resid, [0.5], args=(Q,), bounds=([0], [2]))
+        e1 = resid([R['c_a']], Q); e2 = resid(r.x, Q)
+        evs = np.unique(Q['ev']); bs = []
+        idx = pd.Series(np.arange(len(Q['ev']))).groupby(Q['ev']).apply(np.array)
+        for _ in range(40):
+            ii = np.concatenate([idx[x] for x in rng.choice(evs, len(evs))])
+            bs.append(least_squares(resid, r.x, args=({k: v[ii] for k, v in Q.items()},), bounds=([0], [2])).x[0])
+        out[ds] = dict(c_a=round(float(r.x[0]), 3), ci95=[round(float(np.percentile(bs, 2.5)), 3), round(float(np.percentile(bs, 97.5)), 3)],
+                       queries=int(len(Q['v'])), launches=int(len(evs)), rmse_round1_ca=round(float(np.sqrt(np.mean(e1 ** 2))), 4),
+                       rmse_fitted=round(float(np.sqrt(np.mean(e2 ** 2))), 4), rmse_constant_speed=round(float(np.sqrt(np.mean(Q['y'] ** 2))), 4))
+        print(ds, out[ds], flush=True)
+    allQ = {k: np.concatenate([Q[k] for Q in sets.values()]) for k in ('v', 'a', 'g', 'VL', 'AL', 'y', 'ev')}
+    r = least_squares(resid, [0.5], args=(allQ,), bounds=([0], [2]))
+    out['pooled'] = dict(c_a=round(float(r.x[0]), 3), median_of_sites=round(float(np.median([o['c_a'] for o in out.values()])), 3))
+    print(out['pooled'])
+    res = json.load(open(OUT)); res['launch_fit'] = out; json.dump(res, open(OUT, 'w'), indent=1)
+
+
 if __name__ == '__main__':
     if sys.argv[1] == 'run':
         for n in sys.argv[2:] or ['rounD', 'inD', 'sind', 'lankershim', 'tgsim']:
@@ -409,3 +468,6 @@ if __name__ == '__main__':
         summary()
     elif sys.argv[1] == 'summary':
         summary()
+    elif sys.argv[1] == 'launch':
+        launch_fit()
+
