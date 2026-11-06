@@ -120,7 +120,7 @@ def samples(day, drone, hhmm, every=1):
 OSM_NET = os.path.join(OUTD, 'osm_net.xml')
 NETCONVERT_OSM = ['--proj', '+proj=utm +zone=34 +ellps=WGS84 +datum=WGS84 +units=m +no_defs', '--offset.disable-normalization',
                   '--offset.x', str(-ORIGIN[0]), '--offset.y', str(-ORIGIN[1]), '--junctions.join', '--tls.guess-signals', '--tls.join',
-                  '--no-turnarounds', '--remove-edges.isolated', '--keep-edges.by-vclass', 'passenger', '--osm.sidewalks', 'false', '--no-warnings']
+                  '--no-turnarounds', '--remove-edges.isolated', '--keep-edges.by-vclass', 'passenger', '--osm.sidewalks', 'false', '--output.street-names', '--no-warnings']
 
 
 def net_lanes(path=OSM_NET):
@@ -271,6 +271,170 @@ def inventory():
     return out
 
 
+def lanes_summary():
+    """Per drone area: OSM lane-count agreement, offsets, residuals, motorcycle share per lane (from lanes/d*.json)."""
+    out, allv = {}, []
+    for p in sorted(glob.glob(os.path.join(OUTD, 'lanes', 'd*.json')), key=lambda s: int(re.search(r'd(\d+)', s)[1])):
+        dr = int(re.search(r'd(\d+)\.json', p)[1]); r = json.load(open(p)); E = list(r['edges'].values())
+        allv += E
+        w = np.array([e['samples'] for e in E], float)
+        lanes = [l for e in E for l in e['lanes'] if l['moto_share'] is not None]
+        by_pos = {}
+        for e in E:
+            n = len(e['lanes'])
+            for i, l in enumerate(e['lanes']):
+                if l['moto_share'] is None or n < 2:
+                    continue
+                k = 'kerb' if i == 0 else 'median side' if i == n - 1 else 'middle'
+                by_pos.setdefault(k, []).append(l['moto_share'])
+        out[dr] = dict(edges=len(E), agree=int(sum(e['osm_lanes'] == e['density_lanes'] for e in E)),
+                       density_more=int(sum(e['density_lanes'] > e['osm_lanes'] for e in E)), density_fewer=int(sum(e['density_lanes'] < e['osm_lanes'] for e in E)),
+                       lanes_density=int(sum(e['density_lanes'] for e in E)), lanes_osm=int(sum(e['osm_lanes'] for e in E)),
+                       centre_offset_abs_m_weighted=round(float(np.average([abs(e['centre_offset']) for e in E], weights=w)), 2),
+                       residual_density_p50_weighted=round(float(np.average([e['residual_density_p50'] for e in E], weights=w)), 2),
+                       residual_osm_p50_weighted=round(float(np.average([e['residual_osm_p50'] for e in E], weights=w)), 2),
+                       lane_spacing_median_m=round(float(np.median([e['spacing'] for e in E if e['spacing']])), 2) if any(e['spacing'] for e in E) else None,
+                       moto_share_samples_weighted=round(float(np.average([e['moto_share'] for e in E], weights=w)), 3),
+                       moto_between_lanes_weighted=round(float(np.average([e['moto_between_lanes'] or 0 for e in E], weights=w)), 3),
+                       moto_share_by_lane_position={k: round(float(np.median(v)), 3) for k, v in by_pos.items()},
+                       moving_samples_on_edges=r['matched_to_edges'], box=[round(v) for v in r['box']],
+                       streets=sorted({e['name'] for e in E if e['name']}))
+    tot_e = sum(v['edges'] for v in out.values()); tot_a = sum(v['agree'] for v in out.values())
+    allres = [e['residual_density_p50'] for e in allv]
+    return dict(areas=out, all=dict(edges=tot_e, agree=tot_a, agree_pct=round(100 * tot_a / max(tot_e, 1), 1),
+                                    density_more=sum(v['density_more'] for v in out.values()), density_fewer=sum(v['density_fewer'] for v in out.values()),
+                                    residual_density_p50_median_of_edges=round(float(np.median(allres)), 2),
+                                    residual_osm_p50_median_of_edges=round(float(np.median([e['residual_osm_p50'] for e in allv])), 2),
+                                    moto_between_lanes_median_of_edges=round(float(np.median([e['moto_between_lanes'] for e in allv if e['moto_between_lanes'] is not None])), 3)))
+
+
+
+# ---------------------------------------------------------------- signals read from crossings, residual queues
+
+D_START = 1.9      # s: onset bias, mean of DLR UT (1.83) and SinD (2.0), research/truth/replay/signals.json
+D_END_ARC = -0.95  # s: fixed-time end bias, mean of SinD Tianjin (+0.26) and Chongqing (-2.17); their spread is the band
+YELLOW = 3.0
+
+
+def net_junctions(path=OSM_NET):
+    import xml.etree.ElementTree as ET
+    return {j.get('id'): dict(type=j.get('type'), x=float(j.get('x')), y=float(j.get('y')))
+            for j in ET.parse(path).getroot().iter('junction') if j.get('type') != 'internal'}
+
+
+def approaches(drone, E=None, J=None):
+    """Incoming edges of signalised junctions whose end is in the drone's view."""
+    E = E or net_lanes(); J = J or net_junctions()
+    box = area_box(drone)
+    out = []
+    for eid, e in E.items():
+        j = J.get(e['to'])
+        if not j or j['type'] not in ('traffic_light', 'traffic_light_right_on_red', 'traffic_light_unregulated'):
+            continue
+        P = e['lanes'][0]['shape']
+        if not (box[0] + 15 < P[-1, 0] < box[2] - 15 and box[1] + 15 < P[-1, 1] < box[3] - 15):
+            continue
+        out.append(eid)
+    return out
+
+
+def approach_tracks(A, tree, e, back=90.0, ahead=15.0):
+    """Per vehicle: front position along the edge's lane 0 relative to its end, lateral, speed, class."""
+    import signals as SG
+    P = e['lanes'][0]['shape']; w = np.array([l['width'] for l in e['lanes']]); width = w.sum()
+    d = np.diff(P, axis=0); seg = np.hypot(d[:, 0], d[:, 1]); cum = np.r_[0, np.cumsum(seg)]
+    if cum[-1] < 30:
+        return None
+    # extend the end straight on by `ahead` so crossings past the line are seen
+    u_end = d[-1] / seg[-1]
+    P2 = np.vstack([P, P[-1] + u_end * ahead])
+    s0 = max(cum[-1] - back, 0)
+    q = np.array([np.interp(np.arange(s0, cum[-1] + ahead, 4.0), np.r_[cum, cum[-1] + ahead], P2[:, j]) for j in (0, 1)]).T
+    idx = np.array(sorted(set(i for l in tree.query_ball_point(q, r=width + 6.0) for i in l)))
+    if len(idx) < 200:
+        return None
+    s, lat, si, uu, Lt = project(P2, A['x'][idx], A['y'][idx])
+    hn = np.maximum(np.hypot(A['hx'][idx], A['hy'][idx]), 1e-6)
+    cosang = (A['hx'][idx] * uu[si, 0] + A['hy'][idx] * uu[si, 1]) / hn
+    k = ((cosang > 0.8) | (A['v'][idx] < 0.5)) & (lat > -2.0) & (lat < width + 1.0) & (s > s0)
+    idx, s, lat = idx[k], s[k], lat[k]
+    L = np.array([DIMS[int(t)][0] for t in range(7)])[A['type'][idx]]
+    sf = s - cum[-1] + L / 2
+    veh = []
+    o = np.lexsort((A['t'][idx], A['vid'][idx]))
+    idx, sf, lat = idx[o], sf[o], lat[o]
+    cut = np.flatnonzero(np.diff(A['vid'][idx])) + 1
+    for a, b in zip(np.r_[0, cut], np.r_[cut, len(idx)]):
+        if b - a < 5:
+            continue
+        ty = int(A['type'][idx[a]])
+        veh.append(dict(t=A['t'][idx[a:b]], s=sf[a:b], v=A['v'][idx[a:b]], lat=lat[a:b], kind='two' if ty == 5 else 'car', id=int(A['vid'][idx[a]]), type=ty))
+    return veh
+
+
+def residual_cycles(S, greens):
+    """Per read cycle: cars standing before the line at its onset, and a residual queue (a car standing before the
+    line from 5 s before the end of green until 2 s after the yellow)."""
+    before = (S.kind == 'car') & (S.s < 0) & ~(S.tcross < S.t0)
+    out = []
+    for g0, g1, *_ in greens:
+        q = int((before & (S.t0 <= g0) & (S.t1 >= g0 - 0.5)).sum())
+        r = int((before & (S.t0 <= g1 - 5.0) & (S.t1 >= g1 + YELLOW + 2.0)).sum())
+        out.append((g0, g1, q, r))
+    return out
+
+
+def signals_file(day, drone, hhmm, E, J, apps):
+    import signals as SG
+    from scipy.spatial import cKDTree
+    A = samples(day, drone, hhmm)
+    tree = cKDTree(np.c_[A['x'], A['y']])
+    rows, cyc = [], []
+    t0, t1 = float(A['t'].min()), float(A['t'].max())
+    for eid in apps:
+        e = E[eid]
+        veh = approach_tracks(A, tree, e)
+        if not veh or sum(v['kind'] == 'car' for v in veh) < 30:
+            continue
+        C, S = SG.events(veh)
+        shift, nh = SG.stop_line(S)
+        if nh < 5:
+            continue
+        for v in veh:
+            v['s'] = v['s'] + shift
+        C, S = SG.events(veh)
+        fx = SG.fit_fixed(C, S, D_START, dict(arc=D_END_ARC, p80=0.0), t0 + 60, t1 - 60)
+        if not fx:
+            continue
+        greens = [g for g in fx['greens']['arc'] if t0 + 30 < g[0] < t1 - 120]
+        rc = residual_cycles(S, greens)
+        nq = sum(1 for c in rc if c[2] > 0)
+        rows.append(dict(day=day, drone=drone, period=hhmm, edge=eid, junction=e['to'], name=e['name'], lanes=len(e['lanes']),
+                         line_shift_m=round(shift, 1), heads=nh, cars=int(sum(v['kind'] == 'car' for v in veh)), moto=int(sum(v['kind'] == 'two' for v in veh)),
+                         cycle=round(fx['cycle'], 2), R=round(fx['R'], 3), green=round(fx['green']['arc'], 1), offset=round(fx['offset'], 2),
+                         cycles=len(rc), cycles_with_queue=nq, residual_cycles=sum(1 for c in rc if c[3] > 0),
+                         queue_mean=round(float(np.mean([c[2] for c in rc])), 2) if rc else 0, queue_max=max([c[2] for c in rc], default=0),
+                         residual_max=max([c[3] for c in rc], default=0)))
+        cyc += [dict(day=day, drone=drone, period=hhmm, edge=eid, g0=round(c[0], 1), g1=round(c[1], 1), queue=c[2], residual=c[3]) for c in rc]
+    return rows, cyc
+
+
+def signals_all(drones):
+    import pandas as pd
+    E = net_lanes(); J = net_junctions()
+    rows, cyc = [], []
+    for dr in drones:
+        apps = approaches(dr, E, J)
+        for day, d_, hh, p in files():
+            if d_ != dr:
+                continue
+            r, c = signals_file(day, dr, hh, E, J, apps)
+            rows += r; cyc += c
+            print(day, dr, hh, 'approaches read', len(r), flush=True)
+        pd.DataFrame(rows).to_csv(os.path.join(OUTD, 'signals_approaches.csv'), index=False)
+        pd.DataFrame(cyc).to_csv(os.path.join(OUTD, 'signals_cycles.csv'), index=False)
+
+
 if __name__ == '__main__':
     c = sys.argv[1]
     if c == 'convert':
@@ -293,3 +457,13 @@ if __name__ == '__main__':
         os.makedirs(os.path.join(OUTD, 'lanes'), exist_ok=True)
         for dr, r in out.items():
             json.dump(r, open(os.path.join(OUTD, 'lanes', f'd{dr}.json'), 'w'), indent=1)
+
+    elif c == 'lanes_summary':
+        r = lanes_summary()
+        json.dump(r, open(os.path.join(REPO, 'research/truth/replay/pneuma_lanes.json'), 'w'), indent=1)
+        print(json.dumps(r['all'], indent=1))
+        for k, v in r['areas'].items():
+            print(k, {kk: vv for kk, vv in v.items() if kk not in ('box', 'streets')}, v['streets'][:6])
+    elif c == 'signals':
+        sys.path.insert(0, HERE)
+        signals_all([int(a) for a in sys.argv[2].split(',')])

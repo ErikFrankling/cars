@@ -1,0 +1,160 @@
+{
+ "days": [
+  "20181024",
+  "20181029",
+  "20181030",
+  "20181101"
+ ],
+ "drones": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10
+ ],
+ "files": 199,
+ "files_per_day": {
+  "20181024": 50,
+  "20181029": 50,
+  "20181030": 49,
+  "20181101": 50
+ },
+ "missing": [
+  "20181030 d2"
+ ],
+ "vehicles_total": 455597,
+ "by_class": {
+  "Car": 187867,
+  "Taxi": 78834,
+  "Bus": 10420,
+  "Medium Vehicle": 18614,
+  "Heavy Vehicle": 4530,
+  "Motorcycle": 155329,
+  "Other": 3
+ },
+ "by_drone": {
+  "1": {
+   "vehicles_per_file": 1022,
+   "moto_share_veh": 0.298,
+   "moto_share_time": 0.241,
+   "box": [
+    2157,
+    758,
+    2523,
+    1213
+   ]
+  },
+  "2": {
+   "vehicles_per_file": 3015,
+   "moto_share_veh": 0.343,
+   "moto_share_time": 0.277,
+   "box": [
+    1967,
+    645,
+    2354,
+    1109
+   ]
+  },
+  "3": {
+   "vehicles_per_file": 2686,
+   "moto_share_veh": 0.372,
+   "moto_share_time": 0.314,
+   "box": [
+    1686,
+    1015,
+    2090,
+    1498
+   ]
+  },
+  "4": {
+   "vehicles_per_file": 1989,
+   "moto_share_veh": 0.305,
+   "moto_share_time": 0.23,
+   "box": [
+    1931,
+    1168,
+    2303,
+    1674
+   ]
+  },
+  "5": {
+   "vehicles_per_file": 2778,
+   "moto_share_veh": 0.381,
+   "moto_share_time": 0.302,
+   "box": [
+    1472,
+    1414,
+    1959,
+    1812
+   ]
+  },
+  "6": {
+   "vehicles_per_file": 2865,
+   "moto_share_veh": 0.35,
+   "moto_share_time": 0.266,
+   "box": [
+    1534,
+    1503,
+    1849,
+    2140
+   ]
+  },
+  "7": {
+   "vehicles_per_file": 2673,
+   "moto_share_veh": 0.311,
+   "moto_share_time": 0.228,
+   "box": [
+    1660,
+    2049,
+    1934,
+    2544
+   ]
+  },
+  "8": {
+   "vehicles_per_file": 2424,
+   "moto_share_veh": 0.292,
+   "moto_share_time": 0.207,
+   "box": [
+    1759,
+    2217,
+    2294,
+    2534
+   ]
+  },
+  "9": {
+   "vehicles_per_file": 2016,
+   "moto_share_veh": 0.319,
+   "moto_share_time": 0.244,
+   "box": [
+    1235,
+    1725,
+    1730,
+    2061
+   ]
+  },
+  "10": {
+   "vehicles_per_file": 2181,
+   "moto_share_veh": 0.386,
+   "moto_share_time": 0.319,
+   "box": [
+    1347,
+    1442,
+    1767,
+    1710
+   ]
+  }
+ },
+ "by_period": {
+  "0800": 0.28,
+  "0830": 0.332,
+  "0900": 0.34,
+  "0930": 0.348,
+  "1000": 0.357,
+  "1030": 0.364
+ }
+}
