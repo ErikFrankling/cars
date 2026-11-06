@@ -654,8 +654,8 @@ class Wave:
             amp.append(x[-1, 3] - x[0, 3])
             mins.append(x[-1, 3])
         w_own = 7.5 / (1.4 * math.exp(0.3 ** 2 / 2)) * 3.6
-        book.check('W1', 'F101', 0, spd, quantity='disturbance moves upstream at s/E[T] (km/h, ground)', forecast=w_own, seeds=seedtag('W1'))
-        book.check('W1', 'F102', 0, amp, quantity='car 30 min speed less leader min speed (m/s): no growth', seeds=seedtag('W1'), mode='low')
+        book.check('W1', 'F131', 0, spd, quantity='disturbance moves upstream at s/E[T] (km/h, ground)', forecast=w_own, seeds=seedtag('W1'))
+        book.check('W1', 'F132', 0, amp, quantity='car 30 min speed less leader min speed (m/s): no growth', seeds=seedtag('W1'), mode='low')
         book.info('W1', 'lowest speed of car 30 (m/s), leader 3', float(np.mean(mins)) if mins else float('nan'))
 
 
@@ -1074,7 +1074,7 @@ class Give:
         tf_own = float(np.mean(all_tf))
         for i, q in enumerate(Give.QS):
             fc = 3600 / tf_own * math.exp(-q * (5.9 - tf_own / 2) / 3600)
-            book.check('G1', 'F103', i, caps[q], quantity=f'Siegloch at own tc 5.9 tf {tf_own:.2f}, major {q}', forecast=fc, tol='10%', seeds=seedtag(f'G1{q}'))
+            book.check('G1', 'F133', i, caps[q], quantity=f'Siegloch at own tc 5.9 tf {tf_own:.2f}, major {q}', forecast=fc, tol='10%', seeds=seedtag(f'G1{q}'))
         vt = []
         for r in range(SEEDS):
             f = run.cell(f'G1q0r{r}')
@@ -1082,7 +1082,7 @@ class Give:
             if len(z):
                 vt.append(float(z.speed.median()))
         if vt:
-            book.check('G1', 'F104', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: E[T] + s/v_turn, v_turn {np.mean(vt):.2f}', forecast=1.4 * math.exp(0.045) + 7.5 / np.mean(vt), tol='10%', seeds='G1 all')
+            book.check('G1', 'F134', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: E[T] + s/v_turn, v_turn {np.mean(vt):.2f}', forecast=1.4 * math.exp(0.045) + 7.5 / np.mean(vt), tol='10%', seeds='G1 all')
         for q in Give.QS[1:]:
             got = []
             for r in range(SEEDS):

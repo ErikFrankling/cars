@@ -1613,6 +1613,10 @@ fn critical_gap_hbs(net: &Net, topo: &Topology, l: &crate::topology::Link) -> f3
     if foes.is_empty() {
         return 0.0;
     }
+    // A zipper is not a give-way: its turns are taken in the zipper's own crossing rule.
+    if entry.state == b'Z' {
+        return 0.0;
+    }
     let stop = matches!(entry.state, b's' | b'w');
     let major_left = topo.lane_links[entry.from_lane as usize].iter().any(|&k| matches!(topo.links[k as usize].state, b'M' | b'O'));
     let base = match entry.dir {

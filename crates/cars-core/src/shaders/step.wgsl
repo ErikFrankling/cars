@@ -2188,6 +2188,8 @@ fn ph_start_hold(e: ptr<function, Veh>, i: u32, speed: f32, nv: f32, held: bool,
     if (still || (front && (nv <= 0.0 || held))) { steps = 0u; } else if (nv > 0.0) { steps = min(steps + 1u, 255u); }
     (*e).hu_state = ((*e).hu_state & 0xffffff00u) | steps;
     if (still || steps == 0u) { return 0.0; }
+    // Inside a junction the driver watches the conflict, as at a give-way line: no added reaction.
+    if (is_internal((*e).lane)) { return nv; }
     // G.step counts the step's end, so a light that changes at t is seen in the step ending at t: one step early.
     // A leader's start is seen one step after it began. Partial steps keep the reaction the same at any dt.
     let first = front && lanes[(*e).lane].length - (*e).pos < 10.0;
