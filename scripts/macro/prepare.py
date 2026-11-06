@@ -21,7 +21,13 @@ def export(T, out):
     out.mkdir(parents=True, exist_ok=True)
 
     # free speeds
-    pr = pd.read_csv(DATA / 'probes/edge_hour.csv.gz', usecols=['edge', 'free_flow']).groupby('edge').free_flow.first()
+    # 05-06 h, R 3: deep-night probes are not free
+    z = np.load(DATA / 'probes/edge_15min.npz', allow_pickle=True)
+    with np.errstate(invalid='ignore', divide='ignore'):
+        w = np.nan_to_num(z['vol'][:, :, 20:24])
+        m = np.nan_to_num(z['med'][:, :, 20:24])
+        pr = pd.Series((w * m).sum(axis=(1, 2)) / np.maximum(w.sum(axis=(1, 2)), 1e-9), index=[str(k) for k in z['keys']])
+        pr = pr[w.sum(axis=(1, 2)) >= 40]
     sig = {k for k, j in T['junc'].items() if j['type'].startswith('traffic_light')}
     rows = []
     for k, e in T['edges'].items():
@@ -50,11 +56,14 @@ def export(T, out):
             lim = round(e['v'] * 3.6 / 10) * 10
             r = ratio.get((e['type'], lim), gen.get(lim, 1.0))
             v = e['v'] * r
+            if k in pr.index and e['to'] not in sig and e['L'] > 60:
+                v = pr[k] / 3.6
             m = mt._or(l['mask'] for l in e['any'])
             o = rev.get((e['to'], e['frm']))
             n = max(len(e['car']), 1)
             f.write(f"{k}\t{e['L']:.2f}\t{v:.3f}\t{n}\t{int(e['type'] in mt.RAMPS)}\t{BETA.get(e['type'], 0.0)}\t{m}\t{idx[o] if o in idx else -1}\t{mt.midblock(e['v']):.1f}\n")
 
+    pd.DataFrame([dict(id=k, type=T['edges'][k]['type'], x=T['edges'][k]['xy'][0], y=T['edges'][k]['xy'][1], L=T['edges'][k]['L']) for k in ids]).to_csv(out / 'edge_meta.csv', index=False)
     # arcs sorted by from edge
     moves = [m for m in T['moves'] if m['frm'] in idx and m['to'] in idx]
     moves.sort(key=lambda m: idx[m['frm']])
@@ -65,7 +74,7 @@ def export(T, out):
         for i, m in enumerate(moves):
             f.write(f"{i}\t{idx[m['frm']]}\t{idx[m['to']]}\t{m['mask']}\t{T['gof'][m['id']]}\t{int(m['dir'] in ('t', 'T'))}\n")
     with open(out / 'conns.tsv', 'w') as f:
-        f.write('arc\tlane\tkind\tctrl\tidx\tf\ttg\ttf\tfoes\tfoe_yield\n')
+        f.write('arc\tlane\tkind\tctrl\tidx\tf\ttg\ttf\tfoes\tfoe_yield\tpair_store\tpair_inner\n')
         for m in moves:
             e = T['edges'][m['frm']]
             for c in m['conns']:
@@ -80,7 +89,14 @@ def export(T, out):
                     kind, (tg, tf) = 2, mt.GAPS[mt.gap_key(c, e['type'])]
                 foes = ' '.join(str(aid[x]) for x in c['foe_m'] if x in aid)
                 fy = ' '.join(str(aid[x]) for x in c['foe_yield'] if x in aid)
-                f.write(f"{aid[m['id']]}\t{c['fl']}\t{kind}\t{ctrl[c['ctrl']] if c['ctrl'] else -1}\t{c['idx']}\t{fd}\t{tg}\t{tf}\t{foes}\t{fy}\n")
+                sto, inn = 0.0, 0
+                if c['ctrl'] and c['dir'] == 's':
+                    t = T['edges'][c['to']]
+                    if t['L'] < 50 and t['frm'] in sig and t['to'] in sig:
+                        sto = max(t['L'] / mt.SPACING, 0.5)
+                    if e['L'] < 50 and e['frm'] in sig and e['to'] in sig:
+                        inn = 1
+                f.write(f"{aid[m['id']]}\t{c['fl']}\t{kind}\t{ctrl[c['ctrl']] if c['ctrl'] else -1}\t{c['idx']}\t{fd}\t{tg}\t{tf}\t{foes}\t{fy}\t{sto:.2f}\t{inn}\n")
     with open(out / 'ctrls.tsv', 'w') as f:
         f.write('ctrl\tdur\tstate\n')
         for c, i in ctrl.items():

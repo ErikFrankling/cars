@@ -82,7 +82,7 @@ for site, g in real.groupby('site'):
         caps[s] = min(x for x in (d, u, n * mt.midblock(T['edges'][e]['v'])) if x is not None)
     kinds = sorted({mt.kind(c) for c in cs if c})
     sh = sorted({round((c['gp'] + c['gq']) / c['C'], 2) for c in cs if c and c['ctrl']})
-    row = dict(site=site, street=sites.street.get(site, ''), road_class=sites.road_class.get(site, ''), edge=e, lanes=n, kinds='+'.join(kinds), gc=';'.join(map(str, sh)), queue_hours=len(qh), real_max_any=float(g.flow.max()), cap_1285=round(caps[1285.0]), cap_1640=round(caps[1640.0]), cap_1895=round(caps[1895.0]))
+    row = dict(site=site, street=sites.street.get(site, ''), road_class=sites.road_class.get(site, ''), edge=e, lanes=n, kinds='+'.join(kinds), gc=';'.join(map(str, sh)), queue_hours=len(qh), real_max_any=float(g.flow.max()), cap_1640a=round(caps[1640.0]), cap_1640=round(caps[1640.0]), cap_1900=round(caps[1900.0]))
     if len(qh):
         row.update(real_max_queue=float(qh.flow.max()), real_p90_queue=float(qh.flow.quantile(.9)), ratio_1640=round(float(qh.flow.max()) / caps[1640.0], 2), slowest=round(float(qh.ratio.min()), 2))
     tw.append(row)

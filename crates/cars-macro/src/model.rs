@@ -49,6 +49,8 @@ struct Conn {
     tf: f32,
     foes: Vec<u32>,
     foe_yield: Vec<u32>,
+    pair_store: f32, // through into a short link: cars per lane the link holds; 0 otherwise
+    pair_inner: bool, // through out of a short link, linked to the signal before it
 }
 
 struct Arc {
@@ -114,7 +116,7 @@ fn load_net(dir: &str) -> Net {
     for i in 0..edges.len() {
         first[i + 1] += first[i];
     }
-    let conns: Vec<Conn> = tsv(&format!("{dir}/conns.tsv")).into_iter().map(|r| Conn { arc: r[0].parse().unwrap(), lane: r[1].parse().unwrap(), kind: r[2].parse().unwrap(), ctrl: r[3].parse::<i64>().map(|x| if x < 0 { NONE } else { x as u32 }).unwrap(), idx: r[4].parse::<i64>().unwrap().max(0) as u32, f: r[5].parse().unwrap(), tg: r[6].parse().unwrap(), tf: r[7].parse().unwrap(), foes: ids(r.get(8).map(|s| s.as_str()).unwrap_or("")), foe_yield: ids(r.get(9).map(|s| s.as_str()).unwrap_or("")) }).collect();
+    let conns: Vec<Conn> = tsv(&format!("{dir}/conns.tsv")).into_iter().map(|r| Conn { arc: r[0].parse().unwrap(), lane: r[1].parse().unwrap(), kind: r[2].parse().unwrap(), ctrl: r[3].parse::<i64>().map(|x| if x < 0 { NONE } else { x as u32 }).unwrap(), idx: r[4].parse::<i64>().unwrap().max(0) as u32, f: r[5].parse().unwrap(), tg: r[6].parse().unwrap(), tf: r[7].parse().unwrap(), foes: ids(r.get(8).map(|s| s.as_str()).unwrap_or("")), foe_yield: ids(r.get(9).map(|s| s.as_str()).unwrap_or("")), pair_store: r.get(10).and_then(|x| x.parse().ok()).unwrap_or(0.0), pair_inner: r.get(11).map(|x| x == "1").unwrap_or(false) }).collect();
     let mut ctrls: Vec<Ctrl> = Vec::new();
     for r in tsv(&format!("{dir}/ctrls.tsv")) {
         let c: usize = r[0].parse().unwrap();
@@ -154,11 +156,11 @@ struct Supply {
 
 const BLOCKS: usize = 4;
 fn block_of_hour(h: f32) -> usize {
-    if (6.0..10.0).contains(&h) {
+    if (5.0..10.0).contains(&h) {
         0
     } else if (10.0..15.0).contains(&h) {
         1
-    } else if (15.0..19.0).contains(&h) {
+    } else if (15.0..21.0).contains(&h) {
         2
     } else {
         3
@@ -220,14 +222,39 @@ fn retime(net: &Net, sup: &mut Supply, flow: &[f32], periods_of_block: &[Vec<usi
                         y[greens[0]] = y[greens[0]].max(r);
                     }
                 }
-                let green_total = (cyc - fixed).max(7.0 * stages.len() as f32);
+                // R 5: any connection .11-.60 of the cycle, longest per light up to .76
+                let (gmin, gmax) = (0.11 * cyc, 0.76 * cyc);
+                let green_total = (cyc - fixed).max(gmin * stages.len() as f32);
                 let tot: f32 = y.iter().sum();
-                let spare = green_total - 7.0 * stages.len() as f32;
                 let map_g: f32 = stages.iter().map(|&p| ctrl.phases[p].0).sum();
-                for &p in &stages {
-                    let share = if tot > 1e-3 { y[p] / tot } else { ctrl.phases[p].0 / map_g.max(1.0) };
-                    g[p] = 7.0 + spare * share;
+                let mut want: Vec<f32> = stages.iter().map(|&p| if tot > 1e-3 { y[p] / tot } else { ctrl.phases[p].0 / map_g.max(1.0) }).collect();
+                let mut fixed_g = vec![None; stages.len()];
+                for _ in 0..stages.len() + 1 {
+                    let left: f32 = green_total - fixed_g.iter().flatten().sum::<f32>();
+                    let w: f32 = want.iter().zip(&fixed_g).filter(|(_, f)| f.is_none()).map(|(a, _)| *a).sum();
+                    let mut changed = false;
+                    for i in 0..stages.len() {
+                        if fixed_g[i].is_none() {
+                            let v = if w > 0.0 { left * want[i] / w } else { left / stages.len() as f32 };
+                            if v < gmin {
+                                fixed_g[i] = Some(gmin);
+                                changed = true;
+                            } else if v > gmax {
+                                fixed_g[i] = Some(gmax);
+                                changed = true;
+                            }
+                        }
+                    }
+                    if !changed {
+                        break;
+                    }
                 }
+                let left: f32 = green_total - fixed_g.iter().flatten().sum::<f32>();
+                let w: f32 = want.iter().zip(&fixed_g).filter(|(_, f)| f.is_none()).map(|(a, _)| *a).sum();
+                for (i, &p) in stages.iter().enumerate() {
+                    g[p] = fixed_g[i].unwrap_or(if w > 0.0 { left * want[i] / w } else { 0.0 });
+                }
+                want.clear();
             }
             for &cc in &per_ctrl[ci] {
                 let c = &net.conns[cc as usize];
@@ -283,6 +310,10 @@ fn update_supply(net: &Net, sup: &mut Supply, flow: &[f32], block_of_period: &[u
             let mut d = vec![0f32; na];
             let mut xg = vec![0f32; ng];
             let mut cg = vec![0f32; ng];
+            if q.iter().all(|&x| x == 0.0) && p > 0 {
+                cg.fill(1e5);
+                return (d, xg, cg);
+            }
             // single-lane capacity by connection; rank-3 impedance uses the previous pass's x
             let mut caps = vec![0f32; net.conns.len()];
             for (i, c) in net.conns.iter().enumerate() {
@@ -299,6 +330,10 @@ fn update_supply(net: &Net, sup: &mut Supply, flow: &[f32], block_of_period: &[u
                             let qg = qp * cy / (gp + gq).max(1.0);
                             cap += gq / cy * sat.min(siegloch(qg, c.tg, c.tf));
                             cap += 3600.0 / cy * 2.0; // sneakers per cycle
+                        }
+                        if c.pair_store > 0.0 {
+                            // R 6: downstream green overlaps .65 of this one; the rest fits only in the link's storage
+                            cap = cap.min(sat * 0.65 * (gp + gq) / cy + c.pair_store * 3600.0 / cy);
                         }
                         cap
                     }
@@ -412,7 +447,8 @@ fn update_supply(net: &Net, sup: &mut Supply, flow: &[f32], block_of_period: &[u
                         let j = ci * BLOCKS + b;
                         let cy = sup.cyc[j].max(1.0);
                         let gc = ((sup.prot[j] + sup.perm[j]) / cy).clamp(0.02, 1.0);
-                        d += 0.5 * cy * (1.0 - gc).powi(2) / (1.0 - x_rand.min(1.0) * gc).max(0.02);
+                        let u = 0.5 * cy * (1.0 - gc).powi(2) / (1.0 - x_rand.min(1.0) * gc).max(0.02);
+                        d += if con.pair_inner { u * 0.35 } else { u };
                         d += over.max(0.0) + det;
                     }
                     2 => {
@@ -424,7 +460,7 @@ fn update_supply(net: &Net, sup: &mut Supply, flow: &[f32], block_of_period: &[u
                         }
                     }
                 }
-                new_delay[p * na + m as usize] = d.min(3600.0);
+                new_delay[p * na + m as usize] = d.min(7200.0);
             }
         }
     }
@@ -447,7 +483,7 @@ fn update_supply(net: &Net, sup: &mut Supply, flow: &[f32], block_of_period: &[u
                 1800.0 * t_h * (x.min(X_CAP) - 1.0).max(0.0)
             };
             res_e[p * ne + e] = r;
-            new_run[p * ne + e] = t0 * bpr + det.min(3600.0);
+            new_run[p * ne + e] = t0 * bpr + det.min(7200.0);
         }
     }
     for i in 0..sup.delay.len() {
@@ -668,6 +704,82 @@ fn perceived_cost(net: &Net, sup: &Supply, path: &[u32], dep: f32, period: f32, 
     c
 }
 
+fn save(net: &Net, sup: &Supply, l: &Load, st: &[LegState], arena: &[Vec<u32>], out: &str, period: f32, block_of_period: &[usize], save_paths: bool) -> Result<(), String> {
+    let (ne, na, pn) = (net.edges.len(), net.arcs.len(), sup.p);
+    // final outputs: per hour
+    let hour_of = |p: usize| ((p as f32 * period) / 3600.0) as usize;
+    let mut f = std::io::BufWriter::new(std::fs::File::create(format!("{out}/arcs.tsv")).map_err(|e| e.to_string())?);
+    writeln!(f, "hour\tarc\tn\to\tdelay\tx\tgc\tres\tcap").unwrap();
+    let hours = hour_of(pn - 1) + 1;
+    let ng = net.n_groups;
+    for h in 0..hours {
+        let ps: Vec<usize> = (0..pn).filter(|&p| hour_of(p) == h).collect();
+        for a in 0..na {
+            let (mut n, mut o, mut dw) = (0f32, 0f32, 0f32);
+            for &p in &ps {
+                n += l.n[p * na + a];
+                o += l.o[p * na + a];
+                dw += l.dw[p * na + a];
+            }
+            if n < 0.01 && o < 0.01 {
+                continue;
+            }
+            let g = net.arcs[a].group as usize;
+            let (mut x, mut rs, mut cp) = (0f32, 0f32, 0f32);
+            for &p in &ps {
+                x = x.max(sup.x[p * ng + g]);
+                rs = rs.max(sup.res[p * ng + g]);
+                cp += sup.cap_g[p * ng + g];
+            }
+            cp /= ps.len().max(1) as f32;
+            let ci = net.group_conns[g].iter().map(|&i| i as usize).find(|&i| net.conns[i].arc == a as u32).unwrap_or(0);
+            let b = block_of_period[ps[0]];
+            writeln!(f, "{h}\t{a}\t{n:.1}\t{o:.1}\t{:.1}\t{x:.3}\t{:.3}\t{rs:.1}\t{cp:.0}", if n > 0.0 { dw / n } else { 0.0 }, sup.gc[ci * BLOCKS + b]).unwrap();
+        }
+    }
+    drop(f);
+    let mut f = std::io::BufWriter::new(std::fs::File::create(format!("{out}/edge_hour.tsv")).map_err(|e| e.to_string())?);
+    writeln!(f, "hour\tedge\tvs\tvm\tstarts\tends\tres_e").unwrap();
+    for h in 0..hours {
+        let ps: Vec<usize> = (0..pn).filter(|&p| hour_of(p) == h).collect();
+        for e in 0..ne {
+            let (mut vs, mut vm, mut st_, mut en, mut re) = (0f32, 0f32, 0f32, 0f32, 0f32);
+            for &p in &ps {
+                vs += l.vs[p * ne + e];
+                vm += l.vm[p * ne + e];
+                st_ += l.starts[p * ne + e];
+                en += l.ends[p * ne + e];
+                re = re.max(sup.res_e[p * ne + e]);
+            }
+            if vs > 0.01 || st_ > 0.0 || en > 0.0 {
+                writeln!(f, "{h}\t{e}\t{vs:.0}\t{vm:.0}\t{st_:.1}\t{en:.1}\t{re:.1}").unwrap();
+            }
+        }
+    }
+    drop(f);
+    let bin = |name: &str, v: &[f32]| {
+        let b: Vec<u8> = v.iter().flat_map(|x| x.to_le_bytes()).collect();
+        std::fs::write(format!("{out}/{name}"), b).unwrap();
+    };
+    bin("vs.bin", &l.vs);
+    bin("vm.bin", &l.vm);
+    std::fs::write(format!("{out}/shape.txt"), format!("{pn} {ne} {period}\n")).unwrap();
+    if save_paths {
+        let mut f = std::io::BufWriter::new(std::fs::File::create(format!("{out}/paths.tsv")).map_err(|e| e.to_string())?);
+        for p in arena {
+            let s: Vec<String> = p.iter().map(|x| x.to_string()).collect();
+            writeln!(f, "{}", s.join(" ")).unwrap();
+        }
+        drop(f);
+        let mut f = std::io::BufWriter::new(std::fs::File::create(format!("{out}/leg_paths.tsv")).map_err(|e| e.to_string())?);
+        for s in st {
+            let v: Vec<String> = s.paths.iter().map(|x| format!("{}:{:.4}", x.0, x.1)).collect();
+            writeln!(f, "{}", v.join(" ")).unwrap();
+        }
+    }
+    Ok(())
+}
+
 fn hash64(a: u64, b: u64) -> u64 {
     let mut h = FxHasher::default();
     a.hash(&mut h);
@@ -682,7 +794,7 @@ pub fn run(dir: &str, out: &str, prm: &Params) -> Result<(), String> {
     let (ne, na) = (net.edges.len(), net.arcs.len());
     let dynamic = prm.dynamic;
     let period = if dynamic { prm.period } else { 3600.0 };
-    let horizon: f32 = 30.0 * 3600.0;
+    let horizon: f32 = 28.0 * 3600.0;
     let pn = (horizon / period).ceil() as usize;
     let index: FxHashMap<&str, u32> = net.edges.iter().enumerate().map(|(i, e)| (e.id.as_str(), i as u32)).collect();
     let mut legs: Vec<Leg> = Vec::new();
@@ -893,69 +1005,8 @@ pub fn run(dir: &str, out: &str, prm: &Params) -> Result<(), String> {
         writeln!(log, "{line}").unwrap();
         log.flush().ok();
         eprintln!("{line}");
-    }
-    // final outputs: per hour
-    let hour_of = |p: usize| ((p as f32 * period) / 3600.0) as usize;
-    let mut f = std::io::BufWriter::new(std::fs::File::create(format!("{out}/arcs.tsv")).map_err(|e| e.to_string())?);
-    writeln!(f, "hour\tarc\tn\to\tdelay\tx\tgc\tres\tcap").unwrap();
-    let hours = hour_of(pn - 1) + 1;
-    let ng = net.n_groups;
-    for h in 0..hours {
-        let ps: Vec<usize> = (0..pn).filter(|&p| hour_of(p) == h).collect();
-        for a in 0..na {
-            let (mut n, mut o, mut dw) = (0f32, 0f32, 0f32);
-            for &p in &ps {
-                n += l.n[p * na + a];
-                o += l.o[p * na + a];
-                dw += l.dw[p * na + a];
-            }
-            if n < 0.01 && o < 0.01 {
-                continue;
-            }
-            let g = net.arcs[a].group as usize;
-            let (mut x, mut rs, mut cp) = (0f32, 0f32, 0f32);
-            for &p in &ps {
-                x = x.max(sup.x[p * ng + g]);
-                rs = rs.max(sup.res[p * ng + g]);
-                cp += sup.cap_g[p * ng + g];
-            }
-            cp /= ps.len().max(1) as f32;
-            let ci = net.group_conns[g].iter().map(|&i| i as usize).find(|&i| net.conns[i].arc == a as u32).unwrap_or(0);
-            let b = block_of_period[ps[0]];
-            writeln!(f, "{h}\t{a}\t{n:.1}\t{o:.1}\t{:.1}\t{x:.3}\t{:.3}\t{rs:.1}\t{cp:.0}", if n > 0.0 { dw / n } else { 0.0 }, sup.gc[ci * BLOCKS + b]).unwrap();
-        }
-    }
-    drop(f);
-    let mut f = std::io::BufWriter::new(std::fs::File::create(format!("{out}/edge_hour.tsv")).map_err(|e| e.to_string())?);
-    writeln!(f, "hour\tedge\tvs\tvm\tstarts\tends\tres_e").unwrap();
-    for h in 0..hours {
-        let ps: Vec<usize> = (0..pn).filter(|&p| hour_of(p) == h).collect();
-        for e in 0..ne {
-            let (mut vs, mut vm, mut st_, mut en, mut re) = (0f32, 0f32, 0f32, 0f32, 0f32);
-            for &p in &ps {
-                vs += l.vs[p * ne + e];
-                vm += l.vm[p * ne + e];
-                st_ += l.starts[p * ne + e];
-                en += l.ends[p * ne + e];
-                re = re.max(sup.res_e[p * ne + e]);
-            }
-            if vs > 0.01 || st_ > 0.0 || en > 0.0 {
-                writeln!(f, "{h}\t{e}\t{vs:.0}\t{vm:.0}\t{st_:.1}\t{en:.1}\t{re:.1}").unwrap();
-            }
-        }
-    }
-    drop(f);
-    if prm.save_paths {
-        let mut f = std::io::BufWriter::new(std::fs::File::create(format!("{out}/paths.tsv")).map_err(|e| e.to_string())?);
-        for p in &arena {
-            let s: Vec<String> = p.iter().map(|x| x.to_string()).collect();
-            writeln!(f, "{}", s.join(" ")).unwrap();
-        }
-        drop(f);
-        let mut f = std::io::BufWriter::new(std::fs::File::create(format!("{out}/leg_paths.tsv")).map_err(|e| e.to_string())?);
-        for s in &st {
-            let v: Vec<String> = s.paths.iter().map(|x| format!("{}:{:.4}", x.0, x.1)).collect();
-            writeln!(f, "{}", v.join(" ")).unwrap();
+        if it % 10 == 0 || it == prm.iters {
+            save(&net, &sup, &l, &st, &arena, out, period, &block_of_period, prm.save_paths)?;
         }
     }
     eprintln!("done in {:.1}s", t0.elapsed().as_secs_f32());

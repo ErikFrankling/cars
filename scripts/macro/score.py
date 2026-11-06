@@ -17,6 +17,101 @@ import metrics
 DATA = Path('/home/erikf/projects/personal/cars-data/berlin2019')
 
 
+HOURS = range(6, 21)
+CLASSES = {'motorway': ('motorway', 'motorway_link', 'trunk', 'trunk_link'), 'arterial': ('primary', 'primary_link', 'secondary', 'secondary_link'), 'local': ('tertiary', 'tertiary_link', 'residential', 'unclassified', 'living_street')}
+MAIN = ('motorway', 'motorway_link', 'trunk', 'trunk_link', 'primary', 'primary_link', 'secondary', 'secondary_link', 'tertiary', 'tertiary_link')
+
+
+def blind_checks(prep, run, c, real, classes, edges, netdir, out):
+    """Blind first: speed by class and hour against v_hm, dip, real jam list at a third and at half (R 1, tier A, no parallel-road rows). Then timing as R 4 reports it."""
+    meta = pd.read_csv(prep / 'edge_meta.csv', keep_default_na=False, dtype={'id': str})
+    box = json.load(open(DATA / 'step0/district.json'))['box']
+    inbox = (meta.x >= box[0]) & (meta.x < box[2]) & (meta.y >= box[1]) & (meta.y < box[3])
+    z = np.load(DATA / 'probes/edge_15min.npz', allow_pickle=True)
+    keys = {str(k): i for i, k in enumerate(z['keys'])}
+    res = {}
+    pn, ne, period = open(run / 'shape.txt').read().split()
+    pn, ne, period = int(pn), int(ne), float(period)
+    vs = np.fromfile(run / 'vs.bin', np.float32).reshape(pn, ne)
+    vm = np.fromfile(run / 'vm.bin', np.float32).reshape(pn, ne)
+    pph = int(round(3600 / period))
+    Lm = meta.L.values
+    for cl, ts in CLASSES.items():
+        idx = np.where(meta.type.isin(ts) & inbox)[0]
+        ki = [keys[meta.id[i]] for i in idx if meta.id[i] in keys]
+        vol = np.nan_to_num(z['vol'][ki])
+        hm = np.nan_to_num(z['hm'][ki])
+        med = np.nan_to_num(z['med'][ki])
+        rows = {}
+        for h in HOURS:
+            q = slice(h * 4, h * 4 + 4)
+            w = vol[:, :, q]
+            rh = float((w * hm[:, :, q]).sum() / max(w.sum(), 1))
+            rm = float((w * med[:, :, q]).sum() / max(w.sum(), 1))
+            ps = range(h * pph, (h + 1) * pph)
+            t = vs[np.ix_(list(ps), idx)].sum(axis=0)
+            d = vm[np.ix_(list(ps), idx)].sum(axis=0)
+            good = t > 0
+            k = 3.6 * d[good] / t[good]
+            mk = float(np.average(k, weights=t[good])) if good.any() else float('nan')
+            rows[h] = (round(rh, 1), round(rm, 1), round(mk, 1))
+        r = pd.DataFrame(rows, index=['hm', 'med', 'model']).T.dropna()
+        res[cl] = dict(mean_abs_pct_hm=round(float(((r.model - r.hm).abs() / r.hm).mean() * 100), 1), bias_pct_hm=round(float(((r.model - r.hm) / r.hm).mean() * 100), 1), dip_model=round(float(r.model.min() / r.model.max()), 2) if len(r) else None, dip_real_med=round(float(r.med.min() / r.med.max()), 2), by_hour={int(h): tuple(x) for h, x in r.iterrows() if h in (6, 8, 12, 16, 17, 20)})
+    # jam list
+    jams = pd.read_csv(HERE.parents[1] / 'research/truth/berlin2019/real_jams.csv', low_memory=False)
+    jams = jams[(jams.source == 'probe') & (jams.tier == 'A') & jams.in_district.astype(bool) & ~jams.flag_parallel_road.fillna(False).astype(bool)]
+    pos = {k: i for i, k in enumerate(meta.id)}
+    arcs = pd.read_csv(prep / 'arcs.tsv', sep='\t')
+    succ = {}
+    for a_, b_ in zip(arcs['from'], arcs['to']):
+        succ.setdefault(a_, []).append(b_)
+    with np.errstate(invalid='ignore', divide='ignore'):
+        v = np.where(vs > 0, vm / vs, np.nan)
+        flow = np.where(Lm > 0, vm / np.maximum(Lm, 1), 0) * pph
+    free = np.nanpercentile(np.where(flow > 10, v, np.nan), 90, axis=0)
+    ismain = meta.type.isin(MAIN).values & inbox.values
+    out_j = {}
+    for name, frac in (('third', 1 / 3), ('half', .5)):
+        lst = jams[jams.threshold == name]
+        for per, (h0, h1) in dict(am=(5, 11), pm=(12, 21)).items():
+            ps = list(range(h0 * pph, h1 * pph))
+            with np.errstate(invalid='ignore'):
+                mask = (v[ps] < free * frac) & (flow[ps] >= 50)
+            hit = np.where(mask.any(axis=0) & ismain)[0]
+            s = set(hit.tolist())
+            seen, places = set(), []
+            for i in hit:
+                if i in seen:
+                    continue
+                st, comp = [int(i)], []
+                seen.add(int(i))
+                while st:
+                    x = st.pop()
+                    comp.append(x)
+                    for y in succ.get(x, []):
+                        if y in s and y not in seen:
+                            seen.add(y)
+                            st.append(y)
+                if Lm[comp].sum() >= 200:
+                    places.append(set(comp))
+            pl = lst[lst.period == per]
+            list_edges = [set(pos[e] for e in str(r).split() if e in pos) for r in pl.edges]
+            lu = set().union(*list_edges) if list_edges else set()
+            mu = set().union(*places) if places else set()
+            caught = float(np.mean([bool(x & mu) for x in list_edges])) if list_edges else None
+            false = float(np.mean([not (x & lu) for x in places])) if places else None
+            out_j[f'{name}_{per}'] = dict(list_places=len(pl), model_places=len(places), caught=round(caught, 3) if caught is not None else None, false=round(false, 3) if false is not None else None)
+    res['jams'] = out_j
+    # timing, as R 4
+    merged = real.groupby(['site', 'hour']).flow.median().reset_index().merge(c[['site', 'hour', 'flow']], on=['site', 'hour'], suffixes=('_r', '_m'))
+    merged['cl'] = merged.site.map(classes)
+    art = merged[merged.cl.isin(['primary', 'secondary'])].groupby('hour')[['flow_r', 'flow_m']].sum()
+    res['real_over_model_arterial_by_hour'] = {int(h): round(float(x.flow_r / max(x.flow_m, 1)), 2) for h, x in art.iterrows() if h in (6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 18)}
+    res['real_over_model_24h'] = {k: round(float(g.flow_r.sum() / max(g.flow_m.sum(), 1)), 2) for k, g in merged.groupby('cl')}
+    (out / 'blind.json').write_text(json.dumps(res, indent=1, default=float))
+    return res
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('prep')
@@ -106,6 +201,8 @@ def main():
             r = r[r.hour.isin(hh)]
         res[dd] = metrics.score(c, r, classes)
     (out / 'score.json').write_text(json.dumps(res, indent=1, default=float))
+    blind = blind_checks(prep, run, c, real, classes, edges, a.netdir, out)
+    print(json.dumps(blind))
 
     def med(*path):
         v = []

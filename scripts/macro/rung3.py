@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import mtable as mt
 
 DATA = Path('/home/erikf/projects/personal/cars-data/berlin2019')
-SAT = (1285.0, 1640.0, 1895.0)
+SAT = (1640.0, 1750.0, 1900.0)
 
 
 def load_greens(path):
