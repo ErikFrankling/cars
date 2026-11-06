@@ -2056,8 +2056,13 @@ class N9:
                 g = {'z': 40, 'o': None, 'h': 26, 'i': 40}[label]
                 fc = o['S'] * (g + 3 - o['l']) / 3600 if g else 3.0
                 book.check('N9', fid, i, out, quantity=f'{text}: cars per cycle' + (', own S(g+y-l)' if g else ''), forecast=fc, seeds=seedtag('N9'))
-            else:
+            elif label == 'w':
                 book.check('N9', 'F295', 0, out, quantity=f'{text}: cars per cycle', seeds=seedtag(f'N9{label}'), mode='low', tol='0')
+            else:
+                # Opposed: nothing passes both lights in one green, so a cycle carries what the link stores when the
+                # downstream light turns green, as F047's one-lane case: whole bodies on each lane at jam spacing.
+                per_lane = math.floor((np.mean(L) - 5.0) / 7.5) + 1
+                book.check('N9', 'F405', 0, out, quantity=f'{text}: cars per cycle, storage {lanes} x {per_lane} on {np.mean(L):.1f} m', forecast=min(lanes * per_lane, N9_FEED[label] * 90 / 3600), tol='10%', seeds=seedtag(f'N9{label}'))
             book.check('N9', 'F293', 0, holds, quantity=f'{text}: longest stand on link or approach (s)', seeds=seedtag('N9'), mode='high', tol='0')
             book.check('N9', 'F294', 0, left, quantity=f'{text}: cars left {2890 - N9_END} s after the feed ends', seeds=seedtag('N9'), tol='0')
             book.info('N9', f'{text}: flow late over early (1 = no decay); link lane (m)', f'{np.mean(trend):.2f}; {np.mean(L):.1f}')
