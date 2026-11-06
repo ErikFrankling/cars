@@ -1,43 +1,43 @@
 # Status board
 
-The orchestrator keeps this current. Work follows the ladder in `PLAN.md`. No run without a line in `foundations/forecasts.csv`. Reference is reality or theory; SUMO and `--sumo-compat` count for nothing here.
+The orchestrator keeps this current. Work follows the tiers in `PLAN.md`. No run without a line in `foundations/forecasts.csv`. Reference is recordings and theory; SUMO and `--sumo-compat` count for nothing here.
 
 ## Goal
-Human-only traffic on the Berlin district (49 km²): no vehicle removal, full demand, report 15's Credible thresholds on held-out sites.
+Good science: a simulator whose every behaviour is tested against recordings where everything else was observed, so that a car you look at acts like a human and an area matches its recording, before any self-driving result counts.
 
-## Ladder
-| Rung | State | Number that says so |
+## Tiers
+| Tier | State | Number that says so |
 |---|---|---|
-| 1. Reality table | **Done**, `foundations/R-reality-table.md` | 97 real jam places in the district; bands for cars on the road |
-| 2. Scenes and real tracks | Running | Scenes passing, of about 40 |
-| 3. Movement table | Running | Site-hours over the upper test; real jam heads with no matching capacity |
-| 4. Macro assignment | Next | RMSN, R², slope, GEH<5, class bias, rush-hour dip, jam list |
-| 5. Vehicles and forecast | Waits | Var/mean, now 0.82 / 2.97 / 5.63 at 10 / 50 / 100% |
-| 6. Corridor | Waits for 2, 5 | Real queue place, start, end, discharge |
-| 7. Micro district | Waits for 6 | Real speeds and jam list; cars on road against forecast; hold p99 and max |
-| 8. Score | Waits | Gate |
+| T0 Verification | Running: theory scenes, one driver, frozen time step | Scenes passing; baseline 74 pass, 98 fail (physical), 79, 99 (human) |
+| T1 One driver | Next: replay harness | F101 spacing error; F102-F103 classifier |
+| T2 Streams | Next, same harness | F104 discharge per cycle against a point queue |
+| T3 Networks, recorded demand | Data downloading: pNEUMA, Songdo | |
+| T4 Cities | Berlin macro parked on `t3/macro-assignment-rungs-3-5` | Reality table done |
+| T5 Self-driving | Waits for T3 | |
+
+## Recordings on disk
+Car following and lane changes: TGSIM (5 sites), DLR HT (A39), HIGH-SIM sample, NGSIM (4 sites), DRaT, HDSVT. Junctions: DLR UT (24 h, controller signal states), SinD (4 cities, signal states), OpenDD, Swiss roundabouts, Songdo one junction-day. Whole areas: pNEUMA one file (full set downloading), Songdo (full set downloading). Cities: Xuancheng, Cambridge one day, Jinan. All under `/home/erikf/projects/personal/cars-data/truth/trajectories/` and `datasets/`.
 
 ## What is known, measured or computed
 | Fact | Value | Source |
 |---|---|---|
-| Movements over capacity on MATSim's routes, 100 / 50 / 30% | 311-365 / 11-20 / 0 | D §2.4 |
-| Top jam roots at 50%, two old-driver runs: on or next to an overload; on a signal approach under 50 m | 6-27%; 40-54% (chance 4%, 10%) | PLAN, `scripts/theory/seeds_vs_*.py` |
-| Major-road demand at peak against a regression on other cities | 245,200 against 262,000-318,000 veh-km/h, ±47% | B §5.4 |
-| Cars on the road at 100%, real speeds on model vehicle-km | 12,800-16,100 at 07-08 h, 15,700-18,500 at 08-09 h, 18,500-21,800 at 16-17 h | R §4 |
-| Real saturation flow | 1,750, sweep 1,640-1,900; Berlin can't settle it | R §2 |
-| Hamburg close through pairs under 50 m | 77% linked, +2 s, overlap 0.65, 46% clear; our invented pairs clear as often | R §6 |
-| MATSim's morning against real counts | 0.77 at 06 h, 0.86 at 07 h, 0.98 at 08 h, 1.11-1.18 at 09-11 h | R §4 |
+| Queue discharge with real signal states | 2.0 s per car, 2.7 s lost | Report 05, DLR UT |
+| Lane change duration, 10-90% | 5.1-5.6 s on about 36,000 events | Report 05 |
+| Congested US lane changes passing SUMO's safe-gap test | 35% (free German motorway 85%) | Report 05 |
+| Yellow: half stop at | 5.1 s to the line; almost none brake over 2 m/s² | Report 05 |
+| Roundabout critical gap | about 2.95 s, 7,131 decisions | Report 05 |
+| Car following, held-out 30 s spacing error | lagged model 4.00 m, Krauss 5.43, IDM 5.54 | Report 05 |
 | Longest wait at a real lane end | 79 s, 0 of 610 failed | Report 14 |
-| Time for a held car to fill a median block | 78-157 s | C §3.4 |
-| Physical driver follow-up at give-way | 4.41 s against 3.0 | B §3 |
-| Human driver saturation | 1,500, now 1,800 after the launch fix B's formula points to | B §1, report 16 |
-| Physical driver saturation and motorway | 1,929; 1,732-1,891 across three runs | Physics rounds |
+| Berlin: movements over capacity on MATSim's routes, 100 / 50 / 30% | 311-365 / 11-20 / 0 | D §2.4 |
+| Berlin real saturation flow | 1,750, sweep 1,640-1,900 | R §2 |
+| Real day against real day, Berlin jam places | caught 67%, false 33% | Report 22 |
 
-## Open from the stopped runs
-Not in main: the human driver, `t3/1b36c9cf` at 11afb41, conflicts with the physical driver in seven files, and gets merged by scene results. Its motorway flow is 1,220 per lane, and its final regression pass was cut short. Its no-jump fix for real I-80 tracks is in, but `merge_i80_real_vs_sim.mp4` was cut to 33 of 80 s by the watchdog and needs a full render, checked by eye, once the driver settles. `t3/c5547dcd` has the route agent's iteration files only. Rules committed but unproven: abreast (never fired), missed turns (15 m trigger misses 62% of lane-change root hours in older runs).
+## Erik
+- I-24 MOTION and CIRCLES need a verified account in his name.
+- highD, exiD, inD, rounD: pending review since 2 November, answer to erikfran@kth.se.
 
 ## Rules against rabbit holes
-- Fix a cause only on the lowest rung that shows it.
+- Fix a cause only on the lowest tier that shows it.
 - A miss against a forecast gets explained before anything else changes.
 - Two rounds with no gain on a problem: stop, write down what was tried, take the next item.
-- Merge to main often. At most 3 agents while one Claude account is at its weekly limit (it resets 4 November, 16:00).
+- Merge to main often. At most 3 agents while one Claude account is at its weekly limit (account 2 until 9 November, 11:00).

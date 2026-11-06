@@ -1,109 +1,115 @@
-# Plan: build it in the right order, and know the answer before running
+# Plan: good science first
 
-From Erik: "Think from first principles. Read how real-to-life simulations are constructed. Lay out a plan that you know will have the desired effect before testing anything. You keep doing large tests, basically throwing shit at the wall to see what sticks." And: "Who cares about SUMO."
+Erik, 6 November: the north star is good science. That needs a baseline close to real-world data, so a lot of good real data to test against. Build the simulation from first principles and from what other projects got wrong, until it is true to life: a car you look at behaves like a real human, and at system scale it matches real data. Then build self-driving into it and see what it changes. Rethink every prior, ours included.
 
-The reading is in `foundations/`: A how simulations are built, B what theory predicts, C why real traffic stays fluid, D from demand to lanes. Self-driving work stays paused (VALIDATION-GATE.md). This version includes a separate review of the first draft, and the test that review proposed.
+The earlier ladder (Berlin first, git history up to 8ee9720) is replaced. What it found still holds and is listed under "Kept".
 
-## The chain
+## The priors we drop
 
-A traffic simulation is a chain. Each link has its own measured truth, and each can be checked before the next exists.
+| Prior | Why it fails | Instead |
+|---|---|---|
+| Berlin with MATSim demand is the main test | When demand comes from a model, a miss can come from demand, routes, map, signals or drivers, and the data can't tell which. We saw it: MATSim's routes overload 311-365 movements at full demand, which no driver can fix | Test behaviour first where demand, routes and signals are recorded. Berlin comes last, as a test of demand and routes once behaviour is settled |
+| Theory scenes show the driver is right | They show the code does what its equations say. That is verification. Only recordings can show the equations are human. That is validation | Keep both and name them. A scene never sets a behaviour number |
+| Parameters are plausible averages, adjusted until things look right | Fitted numbers absorb errors they didn't cause (Kennedy & O'Hagan 2001). Report 05's calibrated Krauss deceleration of 0.33 m/s² is one | Every behaviour number is measured as a distribution, from a recording of that behaviour alone, then frozen. Nothing higher up may move it |
+| Matching a number means realistic | Many wrong models match one number (report 22). Counts can't tell free flow from a jam carrying the same flow | Indistinguishable from reality: the gap between simulation and recording is no larger than between two recordings, at every scale, on data never used to set anything |
+| Behaviour is the car-following model | Most urban error sits in junctions, lane choice and lane changes, and the deadlocks are there | Every decision a driver makes gets its own recording-based test |
 
-Map and signals → capacity of each movement → routes that fit those capacities → queues → delay → routes again.
+## The method: replay with recorded boundaries
 
-Tune from the far end and parameters absorb errors they didn't cause (FHWA 2004, pp. 7, 45, 54). We started at the far end: a whole city, then guessing from its jam.
+A drone or overhead-camera recording sees every vehicle in an area. So we know when and where each one entered, at what speed and in which lane, where it left, and often what the signals showed. Put exactly that into the simulator at the edge of the recorded area and simulate only what happens inside. Demand, routes and signals are then facts, not guesses. What's left to differ is the driver and the map, and the map is checked separately against the recording.
 
-## What we did wrong
+One setting decides how much is simulated:
 
-1. **Routes from another model.** MATSim's routes answer "best path on MATSim's capacities". About 80% of the edges over 900 veh/lane/h are MATSim's own flow, at v/c 0.55 on its numbers. Its capacity on most main-road signal approaches is one constant, 845 veh/lane/h, whatever the signal or the turn. On our map's movements those routes overload 311-365 movements at 100%, 11-20 at 50%, none at 30% (D §2.4; `scripts/theory/screen.py`, rerun and confirmed, 2 seconds). That rules those routes out at full demand. At 50% it explains only part of the jam; see the next section.
-2. **The micro simulator as the first assignment tool.** In a jam, feedback means nothing. Report 23's "the fault left isn't route choice" isn't shown: no run has used routes assigned on this map's capacities.
-3. **A driver that fails hand calculations, put on a city.** Give-way follow-up is 4.41 s against a real 3.0 s, which alone explains most of the give-way deficit (B §3).
-4. **Waits that don't end.** Root cars in saved runs stay held from first to last 15-minute sample for a median of 30-60 min, which isn't proof of unbroken holding but is far outside reality. The longest wait measured at a real lane end is 79 s, and a median block fills behind a held car in 78-157 s (C §3.4). The lock happens at 2-4% of jam density, so it isn't a space problem.
-5. **Copied trips.** Demand above 10% is copies of each trip, same route, within ±150 s. Variance over mean of 5-minute counts per movement: 0.82 at 10%, 2.97 at 50%, 5.63 at 100% (`scripts/theory/dispersion.py`). Random queue goes roughly as I·x²/(2(1-x)), so about 2.4 cars with independent trips and 13.5 with today's at x 0.85. That is an order of magnitude only: the count ignores signal filtering, contains the rising demand of 07-08 h, and copies spread over three 90 s cycles. It is second order next to items 1 and 3, and it gets a scene (X1) to size it.
-6. **No list of real jams.** Nobody builds a model without one (Gomes; FHWA). We only scored against it afterwards.
-7. **SUMO and the old driver as reference.** "Healthy" was five times an old-driver run, and SUMO was used to split causes. Both go. The same target now comes from real speeds (B §5.1), though the vehicle-km behind it still come from a model.
+- **One vehicle simulated, the rest replayed.** Its leader and neighbours move exactly as recorded. Does this driver do what real drivers did in the same place?
+- **One lane, approach or corridor simulated.** Do the queues, waves, discharge and capacity drop come out right?
+- **Every vehicle in the area simulated.** Travel times, delay by approach, queue lengths, spillback, the area's flow-density curve.
 
-Not causes, tested: the district boundary (a wider cut has more cars inside, not fewer). Adding 141 OSM signals on the old driver and rigid routes gave no gain.
+Vehicles we don't model, such as motorcycles, bikes and buses, stay replayed at every setting. Self-driving uses the same harness: replace a share of recorded humans with automated vehicles and compare against the all-human replay of the same recording.
 
-## Where the jam sources really sit
+## Tiers
 
-The review's falsifier: if the static screen explains the 50% jam, jam roots should sit on its overloaded approaches. `scripts/theory/seeds_vs_screen.py`, `seeds_vs_storage.py`. Share of top-15 root vehicle-hours, chance being that set's share of route flow. Saved runs, old driver, map m12, MATSim routes, so this is a clue about the map and the engine, and each row is one run:
+Each tier passes before the next counts. Tiers that don't depend on each other run side by side.
 
-| Where the root stands | Chance | `hunt_s5_s0` | `why5`, stopped early |
-|---|---:|---:|---:|
-| Approach over capacity, x > 1 | 1% | 5% | 27% |
-| ... or next to one | 4% | 6% | 27% |
-| Signal approach whose red-time queue doesn't fit | 3% | 25% | 21% |
-| Signal approach under 50 m | 10% | 54% | 40% |
-| Signal approach under 30 m | 5% | 39% | 32% |
-| Inside a junction | | 20% | 0% |
+| Tier | Question | Recordings (on disk unless marked) | Compared | Status |
+|---|---|---|---|---|
+| **T0 Verification** | Does the code do what its equations say? | Theory scenes, `scripts/theory/scenes.py` | Hand-computed answers, forecasts F001-F049 | Running |
+| **T1 One driver** | Does one simulated driver among recorded traffic act like the real one? | Car following: TGSIM, DLR HT, HIGH-SIM, NGSIM. Launch and yellow: DLR UT (controller signal states), SinD. Gap acceptance: Swiss roundabouts, OpenDD, DLR UT, Songdo. Lane changes and merges: DLR HT, HIGH-SIM, DRaT, NGSIM I-80 | Distributions of gap, speed, acceleration, accepted gaps, timing, place. A classifier test, below | Next |
+| **T2 Streams** | Given recorded inflow, do the right queues and waves appear? | HIGH-SIM (congested motorway), NGSIM I-80 and US-101, DLR UT (one German junction, 24 h, real signals), SinD, Lankershim | Wave speed, period and growth; capacity drop; queue length over time; discharge per cycle; lane use | Next |
+| **T3 Networks, recorded demand** | Given every recorded entry, does the area behave like the recording? | pNEUMA, Athens: 10 drone areas, 5 mornings, every vehicle, heavy congestion (downloading). Songdo: 20 junctions, 4 days, vehicle classes given, lane polygons (downloading); its motorcycle share is still to check | Per-vehicle travel time, delay by approach, queues, spillback, flow-density curve. Signals are read from stop-line crossings | After T1, T2 |
+| **T4 Cities** | Partly recorded demand, then modelled demand | Xuancheng (plate reads and signal intervals, 1 h), Cambridge (camera journeys, 8 days), Jinan (reconstructed paths). Then Berlin, Stockholm, Madrid | Report 22's benchmark | Berlin parked |
+| **T5 Self-driving** | What changes when some vehicles are automated? | Recorded automated vehicles: TGSIM I-294 (adaptive cruise in traffic), OpenACC (to fetch), CIRCLES on I-24 (needs registration). Humans reacting to them: same recordings | First the automated controller against its recordings, then how humans respond to it, then counterfactual replays on T2-T4 | After T3 |
 
-The run on assigned routes, `whya1`, differs: 3% on short approaches, with 45% of root hours waiting for a lane change, 29% a yield and 29% inside a junction. Lane-change waits are 24% and 19% in the two runs above.
+## How a pass is decided
 
-**So overload is real and predicted, but it isn't what starts most of the 50% jam.** My first draft said a jam at 50% was never a surprise. That was too strong. Most roots stand at approaches the table calls fine, and this leaves three local faults, each testable in a small scene:
+1. **Noise floor first.** Before any comparison, measure the same metric real against real: two days, two drones, two halves of a recording. That's the ruler.
+2. **Indistinguishable, and better than a dumb model.** A metric passes when the simulation-to-recording gap has a confidence bound under the floor, and the simulation beats a null model given the same inputs: a point queue with the measured discharge headway, a constant-time-gap follower, free-flow travel time plus signal delay. If a simple model does as well, the micro detail adds nothing there yet.
+3. **Human-likeness by classifier.** Cut real and simulated trajectories into 10 s windows (speed, acceleration, gap, closing speed, lateral position), train a classifier to tell them apart, score it on held-out windows (a classifier two-sample test, Lopez-Paz & Oquab 2017). Real against real gives the floor accuracy. Simulation passes when it's no easier to spot than that. What the classifier relies on says what's wrong. Both sides go through the same instrument first: simulated tracks get the recording's sampling and smoothing, or the classifier just learns the tracker.
+4. **Ensembles, not single runs.** Many seeds. Report where the recording falls in the simulated spread, with a proper score (CRPS), not only the mean.
+5. **Held out by design.** Set numbers on some days and sites, test on others, and on a contrasting place: set on Athens and the German sites, test on Songdo. A held-out set is opened once per change that already passes everything else.
 
-- **Short links between signals.** A 17 m link can't hold one red's arrivals. I expected real signals to clear such links and ours not to. Hamburg doesn't confirm that: under 50 m, 77% of real through pairs are linked with a small offset, but only 46% clear on the report's test, and our invented programs clear as often (R §6). Ours are too uniform, not obviously worse. So why roots gather on short approaches is still open. Next checks: opposed pairs and turns into short links, lane choice and queueing on short links (scene N9), and how a real short link behaves when it fills.
-- **Waits for a lane or a gap that don't end.** C's finding.
-- **Stand-offs inside junctions.** The largest single root in `hunt_s5_s0`, 436 vehicle-hours, is a yield 2 m into a junction lane.
+## The driver, from first principles
 
-So rung 2 and the signal-pair check matter at least as much as the macro layer. Macro is still needed, for full demand and because no test has used routes fitted to this map.
+A human driver perceives, decides and acts, with delays and errors, inside a vehicle. Every part is a measured quantity. Nothing enters without a recording that shows it.
+
+| Part | What it is | Measured as | First source |
+|---|---|---|---|
+| Perception | Gap and closing speed are judged with error, with a threshold below which change isn't noticed | Spread of response to small closing speeds | TGSIM, HIGH-SIM |
+| Delay | Response to the leader comes about 1 s late | Lag that best explains the follower | Report 05 found 1 s; check per dataset |
+| Attention | Drivers adjust in steps, not continuously | Acceleration noise and its correlation time | Report 05: small correlated noise |
+| Following | Preferred time gap and standstill gap, different per driver | Distributions in steady following | TGSIM, DLR HT, HIGH-SIM |
+| Free driving | Desired speed per road type and per driver | Speeds of unconstrained vehicles | DLR HT, pNEUMA off-peak, Berlin 05-06 h |
+| Launch | Delay of the first car, headway of the rest | Crossing times after green | DLR UT: 2.7 s lost, 2.0 s per car |
+| Yellow | Stop or go | Share stopping by time to the line | DLR UT: half stop at 5.1 s; almost no one brakes over 2 m/s² |
+| Gap acceptance | Accepted and rejected gaps, follow-up time, impatience over waiting | Gap choices per waiting time | Swiss roundabouts: critical gap about 2.95 s. Give-way junctions still to measure |
+| Lane choice | Where drivers move into the lane they need | Distance before the junction | pNEUMA, Songdo |
+| Lane change | Gaps accepted, duration, courtesy of the car behind | Accepted lead and lag gaps; 10-90% time | Report 05: 5.1-5.6 s; only 35% of congested US changes pass SUMO's safe-gap test |
+| Vehicle | Power, braking, size | Manufacturer data and launches | Report 11 |
+
+Emergent facts the whole must then reproduce with no retuning: wave speed, concave growth of oscillations along a platoon (Jiang et al. 2014), capacity drop at an active bottleneck, signal discharge, queue spillback, the flow-density curve of an area.
+
+## What other projects got wrong, and what we do
+
+| Mistake | Source | Here |
+|---|---|---|
+| Calibrated to counts that many parameter sets reach | MULTITUDE 2014: GEH targets "can be obtained with a multiplicity of parameter combinations" | Measured parts, emergent tests, no fit to aggregates |
+| Demand and behaviour tuned together, going in circles | FHWA Toolbox III 2004 | Behaviour on recorded demand (T1-T3) before modelled demand (T4) |
+| Failures hidden | SUMO teleports a car stuck 300 s by default | No teleports, no removal. Give-ups are behaviour and counted |
+| Means of one run | MULTITUDE 2014 | Ensembles and proper scores |
+| Car following fitted on trajectories, then waves vanish in the network | "Calibration Illusion", 2026: waves "degrade to non-existence" | Waves are a T2 test of their own |
+| Learned simulators judged over 8 s | WOSAC 2023 | Horizons of hours, flows and queues |
+| No held-out test | Report 15: no published city micro model passed on held-out data | Rule 5 above |
+| Us: a city first, theory scenes taken as validation, big runs then guessing | This repo, October-November | This plan |
 
 ## Rules
 
-1. **No run without a written forecast.** A line in `foundations/forecasts.csv` before the run: the number, the formula or model it came from, the tolerance. No forecast, no run.
-2. **A rung passes before anything that depends on it runs.** No city run to see what happens. Rungs that don't depend on each other run side by side.
-3. **A result that misses its forecast gets explained first.** Either the code or the assumption is wrong, and we find out which before changing anything else.
-4. **Reference is reality or theory.** No decision rests on SUMO or `--sumo-compat`. `scripts/golden.py` only guards that mode, and isn't a merge gate.
-5. **One driver.** Physical motion with human decisions on top. Each human rule enters when a scene shows the gap it closes.
-6. **One seed is no result** where the outcome is chaotic. Scenes and district runs quote a spread.
-7. **Never scale demand to pass.** No vehicle removal. A driver giving up a turn and carrying on is behaviour, allowed, counted, and capped at 10 per 1,000 trips. That ceiling is a judgement, since no field measure exists. Going over it means lane planning is wrong.
-8. **Nothing gets tuned to pass a fitted number.** Demand v6.4 was already fitted to these count sites, so agreeing with them proves little. Signals follow one rule fixed before scoring. Sweeps report sensitivity and are never a search for the best value.
-9. **Agreement between our own layers is consistency, not truth.** Micro matching macro splits causes. Only real data passes a rung that claims realism.
+1. **No run without a written forecast** in `foundations/forecasts.csv`: the number, where it comes from, the tolerance. Replay-tier forecasts use F100 onwards.
+2. **A miss gets explained before anything else changes.** Code or assumption, find out which.
+3. **Fix a cause on the lowest tier that shows it.** A T3 miss caused by lane changes goes back to T1 lane changes.
+4. **A behaviour number comes from a recording of that behaviour**, with its source written next to it. A value set because a scene passes with it is marked provisional.
+5. **Reference is recordings and theory.** No decision rests on SUMO or `--sumo-compat`. SUMO's netconvert may still convert map formats.
+6. **One seed is no result.**
+7. **No vehicle removal, no demand scaling.**
+8. **Agreement between our own layers is consistency, not truth.**
+9. **Two rounds with no gain on a problem: stop, write down what was tried, take the next.**
 
-## The ladder
+## Kept from the earlier ladder
 
-Dependencies: 1 → 3 → 4 → 5 → 6 → 7 → 8, and 2 → 6. Rung 2 runs alongside 3 and 4.
+- The theory scene suite and forecasts F001-F049, now T0.
+- The reality table, `foundations/R-reality-table.md`: 97 real Berlin jam places, saturation 1,750 (1,640-1,900), green splits, cars on the road by hour, Hamburg signal pairs. It serves T4.
+- The macro assignment on branch `t3/macro-assignment-rungs-3-5`, parked with its log. Berlin needs it in T4.
+- The static checks in `scripts/theory/`.
+- Report 22's benchmark and noise floors, the scoreboard for T4.
 
-| Rung | What | Runs | Cost | Exit test | If it fails |
-|---|---|---|---|---|---|
-| **1. Reality table, done** | `foundations/R-reality-table.md`. 97 credible real jam places in the district. Saturation 1,750, sweep 1,640-1,900; Berlin can't settle it. Main-road green 0.47-0.76, cycle 75-110 s. Free speed from 05-06 h. Cars on the road at 100%: 12,800-16,100 at 07-08 h, 15,700-18,500 at 08-09 h, 18,500-21,800 at 16-17 h, the real peak. MATSim's morning runs about an hour early: real over model 0.77 at 06 h, 0.86 at 07 h, 0.98 at 08 h, 1.11-1.18 at 09-11 h | Data only | Done | Every target has a number, a spread and a source | |
-| **2. Scenes and real tracks** | About 40 small scenes from B and C with computed answers, including two signals 20 m apart and stand-offs inside a junction. Most run in seconds; the closed grid is hours of simulated time on CPU. Then the benchmark's trajectory levels on held-out real tracks, since norm formulas alone are bands. Time step frozen here | CPU | Days of driver work | All pass on one driver at one time step, within tolerance | Fix the driver. A city run proves nothing until this passes |
-| **3. Movement table** | Every movement: capacity, storage, free time, from lanes, signals and the German manual. Connections with no green. Main roads with capacity under 50 veh/h. **Through signal pairs under 50 m follow the rule from R §6, fixed before any Berlin score:** same cycle, downstream green +2 s, overlap 0.65. `cuts.rs` on this table: if 100% exceeds a cut, no routing can fix it | No simulation, seconds | Hours | **Upper:** real flow ≤ 1.1 × table capacity at every site-hour, or a named cause. **Lower:** hourly loops can't test capacity from below, since real queue-hour flow is a median 619 per lane at any saturation, so a table too high is caught by jams: every real jam head on the list must have a table capacity near its real flow, or a named cause. Scenes agree with the table within 10% per class | Fix the table or the map, one named cause at a time |
-| **4. Macro assignment** | 100% demand, whole region, movement delay, real free speeds, road hierarchy. Only who, where, when, class comes from MATSim | One CPU, minutes | Days to build | **First the blind checks:** speed by class and hour, rush-hour dip ±0.10, the 24 clean cross-sections, and the real jam list, scored against what one real day gets on the other seven: caught 72-81%, false 22-40% at a third of free speed; 80-91%, 7-11% at half. Then fitted sites: RMSN ≤ 0.40, R² ≥ 0.75, slope 0.85-1.15, GEH<5 ≥ 60%, class bias ±15% | Macro understates delay, so speeds alone don't condemn it. If flows by site and class can't be reached with capacities inside measured ranges, the demand is the problem: stop micro work on Berlin, say so, and go to data or Madrid |
-| **5. Vehicles and forecast** | Macro's paths to whole vehicles. Same-route clusters gone, peak shape kept. Kinematic-wave pass for spillback. Boundary: metered entries, time-varying exit capacity. Writes the forecast for rungs 6 and 7 | No simulation, minutes | Days | Peak profile within 5%. Bunching as scene X1 says it must be. Movements within 5% of macro. Lane-feasible routes | Fix before any micro run |
-| **6. Corridors** | No single corridor has both known timing and known discharge. Leipziger Straße-Gertraudenstraße eastbound: jam on 8 of 8 days from 15:30, four loops in a line, discharge about 750 per lane, signals by rule. B1/B5: jam on 8 of 8 days, published cycles, no loops. Small simulated area around each | GPU, short | Hours | Leipziger: real jam place, start, end and discharge. B1/B5: real place and time | Back to the lowest rung that shows the cause |
-| **7. Micro district** | In order: near-empty, flat reduced, 50% peak, 100%. Small to big | GPU, short | Hours each | **Real data:** speed by class and hour, jam list, flows on tuning sites. **Own forecast:** cars on road within 15%, discharge per movement within 10%. Holds: p99 under spill time, none over 5 min. Give-ups under 10 per 1,000 trips | Macro has no queue and micro does: engine or lane fault. Both have it: map or routes. Fix there, on the lowest rung that shows it |
-| **8. Score** | Benchmark with one configuration. Open locked sites once. Then Madrid | | | Gate thresholds | Report exactly what fails |
+## First experiments and their forecasts
 
-## What we can already calculate
+Written before any run, F100-F104 in `forecasts.csv`.
 
-These are forecasts, written before any code changes.
+1. **Harness check (T0).** Replay every vehicle of a recording: the simulator's output equals the recording within map-matching error.
+2. **One follower (T1).** TGSIM I-90/94, report 05's held-out day, one simulated vehicle behind its recorded leader. 30 s spacing error between 4.0 and 5.5 m. Under 4.4 m only if the driver has report 05's 1 s response lag. Report 05: its lagged model 4.00 m, calibrated Krauss 5.43 m, calibrated IDM 5.54 m.
+3. **Classifier, as a test of the test (T1).** Real against real near 0.5 accuracy. Today's driver against real well above that, since a driver with no noise in acceleration is easy to spot. If it isn't spotted, the test has no power.
+4. **One approach (T2).** DLR UT, one signal approach, recorded arrivals and controller states, every car on it simulated. Discharge per saturated cycle at least as close to the recording as a point queue with 2.0 s headway and 2.7 s lost time.
 
-| Change | Today | Calculated after |
-|---|---|---|
-| Give-way follow-up 4.41 → 3.0 s | 816 / 474 / 279 / 162 veh/h at major 0 / 400 / 800 / 1,200 | 1,200 / 696 / 404 / 234. German manual 1,200 / 736 / 451 / 277 |
-| A wrong-lane head gives up after 60 s, 10% of a lane's cars | 0 veh/h through that lane | 450 veh/h (S3) |
-| Holds end in about 90 s instead of 30 min | Active seeds N = λD | About 20 times fewer at the same seed rate |
-| Lane planning | 36% complete a change on a 97 m block at 900 veh/h, Δv 3 m/s (a floor; real drivers do better) | 95% needs 660 m of planning, or 190 m after slowing to Δv 6 |
-| Independent trips instead of copies, order of magnitude | About 13.5 cars of random queue at x 0.85, 100% demand | About 2.4 cars |
-| Full demand on major roads | 230,500-245,200 veh-km/h | 262,000-318,000 by a regression on other cities, ±47%, so only a rough sign the network fits. Real per-lane flow is 6-15% under this demand |
+## Data only Erik can unlock
 
-## What isn't known
-
-- Whether macro reaches the bars on Berlin's invented signals. Rung 4 answers that cheaply, which is why it comes before any more district micro work.
-- How much each give-up or forcing behaviour moves a real network. No field study measures it. Scenes prove each rule works, not its size in a city.
-- Why jam roots gather on short signal approaches. It's two old-driver runs, top 15 roots each, sampled every 15 minutes, on an invented signal program, and Hamburg didn't confirm the first explanation.
-- The match between the screen's limit (first overloads at 30% with our give-way) and the stepped run's freeze at 30% is one match, and that run re-routed between steps.
-- Berlin's saturation flow, green splits, motorway capacity, residential traffic and queue lengths. R "What can't be known" says why. One Berlin queue count with a stopwatch, or real weekday headways anywhere in Germany, would settle saturation.
-- There is no real reference for bunching at 5-minute level, since Berlin's detectors are hourly.
-- Whether to correct MATSim's early morning. A time-profile factor is the smallest OD change there is, and it is only allowed after route and capacity work, within rule 7.
-
-## How it could pass and still be wrong
-
-- Signals tuned against sites demand was already fitted to. Rule 8 forbids it, and blind checks come first.
-- A table too generous everywhere passes the upper test. Real jams on the list must come out as jams, in macro and in micro, which a too-generous table can't do.
-- Micro agreeing with a macro built on the same inputs. Rule 9, and rungs 6 and 7 exit on real data.
-- Scenes pass on norm values that aren't Berlin's. Rung 1 settles what can be settled, and held-out sites at rung 8 are the final word.
-
-## Parked
-
-Stockholm, self-driving tiers, signal-free junctions, the learned driver, the report rewrite. The benchmark stays as the final scoreboard, used at rung 8, apart from its trajectory levels at rung 2.
+- **I-24 MOTION and CIRCLES** (Nashville motorway, every vehicle, and the 100-vehicle automated test of November 2022). Needs a verified account.
+- **highD, exiD, inD, rounD.** Applied for on 2 November under erikfran@kth.se, pending manual review. The answer goes to that inbox.
