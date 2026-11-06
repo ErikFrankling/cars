@@ -943,7 +943,7 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.a0 = num("phys.a0", r.a0);
     g.a1 = num("phys.a1", r.a1);
     g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
-    g.v_lat = num("phys.v_lat", cfg.tune("v_lat", if !cfg.humans && cfg.tune("lc_measured", 1.0) > 0.0 { LCM_V_LAT } else { 0.6 }));
+    g.v_lat = num("phys.v_lat", cfg.tune("v_lat", if !cfg.humans && cfg.tune("lc_measured", 0.0) > 0.0 { LCM_V_LAT } else { 0.6 }));
     g.width = t.width;
     // DRIVER.md: real cars stand 1.7 m apart in rounD and inD queues, measured on real box lengths. SUMO's 2.5 had no source.
     if md_type(t, cfg) {
@@ -1245,7 +1245,7 @@ impl World {
             md_u: [0.95, 0.8, 0.0, 0.0],
             lcm_a: [cfg.tune("lcm_a0", LCM_A0), cfg.tune("lcm_at", LCM_AT), cfg.tune("lcm_lag_mu", LCM_LAG[0]), cfg.tune("lcm_lag_close", LCM_LAG[1])],
             lcm_b: [cfg.tune("lcm_lag_sd", LCM_LAG[2]), cfg.tune("lcm_lead_mu", LCM_LEAD[0]), cfg.tune("lcm_lead_close", LCM_LEAD[1]), cfg.tune("lcm_lead_sd", LCM_LEAD[2])],
-            lcm_c: [cfg.tune("lcm_courtesy", LCM_COURTESY), if !cfg.humans && cfg.tune("lc_measured", 1.0) > 0.0 { 1.0 } else { 0.0 }, 0.0, 0.0],
+            lcm_c: [cfg.tune("lcm_courtesy", LCM_COURTESY), if !cfg.humans && cfg.tune("lc_measured", 0.0) > 0.0 { 1.0 } else { 0.0 }, 0.0, 0.0],
         };
         w
     }

@@ -11,3 +11,5 @@ Fixed 6 November 2026, before any number in `research/truth/measure/` was comput
 | Lane changes and merges (6) | exiD location 5 (recordings 73-77, a Friday); highD location 6 | A whole merge site |
 | Launch and discharge (7) | SinD Xi'an | A whole city |
 | Desired speed (8) | highD location 6; exiD location 5; inD location 3 | Same as above |
+
+7 November 2026, lane changes (LANECHANGE.md): exiD location 5 and highD location 6 were **not** opened. Step 4 does not pass, so no held-out test was run.

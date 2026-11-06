@@ -76,3 +76,15 @@ This driver was not moved towards DRIVER.md in this job (orchestrator). The last
 | Gate floor during a change | certificate × 0.35 | report 18 lags | Fitted to p25 lags | highD, exiD | accepted lag p5/p50 0.45/1.2-1.7 s, lead 0.30-0.38/1.5-1.7 s; on-ramp lag 0.45/1.81, lead 0.39/1.66 s |
 | Lane change duration | from the physics lateral speed 0.6 m/s | physics table | Adapted | exiD, highD | 10-90%: merge 5.4 s, motorway 4.4-5.0 s |
 | Free speed, motorway | lane limit × speedFactor | SUMO | – | highD, exiD | no limit 34.5 m/s; 120 km/h 30.7-32.2; 100 km/h 28.3 m/s |
+
+## Lane changes measured (7 November, `measure/LANECHANGE.md`, `--tune lc_measured=1`, off by default)
+
+| Parameter | Old value | Measured rules | Source | Status |
+|---|---|---|---|---|
+| Merge start law | report 18 B2: intercept 0.4 (closed-loop tuned), driver term 0.5 (invented), tte −1.544, lag 0.133, lead 0.164 | per 0.5 s sigmoid(−0.601 − 1.119 tte/10) × acceptance | I-80 + US-101 must-change cohorts with refusals (959 cars), moved to the start by the measured 2.0 s | Measured; exiD does not identify it (starts come at once) and starts 2.3× as often |
+| Gap floor during a change | certificate × 0.35 (fitted) | lognormal critical time gaps: lag median 0.40 s, log-SD 1.68, ln +0.551 per m/s closing; lead 0.14 s, 1.37, +0.453 | same fit | Measured; medians weakly determined |
+| Discretionary gaps behind a physical follower | 0.6 × its desired gap; Ahmed's published lead gap | the same acceptance | same fit; transfers to highD left changes (lag p50 1.65 against 1.72 s) | Measured; right changes not reproduced |
+| Courtesy share | 0.4 | 0.4 | report 14 I-80 sweep | Provisional. F707 (5.5 points per merge, exiD) is another quantity; 0.055 tripled lane-end waits |
+| Sideways speed | 0.6 m/s (adapted) | 0.71 m/s | exiD merges and highD: start to crossing 1.96 s, start to clear 3.2 s | Measured; DLR HT 0.47-0.52 |
+| Change over a lane end | must finish first | runs on over links with no junction box | harness: the old rule stopped every exiD merger at the end of its sectioned lane | Fix |
+| SUMO follower/leader holds for a changer | on | off for measured drivers | F707: no measurable response before the start | Dropped |

@@ -487,7 +487,9 @@ def fit_all():
     res['ramp']['starts_per_s_by_tte_observed_vs_model'] = {f'{lo}-{hi}': [round(float(y[(tte >= lo) & (tte < hi)].mean()), 4), round(float(ph[(tte >= lo) & (tte < hi)].mean()), 4), int(((tte >= lo) & (tte < hi)).sum())]
                                                          for lo, hi in zip(bins[:-1], bins[1:])}
     res['ramp']['offered_refused_lag_s'] = q(tl[(y == 0) & np.isfinite(tl)], (5, 25, 50))
-    acc = p
+    # The exiD fit above is degenerate (LANECHANGE.md): discretionary desire uses the acceptance frozen from the I-80 and
+    # US-101 must-change cohorts (world.rs LCM_*).
+    acc = np.array([-0.825, -1.119, -0.908, 0.551, np.log(1.676), -2.004, 0.453, np.log(1.374)])
     # Discretionary: highD fit, DLR HT check.
     for ds in ('highD', 'dlrht'):
         H = pd.read_pickle(f'{WORK}/{ds}_states.pkl')
@@ -508,7 +510,7 @@ def fit_all():
             Ss, X, lp, ys, tl, td = side_arrays(H, side, acc)
             ww = Ss.w.to_numpy()
             b, f = fit_des(X, lp, ys, ww)
-            Bd = boot(Ss.g.to_numpy(), lambda ix: fit_des(X[ix], lp[ix], ys[ix], ww[ix])[0], 20)
+            Bd = boot(Ss.g.to_numpy(), lambda ix: fit_des(X[ix], lp[ix], ys[ix], ww[ix])[0], 10)
             pr = expit(X @ b) * np.exp(lp) * ww
             chk = {}
             for nm, t in (('lag', tl), ('lead', td)):

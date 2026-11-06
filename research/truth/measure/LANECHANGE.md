@@ -1,6 +1,6 @@
 # Lane changes, measured
 
-7 November 2026. Written after the measurements (F700-F708) and before any scene or replay test of the code. Numbers are in [lc_decision.json](lc_decision.json); scripts are `scripts/measure/lc_decision.py` (states and fits) and `scripts/replay/lc_merge.py` (harness). Held out, unread: exiD location 5 and highD location 6 ([HOLDOUT.md](HOLDOUT.md)). Applies to the one driver (physical motion, `hd_phys`); `--tune lc_measured=0` gives the old rules back. The human driver and `--sumo-compat` are unchanged.
+7 November 2026. Written after the measurements (F700-F708) and before any scene or replay test of the code. Numbers are in [lc_decision.json](lc_decision.json); scripts are `scripts/measure/lc_decision.py` (states and fits) and `scripts/replay/lc_merge.py` (harness). Held out, unread: exiD location 5 and highD location 6 ([HOLDOUT.md](HOLDOUT.md)). Applies to the one driver (physical motion, `hd_phys`), **off by default**: `--tune lc_measured=1` turns it on. Three T0 rows that pass with the old rules fail with it (Results). Without the switch a run is the old code's. The human driver and `--sumo-compat` are unchanged.
 
 ## What the recordings can and cannot say
 
@@ -56,7 +56,11 @@
   - against a 6.4% baseline;
   - an excess of 5.5 points.
   - Report 14 on I-80: +5.8 to +8.3 points, by speed 6-6.5 points at 2-15 m/s, about 0 above 25 m/s.
-- **Courtesy share 0.055.** It replaces the provisional 0.4. A follower drawn courteous brakes as before (report 14's yield, up to 1.5 m/s², more near the lane end).
+- **Courtesy share stays at the provisional 0.4** (report 14's I-80 sweep). F707 is not this share.
+  - The simulator's share applies only when a blocked must-changer is alongside. F707 counts braking per merge, mostly in free flow where nobody is blocked.
+  - Set to 0.055, lane-end waits were three times I-80's: LC8 p99 187 s against 72.7, median 68 against 22.6.
+  - At 0.4: 76.5 s and 24 s.
+  - The share of chances in which a blocked merger is let in is the measurement that would set it. Report 14 has it for I-80 (59%), but not yet in the simulator's terms.
 - **Rules dropped for a measured follower or leader**, because no recording shows them:
   - SUMO's "keep a secure gap behind the merger's planned speed" for followers of a blocked changer (MSLCHelper::getSpeedPreservingSecureGap);
   - the request that the target lane's leader hold its speed while a changer overtakes it;
@@ -92,10 +96,68 @@ Measured from the start (10%):
 | Start law a0, AT | −0.825, −1.119 per 10 s | I-80 + US-101 must-change cohorts (report 14 tables), joint likelihood | Measured; a0 moved by the measured 2.0 s |
 | Critical lag: ln median, closing slope, log-SD | −0.908, 0.551, 1.676 | same fit | Measured; median weakly determined |
 | Critical lead: same | −2.004, 0.453, 1.374 | same fit | Measured; median weakly determined |
-| Courtesy share | 0.055 | exiD sites 0, 2, 3, 4, 6, F707 | Measured |
+| Courtesy share | 0.4 | report 14, I-80 sweep for the human driver | Provisional: F707 (5.5 points per merge on exiD) is a different quantity |
 | Sideways speed | 0.71 m/s | exiD merges, highD | Measured |
 | Start to crossing used for the shift | 2.0 s | exiD, highD | Measured |
 | Strategic urgency window (LC2013 lookahead, report 18 B1's 43 s) | unchanged | LMRS | Established, not re-measured |
 | Discretionary desire | LC2013 | SUMO | Not measured here; fit available |
 
-All were frozen in `world.rs` before the first test run of this code.
+All were frozen in `world.rs` before the first test run. Two changes were made after it, each with its forecast written first:
+- F727 held the closing-speed terms at the p95 of their data. It gave no gain and was reverted.
+- F728 put courtesy back at 0.4 after the 0.055 of round 1.
+
+## Results (F720-F728)
+
+**Harness, exiD 00, setting 1** (121 on-ramp mergers released where they enter the acceleration lane, everyone else replayed; dt 0.25, 2 seeds; `lc_merge.py`). Old rules against measured rules, with the same cars in the recording:
+
+| | Recorded | Old rules | Measured rules |
+|---|---:|---:|---:|
+| Metres left at the crossing, median | 123 | 2.3 | 110 |
+| Share in the last tenth of the lane | 0.075 | 0.98 | 0.21 |
+| Entering the lane to crossing, median | 4.5 s | 23.3 s | 5.5 s |
+| Speed at the crossing, median | 22.8 m/s | 0 | 22.1 m/s |
+| Lag time gap at the crossing, p5 / p50 | 0.47 / 0.72 s (n 13) | | 0.24 / 0.91 s |
+| Lead time gap at the crossing, p5 / p50 | 0.38 / 0.97 s (n 27) | | −0.12 / 1.50 s |
+| Overlaps with replayed cars per merger-run | | 6.4 | 1.2 |
+
+- **Paired by car:** the median crossing is 0.75 s later than recorded and 10 m earlier on the lane.
+- **The late tail is a transfer limit.** A start law fitted on exiD alone, with the acceptance held, starts 2.3 times as often at 10 s to the end. But exiD's slope is undetermined (by site −5.4 to +8.9).
+- **The negative lead p5** comes from mergers that commit near the end and finish their move past the lane's end, beside the recorded leader.
+- **Setting 2** (the ramp and the rightmost lane simulated):
+  - measured rules 119 m left (recorded 111), 14% in the last tenth (7%), 5.5 s (4.5);
+  - old rules 9.6 m, 69%, 23.8 s.
+  - Both arms show tens of thousands of contacts, from released main-lane cars meeting replayed cars that change into their lane. That is a harness artefact of this setting, so follower braking is not scored from it.
+
+**T0 lane-change rows, dt 0.25, physical driver** (`results/theory/physical_0.25_final.csv`, against `physical_0.25.csv`):
+
+| Row | Old rules | Measured rules (final) |
+|---|---|---|
+| LC1 F021 wait / F263 passes | 9.6 s pass / 0.075 pass | 3.7 s pass / 0.077 pass |
+| LC2 F022 on the move, 100 / 300 m | 0.98 / 0.96 pass | 0.58 / 0.93 pass |
+| LC3 F023 stopped head (floor 724) | 969 pass | 554 **fail** |
+| LC3 F024 share both saturated | 0.715 fail | **0.503 pass** |
+| LC8 F028 wait p99 / max (I-80 72.7 / 79) | 36 / 44 pass | 61 / 64 pass |
+| LC4 F025 capacity with changes (0.91) | 0.99 fail | 0.74 fail |
+| LC5 F026 void dv 5 / F264 ratio / F403 dv 5 / F403 dv 10 | fail / pass / pass / fail | fail / **fail** / **fail** / fail |
+| LC6 F027 drop at 100 km/h (5-15%) | 21.9 fail | 17.0 fail (seeds −31 to 42) |
+| C-S6 F036 total / share / longest wait | 1,377 fail / 0.708 fail / 50 s pass | 1,130 fail / **0.482 pass** / 79 s pass |
+| LC7, C-S3, C-S4, C-S4b, C-S5 | pass | pass |
+| Contacts lc / lc2 / drop / drop_city | 1 / 7 / 2 / 1 | 0 / 1 / 1 / 1 |
+
+- **Two fixed:** the merge shares, which round 1 had fixed already.
+- **Three regressed:** LC3 F023, LC5 F264 and LC5 F403 dv 5.
+- **Why LC3 F023 fails:** its floor assumes a deterministic tc of 4 s. The code's own acceptance is lognormal with a log-SD of 1.68, and its capacity was not recomputed before the run.
+- **Why LC4, LC5 and the C-S6 total fail:** the measured acceptance has a low tail, and a follower behind a short accepted lag brakes with its full car-following response. Real followers apply 0.39-0.68 of it (report 18 B7). That response sits in the car-following law, which is not this job's.
+- **Why the measured rules stay off by default:** these regressions.
+
+**What was tried on the lane-end waits, and stopped (rule 9):**
+- Round 1: the closing-speed term extrapolated to 98 s lags for a head standing beside a 10 m/s stream. Capping it at the data's p95 (F727) changed nothing and raised contacts 15-fold. Reverted.
+- Round 2: the waits came from the courtesy share (F728), not from acceptance.
+
+## Open
+
+- **Follower response after the commit:** a share of the asked braking (report 18 B7, w 0.39-0.68), so that measured short lags do not cost capacity. This belongs in the car-following law.
+- **A start law that carries from congested to free-flow merging.** Time to the end alone does not; ramp-to-main speed difference is the candidate (report 18 C).
+- **The courtesy share in the simulator's own terms:** let-in per chance in an I-80-shaped scene, against 59% (report 14).
+- **Discretionary desire:** the highD/DLR HT hazard (`lc_decision.json`) is ready to replace LC2013's speed gain once a scene or replay shows the gap. LC6's cut-ins in the queue are the candidate.
+- **Held-out sites (exiD location 5, highD location 6) were not opened:** step 4 does not pass.

@@ -177,3 +177,21 @@ Branch t3/f0bdfad3, dt 0.25, llvmpipe, 5 seeds unless said. Driver values (T, re
 - New lines: F402-F406 6 pass, 4 fail (G8 Tanner at 400 and 1200, LC5 dv 10, C-S8 b 1); signal grid 3 pass, 2 fail (F278 expects a lock under 1 h at 0.3 and 0.4 kj; it is free at 0.3 and locks after 0.65-1.37 h at 0.4); miss60 runs now, 9 pass.
 - Which fixes change ordinary traffic: the give-way rule (F401) at every link with a critical gap (priority, stop, right-before-left, 'g' greens); the zipper rule (F400) at zipper nodes; the ring rule (F402) at roundabout entries; exit_comply (F406) only through the arbiter's keep-clear test, which now applies to the 10% of drivers the old 0.9 skipped (check_rewind holds them as before). Lanes and signals without such links are byte for byte the same as before (S1-S8 and L1-L4 traces compared, same binary).
 - Open, with what was tried: lane-drop share 0.70 (C-S6, LC3; two rounds in lc.wgsl, reverted); LC6 drop 22% (friction at the queue head, no line found); LC5 dv 10; G1 and G8 capacity short by the 1.7 s start of the first car of a gap (merge hold plus launch, the launch is the other job's); C-S8 at b 1; G9 right-before-left 525 against 230.
+
+## 6. Measured lane changes, 7 November
+
+Branch t3/7c78c015, dt 0.25, GPU, `--tune lc_measured=1` (off by default); `measure/LANECHANGE.md` has the model, F720-F728 the forecasts.
+
+- **Merge shares fixed:** LC3 0.503 and C-S6 0.482 (were 0.715 and 0.708). LC8 waits pass (p99 61 s).
+- **Three rows that passed now fail:**
+  - LC3 F023 554: its floor assumes a deterministic tc; the code's own acceptance is lognormal.
+  - LC5 F264 and F403 dv 5: a changer takes a short lag, and its follower brakes in full where real followers do 0.39-0.68 of it.
+- **Still failing:** LC4 (0.74), LC6 (17.0%, seeds −31 to 42), C-S6 total (1,130).
+- **Diagnosis of the 0.70 share with the old rules:**
+  - Mergers went in 107 m before the end at 6 m/s, in runs: no through car between two mergers in 243 of 321 cases, against I-80's 145 of 558.
+  - Through cars were held at −3 m/s² by lane-change advice for 25-56% of their ticks: courtesy at full urgency and SUMO's secure-gap request to followers.
+  - Courtesy off alone (0.725) and later merging alone (0.82) did not fix it. Dropping the follower holds and the measured acceptance did.
+- **Lane-end waits, two rounds and stopped:**
+  - Capping the acceptance's closing term (F727) did nothing and raised contacts. Reverted.
+  - Courtesy at 0.055 tripled the waits; back to 0.4 (F728).
+- **A fault found on the way:** the one driver could not carry a change over a lane end. On a lane cut into sections (exiD's merged lanelets) every merger at speed was refused for room and stopped at the end of the acceleration lane. Measured rules let a change run on over links with no junction box.
