@@ -42,10 +42,13 @@ Clean cross-sections: all 24 stations over 200 m from a calibration link are in 
 
 ## Rule fixed before any macro score (rule 8)
 
-Signals, all 667 controllers, no site-level change, counts not used:
-- Cycle 90 s 07-20 h, 75 s otherwise (Hamburg, report 26).
-- Which movements share a stage: the map's program.
-- Stage greens by equal degree of saturation on macro's own flows, per time block (06-10, 10-15, 15-19, rest), 7 s minimum, 4 s lost per stage.
-- Saturation 1,640. Sweeps of s 1,285-1,895 and green share .31-.60 report sensitivity only.
+Revised 6 November from the reality table, before any score on it. Scores F058-F064 ran on an uncommitted mix of this and the first rule, so they count as development runs; the scores from F072 on are the first on this rule.
 
-Route cost: real free speeds per class from probes with junction delay left out; `β` residential and living street +.30, unclassified and tertiary +.10, other 0; perception noise σ .15 per edge and draw (D step 3, order of 10-20%). PCE car 1, van 1.2, trucks 2.
+Signals, all controllers, no site-level change, counts not used:
+- Cycle 90 s **05:00-20:59**, 75 s otherwise. R 5: Hamburg's 90 s runs 05-20 h, not 07-20 h as report 26 said. Cycle sweep 75-110 s (`--cycle`), sensitivity only.
+- Which movements share a stage: the map's program.
+- Stage greens by equal degree of saturation on macro's own flows, per time block (05-10, 10-15, 15-21, rest). Each stage .11-.76 of the cycle (R 5: any connection p10 .11, longest per light p90 .76); the most loaded stage at least .47 (p10 of Hamburg's main phase, median .62). Transitions keep their map length; 3 s lost per green start.
+- Saturation **1,750** through (R 2: 1,285 is rejected by Berlin's flows), sweep 1,640-1,900.
+- Through signal pairs under 50 m, R 6: same cycle, downstream green +2 s, overlap .65 of the upstream green. In the engine: a through movement into a short link between two signals passes `s · .65 · g/C` plus what the link stores per cycle; a through movement out of a short link gets .35 of Webster's uniform delay, as linked. Turns into short links stay as the map's program has them.
+
+Route cost: real free speeds per class from probes with junction delay left out; `β` residential and living street +.30, unclassified and tertiary +.10, other 0; perception noise σ .15 per edge and draw (D step 3, order of 10-20%). PCE car 1, van 1.2, trucks 2. Free speed per edge from probes at 05-06 h (R 3) where the edge has 40 or more probes over 60 m and doesn't end at a signal, else class and limit ratio from those edges.

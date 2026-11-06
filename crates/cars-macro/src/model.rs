@@ -24,6 +24,8 @@ pub struct Params {
     pub beta_mult: f32,
     pub retime_every: usize,
     pub save_paths: bool,
+    pub cycle_day: f32,
+    pub cycle_night: f32,
 }
 
 struct Edge {
@@ -167,16 +169,13 @@ fn block_of_hour(h: f32) -> usize {
     }
 }
 
-fn cycle_of_block(_b: usize, hour_is_day: bool) -> f32 {
-    if hour_is_day { 90.0 } else { 75.0 }
-}
 
 fn siegloch(qp: f32, tg: f32, tf: f32) -> f32 {
     3600.0 / tf * (-(qp / 3600.0) * (tg - tf / 2.0)).exp()
 }
 
 /// Greens per connection and block. Rule fixed in macro-log.md: map's stages, equal degree of saturation on macro's flows, cycle by time of day.
-fn retime(net: &Net, sup: &mut Supply, flow: &[f32], periods_of_block: &[Vec<usize>], s: f32, rule: bool, scale: f32) {
+fn retime(net: &Net, sup: &mut Supply, flow: &[f32], periods_of_block: &[Vec<usize>], s: f32, rule: bool, scale: f32, cycles: (f32, f32)) {
     let na = net.arcs.len();
     let nc = net.conns.len();
     let mut per_ctrl: Vec<Vec<u32>> = vec![Vec::new(); net.ctrls.len()];
@@ -200,7 +199,7 @@ fn retime(net: &Net, sup: &mut Supply, flow: &[f32], periods_of_block: &[Vec<usi
                 q[a] = q[a].max(flow[p * na + a]);
             }
         }
-        let cycle_target = cycle_of_block(b, b != 3);
+        let cycle_target = if b != 3 { cycles.0 } else { cycles.1 };
         for (ci, ctrl) in net.ctrls.iter().enumerate() {
             // real stages hold for more than a transition; transitions keep their map length and carry the lost time (B 5.2: G + 3 - 4)
             let is_green = |p: usize| ctrl.phases[p].1.iter().any(|&x| x == b'G' || x == b'g');
@@ -222,12 +221,14 @@ fn retime(net: &Net, sup: &mut Supply, flow: &[f32], periods_of_block: &[Vec<usi
                         y[greens[0]] = y[greens[0]].max(r);
                     }
                 }
-                // R 5: any connection .11-.60 of the cycle, longest per light up to .76
+                // R 5: a stage .11-.76 of the cycle; the main stage, most loaded, at least .47
                 let (gmin, gmax) = (0.11 * cyc, 0.76 * cyc);
                 let green_total = (cyc - fixed).max(gmin * stages.len() as f32);
                 let tot: f32 = y.iter().sum();
                 let map_g: f32 = stages.iter().map(|&p| ctrl.phases[p].0).sum();
-                let mut want: Vec<f32> = stages.iter().map(|&p| if tot > 1e-3 { y[p] / tot } else { ctrl.phases[p].0 / map_g.max(1.0) }).collect();
+                let want: Vec<f32> = stages.iter().map(|&p| if tot > 1e-3 { y[p] / tot } else { ctrl.phases[p].0 / map_g.max(1.0) }).collect();
+                let main = (0..stages.len()).max_by(|&a, &b| want[a].total_cmp(&want[b])).unwrap();
+                let lo: Vec<f32> = (0..stages.len()).map(|i| if i == main && stages.len() > 1 && 0.47 * cyc + gmin * (stages.len() - 1) as f32 <= green_total { 0.47 * cyc } else { gmin }).collect();
                 let mut fixed_g = vec![None; stages.len()];
                 for _ in 0..stages.len() + 1 {
                     let left: f32 = green_total - fixed_g.iter().flatten().sum::<f32>();
@@ -236,8 +237,8 @@ fn retime(net: &Net, sup: &mut Supply, flow: &[f32], periods_of_block: &[Vec<usi
                     for i in 0..stages.len() {
                         if fixed_g[i].is_none() {
                             let v = if w > 0.0 { left * want[i] / w } else { left / stages.len() as f32 };
-                            if v < gmin {
-                                fixed_g[i] = Some(gmin);
+                            if v < lo[i] {
+                                fixed_g[i] = Some(lo[i]);
                                 changed = true;
                             } else if v > gmax {
                                 fixed_g[i] = Some(gmax);
@@ -254,7 +255,6 @@ fn retime(net: &Net, sup: &mut Supply, flow: &[f32], periods_of_block: &[Vec<usi
                 for (i, &p) in stages.iter().enumerate() {
                     g[p] = fixed_g[i].unwrap_or(if w > 0.0 { left * want[i] / w } else { 0.0 });
                 }
-                want.clear();
             }
             for &cc in &per_ctrl[ci] {
                 let c = &net.conns[cc as usize];
@@ -761,6 +761,18 @@ fn save(net: &Net, sup: &Supply, l: &Load, st: &[LegState], arena: &[Vec<u32>], 
         let b: Vec<u8> = v.iter().flat_map(|x| x.to_le_bytes()).collect();
         std::fs::write(format!("{out}/{name}"), b).unwrap();
     };
+    let mut f = std::io::BufWriter::new(std::fs::File::create(format!("{out}/greens.tsv")).map_err(|e| e.to_string())?);
+    writeln!(f, "ctrl\tidx\tblock\tgp\tgq\tC").unwrap();
+    let mut seen = rustc_hash::FxHashSet::default();
+    for (i, c) in net.conns.iter().enumerate() {
+        if c.ctrl != NONE && seen.insert((c.ctrl, c.idx)) {
+            for b in 0..BLOCKS {
+                let j = i * BLOCKS + b;
+                writeln!(f, "{}\t{}\t{b}\t{:.2}\t{:.2}\t{:.1}", c.ctrl, c.idx, sup.prot[j], sup.perm[j], sup.cyc[j]).unwrap();
+            }
+        }
+    }
+    drop(f);
     bin("vs.bin", &l.vs);
     bin("vm.bin", &l.vm);
     std::fs::write(format!("{out}/shape.txt"), format!("{pn} {ne} {period}\n")).unwrap();
@@ -836,7 +848,7 @@ pub fn run(dir: &str, out: &str, prm: &Params) -> Result<(), String> {
         periods_of_block[b].push(p);
     }
     let mut flow = vec![0f32; pn * na];
-    retime(&net, &mut sup, &flow, &periods_of_block, prm.s, prm.rule_greens, prm.green_scale);
+    retime(&net, &mut sup, &flow, &periods_of_block, prm.s, prm.rule_greens, prm.green_scale, (prm.cycle_day, prm.cycle_night));
     update_supply(&net, &mut sup, &flow, &block_of_period, period / 3600.0, prm.s, dynamic, 1.0);
 
     // legs grouped by origin (either side), class, departure period
@@ -978,7 +990,7 @@ pub fn run(dir: &str, out: &str, prm: &Params) -> Result<(), String> {
                 *f = *a * to_h;
             }
             if prm.rule_greens && (it % prm.retime_every == 0) && inner == 0 {
-                retime(&net, &mut sup, &flow, &periods_of_block, prm.s, true, prm.green_scale);
+                retime(&net, &mut sup, &flow, &periods_of_block, prm.s, true, prm.green_scale, (prm.cycle_day, prm.cycle_night));
             }
             update_supply(&net, &mut sup, &flow, &block_of_period, period / 3600.0, prm.s, dynamic, alpha);
         }
