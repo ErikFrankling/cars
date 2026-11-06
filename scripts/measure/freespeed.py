@@ -4,8 +4,8 @@ One value per car: the median of its speed over samples where it is free, with a
   highD:  no preceding car within 150 m (dhw), same lane, not in a lane change (laneId constant for 2 s around).
   exiD:   main-carriageway lanelets only (no on- or off-ramp tag), no lead vehicle within 150 m (leadDHW), lane constant;
           the posted limit is the lanelet's speed_limit tag.
-  inD:    priority-road lanelets of the site's right_of_way elements, no motor vehicle ahead within 60 m in a
-          20-degree cone, speed not falling (not braking for the junction: 1 s acceleration over -0.3 m/s2).
+  inD:    priority-road lanelets of the site's right_of_way elements, moving at over 2 m/s, no moving road user
+          ahead within 60 m in a 20-degree cone, speed not falling (not braking for the junction: 1 s acceleration over -0.3 m/s2).
   DLR HT: blocks from dlrht.py, no same-lane vehicle within 150 m ahead.
 The spread across cars is the desired-speed spread (SUMO speedDev 0.1 means a coefficient of variation of 0.1).
 
@@ -102,8 +102,9 @@ def ind():
             for a in ix[(g.cls.to_numpy() == 'car') & np.isin(g.lanelet.to_numpy(), list(prio))]:
                 dx, dy = x - d.xc.iat[a], y - d.yc.iat[a]
                 lon = dx * np.cos(hd[a]) + dy * np.sin(hd[a]); lat = -dx * np.sin(hd[a]) + dy * np.cos(hd[a])
-                ahead = (lon > 0.5) & (lon < 60) & (np.abs(lat) < np.tan(np.deg2rad(20)) * lon + 1.5)
-                free[a] = not ahead.any()
+                moving = v[ix] > 1.0                       # parked cars along the kerb are not leaders
+                ahead = (lon > 0.5) & (lon < 60) & (np.abs(lat) < np.tan(np.deg2rad(20)) * lon + 1.5) & moving
+                free[a] = (not ahead.any()) and v[a] > 2.0
         free &= d.lonAcceleration.to_numpy() > -0.3
         pc = per_car(d.id.to_numpy(), v, free, minfree=10)
         rows += [(rec, site, m.day, 13.89, i, x) for i, x in pc.items()]
