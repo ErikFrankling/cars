@@ -121,7 +121,7 @@
     "replay: 5475 tracks, 872079 keys, 0 tracks with no trip, 1704 checked entries",
     "lane changes 7256, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 11900, items full 0; teleports jam 0 yield 0 wrong lane 0",
     "replay: applied 879288, ended 4565, shadows_removed 0, lane_jumps 32897, released 0",
-    "physics: collisions 4211 incidents, 58077 contact samples (same lane 1847, neighbour lane 963, junction crossing 361, junction merge 38, junction diverge 173, lane start 474, other 355, crossed without grant 195, lost on a wrong lane 0); teleports 0; certificate floor hits 86938, no-brake 0, dead-end clamps 2103, crossed without grant 218; lost on a wrong lane 0; shadows 7256, refused 0, refused for room 25942; denied bids 44791"
+    "physics: collisions 4211 incidents, 58077 contact samples (same lane 1847, neighbour lane 963, junction crossing 361, junction merge 38, junction diverge 173, lane start 474, other 355, crossed without grant 195, lost on a wrong lane 0); teleports 0; certificate floor hits 87049, no-brake 0, dead-end clamps 2103, crossed without grant 218; lost on a wrong lane 0; shadows 7256, refused 0, refused for room 25943; denied bids 45390"
    ]
   },
   "1": {
@@ -237,7 +237,7 @@
     "replay: 5475 tracks, 872079 keys, 0 tracks with no trip, 1704 checked entries",
     "lane changes 7252, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 11900, items full 0; teleports jam 0 yield 0 wrong lane 0",
     "replay: applied 879288, ended 4565, shadows_removed 0, lane_jumps 32897, released 0",
-    "physics: collisions 4211 incidents, 58079 contact samples (same lane 1848, neighbour lane 963, junction crossing 360, junction merge 38, junction diverge 173, lane start 475, other 354, crossed without grant 195, lost on a wrong lane 0); teleports 0; certificate floor hits 86905, no-brake 0, dead-end clamps 2103, crossed without grant 218; lost on a wrong lane 0; shadows 7252, refused 0, refused for room 25883; denied bids 44791"
+    "physics: collisions 4211 incidents, 58079 contact samples (same lane 1848, neighbour lane 963, junction crossing 360, junction merge 38, junction diverge 173, lane start 475, other 354, crossed without grant 195, lost on a wrong lane 0); teleports 0; certificate floor hits 87016, no-brake 0, dead-end clamps 2103, crossed without grant 218; lost on a wrong lane 0; shadows 7252, refused 0, refused for room 25884; denied bids 45389"
    ]
   }
  }

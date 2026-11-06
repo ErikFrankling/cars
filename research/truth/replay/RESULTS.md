@@ -172,3 +172,95 @@ python3 -I scripts/replay/sind_approach.py run 0..4 mix && python3 -I scripts/re
 # pNEUMA, F508-F511, F515: PNEUMA.md "Rerun"
 ```
 `$D` is `/home/erikf/projects/personal/cars-data/replay`.
+
+# Third round, 7 November: area entry, two-wheelers, stitching, signals, F520-F526
+
+The job: make area entry work (F515 had failed it), then check the harness again on whole areas and measure the T3 noise floor. Forecasts F520-F526 were written before each run; results in `foundations/forecasts.csv` and the JSON files next to this one. Design notes are in README.md ("Insertion blocked at the entry", "Vehicles off the car path", "Stitching and lane connections") and the scene changes in PNEUMA.md. The driver, junction and lane-change code are main's (the junction-fault fixes merged at ce55b16 included); plain runs without `--replay` are byte-identical to main's binary (below).
+
+| | Forecast | Result | Verdict |
+|---|---|---|---|
+| F520 checked boundary entries, then replayed (drone 8) | p50 0, p95 under 1; over 2 where a recorded queue stands at the view edge; none waiting | p50 **0.0 s**, p95 **0.4 s** of 1,704 entries; queue approaches p95 0.0-1.9 s; 1 waiting | overall pass; the queue split misses (the entry is upstream of the view edge); 1 waiting |
+| F521 two-wheelers off the car path | (a) 20-30 % of motorcycle time off; (b) holds down 25-50 % | (a) **20.9 %**; (b) car-seconds held **-27 %** | pass |
+| F522 stitching | 40-70 % joined, error under 5 m, under 2 of 30 false | **59.6 %**, median **3.6 m**, **0 of 30** | pass |
+| F523 signals | 35-55 of 87 links; under 20 % of new reads off-cycle | **70 of 95** (62 of 87 before connections were added); 2 of 12 off-cycle | links miss above; off-cycle pass |
+| F524 drone 8, every car simulated | 98 % enter, travel time MAE 5-20 s | **39-41 %** enter, 59-61 % still waiting, travel time MAE **106-134 s** | **miss**, two rounds, stopped |
+| F525 drone 6, every car simulated | 95 % enter, travel time MAE 10-40 s | **43-45 %** enter, 54-57 % still waiting, travel time MAE **138-188 s** | **miss** |
+| F526 T3 noise floor, drone 8 09:00 | halves under days | halves: delay **1.5 s**, travel time **7.6 s**; mornings: 1.5-2.3 s and 9.8-10.9 s (24 Oct 10.4 s and 55.6 s) | bracket measured; delay floor lower than forecast |
+
+## Step 1: boundary entry (F520)
+
+A simulated car now enters at the start of its first edge, its front at min(length + 0.1 m, where it was first seen). The time is carried back at its first-seen speed; the lane and speed are recorded. The speed is lowered to the insertion-safe one if the leader asks for it. The entry is refused only when the spot is taken, and the car then waits in a FIFO of its own lane (`depart_speed_mode` 8, one case label in `try_insert`; per-lane queues in `replay.rs`). The view's edge comes from the recording itself: an entry is at the boundary when a point up to 30 m behind it, along its heading, was never driven on by anyone in the file. On drone 8, of 1,846 simulated cars: 142 start in view (forced at their recorded state, as before), 1,455 enter at the boundary, 2 are first seen under 1 m/s (a recorded queue at the view edge), 234 were seen off the net first (side streets missing from OSM's car net), and 13 appear mid-view.
+
+The harness check runs every car through this entry and then replays it, so only the recording itself can hold an entry. The entry delay is p50 0, p95 0.4 s, max 19 s. The forecast named the approaches where a recorded car stands within 12 m of the view edge (Mavromataion 59 % of the time, Gkyilfordou 35 %, Patision south 27 %, Patision north 14 %) and expected p95 over 2 s there. It is 0.0-1.9 s. The premise was wrong: the entry is the edge start, which on Mavromataion and Gkyilfordou lies 15-97 m before the view edge, so a queue standing at the view edge does not reach it. On the two Patision edges, whose start is the view edge, the queues do reach it, but hold entries under 2 s.
+
+The first run had 32 cars still waiting and a longest delay of 197 s, all on the Patision kerb lane. The cause was a taxi and a motorcycle parked 4.1 m and 4.9 m right of that lane's centre, on the kerb, which the 6 m matching had put on the lane. Cars in the recording drove past them. That is the case for the next rule; with it, one car is still waiting: an interior entry that appears mid-queue on a 22 m edge and never finds 2.5 m.
+
+## Step 2: vehicles off the car path (F521)
+
+A replayed vehicle is in the simulation only while its body overlaps the path of a car centred on its lane (|offset| under 0.9 m plus half its width), with runs under 1 s merged. That removes 20.9 % of motorcycle samples (filtering) and 8.5 % of the other replayed classes (parked at the kerb). It is all in the scene builder. In the all-cars run, simulated car-seconds held by a two-wheeler leader fall from 7,056-7,804 to 5,356-5,598 per run (-27 %, pre-merge driver; after the merge 5,188-5,496 against 7,304-7,684, -29 %). Replayed vehicles running into simulated cars fall 20 %. What it can't do: a simulated car changing lanes through a filtering motorcycle doesn't see it.
+
+## Step 3: stitching, lane connections, signals (F522, F523)
+
+**Stitching.** pNEUMA's raw tracks are whole per drone file: 2,784 tracks for 2,781 vehicles, and only 2 end-start pairs of different IDs agree within 3 m and 10 s. So the 1.56 pieces per vehicle are map matching's (off-net gaps, movements the net lacks), and a stitch only re-routes one vehicle. 59.6 % of later pieces join (median error 3.6 m, p90 11 m). Thirty joins plotted against the raw tracks were all right; 29 resume on the same edge after a short gap and one runs through a junction. 190 do not join because the distance disagrees (median 37 m: off the net and back), and 149 because there is no path within 4 edges.
+
+**Lane connections.** 4.9 % of recorded car movements left an edge from a lane with no connection to their exit. They were concentrated on a few movements: on Patision 259806440#1 → #2, 204 of 432 cars use the lane netconvert dropped; on the left into 758432181#0, 30 of 47 come from lanes 0-1. The 12 connections that 3 or more cars use are added, and the scene is matched again: 0.9 % are left. The F100 replay on the new net is still exact: 99.1 % of samples present, lane coordinates p99 2.1 cm, front 2D median 0.11 m, p99 1.79 m.
+
+**Signals.** Every incoming edge of a signalised junction of the scene's net is now offered to the unchanged reader. Edges under 60 m get their straight-on predecessor put in front. A read off its controller's cycle by more than 1 s is fitted again at the controller's cycle (the longest read there; a shorter one is a harmonic). The 7 approaches read before come out identical, and 13 more are read, with 70 of 95 links read. The other 25: 11 have no traffic; 3 have no conflicting vehicle movement and nobody stops; 11 are unreadable (cars stop, but there are too few heads or no periodic fit), and these stay green. Six approaches with no conflicting vehicle movement read periodic at R 0.96-1.0 (pedestrian phases, or a joined junction's second stop line); the forecast had not counted them, hence the miss above its band. Read signals carry SIGNALS.md's band: onset ±0.6 s, end ±2.6 s median.
+
+## Step 4: every car simulated again (F524, F525)
+
+Drone 8, 5 seeds, main's driver after the merge (pre-merge runs in parentheses, numbers alike):
+
+| | Simulation | Recording |
+|---|---|---|
+| Entered | 712-751 of 1,846 (676-746) | 1,846 |
+| Still waiting to enter at the end | 1,095-1,134 | 0 |
+| Entry delay p50 / p95 | 0.5-2.8 s / 490-626 s | |
+| Reached their recorded exit point | 292-317 | 1,721 |
+| On the net at the end | 232-260 | 125 |
+| Travel time error, cars that finished: MAE / bias | 106-134 s / +93 to +124 s (n 161-187) | mean 56-62 s |
+| Same, cars before their first overlap with a replayed vehicle | **19-35 s / -6 to -12 s** (n 48-62; pre-merge 12-21 s / -5 to -10 s) | |
+| Approach delay, 5-minute bins: MAE / bias | 77-94 s / +76 to +94 s; by bin 26-32, 93-106, 132-143 s | mean 5.5 s |
+| Per-approach mean delay over the run (as the floor) | MAE 89-112 s | floor 1.5-2.3 s |
+| Per-route mean travel time (as the floor) | MAE 92-142 s | floor 7.6-10.9 s |
+| Simulated cars meeting a replayed vehicle | 523-566 (72-77 % of those that entered) | |
+
+The entry is not what fails. F520 holds no car when traffic moves as recorded, and the cars scored before they meet a replayed vehicle come out within 20-35 s, early. The area locks up within the first five minutes, and from then on entries wait behind the simulated queues. The jam's roots (`cars jam --seeds` on seed 0) move as the scene is corrected, but always sit in the joined junction clusters of Patision and Alexandras:
+- first, cars on Alexandras westbound yielding into a full box, and 314 cars missing a turn they had to change lanes for in a standing queue. The missing lane connections were part of that; with them added, 198-231 cars still miss a turn;
+- then two stop lines 10 m apart on Patision southbound read at 45 s and 90 s; refitting the 45 s read at the controller's 90 s fixed that pair;
+- then a start-snapshot car placed on the bus lane, with no car link out, stuck for 995 s; moved to the nearest car lane;
+- what remains: a side street yielding into Patision (1445619556) never served for 992 s, full junction exits (`junction lane occupied or exit full`) and right of way at the clusters' internal links (`next lane or right of way`). That is junction and lane-change behaviour, which is being rewritten elsewhere.
+
+Two rounds of scene corrections without a pass, so stopped (rule 9).
+
+Drone 6 (Marni, 29 Oct 09:00), the second check, built the same way, with an exact replay (F100: 99.0 % of samples, lane coordinates p99 1.7 cm, front 2D median 0.19 m, p99 2.7 m). 86 of 166 links are read; 32 where cars stop are unreadable; 15 observed connections are added. Five seeds after the merge: 791-835 of 1,838 enter, 1,001-1,045 are still waiting, 249-274 reach their exit against 1,735 recorded. Travel time MAE is 138-188 s (bias +117 to +173 s); cars before their first overlap 19-37 s (bias -8 to +1 s, n 34-45). Approach delay MAE is 104-141 s, and 76-77 % of entered cars meet a replayed vehicle. Here only 8-9 cars miss a turn, so turns are not what locks the area: the stuck heads are held by right of way and full junction exits (`10971766#0`, 872 s).
+
+## Step 5: the T3 noise floor (F526)
+
+The recording against itself, measured with the code the runs are scored with (`t3_metrics.py`, `t3_floor.py`). Approaches and their free speeds come from 29 Oct; per-approach mean delay is over approaches with 30+ cars on both sides, per-route mean travel time over routes (first edge to exit edge) with 5+ cars on both sides.
+
+| Drone 8, 09:00 | Approach delay MAE (bias) | Route travel time MAE (bias) |
+|---|---|---|
+| Two halves of 29 Oct (8 minutes each) | **1.48 s** (+0.05), 21 approaches | **7.6 s** (-2.8), 20 routes |
+| 29 Oct against 30 Oct | 2.29 s (+1.4) | 10.9 s (+8.4) |
+| 29 Oct against 1 Nov | 1.53 s (+0.7) | 9.8 s (+7.6) |
+| 29 Oct against 24 Oct | 10.4 s (+10.4) | 55.6 s (+54.8) |
+
+Halves are under days on both metrics, as PLAN expects. The approach sections are only the last 60 m before the line, where the mean delay is 5.5 s, so their floor is small. 24 Oct is a different morning: its mean approach delay is 15.7 s against 5.5-6.9 s on the others. A T3 score on drone 8 at 09:00 therefore has the bracket: approach delay 1.5-2.3 s, route travel time 7.6-10.9 s (10.4 s and 55.6 s if a congested morning counts as the same condition). Today's all-cars run is 40-60 times outside it.
+
+## Plain runs
+
+Main's binary (ce55b16) against this branch, no `--replay`: the FCDs are byte-identical on the DLR UT approach (llvmpipe, 900 s) and on exiD 00 all simulated (llvmpipe and GPU). The drone 8 scene run as a plain run on the GPU is not deterministic with either binary: main gave two different outputs in three runs, this branch two in three, and one output (`f9020d…`) came from both.
+
+## What still blocks area scoring
+
+- **The simulated stream locks the joined junction clusters** in both areas, with main's driver before and after the junction-fault merge: boxes fill, side streets are never served, and 25-34 % of drone 8's trips miss a turn. Until those boxes clear, no T3 number is scored. The quickest localisation would be T2-style runs of one corridor at a time (Alexandras westbound, Patision southbound) with the rest replayed.
+- **Signals.** 11 links on drone 8 and 32 on drone 6 where cars stop stay green. Two-greens-a-cycle approaches are folded into one long green.
+- **The harness's own limits.** A vehicle off the car path is invisible to a car changing lanes through it. 40 % of later pieces are not stitched. 234 entries on drone 8 come from side streets missing from the net. Exits beyond the view have no replayed leader yet (PLAN, "Queues from outside the view"). Replayed vehicles don't react, so in a jam 72-77 % of simulated cars meet one.
+
+## Rerun (third round)
+
+```sh
+source /home/erikf/projects/personal/cars-data/dev-env.sh; cargo build --release -p cars-cli
+# PNEUMA.md "Rerun", third round: build (with --signals), f100, entry (F520), mix (F524, F521 with --name=mix_keep2w), drone 6 (F525), t3_floor.py (F526)
+```
