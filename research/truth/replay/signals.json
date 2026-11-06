@@ -1,0 +1,842 @@
+{
+ "raw_bias": {
+  "dlrut": {
+   "onset": 1.83,
+   "end_bounded": -2.19,
+   "n_onset": 2643,
+   "n_end": 2600
+  },
+  "sind": {
+   "onset": 2.0,
+   "end_bounded": -10.18,
+   "n_onset": 66,
+   "n_end": 54
+  }
+ },
+ "dlrut": {
+  "d_start": 2.0,
+  "d_end": -10.18,
+  "stop_line_shift_m": {
+   "1": 6.84,
+   "3": 5.67,
+   "4": 4.26,
+   "5": 6.41,
+   "6": 5.94,
+   "7": 5.93,
+   "8": 5.26,
+   "9": 4.81
+  },
+  "per_cycle": {
+   "true_greens": 5421,
+   "read_greens": 2555,
+   "false": 7,
+   "false_pct": 0.3,
+   "with_standing_car": {
+    "n": 2698,
+    "missed_pct": 7.7,
+    "onset_abs": {
+     "n": 2489,
+     "median": 0.58,
+     "p90": 1.38
+    },
+    "onset_bias": -0.17
+   },
+   "no_standing_car": {
+    "n": 2723,
+    "with_crossings": 1398,
+    "read_pct": 2.2
+   },
+   "by_level": {
+    "none": {
+     "n": 2723,
+     "missed_pct": 97.8,
+     "onset_abs": {
+      "n": 59,
+      "median": 1.58,
+      "p90": 3.86
+     },
+     "end_abs_bounded": {
+      "n": 56,
+      "median": 11.18,
+      "p90": 346.53
+     },
+     "end_bias_bounded": 10.68,
+     "end_abs_open": null
+    },
+    "light": {
+     "n": 2486,
+     "missed_pct": 8.2,
+     "onset_abs": {
+      "n": 2282,
+      "median": 0.58,
+      "p90": 1.38
+     },
+     "end_abs_bounded": {
+      "n": 2204,
+      "median": 8.76,
+      "p90": 164.73
+     },
+     "end_bias_bounded": 7.85,
+     "end_abs_open": null
+    },
+    "heavy": {
+     "n": 211,
+     "missed_pct": 2.4,
+     "onset_abs": {
+      "n": 206,
+      "median": 0.58,
+      "p90": 1.18
+     },
+     "end_abs_bounded": {
+      "n": 206,
+      "median": 8.01,
+      "p90": 89.94
+     },
+     "end_bias_bounded": 7.84,
+     "end_abs_open": null
+    },
+    "over": {
+     "n": 1,
+     "missed_pct": 0.0,
+     "onset_abs": {
+      "n": 1,
+      "median": 0.98,
+      "p90": 0.98
+     },
+     "end_abs_bounded": {
+      "n": 1,
+      "median": 0.07,
+      "p90": 0.07
+     },
+     "end_bias_bounded": -0.07,
+     "end_abs_open": null
+    }
+   }
+  },
+  "per_group": {
+   "1": {
+    "n": 318,
+    "missed_pct": 5.3,
+    "onset_abs": {
+     "n": 301,
+     "median": 0.58,
+     "p90": 1.21
+    },
+    "onset_bias": -0.18
+   },
+   "3": {
+    "n": 387,
+    "missed_pct": 3.4,
+    "onset_abs": {
+     "n": 374,
+     "median": 0.58,
+     "p90": 1.42
+    },
+    "onset_bias": -0.17
+   },
+   "4": {
+    "n": 401,
+    "missed_pct": 4.0,
+    "onset_abs": {
+     "n": 385,
+     "median": 0.62,
+     "p90": 1.43
+    },
+    "onset_bias": 0.03
+   },
+   "5": {
+    "n": 144,
+    "missed_pct": 9.0,
+    "onset_abs": {
+     "n": 131,
+     "median": 0.56,
+     "p90": 1.21
+    },
+    "onset_bias": -0.19
+   },
+   "6": {
+    "n": 389,
+    "missed_pct": 9.8,
+    "onset_abs": {
+     "n": 351,
+     "median": 0.58,
+     "p90": 1.82
+    },
+    "onset_bias": 0.11
+   },
+   "7": {
+    "n": 432,
+    "missed_pct": 13.4,
+    "onset_abs": {
+     "n": 374,
+     "median": 0.63,
+     "p90": 1.24
+    },
+    "onset_bias": -0.48
+   },
+   "8": {
+    "n": 180,
+    "missed_pct": 17.2,
+    "onset_abs": {
+     "n": 149,
+     "median": 0.58,
+     "p90": 1.38
+    },
+    "onset_bias": -0.38
+   },
+   "9": {
+    "n": 447,
+    "missed_pct": 5.1,
+    "onset_abs": {
+     "n": 424,
+     "median": 0.57,
+     "p90": 1.28
+    },
+    "onset_bias": -0.07
+   }
+  },
+  "fixed": "no group with a constant cycle"
+ },
+ "sind": {
+  "d_start": 1.83,
+  "d_end": -2.19,
+  "stop_line_shift_m": {
+   "Tianjin app0 left": 1.0,
+   "Tianjin app0 straight": 0.79,
+   "Tianjin app1 straight": 3.07,
+   "Tianjin app2 left": 0.0,
+   "Tianjin app2 straight": 40.85,
+   "Tianjin app3 straight": 1.36,
+   "Chongqing app0 left": 0.41,
+   "Chongqing app0 straight": 0.75,
+   "Chongqing app1 left": -0.17,
+   "Chongqing app1 straight": 0.69,
+   "Chongqing app3 straight": 1.01
+  },
+  "per_cycle": {
+   "true_greens": 195,
+   "read_greens": 74,
+   "false": 0,
+   "false_pct": 0.0,
+   "with_standing_car": {
+    "n": 71,
+    "missed_pct": 7.0,
+    "onset_abs": {
+     "n": 66,
+     "median": 0.59,
+     "p90": 2.26
+    },
+    "onset_bias": 0.17
+   },
+   "no_standing_car": {
+    "n": 124,
+    "with_crossings": 54,
+    "read_pct": 6.5
+   },
+   "by_level": {
+    "none": {
+     "n": 124,
+     "missed_pct": 93.5,
+     "onset_abs": {
+      "n": 8,
+      "median": 1.18,
+      "p90": 1.66
+     },
+     "end_abs_bounded": {
+      "n": 5,
+      "median": 46.22,
+      "p90": 157.18
+     },
+     "end_bias_bounded": 46.22,
+     "end_abs_open": {
+      "n": 1,
+      "median": 49.2,
+      "p90": 49.2
+     }
+    },
+    "light": {
+     "n": 71,
+     "missed_pct": 7.0,
+     "onset_abs": {
+      "n": 66,
+      "median": 0.59,
+      "p90": 2.26
+     },
+     "end_abs_bounded": {
+      "n": 49,
+      "median": 17.6,
+      "p90": 171.7
+     },
+     "end_bias_bounded": -8.66,
+     "end_abs_open": {
+      "n": 5,
+      "median": 45.25,
+      "p90": 89.23
+     }
+    }
+   }
+  },
+  "per_group": {
+   "Chongqing app0 left": {
+    "n": 6,
+    "missed_pct": 0.0,
+    "onset_abs": {
+     "n": 6,
+     "median": 0.6,
+     "p90": 4.08
+    },
+    "onset_bias": 0.37
+   },
+   "Chongqing app0 straight": {
+    "n": 5,
+    "missed_pct": 0.0,
+    "onset_abs": {
+     "n": 5,
+     "median": 1.03,
+     "p90": 1.64
+    },
+    "onset_bias": 0.67
+   },
+   "Chongqing app1 left": {
+    "n": 5,
+    "missed_pct": 0.0,
+    "onset_abs": {
+     "n": 5,
+     "median": 0.93,
+     "p90": 2.14
+    },
+    "onset_bias": -0.43
+   },
+   "Chongqing app1 straight": {
+    "n": 8,
+    "missed_pct": 0.0,
+    "onset_abs": {
+     "n": 8,
+     "median": 0.47,
+     "p90": 1.04
+    },
+    "onset_bias": 0.22
+   },
+   "Chongqing app3 straight": {
+    "n": 8,
+    "missed_pct": 0.0,
+    "onset_abs": {
+     "n": 8,
+     "median": 0.7,
+     "p90": 1.27
+    },
+    "onset_bias": -0.18
+   },
+   "Tianjin app0 left": {
+    "n": 5,
+    "missed_pct": 0.0,
+    "onset_abs": {
+     "n": 5,
+     "median": 1.04,
+     "p90": 2.46
+    },
+    "onset_bias": 1.04
+   },
+   "Tianjin app0 straight": {
+    "n": 10,
+    "missed_pct": 10.0,
+    "onset_abs": {
+     "n": 9,
+     "median": 0.81,
+     "p90": 3.12
+    },
+    "onset_bias": 0.24
+   },
+   "Tianjin app1 straight": {
+    "n": 6,
+    "missed_pct": 0.0,
+    "onset_abs": {
+     "n": 6,
+     "median": 0.4,
+     "p90": 0.91
+    },
+    "onset_bias": -0.39
+   },
+   "Tianjin app2 left": {
+    "n": 3,
+    "missed_pct": 66.7,
+    "onset_abs": {
+     "n": 1,
+     "median": 2.28,
+     "p90": 2.28
+    },
+    "onset_bias": 2.28
+   },
+   "Tianjin app2 straight": {
+    "n": 10,
+    "missed_pct": 20.0,
+    "onset_abs": {
+     "n": 8,
+     "median": 0.35,
+     "p90": 0.61
+    },
+    "onset_bias": 0.01
+   },
+   "Tianjin app3 straight": {
+    "n": 5,
+    "missed_pct": 0.0,
+    "onset_abs": {
+     "n": 5,
+     "median": 0.39,
+     "p90": 2.02
+    },
+    "onset_bias": -0.29
+   }
+  },
+  "fixed": {
+   "groups": {
+    "Tianjin app0 left": {
+     "true_cycle": 59.99,
+     "fit_cycle": 59.88,
+     "R": 1.0,
+     "true_green": 26.0,
+     "arc": {
+      "fit_green": 29.5,
+      "onset_abs": {
+       "n": 19,
+       "median": 1.46,
+       "p90": 2.24
+      },
+      "end_abs": {
+       "n": 19,
+       "median": 4.91,
+       "p90": 5.76
+      },
+      "end_bias": 4.91,
+      "missed": 0
+     },
+     "p80": {
+      "fit_green": 25.9,
+      "onset_abs": {
+       "n": 19,
+       "median": 1.46,
+       "p90": 2.24
+      },
+      "end_abs": {
+       "n": 19,
+       "median": 1.33,
+       "p90": 2.18
+      },
+      "end_bias": 1.33,
+      "missed": 0
+     },
+     "next_onset": {
+      "fit_green": 24.3,
+      "end_abs": {
+       "n": 19,
+       "median": 0.59,
+       "p90": 1.24
+      },
+      "end_bias": -0.33
+     }
+    },
+    "Tianjin app0 straight": {
+     "true_cycle": 59.99,
+     "fit_cycle": 60.02,
+     "R": 0.99,
+     "true_green": 26.0,
+     "arc": {
+      "fit_green": 27.9,
+      "onset_abs": {
+       "n": 20,
+       "median": 0.71,
+       "p90": 0.82
+      },
+      "end_abs": {
+       "n": 20,
+       "median": 2.64,
+       "p90": 2.75
+      },
+      "end_bias": 2.64,
+      "missed": 0
+     },
+     "p80": {
+      "fit_green": 30.5,
+      "onset_abs": {
+       "n": 20,
+       "median": 0.71,
+       "p90": 0.82
+      },
+      "end_abs": {
+       "n": 20,
+       "median": 5.2,
+       "p90": 5.3
+      },
+      "end_bias": 5.2,
+      "missed": 0
+     },
+     "next_onset": {
+      "fit_green": 26.4,
+      "end_abs": {
+       "n": 20,
+       "median": 1.06,
+       "p90": 1.17
+      },
+      "end_bias": 1.06
+     }
+    },
+    "Tianjin app1 straight": {
+     "true_cycle": 59.99,
+     "fit_cycle": 59.97,
+     "R": 1.0,
+     "true_green": 26.0,
+     "arc": {
+      "fit_green": 30.8,
+      "onset_abs": {
+       "n": 19,
+       "median": 0.36,
+       "p90": 0.67
+      },
+      "end_abs": {
+       "n": 19,
+       "median": 4.42,
+       "p90": 4.62
+      },
+      "end_bias": 4.42,
+      "missed": 0
+     },
+     "p80": {
+      "fit_green": 34.6,
+      "onset_abs": {
+       "n": 19,
+       "median": 0.36,
+       "p90": 0.67
+      },
+      "end_abs": {
+       "n": 19,
+       "median": 8.22,
+       "p90": 8.42
+      },
+      "end_bias": 8.22,
+      "missed": 0
+     },
+     "next_onset": {
+      "fit_green": 26.9,
+      "end_abs": {
+       "n": 19,
+       "median": 0.48,
+       "p90": 0.68
+      },
+      "end_bias": 0.48
+     }
+    },
+    "Tianjin app2 straight": {
+     "true_cycle": 59.99,
+     "fit_cycle": 60.02,
+     "R": 1.0,
+     "true_green": 26.0,
+     "arc": {
+      "fit_green": 20.3,
+      "onset_abs": {
+       "n": 20,
+       "median": 0.09,
+       "p90": 0.2
+      },
+      "end_abs": {
+       "n": 20,
+       "median": 5.69,
+       "p90": 5.86
+      },
+      "end_bias": -5.69,
+      "missed": 0
+     },
+     "p80": {
+      "fit_green": 23.1,
+      "onset_abs": {
+       "n": 20,
+       "median": 0.09,
+       "p90": 0.2
+      },
+      "end_abs": {
+       "n": 20,
+       "median": 2.96,
+       "p90": 3.13
+      },
+      "end_bias": -2.96,
+      "missed": 0
+     },
+     "next_onset": {
+      "fit_green": 27.1,
+      "end_abs": {
+       "n": 20,
+       "median": 1.06,
+       "p90": 1.17
+      },
+      "end_bias": 1.06
+     }
+    },
+    "Tianjin app3 straight": {
+     "true_cycle": 59.99,
+     "fit_cycle": 59.87,
+     "R": 0.99,
+     "true_green": 26.0,
+     "arc": {
+      "fit_green": 28.4,
+      "onset_abs": {
+       "n": 19,
+       "median": 0.59,
+       "p90": 1.07
+      },
+      "end_abs": {
+       "n": 19,
+       "median": 2.61,
+       "p90": 3.53
+      },
+      "end_bias": 2.61,
+      "missed": 0
+     },
+     "p80": {
+      "fit_green": 30.2,
+      "onset_abs": {
+       "n": 19,
+       "median": 0.59,
+       "p90": 1.07
+      },
+      "end_abs": {
+       "n": 19,
+       "median": 4.37,
+       "p90": 5.29
+      },
+      "end_bias": 4.37,
+      "missed": 0
+     },
+     "next_onset": {
+      "fit_green": 25.3,
+      "end_abs": {
+       "n": 19,
+       "median": 0.62,
+       "p90": 1.5
+      },
+      "end_bias": -0.52
+     }
+    },
+    "Chongqing app0 left": {
+     "true_cycle": 70.07,
+     "fit_cycle": 70.24,
+     "R": 0.98,
+     "true_green": 22.0,
+     "arc": {
+      "fit_green": 21.7,
+      "onset_abs": {
+       "n": 14,
+       "median": 1.35,
+       "p90": 2.54
+      },
+      "end_abs": {
+       "n": 14,
+       "median": 1.11,
+       "p90": 2.24
+      },
+      "end_bias": 1.11,
+      "missed": 0
+     },
+     "p80": {
+      "fit_green": 15.9,
+      "onset_abs": {
+       "n": 14,
+       "median": 1.35,
+       "p90": 2.54
+      },
+      "end_abs": {
+       "n": 14,
+       "median": 4.7,
+       "p90": 5.83
+      },
+      "end_bias": -4.7,
+      "missed": 0
+     },
+     "next_onset": {
+      "fit_green": 41.5,
+      "end_abs": {
+       "n": 14,
+       "median": 20.92,
+       "p90": 22.05
+      },
+      "end_bias": 20.92
+     }
+    },
+    "Chongqing app0 straight": {
+     "true_cycle": 70.07,
+     "fit_cycle": 70.04,
+     "R": 1.0,
+     "true_green": 22.0,
+     "arc": {
+      "fit_green": 19.1,
+      "onset_abs": {
+       "n": 16,
+       "median": 0.37,
+       "p90": 0.5
+      },
+      "end_abs": {
+       "n": 16,
+       "median": 2.55,
+       "p90": 2.67
+      },
+      "end_bias": -2.55,
+      "missed": 0
+     },
+     "p80": {
+      "fit_green": 20.7,
+      "onset_abs": {
+       "n": 16,
+       "median": 0.37,
+       "p90": 0.5
+      },
+      "end_abs": {
+       "n": 16,
+       "median": 0.88,
+       "p90": 1.0
+      },
+      "end_bias": -0.88,
+      "missed": 0
+     },
+     "next_onset": {
+      "fit_green": 41.0,
+      "end_abs": {
+       "n": 16,
+       "median": 19.44,
+       "p90": 19.56
+      },
+      "end_bias": 19.44
+     }
+    },
+    "Chongqing app1 straight": {
+     "true_cycle": 70.07,
+     "fit_cycle": 70.02,
+     "R": 1.0,
+     "true_green": 21.9,
+     "arc": {
+      "fit_green": 18.1,
+      "onset_abs": {
+       "n": 16,
+       "median": 0.18,
+       "p90": 0.21
+      },
+      "end_abs": {
+       "n": 16,
+       "median": 3.68,
+       "p90": 3.73
+      },
+      "end_bias": -3.68,
+      "missed": 0
+     },
+     "p80": {
+      "fit_green": 19.6,
+      "onset_abs": {
+       "n": 16,
+       "median": 0.18,
+       "p90": 0.21
+      },
+      "end_abs": {
+       "n": 16,
+       "median": 2.12,
+       "p90": 2.17
+      },
+      "end_bias": -2.12,
+      "missed": 0
+     },
+     "next_onset": {
+      "fit_green": 20.7,
+      "end_abs": {
+       "n": 16,
+       "median": 1.04,
+       "p90": 1.09
+      },
+      "end_bias": -1.04
+     }
+    },
+    "Chongqing app3 straight": {
+     "true_cycle": 69.97,
+     "fit_cycle": 69.88,
+     "R": 1.0,
+     "true_green": 21.9,
+     "arc": {
+      "fit_green": 20.0,
+      "onset_abs": {
+       "n": 16,
+       "median": 0.56,
+       "p90": 1.27
+      },
+      "end_abs": {
+       "n": 16,
+       "median": 2.37,
+       "p90": 3.21
+      },
+      "end_bias": -2.37,
+      "missed": 0
+     },
+     "p80": {
+      "fit_green": 14.2,
+      "onset_abs": {
+       "n": 16,
+       "median": 0.56,
+       "p90": 1.27
+      },
+      "end_abs": {
+       "n": 16,
+       "median": 8.25,
+       "p90": 9.09
+      },
+      "end_bias": -8.25,
+      "missed": 0
+     },
+     "next_onset": {
+      "fit_green": 20.3,
+      "end_abs": {
+       "n": 16,
+       "median": 2.11,
+       "p90": 2.95
+      },
+      "end_bias": -2.11
+     }
+    }
+   },
+   "end_bias_by_site": {
+    "Chongqing": {
+     "arc": -2.17,
+     "p80": -7.73
+    },
+    "Tianjin": {
+     "arc": 0.26,
+     "p80": -3.54
+    }
+   },
+   "intergreen_by_site": {
+    "Chongqing": 3.0,
+    "Tianjin": 3.99
+   },
+   "pooled": {
+    "cycle_abs": {
+     "n": 9,
+     "median": 0.05,
+     "p90": 0.13
+    },
+    "onset_median_of_groups": {
+     "n": 9,
+     "median": 0.56,
+     "p90": 1.37
+    },
+    "end_arc_median_of_groups": {
+     "n": 9,
+     "median": 2.64,
+     "p90": 5.07
+    },
+    "end_p80_median_of_groups": {
+     "n": 9,
+     "median": 4.37,
+     "p90": 8.23
+    },
+    "end_next_onset_median_of_groups": {
+     "n": 9,
+     "median": 1.06,
+     "p90": 19.74
+    }
+   }
+  }
+ }
+}
