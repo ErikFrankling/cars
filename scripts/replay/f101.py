@@ -5,6 +5,8 @@ Each window runs on its own one-lane edge, so all 4,955 run side by side in one 
     python3 -I scripts/replay/f101.py run main 0 [--gpu]    # main's driver, physical mode, seed 0
     python3 -I scripts/replay/f101.py run sumo 0            # --sumo-compat Krauss with speedDev 0: the F105 cross-check
     python3 -I scripts/replay/f101.py score                 # every run in the folder
+    F101_SITE=I294L1 python3 -I scripts/replay/f101.py build  # the same windows from another TGSIM site, in f101_I294L1/
+    F101_FLAGS='--tune measured=0' ...                      # extra flags for cars run
 """
 import sys, os, json, glob
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -13,7 +15,9 @@ sys.path.insert(0, HERE)
 from rpl import *
 import numpy as np, pandas as pd
 
-D = os.path.join(OUT, 'f101')
+SITE = os.environ.get('F101_SITE', 'I90mov')
+D = os.path.join(OUT, 'f101' if SITE == 'I90mov' else f'f101_{SITE}')
+MAXN = int(os.environ.get('F101_MAXN', '0')) or None
 T0 = 1.0          # window start in simulation time
 X0 = 20.0         # follower's start on its edge
 W = 300           # 30 s at 0.1 s, as report 05
@@ -24,7 +28,7 @@ def windows():
     os.chdir(REPO)
     sys.path.insert(0, os.path.join(REPO, 'research/truth/scripts'))
     from opus_windows import windows as cut
-    return cut('I90mov')
+    return cut(SITE, maxn=MAXN)
 
 
 def build():
@@ -66,7 +70,7 @@ def build():
 
 def run(tag, seed, gpu=False):
     out = f'{D}/{tag}_s{seed}'
-    flags = ['--sumo-compat'] if tag == 'sumo' else []
+    flags = (['--sumo-compat'] if tag == 'sumo' else []) + os.environ.get('F101_FLAGS', '').split()
     log = run_cars(['--net', f'{D}/net.xml', '--routes', f'{D}/routes_{"sumo" if tag == "sumo" else "main"}.xml', '--replay', f'{D}/windows.rpl', '--dt', '0.1',
                     '--begin', 0, '--end', T0 + W * 0.1, '--seed', seed, '--time-to-teleport', '0', '--fcd', f'{out}.fcd.csv',
                     '--fcd-begin', T0 - 0.05, '--fcd-interval', '0.1'] + flags, gpu=gpu, log=f'{out}.log')
@@ -118,7 +122,7 @@ def score():
             res[f'{tag}_over_seeds'] = dict(n=len(vals), mean=float(np.mean(vals)), min=float(np.min(vals)), max=float(np.max(vals)))
             print(tag, res[f'{tag}_over_seeds'])
     os.makedirs(os.path.join(REPO, 'research/truth/replay'), exist_ok=True)
-    json.dump(res, open(os.path.join(REPO, 'research/truth/replay/f101.json'), 'w'), indent=1)
+    json.dump(res, open(os.path.join(REPO, 'research/truth/replay', 'f101.json' if SITE == 'I90mov' else f'f101_{SITE}.json'), 'w'), indent=1)
 
 
 if __name__ == '__main__':

@@ -152,6 +152,11 @@ struct Params {
     pad_g: f32,
     pad_h: f32,
     pad_i: f32,
+    md_a: vec4f,      // measured driver, research/truth/measure/MODEL.md: closing gain K, leader share c_a, k_g, k_p
+    md_b: vec4f,      // response share per step, noise correlation per step, noise scale per step, on
+    md_c: vec4f,      // standstill gap, braking edge of the band (s), closing response cap (m/s), spare
+    md_t: vec4f,      // time gap at 6.5, 12.5, 17.5, 22.5 m/s
+    md_u: vec4f,      // time gap at 30, 40 m/s, spare, spare
 }
 
 struct Globals {
@@ -416,6 +421,7 @@ struct Trip {
     phys: u32,
     persona: u32,     // unorm8: T, s0, amax, lane change duration
     persona2: u32,    // unorm8: critical gap factor, yellow time to line, 2 spare
+    gap_f: f32,       // the measured driver's own time gap factor, kept for the trip
 }
 
 struct TripOut {
@@ -1033,6 +1039,54 @@ fn hu_noise_next(n: f32, trip: u32, step: u32, rho: f32, nscale: f32) -> f32 {
     return rho * n + nscale * sqrt(-2.0 * log(u1)) * cos(6.2831853 * u2);
 }
 
+// ---------------------------------------------------------------- measured driver, research/truth/measure/MODEL.md
+
+var<private> md_on: bool;
+var<private> md_f: f32;       // this driver's time gap factor
+var<private> md_v0: f32;      // desired speed here
+var<private> md_al: f32;      // acceleration of the leader being followed now
+var<private> md_noise: f32;   // this step's command noise, m/s2
+var<private> md_k: f32;
+var<private> md_ca: f32;
+var<private> md_kg: f32;
+var<private> md_kp: f32;
+var<private> md_beta: f32;
+var<private> md_s0: f32;
+var<private> md_near: f32;
+var<private> md_dvmax: f32;
+var<private> md_t: vec4f;
+var<private> md_u: vec2f;
+
+// Median steady time gap against speed, DRIVER.md: linear between the speed bands' centres.
+fn md_tgap(v: f32) -> f32 {
+    if (v <= 6.5) { return md_t.x; }
+    if (v <= 12.5) { return mix(md_t.x, md_t.y, (v - 6.5) / 6.0); }
+    if (v <= 17.5) { return mix(md_t.y, md_t.z, (v - 12.5) / 5.0); }
+    if (v <= 22.5) { return mix(md_t.z, md_t.w, (v - 17.5) / 5.0); }
+    if (v <= 30.0) { return mix(md_t.w, md_u.x, (v - 22.5) / 7.5); }
+    return mix(md_u.x, md_u.y, clamp((v - 30.0) / 10.0, 0.0, 1.0));
+}
+
+// What the driver asks for behind a leader at bumper gap gb: closing speed over gap (the inverse time to collision),
+// a share of the leader's acceleration, braking only well too close, and a weak pull from far behind.
+fn md_cmd(v: f32, gb: f32, vl: f32, al: f32) -> f32 {
+    let gs = max(md_s0, md_f * md_tgap(v) * v);
+    let e = (gb - gs) / max(v, 1.0);
+    return md_k * min(vl - v, md_dvmax) / max(gb, 1.0) + md_ca * al + md_kp * max(e, 0.0) - md_kg * max(-e - md_near, 0.0);
+}
+
+fn md_free(v: f32) -> f32 {
+    let r = min(v, 1.5 * md_v0) / max(md_v0, 0.1);
+    let r2 = r * r;
+    return min(max(ty.a0 - ty.a1 * v, ty.a_floor) * max(1.0 - r2 * r2, -1.0) - ph_gz, ph_a_cap(v));
+}
+
+// The first-order response from the acceleration of the last step. Every constraint passes through it from the same
+// state, so the lowest speed is the response to the lowest command.
+fn md_next(v: f32, a_cmd: f32) -> f32 {
+    return max(0.0, v + (ego_acc + md_beta * (a_cmd + md_noise - ego_acc)) * dt);
+}
+
 fn pcg(state: u32) -> u32 {
     let s = state * 747796405u + 2891336453u;
     let w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u;
@@ -1047,6 +1101,7 @@ fn rand01(rng: ptr<private, u32>) -> f32 {
 fn max_next_speed(v: f32) -> f32 {
     if (mu > 0.0) {
         if (ty.model == MODEL_HUMAN && hu_on) { return min(hu_next(v, hu_a_up(v, hu_v0)), ty.max_speed); }
+        if (md_on) { return min(md_next(v, md_free(v)), ty.max_speed); }
         return max(0.0, min(v + ph_a_drv(v) * dt, ty.max_speed));
     }
     return min(v + ty.accel * dt, ty.max_speed);
@@ -1221,6 +1276,13 @@ fn av_stop_curve(d: f32, b: f32, tr: f32) -> f32 {
 // can sit here: nothing past this point depends on which one asked.
 fn follow_speed(v: f32, gap: f32, vp: f32, bp: f32, leader_cacc: bool, lane_vmax: f32, lane_limit: f32) -> f32 {
     if (mu > 0.0) {
+        if (md_on) {
+            var m = md_next(v, md_cmd(v, gap + ty.min_gap, vp, md_al));
+            // Up to what nearly stands, the measured stop of report 19. Behind anything faster it only made the
+            // next second worse on the recordings (scripts/measure/fit_driver.py, MODEL.md).
+            if (vp < 0.5 * v) { m = min(m, ph_stop_comfort(gap + vp * vp / 2.6, v)); }
+            return ph_limit(m, ph_v_cert(gap + ty.min_gap, v, vp, min(bp, ty.b_lo), ego_acc));
+        }
         var d = follow_driver(v, gap, vp, bp, leader_cacc, lane_vmax, lane_limit);
         // Gipps behind what moves, and where a slowing leader would come to rest is stopped for as drivers stop.
         if (vp < v && ty.model == MODEL_KRAUSS) { d = min(d, ph_stop_comfort(gap + vp * vp / 2.6, v)); }
