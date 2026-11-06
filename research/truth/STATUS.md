@@ -16,7 +16,7 @@ Good science: a simulator whose every behaviour is tested against recordings whe
 | T5 Self-driving | Waits for T3 | |
 
 ## Recordings on disk
-Car following and lane changes: highD and exiD (`datasets/levelx/`), TGSIM (5 sites), DLR HT (A39), HIGH-SIM sample, NGSIM (4 sites), DRaT, HDSVT. Junctions: inD and rounD (`datasets/levelx/`), DLR UT (24 h, controller signal states), SinD (4 cities, signal states), OpenDD, Swiss roundabouts, Songdo one junction-day. Whole areas: pNEUMA one file (full set downloading), Songdo (full set downloading). Cities: Xuancheng, Cambridge one day, Jinan. All under `/home/erikf/projects/personal/cars-data/truth/trajectories/` and `datasets/`.
+Car following and lane changes: highD and exiD (`datasets/levelx/`), TGSIM (5 sites), DLR HT (A39), HIGH-SIM sample, NGSIM (4 sites), DRaT, HDSVT. Junctions: inD and rounD (`datasets/levelx/`), DLR UT (24 h, controller signal states), SinD (4 cities, signal states), OpenDD, Swiss roundabouts, Songdo one junction-day. Whole areas: pNEUMA one file (full set downloading). Junction sets downloading: Songdo (20 junctions), Helsinki (Jätkäsaari drones, 2024-2025, the Nordic contrast), LADDMS stage 1 (lidar at a Nashville corridor). Cities: Xuancheng, Cambridge one day, Jinan. All under `/home/erikf/projects/personal/cars-data/truth/trajectories/` and `datasets/`.
 
 ## What is known, measured or computed
 | Fact | Value | Source |
