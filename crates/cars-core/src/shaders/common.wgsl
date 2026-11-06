@@ -37,6 +37,7 @@ const F_LAT_FAST: u32 = 65536u;    // this lane change runs at the raised latera
 const F_DENIED: u32 = 131072u;     // held at a junction lane in the last step: not coming for now
 const F_REROUTE: u32 = 524288u;    // asked for a new route, waiting for route_patch
 const F_ABREAST: u32 = 8388608u;   // falling behind the car alongside: each wants the other's lane
+const F_LEAD_STILL: u32 = 16777216u; // the car ahead on the lane, within 15 m, stands: no reason to start yet
 const F_GRANTED: u32 = 262144u;    // won a junction lane in the last step, and goes on holding it
 const HU_ENGAGED: u32 = 1073741824u; // hu_state: has decided to go, is edging or waiting for the gap
 const F_YELLOW_GO: u32 = 1048576u;  // decided at yellow to carry on through the junction
@@ -144,8 +145,12 @@ struct Params {
     abreast_b: f32,
     miss_patience: f32,
     miss_short: f32,
-    pad_e: f32,
+    start_react: f32,
+    first_react: f32,
     pad_f: f32,
+    pad_g: f32,
+    pad_h: f32,
+    pad_i: f32,
 }
 
 struct Globals {

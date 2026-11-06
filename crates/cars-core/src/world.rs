@@ -84,8 +84,14 @@ pub struct GpuParams {
     pub miss_patience: f32,
     /// On a lane shorter than this there is no waiting: a change can't fit.
     pub miss_short: f32,
-    pub pad_e: f32,
+    /// Seconds a driver standing still takes to go once its way opens. 0 off.
+    pub start_react: f32,
+    /// The same for the first car at a stop line, which reacts to the light rather than to a leader.
+    pub first_react: f32,
     pub pad_f: f32,
+    pub pad_g: f32,
+    pub pad_h: f32,
+    pub pad_i: f32,
 }
 
 #[repr(C)]
@@ -827,7 +833,8 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.width = t.width;
     // The human driver keeps the physics it was fitted on: tau 0.65, sigma as given, leader braking 4.5.
     let human = cfg.humans || t.model == CfModel::Human;
-    g.ph_tau = num("phys.tau", cfg.tune("tau", if human { 0.65 } else { 1.0 }));
+    // Newell's T, the median driver: real medians fit 1.4 s at any speed (foundations/B §1, report 19's pairs).
+    g.ph_tau = num("phys.tau", cfg.tune("tau", if human { 0.65 } else { 1.4 }));
     // Krauss's 0.5 is inherited. 0.2 brings 50 km/h saturation into report 04's band, 1,846 against 1,714.
     if t.sigma == 0.5 && !human { g.sigma = 0.2; }
     g.sigma = cfg.tune("sigma", g.sigma);
@@ -1098,8 +1105,13 @@ impl World {
             abreast_b: cfg.tune("abreast_b", if cfg.humans { 0.0 } else { 2.5 }),
             miss_patience: if cfg.route_arena > 0 && !cfg.humans { cfg.tune("miss_patience", 60.0) } else { 0.0 },
             miss_short: cfg.tune("miss_short", 15.0),
-            pad_e: 0.0,
+            // Report 05, DLR UT: position 2 moves 1.0 s after its predecessor, the first car 1.62 s after green.
+            start_react: if cfg.humans { 0.0 } else { cfg.tune("start_react", 1.0) },
+            first_react: if cfg.humans { 0.0 } else { cfg.tune("first_react", 1.62) },
             pad_f: 0.0,
+            pad_g: 0.0,
+            pad_h: 0.0,
+            pad_i: 0.0,
         };
         w
     }
@@ -1443,7 +1455,7 @@ impl World {
                     before: l.internal_before.map(|b| b + lane0).unwrap_or(NONE),
                     state: l.state as u32,
                     from_lane: l.from_lane + lane0,
-                    tc: if cfg.mu > 0.0 { (critical_gap(net, topo, l) * cfg.tune("tc_scale", if cfg.humans { 1.0 } else { 0.7 }) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { 0.0 },
+                    tc: if cfg.mu <= 0.0 { 0.0 } else if cfg.humans { (critical_gap(net, topo, l) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { critical_gap_hbs(net, topo, l) * cfg.tune("tc_scale", 1.0) },
                 });
             }
         }
@@ -1590,6 +1602,27 @@ fn critical_gap(net: &Net, topo: &Topology, l: &crate::topology::Link) -> f32 {
     };
     let fast = foes.iter().map(|&f| net.lanes[topo.links[f as usize].from_lane as usize].speed).fold(0.0f32, f32::max);
     base + 0.9 * ((fast - 50.0 / 3.6) / (20.0 / 3.6)).clamp(0.0, 1.0)
+}
+
+/// HBS 2015 S5, urban give-way, critical gap by movement: right from the minor road 5.9 s, left from the major 5.5,
+/// through 6.7, left from the minor 6.5 (KNOBEL form of HBS 2015; foundations/B §3). Stop sign and a fast major road
+/// as TRVMB adds them: 0.7 s and up to 0.9 s.
+fn critical_gap_hbs(net: &Net, topo: &Topology, l: &crate::topology::Link) -> f32 {
+    let entry = &topo.links[l.entry as usize];
+    let foes = if l.foe_links.is_empty() { &entry.foe_links } else { &l.foe_links };
+    if foes.is_empty() {
+        return 0.0;
+    }
+    let stop = matches!(entry.state, b's' | b'w');
+    let major_left = topo.lane_links[entry.from_lane as usize].iter().any(|&k| matches!(topo.links[k as usize].state, b'M' | b'O'));
+    let base = match entry.dir {
+        b'l' | b'L' | b't' if major_left => 5.5,
+        b'r' | b'R' => 5.9,
+        b'l' | b'L' | b't' => 6.5,
+        _ => 6.7,
+    };
+    let fast = foes.iter().map(|&f| net.lanes[topo.links[f as usize].from_lane as usize].speed).fold(0.0f32, f32::max);
+    base + if stop { 0.7 } else { 0.0 } + 0.9 * ((fast - 50.0 / 3.6) / (20.0 / 3.6)).clamp(0.0, 1.0)
 }
 
 fn topo_exit_after_ij(topo: &Topology, id: u32) -> bool {

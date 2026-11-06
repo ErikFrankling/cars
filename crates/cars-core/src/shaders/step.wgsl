@@ -696,7 +696,9 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
         plan_cj(i, ego);
         return;
     }
-    ego_flags = ego.flags;
+    ego_flags = ego.flags & ~F_LEAD_STILL;
+    if (i + 1u < G.n_active && cur[i + 1u].lane == ego.lane && cur[i + 1u].speed < 1e-3
+        && cur[i + 1u].pos - types[cur[i + 1u].vtype].length - ego.pos < 15.0) { ego_flags |= F_LEAD_STILL; }
     ego_acc = ego.acc;
     mode_done = false;
     ph_setup(ego);
@@ -991,7 +993,7 @@ fn foe_on_last_approach(link: u32, a: f32, va: f32, vl: f32, ego: Veh) -> bool {
     let k = links[link];
     if (hu_on) { hu_set_gap(link, ego.trip); }
     var l = a + (k.length + ty.length) / max((va + vl) * 0.5, EPS);
-    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor - dt; }
+    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor; }
     let impat = clamp(ty.impatience + ego.wait / P.time_to_impatience, 0.0, 1.0);
     for (var f = 0u; f < k.foe_count; f++) {
         let foe = foes[k.foe_start + f];
@@ -1229,8 +1231,8 @@ fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f3
     if (have_red(state)) { return false; }
     if ((k.flags & L_CONT) != 0u) { return true; }
     var l = a + (k.length + veh_len) / max((va + vl) * 0.5, EPS);
-    // Physical mode: go when the next foe is a critical gap away, Trafikverket's numbers rather than a crossing estimate.
-    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor - dt; }
+    // Physical mode: go when the next foe arrives a critical gap (HBS, by movement) after we would reach the line.
+    if (mu > 0.0 && k.tc > 0.0) { l = max(a, 0.0) + k.tc - ty.timegap_minor; }
     let e_is_major_green = (k.flags & (L_EXIT_AFTER_IJ | L_INTERNAL_JUNCTION)) != 0u && link_state(k.entry) == CH_G;
     if ((have_priority(state) || e_is_major_green) && state != CH_Z) { return true; }
     if (state == CH_w && wait < dt) { return false; }
@@ -1866,7 +1868,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
             atomicAdd(&C[C_CERT_FLOOR], 1u);
         }
         if (ph_b_follower() <= 0.05) { atomicAdd(&C[C_NO_BRAKE], 1u); }
-        if (hu_on) { nv = hu_start_hold(&e, speed, v_safe, nv); }
+        if (hu_on) { nv = hu_start_hold(&e, speed, v_safe, nv); } else if (P.start_react > 0.0) { nv = ph_start_hold(&e, i, speed, nv, have_to_wait); }
         acc = (nv - speed) / dt;
         var ds: f32;
         if (nv > 0.0) {
@@ -2171,6 +2173,28 @@ fn ph_reroute(e: ptr<function, Veh>, n: u32, base: u32) {
     route_patch[slot] = vec2u((*e).trip, (*e).lane);
     route_patch[slot + 1u] = vec2u(routes[(*e).route_end - 1u], ty.vclass);
     (*e).flags |= F_REROUTE;
+}
+
+// A driver standing still goes a reaction time after its way opens. Report 05: the first car at a green 1.62 s,
+// stopped-start lags behind a leader 1.0-1.6 s. Steps with reason to go are counted in the low byte of hu_state.
+fn ph_start_hold(e: ptr<function, Veh>, i: u32, speed: f32, nv: f32, held: bool) -> f32 {
+    if (speed >= 0.05) { return nv; }
+    // Nobody creeps after a car that stands: the clock runs from when it moves, or from when the way opens.
+    let still = ((*e).flags & F_LEAD_STILL) != 0u;
+    let front = i + 1u >= G.n_active || cur[i + 1u].lane != (*e).lane;
+    var steps = (*e).hu_state & 255u;
+    // Creeping to a red line is not the way opening either.
+    if (still || (front && (nv <= 0.0 || held))) { steps = 0u; } else if (nv > 0.0) { steps = min(steps + 1u, 255u); }
+    (*e).hu_state = ((*e).hu_state & 0xffffff00u) | steps;
+    if (still || steps == 0u) { return 0.0; }
+    // A light is seen in the step it changes; a leader's start one step after it began. Partial steps keep the
+    // reaction the same at any dt.
+    let first = front && lanes[(*e).lane].length - (*e).pos < 10.0;
+    let react = select(P.start_react, P.first_react, first);
+    let waited = f32(steps - 1u) * dt + select(dt, 0.0, first);
+    if (waited + dt <= react + 1e-3) { return 0.0; }
+    if (waited < react - 1e-3) { return nv * (waited + dt - react) / dt; }
+    return nv;
 }
 
 fn hu_start_hold(e: ptr<function, Veh>, speed: f32, v_safe: f32, nv: f32) -> f32 {

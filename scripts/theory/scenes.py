@@ -36,6 +36,25 @@ if Path(LVP).exists():
 SEEDS = 5
 SIM_SEED = 1
 V50 = 50 / 3.6
+FIRST_REACT = 1.62  # world.rs first_react, report 05 DLR UT
+START_REACT = 1.0  # world.rs start_react
+E_T = 1.4 * math.exp(0.3 ** 2 / 2)  # mean T of drivers: tau 1.4, gap_spread 0.3
+
+
+def own_discharge(d0, n, a=1.8, s=7.5, v=V50):
+    """Crossing times of a released queue under this driver's two rules: car k starts START_REACT after car k-1
+    (the first FIRST_REACT after green), and once moving keeps at least E[T] + s/v behind it."""
+    def tau(x):
+        return math.sqrt(2 * x / a) if x <= v * v / (2 * a) else v / a + (x - v * v / (2 * a)) / v
+    t = []
+    for k in range(n):
+        x = k * s + d0
+        ts = FIRST_REACT + k * START_REACT + tau(x)
+        if k:
+            vl = min(v, math.sqrt(2 * a * x))
+            ts = max(ts, t[-1] + E_T + s / max(vl, 1.0))
+        t.append(ts)
+    return [t[0]] + [t[i] - t[i - 1] for i in range(1, n)]
 
 
 def arrival_rng(scene, seed):
@@ -350,6 +369,7 @@ BATCH_CFG = {
     'drop': dict(end=1800, fcd=2.0),
     'drop_city': dict(end=1500, fcd=0.5),
     'slow': dict(end=800, fcd=1.0),
+    'wave': dict(end=420, fcd=0.5, trace=lambda t: wave_lead(t)),
     'net': dict(end=1200, fcd=1.0),
     'net_long': dict(end=3000, fcd=5.0),
     'n9': dict(end=2900, fcd=1.0),
@@ -405,7 +425,9 @@ class Lane:
                     caps[kmh].append(3600 * (len(w) - 1) / (w[-1] - w[0]))
                 if kmh == 50:
                     L = run.lane_len(name, 'in_0')
-                    q = f[(np.abs(f.time - (Lane.T - 1)) < 0.26) & (f.lane == f'{name}.in_0')].sort_values('pos', ascending=False)
+                    ts = f.time.unique()
+                    t_q = ts[np.argmin(np.abs(ts - (Lane.T - 1)))]
+                    q = f[(f.time == t_q) & (f.lane == f'{name}.in_0')].sort_values('pos', ascending=False)
                     q = q[q.speed < 0.2]
                     placed.append(len(q))
                     spacing.append(float(np.median(-np.diff(q.pos.values[:100]))))
@@ -431,7 +453,7 @@ class Lane:
         st['T'] = T
         book.info('L4', 'T from s/w (s)', T)
         self_cap = 3600 / (T + st['s'] / V50)
-        book.check('L1', 'F050', 0, caps[50], forecast=self_cap, tol='3%', seeds=tag)
+        book.info('L1', f'F050 Newell consistency 1/(s/w + s/v) = {self_cap:.0f}: this driver starts at start_react, not T, so it is no check of the code', float(np.mean(caps[50])))
         # L7: instrument agrees with trajectories, and nobody is lost
         e = run.edges()
         worst = 0.0
@@ -566,12 +588,75 @@ class Ring:
         vf = (free.q / free.k).mean()
         pc = np.polyfit(cong.k, cong.q, 1) if len(cong) > 2 else (float('nan'), float('nan'))
         kc = pc[1] / (vf - pc[0])
-        book.check('L2', 'F051', 0, [kc], quantity='critical density (free and congested branch meet)', seeds='L2 3 per density, sim 1')
-        book.check('L2', 'F052', 0, d.groupby('r').q.max().values, seeds='L2 3 per density, sim 1')
+        book.check('L2', 'F051', 0, [kc], quantity='critical density 1/(s + v E[T])', forecast=1000 / (7.5 + V50 * E_T), seeds='L2 3 per density, sim 1')
+        book.check('L2', 'F052', 0, d.groupby('r').q.max().values, quantity='peak ring flow 1/(E[T] + s/v)', forecast=3600 / (E_T + 7.5 / V50), seeds='L2 3 per density, sim 1')
         spac = {10: 100, 12: 83, 15: 67, 20: 50}
         vs = [d[d.N == spac[x]].v.values for x in (10, 12, 15, 20)]
         for i, v in enumerate(vs):
-            book.check('L2', 'F053', i, v, quantity=f'congested speed at spacing {[10, 12, 15, 20][i]} m', seeds='L2 3 per density, sim 1')
+            sp = [10, 12, 15, 20][i]
+            book.check('L2', 'F053', i, v, quantity=f'congested speed at spacing {sp} m, (spacing-s)/E[T]', forecast=(sp - 7.5) / E_T, seeds='L2 3 per density, sim 1')
+
+
+# --- A wave: a platoon behind a leader that brakes once (Hickert et al. 2026: a wave result moved between dt 0.5 and 0.55)
+W1_T0, W1_V, W1_VLOW, W1_HOLD = 200.0, 10.0, 3.0, 5.0
+
+
+def wave_lead(t):
+    """The leader's wanted speed: 10 m/s so the platoon closes up behind it at its own spacing, down to 3 m/s at
+    2 m/s2 from W1_T0, held 5 s, back up at 1.5 m/s2."""
+    t1 = W1_T0 + (W1_V - W1_VLOW) / 2.0
+    if t < W1_T0:
+        return W1_V
+    if t < t1:
+        return W1_V - 2.0 * (t - W1_T0)
+    if t < t1 + W1_HOLD:
+        return W1_VLOW
+    return min(W1_V, W1_VLOW + 1.5 * (t - t1 - W1_HOLD))
+
+
+@scene('W1', 'wave')
+class Wave:
+    N = 30
+
+    @staticmethod
+    def build(w, st):
+        w.car('lead', speedDev='0', speedFactor='1')
+        w.traced = {'lead'}
+        for r in range(SEEDS):
+            c = w.cell(f'W1r{r}', 50)
+            c.node('a', 0, 0)
+            c.node('b', 7000, 0)
+            c.edge('in', 'a', 'b')
+            c.car('v0', 0.0, ['in'], vtype='lead')
+            for i in range(1, Wave.N):
+                c.car(f'v{i}', i * 1.5, ['in'])
+
+    @staticmethod
+    def measure(run, book, st):
+        o = own(st)
+        spd, amp, mins = [], [], []
+        for r in range(SEEDS):
+            name = f'W1r{r}'
+            f = run.cell(name)
+            f = f[f.time >= W1_T0 - 5]
+            rows = []
+            for i in range(Wave.N):
+                g = f[f.trip == f'{name}.v{i}']
+                if not len(g):
+                    continue
+                k = g.speed.values.argmin()
+                rows.append((i, g.time.values[k], g.pos.values[k], g.speed.values[k]))
+            x = np.array(rows)
+            if len(x) < 20:
+                continue
+            tail = x[5:]
+            spd.append(-np.polyfit(tail[:, 1], tail[:, 2], 1)[0] * 3.6)
+            amp.append(x[-1, 3] - x[0, 3])
+            mins.append(x[-1, 3])
+        w_own = 7.5 / (1.4 * math.exp(0.3 ** 2 / 2)) * 3.6
+        book.check('W1', 'F101', 0, spd, quantity='disturbance moves upstream at s/E[T] (km/h, ground)', forecast=w_own, seeds=seedtag('W1'))
+        book.check('W1', 'F102', 0, amp, quantity='car 30 min speed less leader min speed (m/s): no growth', seeds=seedtag('W1'), mode='low')
+        book.info('W1', 'lowest speed of car 30 (m/s), leader 3', float(np.mean(mins)) if mins else float('nan'))
 
 
 # --- One signal
@@ -635,7 +720,8 @@ class Discharge:
         book.info('S1', 'first car stop distance d0 (m)', float(np.mean(stop0)))
         st['hs'] = float(hs.mean())
         for i in range(9):
-            book.check('S2', 'F009', i, H[:, i], quantity=('t1 after green' if i == 0 else f'headway car {i + 1}'), seeds=tag)
+            fc = own_discharge(float(np.mean(stop0)), 9)[i]
+            book.check('S2', 'F009', i, H[:, i], quantity=('t1 after green, own reactions' if i == 0 else f'headway car {i + 1}, own reactions and E[T]'), forecast=fc, seeds=tag)
         lost = (H[:, :4] - hs[:, None]).sum(axis=1)
         book.check('S3', 'F010', 0, lost, seeds=tag)
         st['lost'] = float(lost.mean())
@@ -985,6 +1071,18 @@ class Give:
         book.info('G1', 'capacity at major 0 400 800 1200 (F017 report 23 816 474 279 162; F018 its tf fixed 1200 696 404 234)', ' '.join(f'{np.mean(caps[q]):.0f}' for q in Give.QS))
         all_tf = np.array([x for v in tfs.values() for x in v if np.isfinite(x)])
         book.check('G1', 'F058', 0, all_tf, seeds='G1 all')
+        tf_own = float(np.mean(all_tf))
+        for i, q in enumerate(Give.QS):
+            fc = 3600 / tf_own * math.exp(-q * (5.9 - tf_own / 2) / 3600)
+            book.check('G1', 'F103', i, caps[q], quantity=f'Siegloch at own tc 5.9 tf {tf_own:.2f}, major {q}', forecast=fc, tol='10%', seeds=seedtag(f'G1{q}'))
+        vt = []
+        for r in range(SEEDS):
+            f = run.cell(f'G1q0r{r}')
+            z = f[f.lane.astype(str).str.startswith(':') & f.trip.astype(str).str.contains(r'\.s')]
+            if len(z):
+                vt.append(float(z.speed.median()))
+        if vt:
+            book.check('G1', 'F104', 0, all_tf, quantity=f'follow-up from own following: E[T] + s/v_turn, v_turn {np.mean(vt):.2f}', forecast=1.4 * math.exp(0.045) + 7.5 / np.mean(vt), tol='10%', seeds='G1 all')
         for q in Give.QS[1:]:
             got = []
             for r in range(SEEDS):
@@ -2531,7 +2629,11 @@ def run_batch(name, scenes, a, book, st, out):
     if r.returncode:
         raise RuntimeError(r.stderr[-1500:])
     rewrite_tls(d / 'net.xml', w)
-    types = ''.join(f'<vType id="{k}" vClass="passenger" {v}/>' if 'vClass' not in v else f'<vType id="{k}" {v}/>' for k, v in w.types.items())
+    def vtype(k, v):
+        body = '<param key="phys.trace" value="1"/>' if k in getattr(w, 'traced', ()) else ''
+        head = f'<vType id="{k}" vClass="passenger" {v}' if 'vClass' not in v else f'<vType id="{k}" {v}'
+        return f'{head}>{body}</vType>'
+    types = ''.join(vtype(k, v) for k, v in w.types.items())
     w.veh.sort(key=lambda x: x[0])
     (d / 'r.xml').write_text('<routes>' + types + ''.join(v for _, v in w.veh) + '</routes>')
     capacity = max(2000, 2 * len(w.veh))
@@ -2541,6 +2643,11 @@ def run_batch(name, scenes, a, book, st, out):
     if fcd:
         fcd = max(fcd, a.dt)
         args += ['--fcd', d / 'fcd.csv', '--fcd-interval', fcd]
+    if cfg.get('trace'):
+        # one desired speed per step, for the types marked traced: the platoon leaders of W1
+        steps = int(cfg['end'] / a.dt) + 2
+        (d / 'trace.txt').write_text('\n'.join(f'{cfg["trace"](k * a.dt):.4f}' for k in range(steps)))
+        args += ['--speed-trace', d / 'trace.txt']
     for t in cfg.get('tune', []):
         # the human driver on t3/1b36c9cf names its patience t_miss, and switches the rule off by name
         if a.driver == 'human' and t.startswith('miss_patience='):
@@ -2578,7 +2685,7 @@ def run_batch(name, scenes, a, book, st, out):
         (d / 'fcd.csv').unlink(missing_ok=True)
 
 
-ORDER = ['lane', 'signal', 'ring', 'sringon', 'sringoff', 'signal_long', 'xone', 'give', 'give2', 'lc', 'lc2', 'drop', 'drop_city', 'slow', 'net', 'net_long', 'n9', 'n10', 'miss60', 'miss120', 'miss0', 'block1', 'block25', 'block0', 'grid', 'grid_sig']
+ORDER = ['lane', 'signal', 'ring', 'wave', 'sringon', 'sringoff', 'signal_long', 'xone', 'give', 'give2', 'lc', 'lc2', 'drop', 'drop_city', 'slow', 'net', 'net_long', 'n9', 'n10', 'miss60', 'miss120', 'miss0', 'block1', 'block25', 'block0', 'grid', 'grid_sig']
 
 
 def main():
