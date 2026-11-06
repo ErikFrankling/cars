@@ -250,7 +250,7 @@ Halves are under days on both metrics, as PLAN expects. The approach sections ar
 
 ## Plain runs
 
-Main's binary (ce55b16) against this branch, no `--replay`: the FCDs are byte-identical on the DLR UT approach (llvmpipe, 900 s) and on exiD 00 all simulated (llvmpipe and GPU). The drone 8 scene run as a plain run on the GPU is not deterministic with either binary: main gave two different outputs in three runs, this branch two in three, and one output (`f9020d…`) came from both.
+Main's binary (26e674d, after the measured driver's round 2) against this branch, no `--replay`: the FCDs are byte-identical on the DLR UT approach (llvmpipe, 900 s) and on exiD 00 all simulated (llvmpipe and GPU). The drone 8 scene run as a plain run on the GPU is not deterministic with either binary. Over four runs each, both binaries gave the same two outputs (`3a36bc…` and `f9020d…`), in different proportions. The area runs above are at main ce55b16; the later merge changed only the measured driver (off by default) and roundabout entries, and these areas have none.
 
 ## What still blocks area scoring
 
