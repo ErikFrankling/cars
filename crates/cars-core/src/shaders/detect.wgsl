@@ -84,9 +84,11 @@ fn detect_pose(@builtin(global_invocation_id) id: vec3u) {
         var v_lat = t.v_lat;
         if ((v.flags & F_LAT_FAST) != 0u) { v_lat = 1.0; }
         let w = lanes[v.lane].width;
-        let done = ph_lateral_done(f32((v.phys >> 16u) & 0x3fffu) / 16383.0 * (w / v_lat + 1.0), w, v_lat);
+        let done = ph_lateral_u(f32((v.phys >> 16u) & 0x3fffu) / 16383.0, w, v_lat);
         let side = select(1.0, -1.0, (v.phys >> 30u) == 1u);
-        center += vec2f(-dir.y, dir.x) * side * (w - done);
+        center += vec2f(-dir.y, dir.x) * side * (w - abs(v.lc_edge) - (1.0 - abs(v.lc_edge) / w) * done);
+    } else {
+        center += vec2f(-dir.y, dir.x) * v.lc_edge;
     }
     // On a lane narrower than the body the driver squeezes over: the fault is the lane width in the net.
     let c = cell_of(center);

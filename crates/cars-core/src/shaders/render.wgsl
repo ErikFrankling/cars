@@ -93,14 +93,17 @@ fn prepare_signal(i:u32,si:u32) {
   // Physical mode: the engine knows where the car is sideways.
   xy=b; yaw=0.0;
   if((v.phys>>30u)!=0u){
-   let w=l.width; var v_lat=0.6; if((v.flags&F_LAT_FAST)!=0u){v_lat=1.0;}
+   let w=l.width; var v_lat=0.6; if((v.flags&F_LAT_FAST)!=0u){v_lat=1.0;} if(rt.automated<-0.5){v_lat=0.0;}
    let total=w/v_lat+1.0; let t=f32((v.phys>>16u)&0x3fffu)/16383.0*total;
    var done=v_lat*(t-0.5);
    if(t<1.0){done=v_lat*(t*0.5-sin(3.14159265*t)/6.2831853);}
    if(t>total-1.0){let r=total-t;done=w-v_lat*(r*0.5-sin(3.14159265*r)/6.2831853);}
+   if(v_lat<=0.0){let u=f32((v.phys>>16u)&0x3fffu)/16383.0;done=ph_lateral_u(u,w,0.0);}
    let side=select(1.0,-1.0,(v.phys>>30u)==1u);
-   xy=b+dn*side*(w-done);
-   yaw=clamp(atan2(-side*v_lat,max(v.speed,2.0)),-0.21,0.21);
+   xy=b+dn*side*(w-abs(v.lc_edge)-(1.0-abs(v.lc_edge)/w)*done);
+   yaw=clamp(atan2(-side*max(v_lat,0.67),max(v.speed,2.0)),-0.21,0.21);
+  } else {
+   xy+=dn*v.lc_edge;
   }
  }
  let drawn_dir=d*cos(yaw)+dn*sin(yaw);

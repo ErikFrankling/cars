@@ -55,6 +55,23 @@ pub struct GpuParams {
     pub lc_carry: u32,
     pub meter_n: u32,
     pub lateral_median: f32,
+    pub hu_k: f32,
+    pub hu_rho: f32,
+    pub hu_nscale: f32,
+    pub hu_flags: u32,
+    pub hu_a: [f32; 4],
+    pub hu_b: [f32; 4],
+    pub hu_c: [f32; 4],
+    pub hu_d: [f32; 4],
+    pub hu_e: [f32; 4],
+    pub hu_f: [f32; 4],
+    pub hu_g: [f32; 4],
+    pub hu_i: [f32; 4],
+    pub hu_h: [f32; 4],
+    pub hm_a: [f32; 4],
+    pub hm_b: [f32; 4],
+    pub hm_c: [f32; 4],
+    pub hm_d: [f32; 4],
     /// Metres from which a driver can see whether a give-way line is free, at least. The map's 4.5 m means stopping at every one.
     pub vis_floor: f32,
     /// Seconds at a stand a driver keeps holding back for someone else's lane change.
@@ -126,6 +143,12 @@ pub struct GpuVeh {
     pub occ_best: f32,
     /// Bits 0-7 load, 8-15 power, 16-29 lateral phase, 30-31 lateral direction. See `phys_bits`.
     pub phys: u32,
+    pub hu_acc: f32,
+    pub hu_noise: f32,
+    pub lc_wait: f32,
+    pub hu_state: u32,
+    pub lc_bias: f32,
+    pub lc_edge: f32,
     pub cj_t_line: f32,
     pub cj_v_line: f32,
     pub cj_v_cruise: f32,
@@ -168,6 +191,7 @@ pub struct GpuLane {
     pub curve_v: f32,
     /// Square root of the tightest radius, 0 when straight.
     pub sqrt_r: f32,
+    pub sqrt_path_r: f32,
     pub s_curve: f32,
     pub s_curve_end: f32,
     pub width: f32,
@@ -304,6 +328,8 @@ pub struct GpuTrip {
     pub rng: u32,
     pub replica: u32,
     pub pad: [u32; 3],
+    pub persona: u32,
+    pub persona2: u32,
 }
 
 #[repr(C)]
@@ -405,9 +431,172 @@ pub const C_LC_REFUSED_ROOM: usize = 22;
 pub const C_DENIED: usize = 23;
 pub const C_CONTACT: usize = 24;
 pub const C_CONTACT_KINDS: usize = 25;
-pub const C_LOST: usize = 34;
+/// Human lane change rules, counted after the contact kinds.
+pub const C_HU_YIELD: usize = 32;
 pub const C_HU_REROUTE: usize = 35;
+pub const C_HU_LC_URGENT: usize = 36;
+pub const C_HU_GUARD: usize = 37;
+pub const C_HU_STEPS: usize = 39;
 pub const REROUTE_LOG: u64 = 65536;
+/// Everything on except the rules named.
+pub fn human_flags(off: &[String]) -> u32 {
+    let mut flags = HUMAN_RULES.iter().fold(0, |a, r| a | r.1);
+    for name in off {
+        let rule = HUMAN_RULES.iter().find(|r| r.0 == name).unwrap_or_else(|| panic!("no human rule {name}"));
+        flags &= !rule.1;
+    }
+    flags
+}
+
+/// Rules of `research/truth/14-human-courtesy.md`, as bits of `GpuParams::hu_flags`.
+pub const HUMAN_RULES: [(&str, u32); 13] = [("courtesy", 1), ("shrink", 2), ("offset", 4), ("anticipate", 8), ("miss", 16), ("gate", 32), ("yellow", 64), ("tte", 128), ("start", 256), ("edge", 512), ("follow", 1024), ("match", 2048), ("steer", 4096)];
+
+/// The human driver's numbers that are ours to choose. Provenance of each: `shaders/HUMAN.md`.
+#[derive(Clone, Copy, Debug)]
+pub struct HumanParams {
+    /// Aimsun's "cooperation creating a gap", a share of drivers.
+    pub cooperation: f32,
+    /// Mean seconds at a standstill before giving up on a turn. Each driver draws 0.5 to 1.5 times this.
+    pub t_miss: f32,
+    /// Stop short of the end of a lane: Trafikverket's minimum 5 m, 7 m more on every second lane.
+    pub stop_base: f32,
+    pub stop_offset: f32,
+    pub sig_react: f32,
+    pub r_urg: f32,
+    /// Vissim's CoopDecel.
+    pub coop_decel: f32,
+    pub tau_gate: f32,
+    pub tau_min: f32,
+    pub b_em: f32,
+    pub gap_model: f32,
+    pub gap_junction: f32,
+    pub gap_roundabout: f32,
+    pub t_scale: f32,
+    pub s0_scale: f32,
+    /// Lee's constants are what MITSIMLab recalibrates per site (Choudhury 2007, section 5.4.2).
+    pub lead_shift: f32,
+    pub lag_shift: f32,
+    /// Vissim's 0.6 on the safety distance during a lane change.
+    pub lc_safety: f32,
+    /// Median sideways acceleration a driver holds through a corner, report 19.
+    pub a_y: f32,
+    /// Region's mean of free speed against the limit, Sweden's from VTI 1001. 0 off.
+    pub free_table: f32,
+    /// Invented, see HUMAN.md: Gipps approach to a standing target.
+    pub b_approach: f32,
+    pub tau_approach: f32,
+    pub overshoot: f32,
+    pub standing: f32,
+    pub see: f32,
+    pub lc_slope: f32,
+    pub stop_s0: f32,
+    pub comfort: f32,
+    /// A lane shorter than this is no place to wait for a gap: the route is given up at once.
+    pub stub: f32,
+    /// Speed match weight once the driver has decided to go.
+    pub w_s_near: f32,
+    /// Braking when stopping for a lane end, as late as is comfortable.
+    pub b_end: f32,
+    /// Report 18, section 4.
+    pub tte0: f32,
+    pub s_0: f32,
+    pub s_t: f32,
+    pub s_lag: f32,
+    pub s_lead: f32,
+    pub s_driver: f32,
+    pub w_f: f32,
+    pub t_f: f32,
+    pub b_f: f32,
+    pub w_s_neg: f32,
+    pub w_s_pos: f32,
+    pub k_c: f32,
+    pub q_edge: f32,
+    pub v_edge: f32,
+    pub tau_a: f32,
+    pub tau_sd: f32,
+    /// Gipps limit behind a moving leader, deceleration and reaction term. 0 off.
+    pub gipps_b: f32,
+    pub gipps_tau: f32,
+    /// Critical gap shifts far from a lane end, moving to lead_shift and lag_shift within r_urg of it.
+    pub lead_far: f32,
+    pub lag_far: f32,
+}
+
+impl Default for HumanParams {
+    fn default() -> Self {
+        Self { cooperation: 0.4, t_miss: 120.0, stop_base: 5.0, stop_offset: 7.0, sig_react: 1.0, r_urg: 100.0, coop_decel: 3.0, tau_gate: 0.4, tau_min: 0.3, b_em: 7.5, gap_model: 1.0, gap_junction: 0.65, gap_roundabout: 1.5, t_scale: 0.7, s0_scale: 1.0, lead_shift: -6.0, lag_shift: -2.0, lc_safety: 0.35, a_y: 2.2, free_table: 0.0, b_approach: 1.2, tau_approach: 2.0, overshoot: 1.4, standing: 0.5, see: 30.0, lc_slope: 1.0, stop_s0: 1.0, comfort: 1.5, stub: 7.0, w_s_near: 0.45, b_end: 2.5, tte0: 43.0, s_0: 0.4, s_t: -1.544, s_lag: 0.133, s_lead: 0.164, s_driver: 0.5, w_f: 0.756, t_f: 0.5, b_f: 3.0, w_s_neg: 0.12, w_s_pos: 0.25, k_c: 0.05, q_edge: 0.13, v_edge: 15.0, tau_a: 1.87, tau_sd: 1.44, gipps_b: 3.0, gipps_tau: 0.5, lead_far: -6.0, lag_far: -2.0 }
+    }
+}
+
+impl HumanParams {
+    /// Sweden: Trafikverket's jam spacing and through saturation flow, from `TRVMB Kapacitet`.
+    pub fn sweden() -> Self {
+        Self { free_table: 1.0, t_scale: 0.55, s0_scale: 0.47, ..Self::default() }
+    }
+
+    /// With what `--tune` names. Names that are not this driver's belong to the physics.
+    pub fn tuned(mut self, tune: &[(String, f32)]) -> Self {
+        for (k, v) in tune {
+            let v = *v;
+            match k.as_str() {
+                "cooperation" => self.cooperation = v,
+                "t_miss" => self.t_miss = v,
+                "stop_base" => self.stop_base = v,
+                "stop_offset" => self.stop_offset = v,
+                "sig_react" => self.sig_react = v,
+                "r_urg" => self.r_urg = v,
+                "coop_decel" => self.coop_decel = v,
+                "tau_gate" => self.tau_gate = v,
+                "tau_min" => self.tau_min = v,
+                "b_em" => self.b_em = v,
+                "gap_model" => self.gap_model = v,
+                "gap_junction" => self.gap_junction = v,
+                "gap_roundabout" => self.gap_roundabout = v,
+                "t_scale" => self.t_scale = v,
+                "s0_scale" => self.s0_scale = v,
+                "lead_shift" => self.lead_shift = v,
+                "lag_shift" => self.lag_shift = v,
+                "lc_safety" => self.lc_safety = v,
+                "a_y" => self.a_y = v,
+                "free_table" => self.free_table = v,
+                "b_approach" => self.b_approach = v,
+                "tau_approach" => self.tau_approach = v,
+                "overshoot" => self.overshoot = v,
+                "standing" => self.standing = v,
+                "see" => self.see = v,
+                "lc_slope" => self.lc_slope = v,
+                "stop_s0" => self.stop_s0 = v,
+                "comfort" => self.comfort = v,
+                "stub" => self.stub = v,
+                "w_s_near" => self.w_s_near = v,
+                "b_end" => self.b_end = v,
+                "tte0" => self.tte0 = v,
+                "s_0" => self.s_0 = v,
+                "s_t" => self.s_t = v,
+                "s_lag" => self.s_lag = v,
+                "s_lead" => self.s_lead = v,
+                "s_driver" => self.s_driver = v,
+                "w_f" => self.w_f = v,
+                "t_f" => self.t_f = v,
+                "b_f" => self.b_f = v,
+                "w_s_neg" => self.w_s_neg = v,
+                "w_s_pos" => self.w_s_pos = v,
+                "k_c" => self.k_c = v,
+                "q_edge" => self.q_edge = v,
+                "v_edge" => self.v_edge = v,
+                "tau_a" => self.tau_a = v,
+                "tau_sd" => self.tau_sd = v,
+                "gipps_b" => self.gipps_b = v,
+                "gipps_tau" => self.gipps_tau = v,
+                "lead_far" => self.lead_far = v,
+                "lag_far" => self.lag_far = v,
+                _ => {}
+            }
+        }
+        self
+    }
+}
+pub const C_LOST: usize = 34;
 /// Contact kinds, as counted from `C_CONTACT_KINDS`.
 pub const CONTACT_NAMES: [&str; 9] = ["same lane", "neighbour lane", "junction crossing", "junction merge", "junction diverge", "lane start", "other", "crossed without grant", "lost on a wrong lane"];
 /// Kinds from here on are protocol breaches, not bodies touching.
@@ -441,6 +630,11 @@ pub struct SimConfig {
     pub detect_every: u32,
     /// Desired speed per step for scripted vehicles, for driving-cycle checks.
     pub speed_trace: Vec<f32>,
+    /// Every vehicle type drives as `MODEL_HUMAN`, in physical mode.
+    pub humans: bool,
+    /// Which rules of `HUMAN_RULES` are on.
+    pub human_flags: u32,
+    pub human: HumanParams,
     /// Room in the routes buffer for routes handed out during the run, in edges.
     pub route_arena: u32,
     /// Physical parameters a sensitivity test wants to move. See `tune`.
@@ -478,6 +672,9 @@ impl Default for SimConfig {
             mu: 0.0,
             detect_every: 0,
             speed_trace: Vec::new(),
+            humans: false,
+            human_flags: 127,
+            human: HumanParams::default(),
             route_arena: 0,
             tune: Vec::new(),
             coord: None,
@@ -506,6 +703,7 @@ pub struct World {
     pub conflicts: Vec<GpuConflict>,
     pub vtypes: Vec<GpuVType>,
     pub routes: Vec<u32>,
+    /// Room reserved after `routes` on the GPU, in edges.
     pub route_arena: u32,
     pub trips: Vec<GpuTrip>,
     /// Which demand trip each GPU trip came from.
@@ -627,9 +825,11 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
     g.v_lat = num("phys.v_lat", cfg.tune("v_lat", 0.6));
     g.width = t.width;
-    g.ph_tau = num("phys.tau", cfg.tune("tau", 1.0));
+    // The human driver keeps the physics it was fitted on: tau 0.65, sigma as given, leader braking 4.5.
+    let human = cfg.humans || t.model == CfModel::Human;
+    g.ph_tau = num("phys.tau", cfg.tune("tau", if human { 0.65 } else { 1.0 }));
     // Krauss's 0.5 is inherited. 0.2 brings 50 km/h saturation into report 04's band, 1,846 against 1,714.
-    if t.sigma == 0.5 { g.sigma = 0.2; }
+    if t.sigma == 0.5 && !human { g.sigma = 0.2; }
     g.sigma = cfg.tune("sigma", g.sigma);
     g.lc_strategic = cfg.tune("lc_strategic", g.lc_strategic);
     let automated = matches!(t.model, CfModel::Acc | CfModel::Cacc);
@@ -638,9 +838,26 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     if t.model == CfModel::Krauss {
         g.decel = num("phys.b_plan", cfg.tune("driver_b", 3.0));
     }
-    g.b_assume = num("phys.b_assume", cfg.tune("leader_b", g.decel));
+    g.b_assume = num("phys.b_assume", cfg.tune("leader_b", if human && t.model == CfModel::Krauss { 4.5 } else { g.decel }));
     // Leaders and tails are judged by their hardest possible stop.
     g.apparent = g.b_hi;
+}
+
+fn lognormal(median: f32, sd: f32, lo: f32, hi: f32, state: &mut u64) -> f32 {
+    (median * (normal(state) as f32 * sd).exp()).clamp(lo, hi)
+}
+
+/// One driver, as `research/truth/05-real-human-driving.md` section 8 draws them, packed for `GpuTrip`.
+fn draw_persona(state: &mut u64) -> (u32, u32) {
+    let q = |x: f32, lo: f32, hi: f32| (((x - lo) / (hi - lo)).clamp(0.0, 1.0) * 255.0).round() as u32;
+    let t = lognormal(1.30, 0.25, 0.6, 3.0, state);
+    let s0 = lognormal(2.8, 0.40, 0.5, 6.0, state);
+    let amax = lognormal(1.80, 0.19, 1.0, 3.0, state);
+    let d = lognormal(10.3, 0.33, 4.0, 22.0, state);
+    let critical = lognormal(1.0, 0.26, 0.4, 2.5, state);
+    let u = (uniform(state) as f32).clamp(1e-4, 1.0 - 1e-4);
+    let yellow = 5.1 + 0.54 * (u / (1.0 - u)).ln();
+    (q(t, 0.6, 3.0) | (q(s0, 0.5, 6.0) << 8) | (q(amax, 1.0, 3.0) << 16) | (q(d, 4.0, 22.0) << 24), q(critical, 0.4, 2.5) | (q(yellow, 2.0, 9.0) << 8))
 }
 
 /// Mean free speed over the limit on Swedish municipal main streets, Sept 2018, VTI rapport 1001. Unchecked above 70 km/h.
@@ -674,6 +891,7 @@ fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
         CfModel::Acc => 2,
         CfModel::Cacc => 3,
         CfModel::Av => 4,
+        CfModel::Human => 5,
     };
     let delta = t.params.get("delta").and_then(|v| v.parse().ok()).unwrap_or(4.0);
     let stepping: f32 = t.params.get("stepping").and_then(|v| v.parse().ok()).unwrap_or(0.25);
@@ -706,11 +924,20 @@ fn gpu_vtype(t: &VType, dt: f32) -> GpuVType {
         collision_factor: t.params.get("collisionMinGapFactor").and_then(|v| v.parse().ok()).unwrap_or(match t.model {
             CfModel::Krauss | CfModel::Eidm => 1.0,
             CfModel::Idm | CfModel::Acc | CfModel::Cacc => 0.1,
-            CfModel::Av => 0.0,
+            CfModel::Human | CfModel::Av => 0.0,
         }),
         reaction: t.params.get("reactionTime").and_then(|v| v.parse().ok()).unwrap_or(0.3),
         ..Default::default()
     }
+}
+
+/// A nominal car, as the replay kernel needs it.
+pub fn human_replay_type(t: &VType) -> GpuVType {
+    let mut g = gpu_vtype(t, 0.1);
+    physical_type(&mut g, t, &SimConfig::default());
+    g.model = 4;
+    g.v_lat = -1.0;
+    g
 }
 
 impl World {
@@ -726,11 +953,17 @@ impl World {
             route_arena: cfg.route_arena,
             ..Default::default()
         };
-        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 4.3)), crate::physics::zones(net, topo, cfg.tune("zone_distance", 2.6))));
+        let phys = (cfg.mu > 0.0).then(|| (crate::physics::lanes(net, cfg.tune("curve_cap", 4.3)), crate::physics::zones(net, topo, cfg.tune("zone_distance", 2.6), !cfg.humans)));
         w.vtypes = demand.vtypes.iter().map(|t| gpu_vtype(t, cfg.dt)).collect();
         if cfg.mu > 0.0 {
             for (g, t) in w.vtypes.iter_mut().zip(&demand.vtypes) {
                 physical_type(g, t, cfg);
+                if cfg.humans || matches!(t.model, CfModel::Human) {
+                    g.model = 5;
+                    // Below zero: lateral motion is a human's quintic, not a fixed speed.
+                    g.v_lat = -1.0;
+                    g.collision_factor = 0.0;
+                }
             }
         }
         w.n_edges_per_replica = net.edges.len() as u32;
@@ -804,6 +1037,7 @@ impl World {
         let capacity = capacity + shadow_reserve;
         let sample_steps = ((cfg.sample_seconds / cfg.dt).round() as u32).max(1);
         let n_steps = ((cfg.end_seconds - cfg.begin_seconds) / cfg.dt).ceil() as u32 + 1;
+        let human = cfg.human.tuned(&cfg.tune);
         w.params = GpuParams {
             dt: cfg.dt,
             n_lanes: w.lanes.len() as u32,
@@ -833,6 +1067,23 @@ impl World {
             width_margin: cfg.tune("width_margin", 0.1),
             claim_scale: cfg.tune("claim_scale", 1.0),
             queue_speed: cfg.tune("queue_speed", 2.0),
+            hu_k: 1.0 - (-cfg.dt / 1.0).exp(),
+            hu_rho: (-cfg.dt / 3.0).exp(),
+            hu_nscale: 0.20 * (1.0 - (-2.0 * cfg.dt / 3.0).exp()).sqrt(),
+            hu_flags: cfg.human_flags,
+            hu_a: [human.cooperation, human.t_miss, 0.0, human.stop_base],
+            hu_b: [human.stop_offset, human.sig_react, human.r_urg, human.coop_decel],
+            hu_c: [human.tau_gate, human.tau_min, human.b_em, human.gap_model],
+            hu_d: [human.gap_junction, human.gap_roundabout, human.t_scale, human.s0_scale],
+            hu_e: [human.lead_shift, human.lag_shift, human.lc_safety, human.a_y],
+            hu_f: [human.b_approach, human.tau_approach, human.overshoot, human.standing],
+            hu_g: [human.see, human.lc_slope, human.stop_s0, human.comfort],
+            hu_i: [human.gipps_b, human.gipps_tau, human.w_s_near, human.free_table],
+            hu_h: [human.stub, human.lead_far, human.lag_far, human.b_end],
+            hm_a: [human.tte0, human.s_0, human.s_t, human.s_lag],
+            hm_b: [human.s_lead, human.s_driver, human.w_f, human.t_f],
+            hm_c: [human.b_f, human.w_s_neg, human.w_s_pos, human.k_c],
+            hm_d: [human.q_edge, human.v_edge, human.tau_a, human.tau_sd],
             lost_after: cfg.tune("lost_after", 0.0),
             zones_ahead: cfg.tune("zones_ahead", 0.0) as u32,
             lc_gap: cfg.tune("lc_gap", 0.6),
@@ -843,9 +1094,9 @@ impl World {
             lateral_median: cfg.tune("lateral_median", 2.2),
             vis_floor: cfg.tune("vis_floor", 30.0),
             lc_patience: cfg.tune("lc_patience", 10.0),
-            gap_spread: cfg.tune("gap_spread", 0.3),
-            abreast_b: cfg.tune("abreast_b", 2.5),
-            miss_patience: if cfg.route_arena > 0 { cfg.tune("miss_patience", 60.0) } else { 0.0 },
+            gap_spread: cfg.tune("gap_spread", if cfg.humans { 0.0 } else { 0.3 }),
+            abreast_b: cfg.tune("abreast_b", if cfg.humans { 0.0 } else { 2.5 }),
+            miss_patience: if cfg.route_arena > 0 && !cfg.humans { cfg.tune("miss_patience", 60.0) } else { 0.0 },
             miss_short: cfg.tune("miss_short", 15.0),
             pad_e: 0.0,
             pad_f: 0.0,
@@ -1022,6 +1273,7 @@ impl World {
                 let lp = &ph[li];
                 g.gz = lp.gz;
                 g.curve_v = lp.curve_v;
+                g.sqrt_path_r = lp.sqrt_path_r;
                 g.sqrt_r = lp.sqrt_r;
                 g.s_curve = lp.s_curve;
                 g.s_curve_end = lp.s_curve_end;
@@ -1191,7 +1443,7 @@ impl World {
                     before: l.internal_before.map(|b| b + lane0).unwrap_or(NONE),
                     state: l.state as u32,
                     from_lane: l.from_lane + lane0,
-                    tc: if cfg.mu > 0.0 { (critical_gap(net, topo, l) * cfg.tune("tc_scale", 0.7) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { 0.0 },
+                    tc: if cfg.mu > 0.0 { (critical_gap(net, topo, l) * cfg.tune("tc_scale", if cfg.humans { 1.0 } else { 0.7 }) - cfg.tune("tc_clear", 1.2)).max(0.1) } else { 0.0 },
                 });
             }
         }
@@ -1259,6 +1511,7 @@ impl World {
                 }
             };
             let sf = speed_factor(vt, &mut rng_state);
+            let (persona, persona2) = if cfg.mu > 0.0 && (cfg.humans || matches!(vt.model, CfModel::Human)) { draw_persona(&mut rng_state) } else { (0, 0) };
             let mask = match t.depart_lane {
                 DepartLane::Best | DepartLane::BestProb => {
                     *self.depart_masks.entry((t.route, vtype_id)).or_insert_with(|| crate::bestlanes::depart_mask(net, topo, route, vt))
@@ -1285,6 +1538,8 @@ impl World {
                 pad: [0, mask, if cfg.mu > 0.0 {
                     if vt.params.contains_key("phys.nominal") { PHYS_NOMINAL } else { draw_phys(vt.vclass, &mut rng_state) }
                 } else { 0 }],
+                persona,
+                persona2,
             });
             match t.depart_lane {
                 DepartLane::Index(l) if cfg.per_lane_queues => by_lane.entry((route[0], l)).or_default().push(id),
