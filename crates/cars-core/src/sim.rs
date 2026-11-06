@@ -284,7 +284,8 @@ impl Sim {
         let incoming_links = init("incoming_links", bytemuck::cast_slice(&world.incoming_links), storage);
         let claims_init = vec![0xffu8; p.n_lanes as usize * 4 * 64];
         let claims = init("claims", &claims_init, storage);
-        let last_detect = empty("last_detect", p.n_lanes as u64 * 4);
+        // Per lane the last loop pass, then per link the step it was last crossed.
+        let last_detect = empty("last_detect", (p.n_lanes + p.n_links) as u64 * 4);
         let lc_plan = empty("lc_plan", cap * LCPLAN_BYTES);
         let lane_free = empty("lane_free", p.n_lanes as u64 * 16);
         let physical = p.mu > 0.0;

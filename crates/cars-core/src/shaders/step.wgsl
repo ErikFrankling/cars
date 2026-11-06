@@ -78,6 +78,7 @@ const C_HU_GUARD: u32 = 37u;
 const C_HU_STEPS: u32 = 39u;
 const STUCK_AFTER: f32 = 300.0;   // SUMO's time to teleport, for counting what would have
 const F_STUCK_COUNTED: u32 = 2097152u;
+const F_GAP_TAKEN: u32 = 4194304u; // stood at a give-way line and took a gap: keeps it while it pulls away
 const CONTACT_LOG: u32 = 65536u;
 const WIDEST: f32 = 2.55;
 
@@ -1114,6 +1115,12 @@ fn approach(@builtin(global_invocation_id) id: vec3u) {
     let base = i * MAX_ITEMS;
     let n = ego.n_items;
     let s = seg[ego.lane];
+    // When each link was last crossed, from the latest entrant of its junction lane: the start of the gap a
+    // waiting minor driver sees. Read in exec, after this kernel, so all see the same value.
+    if (mu > 0.0 && s.first == i && is_internal(ego.lane) && ego.entry_step != NONE) {
+        let el = lanes[ego.lane].entry_link;
+        if (el != NONE && !is_internal(links[el].from_lane)) { last_detect[P.n_lanes + el] = ego.entry_step; }
+    }
     check_rewind(ego, base, n, f32(s.end - i - 1u) * (ty.length + ty.min_gap));
     var wants = false;
     for (var j = 0u; j < n; j++) {
@@ -1224,6 +1231,9 @@ fn blocked_by_foe(r: Approach, a: f32, l: f32, va: f32, vl: f32, same_target: bo
     return true;
 }
 
+var<private> lo_taken: bool;
+var<private> lo_head: bool;
+
 fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f32, decel: f32, wait: f32, trip: u32) -> bool {
     let k = links[link];
     if (hu_on) { hu_set_gap(link, trip); }
@@ -1231,9 +1241,27 @@ fn link_opened(link: u32, a: f32, va: f32, vl: f32, veh_len: f32, impatience: f3
     if (have_red(state)) { return false; }
     if ((k.flags & L_CONT) != 0u) { return true; }
     var l = a + (k.length + veh_len) / max((va + vl) * 0.5, EPS);
-    // Physical mode: go when the next foe arrives a critical gap (HBS, by movement) after we would reach the line,
-    // or after now for a driver already waiting there: HBS takes the gap from the waiting driver's departure.
-    if (mu > 0.0 && k.tc > 0.0) { l = select(max(a, 0.0), 0.0, wait > 0.0) + k.tc - ty.timegap_minor; }
+    // Physical mode: HBS's critical gap is the major headway a driver waiting at the line accepts. One arriving
+    // judges the lag from its arrival. One standing at the line counts the time since the last foe crossed, or since
+    // it stopped if later, but no more than that foe can hold it there (its time over the link and the minor time
+    // gap): that time is part of the gap. One that took a gap from the line keeps it while it pulls away; foes that
+    // cannot stop still hold it.
+    if (mu > 0.0 && k.tc > 0.0) {
+        var lag = max(a, 0.0) + k.tc;
+        if (lo_taken) {
+            lag = -1e6;
+        } else if (wait > 0.0 && lo_head) {
+            var last = 0u;
+            var hold = 0.0;
+            for (var f = 0u; f < k.foe_count; f++) {
+                let fl = foes[k.foe_start + f];
+                last = max(last, last_detect[P.n_lanes + fl]);
+                hold = max(hold, (links[fl].length + veh_len) / max(lanes[links[fl].from_lane].speed, 1.0));
+            }
+            lag = k.tc - min(min(f32(G.step - min(last, G.step)) * dt, hold + ty.timegap_minor), wait);
+        }
+        l = lag - ty.timegap_minor;
+    }
     let e_is_major_green = (k.flags & (L_EXIT_AFTER_IJ | L_INTERNAL_JUNCTION)) != 0u && link_state(k.entry) == CH_G;
     if ((have_priority(state) || e_is_major_green) && state != CH_Z) { return true; }
     if (state == CH_w && wait < dt) { return false; }
@@ -1462,7 +1490,13 @@ fn walk_links(e: ptr<function, Veh>, base: u32, n: u32, speed: f32, vmax_lane: f
             if (can_brake) { imp = impat; }
             var my_wait = (*e).wait;
             if (((*e).flags & F_HAVE_STOPPED) != 0u) { my_wait = 1e9; }
+            // Only the car standing at the line, first on its lane, has watched the gap since it began.
+            let me = base / MAX_ITEMS;
+            lo_head = j == 0u && it.dist < 10.0 && (me + 1u >= G.n_active || cur[me + 1u].lane != (*e).lane);
+            // A gap taken counts once the car moves on it: one held there by anything else decides again.
+            lo_taken = ((*e).flags & F_GAP_TAKEN) != 0u && (*e).wait <= 0.0;
             let opened = yellow || through || link_opened(it.link, it.arrival, it.arr_speed, leave, ty.length, imp, ty.decel, my_wait, (*e).trip);
+            if (opened && mu > 0.0 && links[it.link].tc > 0.0 && my_wait > 0.0 && lo_head) { (*e).flags |= F_GAP_TAKEN; }
             let k = links[it.link];
             let kvis = select(max(k.visibility, P.vis_floor), k.visibility, ty.model == MODEL_HUMAN);
             let determined = it.dist <= select(kvis, max(kvis, P.hu_g.x), hu_on);
@@ -1965,7 +1999,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
         if (!is_internal(e.lane)) { atomicAdd(&edge_acc[lanes[e.lane].edge * 8u + 4u], 1u); }
         e.prev_lane = e.lane;
         e.lane = k.next_lane;
-        e.flags &= ~(F_HAVE_STOPPED | F_YELLOW_GO);
+        e.flags &= ~(F_HAVE_STOPPED | F_YELLOW_GO | F_GAP_TAKEN);
         if ((k.flags & L_HAS_VIA) == 0u) { e.route_i += 1u; }
         if (is_internal(e.lane) && !is_internal(e.prev_lane)) { e.entry_step = G.step; }
         if (!is_internal(e.lane)) {

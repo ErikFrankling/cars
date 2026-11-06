@@ -979,7 +979,7 @@ def t_junction(w, name, qp, seed_key, tm=0.0, minor_end=1800, r=0, through=False
     return c
 
 
-def gaps_log(run, name, major_lanes=1):
+def gaps_log(run, name, major_lanes=1, heads=False):
     f = run.cell(name)
     a = f[f.trip.astype(str).str.contains(r'\.m')].copy()
     b = f[f.trip.astype(str).str.contains(r'\.s')].copy()
@@ -987,7 +987,16 @@ def gaps_log(run, name, major_lanes=1):
         a['trip'] = a.trip.astype(str).astype('category')
     b['trip'] = b.trip.astype(str).astype('category')
     tm = pd.concat([leave_times(a, name, f'we_{l}', run.lane_len(name, f'we_{l}')) for l in range(major_lanes)]).sort_values() if len(a) else pd.Series(dtype=float)
-    ts = leave_times(b, name, 'sc_0', run.lane_len(name, 'sc_0'))
+    L = run.lane_len(name, 'sc_0')
+    ts = leave_times(b, name, 'sc_0', L)
+    if heads:
+        # When each minor car first stood at the head of the queue: within 5 m of its line, where only the first fits.
+        z = b[(b.lane.astype(str) == f'{name}.sc_0') & (b.pos > L - 5.0)]
+        h = z.groupby(z.trip.astype(str)).time.min()
+        # Gaps as offered: major cars timed 60 m before the line and carried to it at free speed, before a minor that
+        # took the gap can make the next one brake and stretch it.
+        up = pd.concat([pass_times(a, name, f'we_{l}', run.lane_len(name, f'we_{l}') - 60.0) for l in range(major_lanes)]).sort_values() + 60.0 / V50
+        return up.values, ts.values, h.reindex(ts.index.astype(str)).to_numpy(dtype=float)
     return tm.values, ts.values
 
 
@@ -1001,18 +1010,25 @@ def follow_up(entries, major, t0=300):
     return float(np.mean(h)) if h else float('nan')
 
 
-def critical_gap(major, entries, t0=300):
-    """Maximum likelihood, one largest rejected and one accepted gap per driver, lognormal. Troutbeck, monograph ch. 8."""
+def critical_gap(major, entries, t0=300, heads=None):
+    """Maximum likelihood, one largest rejected and one accepted gap per driver, lognormal. Troutbeck, monograph ch. 8.
+    With heads (when each driver reached the line), only gaps that began while it stood there count: a gap that began
+    before is a lag, and reading it as a whole headway puts rejected 'gaps' the driver never saw whole into the sample."""
     major = major[major > t0]
     pairs = []
-    acc = np.searchsorted(major, entries[entries > t0])
+    sel = entries > t0
+    acc = np.searchsorted(major, entries[sel])
+    hs = heads[sel] if heads is not None else np.full(sel.sum(), -np.inf)
     prev_exit = t0
-    for e, k in zip(entries[entries > t0], acc):
+    for e, k, th in zip(entries[sel], acc, hs):
         if k == 0 or k >= len(major):
             prev_exit = e
             continue
         acc_gap = major[k] - major[k - 1]
-        head_from = prev_exit
+        if heads is not None and not (np.isfinite(th) and major[k - 1] >= th):
+            prev_exit = e
+            continue
+        head_from = max(prev_exit, th)
         idx = np.flatnonzero((major > head_from) & (major < major[k - 1]))
         rej = 0.0
         if len(idx):
@@ -1049,7 +1065,7 @@ class Give:
 
     @staticmethod
     def measure(run, book, st):
-        caps, tf, tc = {}, [], []
+        caps, tf, tc, tc_all = {}, [], [], []
         tfs = {}
         for q in Give.QS:
             caps[q] = []
@@ -1057,13 +1073,17 @@ class Give:
             for r in range(SEEDS):
                 name = f'G1q{q}r{r}'
                 major, entries = gaps_log(run, name)
+                offered, _, heads = gaps_log(run, name, heads=True)
                 e = entries[(entries >= 300) & (entries < 1800)]
                 caps[q].append(len(e) * 3600 / 1500)
                 tfs[q].append(follow_up(entries, major))
                 if q in (400, 800):
-                    v, n = critical_gap(major, entries)
+                    v, n = critical_gap(offered, entries, heads=heads)
                     if np.isfinite(v):
                         tc.append(v)
+                    v, n = critical_gap(major, entries)
+                    if np.isfinite(v):
+                        tc_all.append(v)
         st['G1'] = {q: float(np.mean(v)) for q, v in caps.items()}
         for i, q in enumerate(Give.QS):
             tag = seedtag(f'G1{q}')
@@ -1091,6 +1111,7 @@ class Give:
             book.check('G1', 'F288', 0, np.array(got) / q, quantity=f'major delivered / offered, major {q}', seeds=seedtag(f'G1{q}'))
         book.info('G1', 'tf by major flow: ' + ' '.join(f'{q}:{np.nanmean(v):.2f}' for q, v in tfs.items()), 0.0)
         book.check('G4', 'F257', 0, tc, seeds='G1 q 400 800')
+        book.info('G4', 'critical gap, old estimator: gaps at the line after a taker stretched them, lags read as whole gaps', float(np.mean(tc_all)) if tc_all else float('nan'))
 
 
 @scene('G2', 'give')
