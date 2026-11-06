@@ -1,5 +1,15 @@
 # Macro log: rungs 3, 4, 5
 
+**State on 6 November, when the owner changed direction.** Behaviour is now tested first on recordings where demand, routes and signals are all observed (drone and overhead camera). Berlin with MATSim demand becomes the last tier, a test of demand and routes once behaviour is settled. So this work stops here: rung 3 exited, rung 4 doesn't pass and hasn't hit the kill rule, rung 5 never started. Section "Pick it up cold" at the end says what exists, where, and what to do next.
+
+| Rung | Verdict | Numbers |
+|---|---|---|
+| 3 | **Exits** on the upper test, cuts and audits; lower side has named causes only | upper .18% of site-hours at s 1,750, 1 named site (F072); jam heads median real/capacity .56 (F067 miss, named); cuts 0 of 58 and 0 of 84 |
+| 4 blind | **Speeds pass, jams and motorways fail** | 06-20 h speed bias arterial −5.6%, local +1.6%, motorway +10.9%; arterial dip .66 (real .69), motorway .66 (real .46); jam list caught 0-17% against a real-day floor of 72-91% |
+| 4 fitted | **Fails** | 07-18 h RMSN .426, R² .306, slope .552, GEH<5 32%; primary −22%, secondary +9%, tertiary +68% |
+| 4 kill rule | **Not hit** | route choice alone reaches the 08 h site flows moving 4-8% of vehicle-km (F076): the fault is route cost, not demand |
+| 5 | Not started | |
+
 Nobody contacted. No microscopic simulation, no GPU. Data in `cars-data/berlin2019/macro/`, scripts in `scripts/macro/`. Tuning sites and May 2019 only; locked sites and months not read.
 
 Inputs: lanes ESTIMATED (OSM 2019, m17); signals INVENTED (netconvert structure); saturation MEASURED elsewhere (report 25, 1,285-1,895, not Berlin); give-way gaps from HBS; demand MODELLED (who, where, when, class from MATSim v6.4).
@@ -107,3 +117,35 @@ Region model A, 100% demand, movement detail in the district, on the committed r
 **Route choice alone can reach the counts** (F076, `route_bound.py`, a diagnostic whose splits are thrown away): on macro's kept paths at 08 h, moving 3.9% of vehicle-km brings RMSN .50 to .30 and R² .21 to .65; 5.8% gives R² .78, slope .79, GEH<5 64%. So the kill rule doesn't fire at 08 h: the demand can produce the counts with small route changes, and the fault is in route cost.
 
 **Where flow goes wrong, read by D's flow-and-speed table.** Primary under-load sits on the central east-west corridors: Leipziger Straße .29-.66 of real, Potsdamer Straße .45-.77. Their own edges run at free speed in macro, so it isn't capacity there: "flow low, speed high: traffic goes elsewhere". It goes to parallel streets with no signal arc on the map and no flow-dependent delay: Französische Straße, one lane, 2.2-2.7× real at free speed 35 km/h, where probes show 24 km/h at 08 h on 490 real cars. Lindenstraße 1.4-1.7×, Lennéstraße 3×. Macro has no mid-block friction on urban streets, and the map may be missing signals or priority rules on them. Motorways run 25-47% too fast: no spillback, no merge queue in a static model, as D expected.
+
+**The whole day** (F079, F075, F059). Model A hour by hour, 06-20 h, each hour its own static assignment (`runs6/aday`, merged from `runs6/ah/h*`, `f08`, `f16`):
+
+| Hour | 06 | 07 | 08 | 10 | 12 | 14 | 16 | 17 | 18 | 20 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Arterial model / v_hm, km/h | 19.8 / 31.7 | 19.5 / 27.2 | 23.4 / 23.7 | 25.9 / 24.9 | 24.8 / 25.1 | 22.3 / 24.3 | 19.9 / 21.8 | 22.1 / 23.0 | 24.2 / 23.6 | 29.4 / 29.2 |
+| Local | 17.4 / 29.4 | 17.6 / 23.4 | 22.1 / 20.4 | 23.8 / 20.1 | 20.8 / 20.0 | 21.1 / 20.5 | 16.0 / 18.4 | 21.0 / 19.6 | 22.7 / 20.1 | 25.9 / 23.2 |
+| Motorway | 53.6 / 71.1 | 49.2 / 51.5 | 54.1 / 43.6 | 64.4 / 57.4 | 58.7 / 62.4 | 51.5 / 48.3 | 47.2 / 32.0 | 51.8 / 40.3 | 60.3 / 50.8 | 72.9 / 73.4 |
+| Real over model, arterial sites | .71 | .92 | 1.16 | 1.19 | 1.12 | | .96 | 1.00 | 1.09 | |
+
+- **Passes:** arterial and local speed by hour from 08 h on, within 10% at almost every hour. Arterial dip .66 against .69. Over 24 h, real over model is primary 1.27, secondary .90, tertiary .58, the same direction as MATSim's own (R 4: arterials 1.08, tertiary .78) but stronger.
+- **06-07 h overload, a demand-by-hour cause.** Macro's slowest hour is 06 h, when the real network is nearly free: arterials 19.8 against 31.7. Demand at 06 h is 112,390 vehicles against 145,410 at 08 h, but they drive 3.71 M vehicle-km against 2.31 M (33 km a vehicle against 16): long trips into the city leave early in MATSim's plans. Real over model at arterial sites is .71 at 06 h and .92 at 07 h, the same early morning R 4 found in MATSim's own runs (.77, .86). The static model piles that hour's overload into that hour. Timing correction is the smallest OD change there is and is allowed only after routes and capacity are done (PLAN, rule 7), so it wasn't applied.
+- **Motorways:** too fast in every peak (16 h 47.2 against 32.0) and dip .66 against .46. A static model has no merge queue and no spillback, as D said it would understate delay. AVUS/A100 at 15-18 h, the longest real jam, doesn't appear.
+- **Jam list,** probe tier A, no parallel-road rows, edges matched by `real_jam_edges.csv`: at a third, AM 0 of 35 caught (4 model places), PM 3 of 56 (9 places, 67% false); at half 11% and 17% caught, 65-67% false. The real-day floor is 72-81% caught at a third and 80-91% at half. Static macro with point capacity barely jams, as the jam-head test predicted: heads sit at x .66 median.
+- **Fitted sites,** 07-18 h, 8 days, median: RMSN .426, R² .306, slope .552, GEH<5 32%, WAPE .33, bias −3.5%. Every bar fails except RMSN, which misses .40 by .03.
+
+### What would come next on Berlin, in order
+
+1. **Route cost on urban streets without signals.** Add mid-block friction or the map's missing control on streets like Französische Straße (one lane, kind 0 arcs, no delay at any flow); check the map's control there against OSM 2019 first, one named cause at a time. Then rerun F076: if the kept-path bound stays at 4-8% of vehicle-km and the class bias falls, routes were the cause.
+2. **The sweep that never ran** (F074, `scripts/macro/sweep.sh`, 15 runs, about 3 min each locally on 2 threads): s, cycle, split, σ, β. Sensitivity only.
+3. **Model B** (`scripts/macro/bday.sh`): needs heavy's big slot (it ran out of 3 GB; each rayon fold holds a full period-by-arc array, so fewer threads or a chunked fold would cut memory). It gives queues that carry over, which the jam list and motorway dip need.
+4. **Timing of MATSim's morning,** only after 1-3, by one time-profile factor (PLAN rule 7).
+
+## Pick it up cold
+
+- **Branch** `t3/d09c4919`. Code: `crates/cars-macro` (engine; `macro DIR OUT --model a|b --hours H --split map|sat|main --cycle 90 --s 1750 ...`), `scripts/macro/`.
+- **Tables:** `.macro-data/prep_region/` (region with district movement detail, built by `prep_region.py m17 m16 OUT`) and `.macro-data/prep_ft/` (same, free times from `free_time.py`; **use this one**). Both untracked in the worktree; copies of `prep_region` also at `cars-data/berlin2019/macro/prep_region/`. Build `prep_ft` again with `python3 -I scripts/macro/free_time.py PREP_REGION PREP_FT`.
+- **Runs:** `cars-data/berlin2019/macro/runs6/`: `a05 a08 a16` (before free times), `a08p` (saved paths, for `route_bound.py`), `f05 f08 f16` (committed rule), `ah/h6..h20` (hourly), `aday` (merged day), `greens_rule.csv` (rule greens for `rung3.py --greens`). Scores: `cars-data/berlin2019/runs/macro_r4a08, r4a16, r4f08, r4f16, r4aday` (`score.json`, `blind.json`, `site_hour.csv`).
+- **Rung 3 outputs:** `cars-data/berlin2019/macro/m17/no_model_rule.csv` (upper test), `jam_heads.csv`, `short_links.csv`; `cars-data/berlin2019/macro/real_jam_edges.csv` (member edges of each real jam place, from `jam_edges.py`; kept out of the repo as per-edge probe output).
+- **Rerun:** `source cars-data/dev-env.sh`; one hour `target/release/macro .macro-data/prep_ft OUT --model a --hours 8 --iters 45 --threads 3 --reroute 3` (90-180 s); `python3 -I scripts/macro/score.py .macro-data/prep_ft OUT NAME --hours 8`; speeds for any hour `class_speed.py PREP RUN H...`; a day: `ahours.sh PREP OUT H...` then `merge_hours.py OUT H=RUN...` then `score.py` without `--hours`. Upper test: `greens_for_rung3.py m17 RUN_AM RUN_PM greens.csv`, then `rung3.py m17 --repair m16 --tag _rule --greens greens.csv`.
+- **Machines:** the homelab node sat at load 31 on 8 threads all afternoon; `heavy` jobs at idle priority didn't finish a 2-minute run in 15 minutes. Local single-hour runs on 2-3 threads are fine.
+- **Forecasts:** every line F040-F079 that belongs to rungs 3-4 has a result and a verdict in `forecasts.csv`; F065, F069-F071 and F074 say "not run".
