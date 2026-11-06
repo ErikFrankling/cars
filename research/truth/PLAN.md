@@ -33,7 +33,7 @@ Each tier passes before the next counts. Tiers that don't depend on each other r
 | Tier | Question | Recordings (on disk unless marked) | Compared | Status |
 |---|---|---|---|---|
 | **T0 Verification** | Does the code do what its equations say? | Theory scenes, `scripts/theory/scenes.py` | Hand-computed answers, forecasts F001-F049 | Running |
-| **T1 One driver** | Does one simulated driver among recorded traffic act like the real one? | Car following: TGSIM, DLR HT, HIGH-SIM, NGSIM. Launch and yellow: DLR UT (controller signal states), SinD. Gap acceptance: Swiss roundabouts, OpenDD, DLR UT, Songdo. Lane changes and merges: DLR HT, HIGH-SIM, DRaT, NGSIM I-80 | Distributions of gap, speed, acceleration, accepted gaps, timing, place. A classifier test, below | Next |
+| **T1 One driver** | Does one simulated driver among recorded traffic act like the real one? | Car following: highD, TGSIM, DLR HT, HIGH-SIM, NGSIM. Launch and yellow: DLR UT (controller signal states), SinD. Gap acceptance: inD, rounD, Swiss roundabouts, OpenDD, DLR UT, Songdo. Lane changes and merges: exiD, highD, DLR HT, HIGH-SIM, DRaT, NGSIM I-80 | Distributions of gap, speed, acceleration, accepted gaps, timing, place. A classifier test, below | Next |
 | **T2 Streams** | Given recorded inflow, do the right queues and waves appear? | HIGH-SIM (congested motorway), NGSIM I-80 and US-101, DLR UT (one German junction, 24 h, real signals), SinD, Lankershim | Wave speed, period and growth; capacity drop; queue length over time; discharge per cycle; lane use | Next |
 | **T3 Networks, recorded demand** | Given every recorded entry, does the area behave like the recording? | pNEUMA, Athens: 10 drone areas, 5 mornings, every vehicle, heavy congestion (downloading). Songdo: 20 junctions, 4 days, vehicle classes given, lane polygons (downloading); its motorcycle share is still to check | Per-vehicle travel time, delay by approach, queues, spillback, flow-density curve. Signals are read from stop-line crossings | After T1, T2 |
 | **T4 Cities** | Partly recorded demand, then modelled demand | Xuancheng (plate reads and signal intervals, 1 h), Cambridge (camera journeys, 8 days), Jinan (reconstructed paths). Then Berlin, Stockholm, Madrid | Report 22's benchmark | Berlin parked |
@@ -109,7 +109,7 @@ Written before any run, F100-F104 in `forecasts.csv`.
 3. **Classifier, as a test of the test (T1).** Real against real near 0.5 accuracy. Today's driver against real well above that, since a driver with no noise in acceleration is easy to spot. If it isn't spotted, the test has no power.
 4. **One approach (T2).** DLR UT, one signal approach, recorded arrivals and controller states, every car on it simulated. Discharge per saturated cycle at least as close to the recording as a point queue with 2.0 s headway and 2.7 s lost time.
 
-## Data only Erik can unlock
+## Data access
 
-- **I-24 MOTION and CIRCLES** (Nashville motorway, every vehicle, and the 100-vehicle automated test of November 2022). Needs a verified account.
-- **highD, exiD, inD, rounD.** Applied for on 2 November under erikfran@kth.se, pending manual review. The answer goes to that inbox.
+- **highD, exiD, inD, rounD** (German motorways, motorway exits and entries, junctions in Aachen, roundabouts): granted 2 November, downloaded 6 November to `datasets/levelx/`. Non-commercial use, no redistribution, cite the papers.
+- **I-24 MOTION and CIRCLES** (Nashville motorway, every vehicle, and the 100-vehicle automated test of November 2022): account requested 6 November, waiting for the site's approval. A scheduled check reads the KTH inbox on 7 November and downloads when approved.

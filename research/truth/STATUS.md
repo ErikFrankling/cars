@@ -16,7 +16,7 @@ Good science: a simulator whose every behaviour is tested against recordings whe
 | T5 Self-driving | Waits for T3 | |
 
 ## Recordings on disk
-Car following and lane changes: TGSIM (5 sites), DLR HT (A39), HIGH-SIM sample, NGSIM (4 sites), DRaT, HDSVT. Junctions: DLR UT (24 h, controller signal states), SinD (4 cities, signal states), OpenDD, Swiss roundabouts, Songdo one junction-day. Whole areas: pNEUMA one file (full set downloading), Songdo (full set downloading). Cities: Xuancheng, Cambridge one day, Jinan. All under `/home/erikf/projects/personal/cars-data/truth/trajectories/` and `datasets/`.
+Car following and lane changes: highD and exiD (`datasets/levelx/`), TGSIM (5 sites), DLR HT (A39), HIGH-SIM sample, NGSIM (4 sites), DRaT, HDSVT. Junctions: inD and rounD (`datasets/levelx/`), DLR UT (24 h, controller signal states), SinD (4 cities, signal states), OpenDD, Swiss roundabouts, Songdo one junction-day. Whole areas: pNEUMA one file (full set downloading), Songdo (full set downloading). Cities: Xuancheng, Cambridge one day, Jinan. All under `/home/erikf/projects/personal/cars-data/truth/trajectories/` and `datasets/`.
 
 ## What is known, measured or computed
 | Fact | Value | Source |
@@ -32,9 +32,9 @@ Car following and lane changes: TGSIM (5 sites), DLR HT (A39), HIGH-SIM sample, 
 | Berlin real saturation flow | 1,750, sweep 1,640-1,900 | R §2 |
 | Real day against real day, Berlin jam places | caught 67%, false 33% | Report 22 |
 
-## Erik
-- I-24 MOTION and CIRCLES need a verified account in his name.
-- highD, exiD, inD, rounD: pending review since 2 November, answer to erikfran@kth.se.
+## Data access
+- highD, exiD, inD, rounD: downloaded 6 November, manifest with checksums and licence in `datasets/levelx/manifest.json`.
+- I-24 MOTION and CIRCLES: account requested 6 November, pending approval; scheduled check 7 November 17:00.
 
 ## Rules against rabbit holes
 - Fix a cause only on the lowest tier that shows it.
