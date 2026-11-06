@@ -16,6 +16,7 @@ const SORT: &str = include_str!("shaders/sort.wgsl");
 const DETECT: &str = include_str!("shaders/detect.wgsl");
 const ROUTE: &str = include_str!("shaders/route.wgsl");
 const AV_JUNCTION: &str = include_str!("shaders/av_junction.wgsl");
+const REPLAY: &str = include_str!("shaders/replay.wgsl");
 
 /// Bindings of the main layout, in binding order: (read only).
 const MAIN_BINDINGS: &[bool] = &[
@@ -58,8 +59,18 @@ pub struct CoordSim {
     apply: wgpu::ComputePipeline,
 }
 
+/// The replay pass, with --replay: research/truth/replay/README.md.
+pub struct ReplaySim {
+    pub stats: wgpu::Buffer,
+    group: wgpu::BindGroup,
+    /// The five main buffers it uses, for each order of prev and cur: the whole main layout would pass the limit.
+    main: [wgpu::BindGroup; 2],
+    apply: wgpu::ComputePipeline,
+}
+
 pub struct Sim {
     pub coord: Option<CoordSim>,
+    pub replay: Option<ReplaySim>,
     pub world_params: GpuParams,
     pub step: u64,
     pub buffers: Buffers,
@@ -481,7 +492,10 @@ impl Sim {
             std::env::var("CARS_SHADER_DIR").ok().and_then(|d| std::fs::read_to_string(format!("{d}/{name}")).ok()).unwrap_or_else(|| builtin.to_string())
         };
         let (common, route, step, lc) = (shader("common.wgsl", COMMON), shader("route.wgsl", ROUTE), shader("step.wgsl", STEP), shader("lc.wgsl", LC));
-        let main_src = format!("{common}\n{route}\n{step}\n{lc}\n{}", shader("detect.wgsl", DETECT));
+        let mut main_src = format!("{common}\n{route}\n{step}\n{lc}\n{}", shader("detect.wgsl", DETECT));
+        if world.replay.is_some() {
+            main_src = format!("{main_src}\n{}", shader("replay.wgsl", REPLAY));
+        }
         let main_module = gpu.shader("step", &main_src);
         let control_module = gpu.shader("control", &format!("{common}\n{CONTROL}"));
         let sort_module = gpu.shader("sort", &format!("{common}\n{SORT}"));
@@ -627,6 +641,35 @@ impl Sim {
             _ => None,
         };
 
+        let replay = world.replay.as_ref().map(|rw| {
+            let stats = empty("replay_stats", crate::world::REPLAY_STATS.len() as u64 * 4);
+            let list = [
+                init("replay_cfg", bytemuck::bytes_of(&rw.cfg), wgpu::BufferUsages::UNIFORM),
+                init("replay_tracks", bytemuck::cast_slice(&rw.tracks), storage),
+                init("replay_keys", bytemuck::cast_slice(&rw.keys), storage),
+                init("replay_trip", bytemuck::cast_slice(&rw.trip_track), storage),
+                stats.clone(),
+            ];
+            let entries = [uniform_entry(10), storage_entry(11, true), storage_entry(12, true), storage_entry(13, true), storage_entry(14, false)];
+            let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("replay"), entries: &entries });
+            let bind: Vec<_> = list.iter().enumerate().map(|(i, b)| wgpu::BindGroupEntry { binding: 10 + i as u32, resource: b.as_entire_binding() }).collect();
+            let group = device.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("replay"), layout: &layout, entries: &bind });
+            let small_entries = [uniform_entry(0), storage_entry(1, false), storage_entry(8, true), storage_entry(16, false), storage_entry(25, false)];
+            let small_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("replay main"), entries: &small_entries });
+            let small = |cur: &wgpu::Buffer| {
+                let list: [(u32, &wgpu::Buffer); 5] = [(0, &params), (1, &globals), (8, &types), (16, cur), (25, &tail)];
+                let entries: Vec<_> = list.iter().map(|(i, b)| wgpu::BindGroupEntry { binding: *i, resource: b.as_entire_binding() }).collect();
+                device.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("replay main"), layout: &small_layout, entries: &entries })
+            };
+            let pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("replay"),
+                bind_group_layouts: &[Some(&small_layout), Some(&layout)],
+                immediate_size: 0,
+            });
+            reset_zero.push(stats.clone());
+            ReplaySim { stats, group, main: [small(&veh[1]), small(&veh[0])], apply: make(&pl, &main_module, "replay_apply") }
+        });
+
         let buffers = Buffers {
             params,
             globals,
@@ -654,6 +697,7 @@ impl Sim {
         };
         Ok(Self {
             coord,
+            replay,
             world_params: p,
             step: 0,
             buffers,
@@ -791,6 +835,13 @@ impl Sim {
             c.set_pipeline(release);
             c.dispatch_workgroups_indirect(ind, 24);
         }
+        if let Some(r) = &self.replay {
+            c.set_pipeline(&r.apply);
+            c.set_bind_group(0, &r.main[(self.step % 2) as usize], &[]);
+            c.set_bind_group(1, &r.group, &[]);
+            c.dispatch_workgroups_indirect(ind, 24);
+            c.set_bind_group(0, group, &[]);
+        }
         if params.mu <= 0.0 {
             c.set_pipeline(&p.collide);
             c.dispatch_workgroups_indirect(ind, 24);
@@ -882,6 +933,11 @@ impl Sim {
 
     pub fn globals(&self, gpu: &Gpu) -> GpuGlobals {
         self.read::<GpuGlobals>(gpu, &self.buffers.globals, 1)[0]
+    }
+
+    /// `replay_apply`'s counters, named in `REPLAY_STATS`.
+    pub fn replay_stats(&self, gpu: &Gpu) -> Vec<u32> {
+        self.replay.as_ref().map_or(Vec::new(), |r| self.read(gpu, &r.stats, crate::world::REPLAY_STATS.len() as u64))
     }
 
     pub fn counters(&self, gpu: &Gpu) -> Vec<u32> {
