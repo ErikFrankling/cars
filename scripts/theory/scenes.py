@@ -28,8 +28,8 @@ warnings.simplefilter('ignore')
 ROOT = Path(__file__).resolve().parents[2]
 FORECASTS = ROOT / 'research/truth/foundations/forecasts.csv'
 BINS = {'measured': ROOT / 'target/release/cars', 'physical': ROOT / 'target/release/cars', 'human': ROOT / 'target/drivers/cars-human-11afb41'}
-# The measured driver (research/truth/measure/MODEL.md) is the default; the one driver of scenes-log section 3 is --tune measured=0.
-FLAGS = {'measured': '', 'physical': '--tune measured=0', 'human': '--humans'}
+# The measured driver (research/truth/measure/MODEL.md) is --tune measured=1; the one driver of scenes-log section 3 is --tune measured=0.
+FLAGS = {'measured': '--tune measured=1', 'physical': '--tune measured=0', 'human': '--humans'}
 # Lines the measured driver replaces with forecasts from its own equations (F312-F321), and rows it reports as emergent (F322).
 MD_FID = {'F003': 'F312', 'F004': 'F313', 'F008': 'F314', 'F009': 'F315', 'F232': 'F316', 'F234': 'F317', 'F251': 'F318', 'F252': 'F319', 'F253': 'F320', 'F296': 'F321'}
 MD_INFO = {'F001', 'F002', 'F005', 'F231'}
