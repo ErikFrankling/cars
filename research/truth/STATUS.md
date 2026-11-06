@@ -12,7 +12,7 @@ Good science: a simulator whose every behaviour is tested against recordings whe
 | T1 One driver | Next: replay harness | F101 spacing error; F102-F103 classifier |
 | T2 Streams | Next, same harness | F104 discharge per cycle against a point queue |
 | T3 Networks, recorded demand | Data downloading: pNEUMA, Songdo | |
-| T4 Cities | Berlin macro parked on `t3/macro-assignment-rungs-3-5` | Reality table done |
+| T4 Cities | Berlin macro merged, parked: `foundations/macro-log.md` ("Pick it up cold") | Movement table passes (0.18% of site-hours over). Whole day: arterial speed bias -5.6%, dip .66 against .69; motorways, jam list (0-17% caught) and counts (RMSN .43) fail. Route choice alone reaches RMSN .30, so next is route cost on unsignalled streets |
 | T5 Self-driving | Waits for T3 | |
 
 ## Recordings on disk
