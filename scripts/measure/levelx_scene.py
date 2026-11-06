@@ -6,8 +6,11 @@
 highD: one edge per carriageway, straight lanes at the recording's lane markings, lane changes kept inside a track.
 inD, rounD, exiD: every vehicle lanelet of the site's Lanelet2 map is a one-lane edge, joined where one lanelet's end
 boundary is the next one's start. A track is cut where it moves to a lanelet that is not a successor (a lane change, or
-a map gap); the pieces are separate replayed trips, counted in scene.json. Merging parallel lanelets into multi-lane
-edges is left for when a simulated vehicle has to change lanes in these scenes.
+a map gap); the pieces are separate replayed trips, counted in scene.json. With --merge (default for exiD) parallel
+lanelets, those that share a boundary and drive the same way, are one multi-lane edge, so a lane change stays inside a
+track and a simulated car can change lanes there.
+
+Keys carry the lateral offset from the lane's centreline (RPL2), so replayed vehicles move sideways as recorded.
 
 Positions are the vehicle front (SUMO convention), keys at the recording's 25 Hz. No simulator is run here; the check is
 structural: every key's lane is on its route, consecutive route edges are connected in the net, and the map-matching
@@ -76,6 +79,7 @@ def build_highd(rec, out):
     d['edge'] = e; d['lane_id'] = [f'{a}_{b}' for a, b in zip(e, idx)]
     d['s'] = np.where(up, x1 - front, front - x0)
     d['lat'] = np.where(up, -(d.yc - yc), d.yc - yc)
+    d['lat_left'] = -d['lat']
     d['v'] = np.abs(d.vx)
     d['ti'] = d.frame
     return finish(out, 'highD', rec, d, 25.0, lambda g: [g.edge.iloc[0]])
@@ -111,6 +115,83 @@ def lanelet_net(ds, site, out, construction=False):
     return ll
 
 
+def merged_lanelet_net(ds, site, out, construction=False):
+    """Parallel lanelets (a shared boundary way, same driving direction) as one multi-lane edge, lanes right to left;
+    connections lane to lane from the lanelets' successions. Returns lanelet id -> lane id."""
+    ll = {k: v for k, v in LX.lanelets(ds, site, construction).items() if v['tags'].get('subtype') in VEH}
+    dirv = {k: (v['centre'][-1] - v['centre'][0]) / max(np.hypot(*(v['centre'][-1] - v['centre'][0])), 1e-9) for k, v in ll.items()}
+    by_right = {}
+    for k, v in ll.items():
+        by_right.setdefault(v['right_way'], []).append(k)
+    left_of = {}
+    for k, v in ll.items():
+        for o in by_right.get(v['left_way'], []):
+            if o != k and dirv[k] @ dirv[o] > 0.5:
+                left_of[k] = o
+    right_of = {o: k for k, o in left_of.items()}
+    comp, seen = {}, set()
+    for k in ll:
+        if k in seen:
+            continue
+        r = k
+        while r in right_of and right_of[r] not in seen and right_of[r] != k:
+            r = right_of[r]
+        row = [r]; seen.add(r)
+        while row[-1] in left_of and left_of[row[-1]] not in seen:
+            row.append(left_of[row[-1]]); seen.add(row[-1])
+        comp[f'E{row[0]}'] = row
+    lane_of = {k: f'{e}_{i}' for e, row in comp.items() for i, k in enumerate(row)}
+    edge_of = {k: e for e, row in comp.items() for k in row}
+    start = lambda v: (v['left_nodes'][0], v['right_nodes'][0])
+    end = lambda v: (v['left_nodes'][-1], v['right_nodes'][-1])
+    succ = [(a, b) for a in ll for b in ll if a != b and end(ll[a]) == start(ll[b])]
+    # nodes: union of edge ends that a succession joins
+    par = {}
+    def find(x):
+        while par.setdefault(x, x) != x:
+            x = par[x]
+        return x
+    for e in comp:
+        find((e, 0)); find((e, 1))
+    for a, b in succ:
+        par[find((edge_of[a], 1))] = find((edge_of[b], 0))
+    pts = {}
+    for e, row in comp.items():
+        for end_ in (0, 1):
+            c = np.mean([ll[k]['centre'][-1 if end_ else 0] for k in row], axis=0)
+            pts.setdefault(find((e, end_)), []).append(c)
+    nid = {r: f'n{i}' for i, r in enumerate(pts)}
+    with open(f'{out}/plain.nod.xml', 'w') as f:
+        f.write('<nodes>\n')
+        for r, ps in pts.items():
+            p = np.mean(ps, axis=0)
+            f.write(f'  <node id="{nid[r]}" x="{p[0]:.3f}" y="{p[1]:.3f}"/>\n')
+        f.write('</nodes>\n')
+    with open(f'{out}/plain.edg.xml', 'w') as f:
+        f.write('<edges>\n')
+        for e, row in comp.items():
+            a, b = nid[find((e, 0))], nid[find((e, 1))]
+            if a == b:
+                continue
+            sp = 13.89 if ll[row[0]]['tags'].get('location') == 'urban' or ds in ('inD', 'rounD') else 36.11
+            L = LX._resample(ll[row[-1]]['left'], 40); R = LX._resample(ll[row[0]]['right'], 40)
+            f.write(f'  <edge id="{e}" from="{a}" to="{b}" numLanes="{len(row)}" speed="{sp}" spreadType="center" shape="{fmt_shape((L + R) / 2)}">\n')
+            for i, k in enumerate(row):
+                w = float(np.median(np.hypot(*(LX._resample(ll[k]['left'], 20) - LX._resample(ll[k]['right'], 20)).T)))
+                f.write(f'    <lane index="{i}" width="{max(w, 2.0):.2f}" shape="{fmt_shape(ll[k]["centre"])}"/>\n')
+            f.write('  </edge>\n')
+        f.write('</edges>\n')
+    with open(f'{out}/plain.con.xml', 'w') as f:
+        f.write('<connections>\n')
+        for a, b in succ:
+            if edge_of[a] != edge_of[b]:
+                f.write(f'  <connection from="{edge_of[a]}" to="{edge_of[b]}" fromLane="{lane_of[a].rsplit("_", 1)[1]}" toLane="{lane_of[b].rsplit("_", 1)[1]}"/>\n')
+        f.write('</connections>\n')
+    netconvert(f'{out}/plain', f'{out}/net.xml', ['-x', f'{out}/plain.con.xml', '--geometry.remove', 'false', '--junctions.join', 'false', '--default.junctions.radius', '0',
+                                                  '--no-turnarounds.except-deadend', 'false'])
+    return {k: lane_of[k] for k in ll}, comp
+
+
 def connections(net_xml):
     c = set()
     for x in ET.parse(net_xml).getroot().iter('connection'):
@@ -118,7 +199,7 @@ def connections(net_xml):
     return c
 
 
-def match_lanelets(d, lanes, conn, provided=None):
+def match_lanelets(d, lanes, conn, provided=None, lane_of_lanelet=None):
     """Nearest lanelet centreline whose direction agrees within 45 degrees (or the provider's lanelet, exiD)."""
     from scipy.spatial import cKDTree
     P, H, L, S = [], [], [], []
@@ -137,31 +218,65 @@ def match_lanelets(d, lanes, conn, provided=None):
     first = np.where(ok.any(1), ok.argmax(1), 0)
     lane = L[ii[np.arange(len(d)), first]]
     if provided is not None:
-        lp = np.array([f'L{int(x)}_0' if np.isfinite(x) else '' for x in provided])
+        lp = np.array([(lane_of_lanelet.get(int(x), '') if lane_of_lanelet else f'L{int(x)}_0') if np.isfinite(x) else '' for x in provided])
         use = np.isin(lp, list(lanes))
         lane = np.where(use, lp, lane)
     d = d.copy(); d['lane_id'] = lane; d['edge'] = [l.rsplit('_', 1)[0] for l in lane]
     d['s'] = 0.0; d['lat'] = 0.0
+    h = np.deg2rad(d.heading.to_numpy())
+    d['xf'] = d.xc + 0.5 * d.length * np.cos(h); d['yf'] = d.yc + 0.5 * d.length * np.sin(h)
     for lid, g in d.groupby('lane_id'):
         s, lat = poly[lid].project(g.xc.values, g.yc.values)
-        d.loc[g.index, 's'] = s; d.loc[g.index, 'lat'] = lat
-    # Front of the vehicle, carried along its lane.
-    d['s'] = d.s + d.length / 2
+        sf, _ = poly[lid].project(g.xf.values, g.yf.values)
+        d.loc[g.index, 'lat'] = lat
+        # The front, as the simulator keeps it: the front point's projection, or past the lane's end when the
+        # centre's projection says so (moved to the next lane in finish()).
+        over = s + g.length.values / 2 > poly[lid].cum[-1] * poly[lid].scale
+        d.loc[g.index, 's'] = np.where(over, s + g.length.values / 2, sf)
     d['v'] = np.hypot(d.vx, d.vy)
+    d['lat_left'] = d['lat']
     return d
 
 
-def build_drone(ds, rec, out):
+def build_drone(ds, rec, out, merge=False):
     m = LX.recordings(ds, holdout=True).set_index('rec').loc[rec]
     construction = ds == 'inD' and m.site == 1 and 11 <= rec <= 17
-    lanelet_net(ds, int(m.site), out, construction)
+    lol = None
+    if merge:
+        lol, comp = merged_lanelet_net(ds, int(m.site), out, construction)
+    else:
+        lanelet_net(ds, int(m.site), out, construction)
     lanes = lane_shapes(f'{out}/net.xml')
     conn = connections(f'{out}/net.xml')
     tm = LX.tracks_meta(ds, rec).set_index('trackId')
     d = LX.tracks(ds, rec)
     cls = tm['class'].reindex(d.id).values
     d = d[np.isin(cls, ['car', 'truck', 'van', 'bus', 'truck_bus', 'trailer', 'motorcycle'])].reset_index(drop=True)
-    d = match_lanelets(d, lanes, conn, d.laneletId.to_numpy() if 'laneletId' in d else None)
+    lid = None
+    if 'laneletId' in d:
+        # exiD gives one or more lanelets per sample ("a;b"); take the listed one the centre projects inside
+        parts = d.laneletId.astype(str).str.split(';')
+        lid = pd.to_numeric(parts.str[0], errors='coerce').to_numpy()
+        multi = np.flatnonzero(parts.str.len().to_numpy() > 1)
+        polys = {}
+        for i in multi:
+            best = None
+            for c in parts.iat[i]:
+                try:
+                    ln_ = lol.get(int(float(c))) if lol else f'L{int(float(c))}_0'
+                except ValueError:
+                    continue
+                if ln_ not in lanes:
+                    continue
+                pl = polys.setdefault(ln_, Polyline(lanes[ln_]['shape'], lanes[ln_]['length']))
+                sc, la = pl.project([d.xc.iat[i]], [d.yc.iat[i]])
+                inside = 0.01 < sc[0] < pl.cum[-1] * pl.scale - 0.01
+                key = (not inside, abs(la[0]))
+                if best is None or key < best[0]:
+                    best = (key, float(c))
+            if best:
+                lid[i] = best[1]
+    d = match_lanelets(d, lanes, conn, lid, lol)
     d['ti'] = d.frame
     return finish(out, ds, rec, d, 25.0, None, conn)
 
@@ -179,7 +294,28 @@ def finish(out, ds, rec, d, fps, route_of, conn=None):
     else:
         cut_conn = np.zeros(len(d), bool)
     d['piece'] = np.cumsum(newtrack | cut_conn)
-    lane_list = sorted(lane_shapes(f'{out}/net.xml'))
+    LS = lane_shapes(f'{out}/net.xml')
+    lane_list = sorted(LS)
+    # A front past the end of the centre's lane belongs on the next lane the track takes (the providers label the
+    # lane of the centre).
+    moved = 0
+    ln = d.lane_id.map(lambda l: LS[l]['length']).to_numpy()
+    over = np.flatnonzero(d.s.to_numpy() > ln)
+    if len(over):
+        lane = d.lane_id.to_numpy().copy(); sv = d.s.to_numpy().copy(); pc = d.piece.to_numpy(); latl = d.lat_left.to_numpy().copy()
+        nxt = np.full(len(d), -1)
+        chg = np.flatnonzero((lane[1:] != lane[:-1]) & (pc[1:] == pc[:-1])) + 1
+        for i in over:
+            k = np.searchsorted(chg, i, side='right')
+            if k < len(chg) and pc[chg[k]] == pc[i] and lane[chg[k]].rsplit('_', 1)[0] != lane[i].rsplit('_', 1)[0]:
+                lane[i] = lane[chg[k]]; moved += 1
+                if 'xf' in d:
+                    pl = Polyline(LS[lane[i]]['shape'], LS[lane[i]]['length'])
+                    a, b = pl.project([d.xf.iat[i]], [d.yf.iat[i]])
+                    sv[i] = float(a[0]); latl[i] = float(b[0])
+                else:
+                    sv[i] = sv[i] - ln[i]
+        d['lane_id'] = lane; d['s'] = sv; d['lat_left'] = latl; d['edge'] = [l.rsplit('_', 1)[0] for l in lane]
     lidx = {l: k for k, l in enumerate(lane_list)}
     tracks, rows = [], []
     t_begin = float(np.floor(d.ti.min() / fps) - 1.0)
@@ -191,7 +327,7 @@ def finish(out, ds, rec, d, fps, route_of, conn=None):
             continue
         tid = f'{int(g.id.iloc[0])}_{p}'
         t0 = float(g.ti.iloc[0]) / fps - t_begin
-        tracks.append((tid, t0, 1.0 / fps, INF, [lidx[l] for l in g.lane_id], g.s.to_numpy(), g.v.to_numpy()))
+        tracks.append((tid, t0, 1.0 / fps, INF, [lidx[l] for l in g.lane_id], g.s.to_numpy(), g.v.to_numpy(), g.lat_left.to_numpy()))
         rows.append((t0, tid, ' '.join(route), float(g.s.iloc[0]), float(g.v.iloc[0]), round(float(g.length.iloc[0]), 1)))
     rows.sort()
     with open(f'{out}/routes.xml', 'w') as f:
@@ -203,7 +339,7 @@ def finish(out, ds, rec, d, fps, route_of, conn=None):
                     f'departSpeed="{max(v, 0):.3f}"><route edges="{route}"/></vehicle>\n')
         f.write('</routes>\n')
     write_rpl(f'{out}/all.rpl', lane_list, tracks)
-    d[['id', 'piece', 'ti', 'lane_id', 's', 'lat', 'xc', 'yc', 'v']].to_csv(f'{out}/matched.csv.gz', index=False)
+    d[['id', 'piece', 'ti', 'lane_id', 's', 'lat', 'lat_left', 'xc', 'yc', 'v', 'length', 'heading']].to_csv(f'{out}/matched.csv.gz', index=False)
     bad_conn = 0
     if conn is not None:
         for _, _, route, *_ in rows:
@@ -212,19 +348,20 @@ def finish(out, ds, rec, d, fps, route_of, conn=None):
     meta = dict(dataset=ds, recording=rec, held_out=held(ds, rec), begin=0.0, recording_time_of_scene_zero_s=t_begin, key_dt=1.0 / fps,
                 end=float(d.ti.max() / fps - t_begin + 1), samples=len(d), vehicles=int(d.id.nunique()), pieces=len(tracks),
                 pieces_per_vehicle=round(len(tracks) / max(d.id.nunique(), 1), 2), lanes=len(lane_list),
-                route_links_not_in_net=bad_conn, map_lateral_abs_m=q(np.abs(d.lat)))
+                route_links_not_in_net=bad_conn, fronts_moved_to_next_lane=moved, map_lateral_abs_m=q(np.abs(d.lat)))
     json.dump(meta, open(f'{out}/scene.json', 'w'), indent=1)
     print(json.dumps(meta))
     return meta
 
 
-def build(ds, rec, allow_holdout=False):
+def build(ds, rec, allow_holdout=False, merge=None):
     if held(ds, rec) and not allow_holdout:
         raise SystemExit(f'{ds} {rec} is held out (research/truth/measure/HOLDOUT.md); pass --holdout to build it')
-    out = os.path.join(OUT, f'levelx-{ds}-{rec:02d}')
+    merge = (ds == 'exiD') if merge is None else merge
+    out = os.path.join(OUT, f'levelx-{ds}-{rec:02d}' + ('-merged' if merge and ds != 'highD' else ''))
     os.makedirs(out, exist_ok=True)
-    return build_highd(rec, out) if ds == 'highD' else build_drone(ds, rec, out)
+    return build_highd(rec, out) if ds == 'highD' else build_drone(ds, rec, out, merge)
 
 
 if __name__ == '__main__':
-    build(sys.argv[1], int(sys.argv[2]), '--holdout' in sys.argv)
+    build(sys.argv[1], int(sys.argv[2]), '--holdout' in sys.argv, True if '--merge' in sys.argv else False if '--no-merge' in sys.argv else None)

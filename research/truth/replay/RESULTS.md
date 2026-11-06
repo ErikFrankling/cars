@@ -88,3 +88,87 @@ python3 -I scripts/replay/dlrut_approach.py f104 0..2 && python3 -I scripts/repl
 ```
 
 All runs use `CARS_ADAPTER=llvmpipe` (set by `rpl.run_cars`); pass `--gpu` where offered to go through `flock /tmp/cars-gpu.lock` instead. Scenes and outputs go to `/home/erikf/projects/personal/cars-data/replay/`.
+
+# Second round, 6-7 November: data side and harness, F500-F515
+
+The data side for area tests, and the harness extended so the drivers being rewritten in parallel can go onto whole areas. Forecasts were written before each run. Details: [SIGNALS.md](SIGNALS.md) (signals read from crossings, the error band) and [PNEUMA.md](PNEUMA.md) (inventory, lanes, motorcycles, oversaturation, the drone 8 scene). The driver and the junction and lane-change code are main's, unchanged. Plain runs without `--replay` are bit-identical to main's binary (a8cddaf): FCD md5 equal on the DLR UT approach (llvmpipe) and on exiD 00 all simulated (llvmpipe and GPU).
+
+| | Forecast | Result | Verdict |
+|---|---|---|---|
+| F500 onset read from queue heads, DLR UT | median 0.5-1.2 s, p90 under 2.5 | **0.58 s, p90 1.38 s** (2,698 greens with a car standing) | pass |
+| F501 end of green per cycle | saturated 0.8-2.0 s | 8.0 s: DLR UT gaps out after the queue clears, one oversaturated cycle in 24 h | miss: per-cycle ends unreadable on these sites; the fixed-time fit takes over |
+| F502 missed / false greens | under 3% / under 5% | 7.7% / 0.3% | missed miss (head over 10 m back, track ends before the line, stood under 2 s); false pass |
+| F503 SinD | onset 0.6-1.5 s | **0.59 s**, p90 2.26; missed 7.0%, false 0 | onset pass, missed miss |
+| F504 fixed-time fit (SinD, 9 groups) | cycle 0.5 s, onset 1.0, end 1.5 | cycle **0.05 s**, onset **0.56 s**, end **2.64 s** (p90 5.1); from the next onset 1.06 s where every phase is read | end miss |
+| F505 by queue at onset | no level over 1.5 s | 1-3 standing 0.58, 4+ 0.58, oversaturated 0.98 (n = 1) | pass, oversaturated untested |
+| F506 highD 01 F100 with lateral keys | 2D median under 5 cm | centre 2.1 cm p99 3.1 cm; front max 7.7 mm; lane coordinates max 2.7 mm | pass |
+| F507 exiD 00 on merged multi-lane edges | under 1.1 pieces per vehicle, 2D median under 10 cm | **1.00** piece per vehicle (was 1.39), front 2D median 1.1 cm, p99 25 cm | pass after three fixes to the scene builder |
+| F508 pNEUMA drone 8 F100 | median under 0.15 m, p99 under 1.0 m | 99.1% of samples present; lane coordinates p99 2.1 cm; front 2D median **0.11 m**, p99 **1.81 m** | median pass, p99 miss (the centre's offset moves the whole body) |
+| F509 lanes from density against OSM | agreement 40-70%, residual 0.25-0.5 m | **56.7%** of 314 edges; residual 0.38 m (0.89 m about OSM's lanes) | pass |
+| F510 motorcycles | 25-45% per area, over 40% between lanes | 29-39% of vehicles, 21-32% of time; 51% between lanes | pass |
+| F511 oversaturation | worst approach over 20% on 3+ areas | all 10 areas, 32-74% of cycles with a residual queue | pass |
+| F512 SinD saturated cycles | 0-2 | **0** on Tianjin approach 2 (Tianjin and Chongqing have no car queue over 3) | pass: F120 as written can't be measured on SinD's two usable cities |
+| F513 SinD Tianjin approach 2, crossing error | driver 1-3 s, no worse than the point queue | driver **3.57-4.10 s** (5 seeds), bias +0.0 to +0.7; point queue **1.33 s**; without two-wheelers 2.67-3.43 | **miss**, explained below |
+| F514 discharge per queued cycle | driver no worse than the point queue | driver 0.10 cars, point queue 0.00 | miss by one car in ten cycles |
+| F515 pNEUMA drone 8 mix (harness check) | 99% enter, delay p95 under 2 s | all forced: 100% enter, 60-65% still on the net at the end (boundary entries stacked onto full edges); snapshot forced only: **29-32%** enter, delay p95 607-660 s | **miss**, two rounds, stopped: boundary entries are the open problem (below) |
+
+## F513: why the driver loses to a point queue on SinD
+
+On SinD Tianjin approach 2, 22 crossings are scored. Most of the driver's crossings are within 2 s of the recorded ones; without its three largest errors its MAE is 0.9-1.3 s. Three cars per run carry the rest:
+- One simulated car runs a yellow (it enters 16 m before the line at 7 m/s, 1.3 s into the yellow) where its real driver stopped. That costs −33 s, a whole cycle.
+- Two cars on the left lane wait 7-15 s into green behind a replayed motorcycle standing in the junction box at the start of their exit lane. In reality they passed beside it; in a lane model a replayed motorcycle blocks the whole lane.
+- One real car crossed 4.5 s before its green.
+
+Removing two- and three-wheelers leaves the yellow-runner and gives 2.7-3.4 s. The point queue has no yellow decision and no motorcycles, so on a sample this small it wins.
+
+What this says:
+- Mixed traffic needs two-wheelers that don't occupy a whole lane before SinD (or Athens) can test a car driver at the line.
+- The yellow decision is a measured behaviour (report 05: half stop at 5.1 s to the line) the driver should be checked against on its own.
+
+The null's saturation headway is SinD's clock-free 2.6 s (other cities), because Tianjin's other approaches give one car-to-car headway; its first-car time, 1.91 s after green, is Tianjin's own.
+
+## F515: cars simulated on a whole pNEUMA area
+
+A harness check on drone 8, five seeds each way.
+- **Every simulated car forced in** at its recorded state: all of them enter, but 60-65% are still there at the end. Cars entering at the boundary were put onto edges the simulated queue already filled: 431 cars on a 35 m three-lane edge of Patision, about 5,400 simulated-on-simulated overlap pairs.
+- **Only the start snapshot forced**, later entries inserted normally: the stacking is gone (132-160 pairs), but only 29-32% of the cars get in, with entry delays to 660 s.
+
+A car's recorded entry is where the tracker first sees it, often inside a queue at the edge of the view. If the simulated queue or a replayed motorcycle is there, it waits, and the per-edge insertion queue holds every later car on that edge.
+
+Two rounds without a pass, so stopped (rule 9). Next:
+- enter at the start of the boundary edge with the time carried back;
+- per-lane insertion queues;
+- two-wheelers that don't take a whole lane (also F513).
+
+Until then no T3 number is scored on pNEUMA.
+
+## What the harness can do now
+
+Everything in the first round, plus:
+- **Lateral replay** (`RPL2`): a replayed vehicle moves sideways as recorded, across lane changes on an edge, and is drawn and contact-checked where it is. The released driver starts on its lane's centre.
+- **Multi-lane levelX scenes**: highD (one edge per carriageway); exiD (parallel lanelets merged, explicit lane-to-lane connections, junction radius 0, keys from the projected front, fronts moved onto the next lane).
+- **SinD approaches with no map**: lanes and stop line from the tracks, the recorded light, two-wheelers replayed while over a car lane, a variant without them.
+- **Signals without a log**: the reader with its error band (SinD, DLR UT scored), fixed-time programs for pre-timed sites, one long program per junction.
+- **pNEUMA**: streaming reader; lanes from density checked against OSM; signals read at every OSM signalised approach in 199 files; residual queues per cycle; a T3 scene with internal lanes, path bridging, read signals, and simulated cars forced in at their recorded state and released at once (a recorded tight gap is never refused).
+- **Insertion steps**: F100 scoring leaves each trip's insertion step out and reports how late it came.
+
+Can't yet:
+- Two-wheelers that share a lane with a car.
+- Simulated entries at a pNEUMA area's boundary (F515): forced, they stack; unforced, two thirds never get in.
+- Routes through cuts in pNEUMA: 1.56 pieces per vehicle; a simulated car's route ends where its first piece ended.
+- Read signals on approaches with few standing cars: 70 of 87 links in drone 8 stay green.
+- A saturated-cycle test on SinD (F120).
+- Songdo: its 85 junction-day zips are on disk (the `fetch-drones` job finished), not started.
+
+## Rerun (second round)
+
+```sh
+source /home/erikf/projects/personal/cars-data/dev-env.sh; cargo build --release -p cars-cli
+python3 -I scripts/replay/signals.py dlrut && python3 -I scripts/replay/signals.py sind && python3 -I scripts/replay/signals.py score   # F500-F505
+python3 -I scripts/measure/levelx_scene.py highD 1 && python3 -I scripts/replay/levelx_f100.py $D/levelx-highD-01        # F506
+python3 -I scripts/measure/levelx_scene.py exiD 0 && python3 -I scripts/replay/levelx_f100.py $D/levelx-exiD-00-merged   # F507
+python3 -I scripts/replay/sind_approach.py build && python3 -I scripts/replay/sind_approach.py f100
+python3 -I scripts/replay/sind_approach.py run 0..4 mix && python3 -I scripts/replay/sind_approach.py run 0..4 mix_no2w && python3 -I scripts/replay/sind_approach.py score   # F512-F514
+# pNEUMA, F508-F511, F515: PNEUMA.md "Rerun"
+```
+`$D` is `/home/erikf/projects/personal/cars-data/replay`.

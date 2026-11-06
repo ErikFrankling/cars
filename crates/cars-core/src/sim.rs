@@ -657,10 +657,10 @@ impl Sim {
             let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("replay"), entries: &entries });
             let bind: Vec<_> = list.iter().enumerate().map(|(i, b)| wgpu::BindGroupEntry { binding: 10 + i as u32, resource: b.as_entire_binding() }).collect();
             let group = device.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("replay"), layout: &layout, entries: &bind });
-            let small_entries = [uniform_entry(0), storage_entry(1, false), storage_entry(8, true), storage_entry(16, false), storage_entry(25, false)];
+            let small_entries = [uniform_entry(0), storage_entry(1, false), storage_entry(3, true), storage_entry(8, true), storage_entry(16, false), storage_entry(25, false)];
             let small_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("replay main"), entries: &small_entries });
             let small = |cur: &wgpu::Buffer| {
-                let list: [(u32, &wgpu::Buffer); 5] = [(0, &params), (1, &globals), (8, &types), (16, cur), (25, &tail)];
+                let list: [(u32, &wgpu::Buffer); 6] = [(0, &params), (1, &globals), (3, &lanes), (8, &types), (16, cur), (25, &tail)];
                 let entries: Vec<_> = list.iter().map(|(i, b)| wgpu::BindGroupEntry { binding: *i, resource: b.as_entire_binding() }).collect();
                 device.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("replay main"), layout: &small_layout, entries: &entries })
             };

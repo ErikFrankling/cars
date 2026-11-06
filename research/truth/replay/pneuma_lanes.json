@@ -1,0 +1,421 @@
+{
+ "areas": {
+  "1": {
+   "edges": 19,
+   "agree": 10,
+   "density_more": 1,
+   "density_fewer": 8,
+   "lanes_density": 34,
+   "lanes_osm": 40,
+   "centre_offset_abs_m_weighted": 0.95,
+   "residual_density_p50_weighted": 0.37,
+   "residual_osm_p50_weighted": 0.85,
+   "lane_spacing_median_m": 3.0,
+   "moto_share_samples_weighted": 0.258,
+   "moto_between_lanes_weighted": 0.498,
+   "moto_share_by_lane_position": {
+    "kerb": 0.202,
+    "middle": 0.172,
+    "median side": 0.207
+   },
+   "moving_samples_on_edges": 0.387,
+   "box": [
+    2202,
+    762,
+    2537,
+    1213
+   ],
+   "streets": [
+    "\u0391\u03ba\u03b1\u03b4\u03b7\u03bc\u03af\u03b1\u03c2",
+    "\u0391\u03bb\u03ad\u03be\u03b1\u03bd\u03b4\u03c1\u03bf\u03c5 \u03a3\u03bf\u03cd\u03c4\u03c3\u03bf\u03c5",
+    "\u0391\u03bc\u03b5\u03c1\u03b9\u03ba\u03ae\u03c2",
+    "\u0392\u03b7\u03c3\u03c3\u03b1\u03c1\u03af\u03c9\u03bd\u03bf\u03c2",
+    "\u0392\u03bf\u03c5\u03ba\u03bf\u03c5\u03c1\u03b5\u03c3\u03c4\u03af\u03bf\u03c5",
+    "\u0394\u03b7\u03bc\u03bf\u03ba\u03c1\u03af\u03c4\u03bf\u03c5",
+    "\u039b\u03c5\u03ba\u03b1\u03b2\u03b7\u03c4\u03c4\u03bf\u03cd",
+    "\u039f\u03bc\u03ae\u03c1\u03bf\u03c5",
+    "\u03a3\u03af\u03bd\u03b1",
+    "\u03a3\u03cc\u03bb\u03c9\u03bd\u03bf\u03c2"
+   ]
+  },
+  "2": {
+   "edges": 22,
+   "agree": 9,
+   "density_more": 3,
+   "density_fewer": 10,
+   "lanes_density": 55,
+   "lanes_osm": 63,
+   "centre_offset_abs_m_weighted": 3.28,
+   "residual_density_p50_weighted": 0.45,
+   "residual_osm_p50_weighted": 1.29,
+   "lane_spacing_median_m": 3.0,
+   "moto_share_samples_weighted": 0.291,
+   "moto_between_lanes_weighted": 0.57,
+   "moto_share_by_lane_position": {
+    "kerb": 0.202,
+    "median side": 0.173,
+    "middle": 0.187
+   },
+   "moving_samples_on_edges": 0.45,
+   "box": [
+    1961,
+    650,
+    2356,
+    1116
+   ],
+   "streets": [
+    "\u0391\u03bc\u03b5\u03c1\u03b9\u03ba\u03ae\u03c2",
+    "\u0392\u03b1\u03c3\u03b9\u03bb\u03ad\u03c9\u03c2 \u0393\u03b5\u03c9\u03c1\u03b3\u03af\u03bf\u03c5 \u0391&apos;",
+    "\u0392\u03b1\u03c3\u03b9\u03bb\u03af\u03c3\u03c3\u03b7\u03c2 \u0391\u03bc\u03b1\u03bb\u03af\u03b1\u03c2",
+    "\u0392\u03b1\u03c3\u03b9\u03bb\u03af\u03c3\u03c3\u03b7\u03c2 \u03a3\u03bf\u03c6\u03af\u03b1\u03c2",
+    "\u039a\u03bf\u03bb\u03bf\u03ba\u03bf\u03c4\u03c1\u03ce\u03bd\u03b7",
+    "\u039a\u03c1\u03b9\u03b5\u03b6\u03ce\u03c4\u03bf\u03c5",
+    "\u039f\u03bc\u03ae\u03c1\u03bf\u03c5",
+    "\u03a0\u03b1\u03bd\u03b5\u03c0\u03b9\u03c3\u03c4\u03b7\u03bc\u03af\u03bf\u03c5",
+    "\u03a0\u03bb\u03b1\u03c4\u03b5\u03af\u03b1 \u03a3\u03c5\u03bd\u03c4\u03ac\u03b3\u03bc\u03b1\u03c4\u03bf\u03c2",
+    "\u03a3\u03af\u03bd\u03b1",
+    "\u03a3\u03c4\u03b1\u03b4\u03af\u03bf\u03c5"
+   ]
+  },
+  "3": {
+   "edges": 23,
+   "agree": 16,
+   "density_more": 1,
+   "density_fewer": 6,
+   "lanes_density": 53,
+   "lanes_osm": 59,
+   "centre_offset_abs_m_weighted": 1.29,
+   "residual_density_p50_weighted": 0.39,
+   "residual_osm_p50_weighted": 0.72,
+   "lane_spacing_median_m": 3.3,
+   "moto_share_samples_weighted": 0.318,
+   "moto_between_lanes_weighted": 0.555,
+   "moto_share_by_lane_position": {
+    "kerb": 0.237,
+    "middle": 0.154,
+    "median side": 0.234
+   },
+   "moving_samples_on_edges": 0.481,
+   "box": [
+    1683,
+    1011,
+    2092,
+    1501
+   ],
+   "streets": [
+    "\u0391\u03c1\u03c3\u03ac\u03ba\u03b7",
+    "\u0394\u03c1\u03b1\u03b3\u03b1\u03c4\u03c3\u03b1\u03bd\u03af\u03bf\u03c5",
+    "\u0399\u03c0\u03c0\u03bf\u03ba\u03c1\u03ac\u03c4\u03bf\u03c5\u03c2",
+    "\u03a0\u03b1\u03bd\u03b5\u03c0\u03b9\u03c3\u03c4\u03b7\u03bc\u03af\u03bf\u03c5",
+    "\u03a0\u03b5\u03c3\u03bc\u03b1\u03b6\u03cc\u03b3\u03bb\u03bf\u03c5",
+    "\u03a1\u03ae\u03b3\u03b1 \u03a6\u03b5\u03c1\u03b1\u03af\u03bf\u03c5",
+    "\u03a3\u03c4\u03b1\u03b4\u03af\u03bf\u03c5",
+    "\u03a6\u03b5\u03b9\u03b4\u03af\u03bf\u03c5",
+    "\u03a7\u03b1\u03c1\u03b9\u03bb\u03ac\u03bf\u03c5 \u03a4\u03c1\u03b9\u03ba\u03bf\u03cd\u03c0\u03b7"
+   ]
+  },
+  "4": {
+   "edges": 35,
+   "agree": 17,
+   "density_more": 6,
+   "density_fewer": 12,
+   "lanes_density": 59,
+   "lanes_osm": 61,
+   "centre_offset_abs_m_weighted": 1.61,
+   "residual_density_p50_weighted": 0.49,
+   "residual_osm_p50_weighted": 1.51,
+   "lane_spacing_median_m": 3.0,
+   "moto_share_samples_weighted": 0.267,
+   "moto_between_lanes_weighted": 0.552,
+   "moto_share_by_lane_position": {
+    "kerb": 0.23,
+    "middle": 0.167,
+    "median side": 0.172
+   },
+   "moving_samples_on_edges": 0.477,
+   "box": [
+    1936,
+    1190,
+    2312,
+    1670
+   ],
+   "streets": [
+    "\u0391\u03ba\u03b1\u03b4\u03b7\u03bc\u03af\u03b1\u03c2",
+    "\u0391\u03c3\u03ba\u03bb\u03b7\u03c0\u03b9\u03bf\u03cd",
+    "\u0393\u03b5\u03c9\u03c1\u03b3\u03af\u03bf\u03c5 \u0393\u03b5\u03bd\u03bd\u03b1\u03b4\u03af\u03bf\u03c5",
+    "\u0396\u03b1\u03bb\u03cc\u03b3\u03b3\u03bf\u03c5",
+    "\u0396\u03c9\u03bf\u03b4\u03cc\u03c7\u03bf\u03c5 \u03a0\u03b7\u03b3\u03ae\u03c2",
+    "\u0399\u03c0\u03c0\u03bf\u03ba\u03c1\u03ac\u03c4\u03bf\u03c5\u03c2",
+    "\u039a\u03c9\u03bb\u03ad\u03c4\u03c4\u03b7",
+    "\u039c\u03b1\u03c5\u03c1\u03bf\u03bc\u03b9\u03c7\u03ac\u03bb\u03b7",
+    "\u03a1\u03ae\u03b3\u03b1 \u03a6\u03b5\u03c1\u03b1\u03af\u03bf\u03c5",
+    "\u03a3\u03cc\u03bb\u03c9\u03bd\u03bf\u03c2",
+    "\u03a7\u03b1\u03c1\u03b9\u03bb\u03ac\u03bf\u03c5 \u03a4\u03c1\u03b9\u03ba\u03bf\u03cd\u03c0\u03b7"
+   ]
+  },
+  "5": {
+   "edges": 37,
+   "agree": 25,
+   "density_more": 3,
+   "density_fewer": 9,
+   "lanes_density": 75,
+   "lanes_osm": 81,
+   "centre_offset_abs_m_weighted": 1.51,
+   "residual_density_p50_weighted": 0.52,
+   "residual_osm_p50_weighted": 0.91,
+   "lane_spacing_median_m": 3.0,
+   "moto_share_samples_weighted": 0.319,
+   "moto_between_lanes_weighted": 0.533,
+   "moto_share_by_lane_position": {
+    "kerb": 0.211,
+    "median side": 0.25,
+    "middle": 0.22
+   },
+   "moving_samples_on_edges": 0.416,
+   "box": [
+    1489,
+    1407,
+    1960,
+    1809
+   ],
+   "streets": [
+    "3\u03b7\u03c2 \u03a3\u03b5\u03c0\u03c4\u03b5\u03bc\u03b2\u03c1\u03af\u03bf\u03c5",
+    "\u0391\u03b3\u03af\u03bf\u03c5 \u039a\u03c9\u03bd\u03c3\u03c4\u03b1\u03bd\u03c4\u03af\u03bd\u03bf\u03c5",
+    "\u0391\u03b8\u03b7\u03bd\u03ac\u03c2",
+    "\u0391\u03b9\u03cc\u03bb\u03bf\u03c5",
+    "\u0391\u03ba\u03b1\u03b4\u03b7\u03bc\u03af\u03b1\u03c2",
+    "\u0392\u03b5\u03c1\u03b1\u03bd\u03b6\u03ad\u03c1\u03bf\u03c5",
+    "\u0393\u03b1\u03bc\u03b2\u03ad\u03c4\u03b1",
+    "\u0398\u03b5\u03bc\u03b9\u03c3\u03c4\u03bf\u03ba\u03bb\u03ad\u03bf\u03c5\u03c2",
+    "\u039a\u03ac\u03bd\u03b9\u03b3\u03b3\u03bf\u03c2",
+    "\u039d\u03b9\u03ba\u03b7\u03c4\u03b1\u03c1\u03ac",
+    "\u03a0\u03b1\u03bd\u03b1\u03b3\u03ae \u03a4\u03c3\u03b1\u03bb\u03b4\u03ac\u03c1\u03b7",
+    "\u03a0\u03b1\u03bd\u03b5\u03c0\u03b9\u03c3\u03c4\u03b7\u03bc\u03af\u03bf\u03c5",
+    "\u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd",
+    "\u03a0\u03b1\u03c4\u03bf\u03cd\u03c3\u03b1",
+    "\u03a0\u03bb\u03b1\u03c4\u03b5\u03af\u03b1 \u039f\u03bc\u03bf\u03bd\u03bf\u03af\u03b1\u03c2",
+    "\u03a3\u03b1\u03c4\u03c9\u03b2\u03c1\u03b9\u03ac\u03bd\u03b4\u03bf\u03c5",
+    "\u03a3\u03c4\u03b1\u03b4\u03af\u03bf\u03c5",
+    "\u03a4\u03b6\u03c9\u03c1\u03c4\u03b6",
+    "\u03a7\u03b1\u03bb\u03ba\u03bf\u03ba\u03bf\u03bd\u03b4\u03cd\u03bb\u03b7"
+   ]
+  },
+  "6": {
+   "edges": 41,
+   "agree": 21,
+   "density_more": 3,
+   "density_fewer": 17,
+   "lanes_density": 85,
+   "lanes_osm": 100,
+   "centre_offset_abs_m_weighted": 1.8,
+   "residual_density_p50_weighted": 0.56,
+   "residual_osm_p50_weighted": 0.84,
+   "lane_spacing_median_m": 2.8,
+   "moto_share_samples_weighted": 0.296,
+   "moto_between_lanes_weighted": 0.51,
+   "moto_share_by_lane_position": {
+    "kerb": 0.236,
+    "median side": 0.24,
+    "middle": 0.204
+   },
+   "moving_samples_on_edges": 0.417,
+   "box": [
+    1534,
+    1494,
+    1848,
+    2128
+   ],
+   "streets": [
+    "3\u03b7\u03c2 \u03a3\u03b5\u03c0\u03c4\u03b5\u03bc\u03b2\u03c1\u03af\u03bf\u03c5",
+    "\u0392\u03b5\u03c1\u03b1\u03bd\u03b6\u03ad\u03c1\u03bf\u03c5",
+    "\u039a\u03ac\u03bd\u03b9\u03b3\u03b3\u03bf\u03c2",
+    "\u039a\u03b1\u03c0\u03bf\u03b4\u03b9\u03c3\u03c4\u03c1\u03af\u03bf\u03c5",
+    "\u039c\u03ac\u03c1\u03bd\u03b7",
+    "\u03a0\u03b1\u03bd\u03b5\u03c0\u03b9\u03c3\u03c4\u03b7\u03bc\u03af\u03bf\u03c5",
+    "\u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd",
+    "\u03a0\u03bb\u03b1\u03c4\u03b5\u03af\u03b1 \u039f\u03bc\u03bf\u03bd\u03bf\u03af\u03b1\u03c2",
+    "\u03a3\u03b1\u03c4\u03c9\u03b2\u03c1\u03b9\u03ac\u03bd\u03b4\u03bf\u03c5",
+    "\u03a3\u03bf\u03bb\u03c9\u03bc\u03bf\u03cd",
+    "\u03a3\u03c4\u03bf\u03c5\u03c1\u03bd\u03ac\u03c1\u03b7",
+    "\u03a7\u03b1\u03bb\u03ba\u03bf\u03ba\u03bf\u03bd\u03b4\u03cd\u03bb\u03b7"
+   ]
+  },
+  "7": {
+   "edges": 29,
+   "agree": 16,
+   "density_more": 0,
+   "density_fewer": 13,
+   "lanes_density": 61,
+   "lanes_osm": 74,
+   "centre_offset_abs_m_weighted": 1.35,
+   "residual_density_p50_weighted": 0.4,
+   "residual_osm_p50_weighted": 0.85,
+   "lane_spacing_median_m": 2.95,
+   "moto_share_samples_weighted": 0.27,
+   "moto_between_lanes_weighted": 0.58,
+   "moto_share_by_lane_position": {
+    "kerb": 0.248,
+    "median side": 0.128,
+    "middle": 0.179
+   },
+   "moving_samples_on_edges": 0.316,
+   "box": [
+    1664,
+    2043,
+    1934,
+    2521
+   ],
+   "streets": [
+    "3\u03b7\u03c2 \u03a3\u03b5\u03c0\u03c4\u03b5\u03bc\u03b2\u03c1\u03af\u03bf\u03c5",
+    "\u0391\u03b2\u03ad\u03c1\u03c9\u03c6",
+    "\u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2",
+    "\u0392\u03b1\u03c3\u03b9\u03bb\u03ad\u03c9\u03c2 \u0397\u03c1\u03b1\u03ba\u03bb\u03b5\u03af\u03bf\u03c5",
+    "\u0397\u03c0\u03b5\u03af\u03c1\u03bf\u03c5",
+    "\u0399\u03bf\u03c5\u03bb\u03b9\u03b1\u03bd\u03bf\u03cd",
+    "\u039c\u03ac\u03c1\u03bd\u03b7",
+    "\u039c\u03b5\u03c4\u03c3\u03cc\u03b2\u03bf\u03c5",
+    "\u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd",
+    "\u03a6\u03b5\u03c1\u03ce\u03bd"
+   ]
+  },
+  "8": {
+   "edges": 44,
+   "agree": 29,
+   "density_more": 6,
+   "density_fewer": 9,
+   "lanes_density": 81,
+   "lanes_osm": 87,
+   "centre_offset_abs_m_weighted": 1.84,
+   "residual_density_p50_weighted": 0.3,
+   "residual_osm_p50_weighted": 0.98,
+   "lane_spacing_median_m": 3.1,
+   "moto_share_samples_weighted": 0.237,
+   "moto_between_lanes_weighted": 0.632,
+   "moto_share_by_lane_position": {
+    "kerb": 0.23,
+    "middle": 0.113,
+    "median side": 0.083
+   },
+   "moving_samples_on_edges": 0.368,
+   "box": [
+    1758,
+    2215,
+    2299,
+    2540
+   ],
+   "streets": [
+    "\u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2",
+    "\u0396\u03b1\u0390\u03bc\u03b7",
+    "\u0399\u03bf\u03c5\u03bb\u03b9\u03b1\u03bd\u03bf\u03cd",
+    "\u039a\u03c5\u03b2\u03ad\u03bb\u03b7\u03c2",
+    "\u039c\u03b1\u03c5\u03c1\u03bf\u03bc\u03b1\u03c4\u03b1\u03af\u03c9\u03bd",
+    "\u039c\u03b5\u03c4\u03c3\u03cc\u03b2\u03bf\u03c5",
+    "\u039c\u03c0\u03bf\u03c5\u03bc\u03c0\u03bf\u03c5\u03bb\u03af\u03bd\u03b1\u03c2",
+    "\u039d\u03bf\u03c4\u03b1\u03c1\u03ac",
+    "\u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd",
+    "\u03a0\u03bb. \u0391\u03b9\u03b3\u03cd\u03c0\u03c4\u03bf\u03c5",
+    "\u03a1\u03b5\u03b8\u03cd\u03bc\u03bd\u03bf\u03c5",
+    "\u03a3\u03c0\u03cd\u03c1\u03bf\u03c5 \u03a4\u03c1\u03b9\u03ba\u03bf\u03cd\u03c0\u03b7",
+    "\u03a7\u03ad\u03c5\u03b4\u03b5\u03bd"
+   ]
+  },
+  "9": {
+   "edges": 42,
+   "agree": 26,
+   "density_more": 5,
+   "density_fewer": 11,
+   "lanes_density": 61,
+   "lanes_osm": 66,
+   "centre_offset_abs_m_weighted": 1.23,
+   "residual_density_p50_weighted": 0.51,
+   "residual_osm_p50_weighted": 1.03,
+   "lane_spacing_median_m": 2.85,
+   "moto_share_samples_weighted": 0.293,
+   "moto_between_lanes_weighted": 0.522,
+   "moto_share_by_lane_position": {
+    "kerb": 0.202,
+    "median side": 0.206,
+    "middle": 0.129
+   },
+   "moving_samples_on_edges": 0.294,
+   "box": [
+    1212,
+    1723,
+    1726,
+    2070
+   ],
+   "streets": [
+    "3\u03b7\u03c2 \u03a3\u03b5\u03c0\u03c4\u03b5\u03bc\u03b2\u03c1\u03af\u03bf\u03c5",
+    "\u0391\u03c1\u03b9\u03c3\u03c4\u03bf\u03c4\u03ad\u03bb\u03bf\u03c5\u03c2",
+    "\u0391\u03c7\u03b1\u03c1\u03bd\u03ce\u03bd",
+    "\u0392\u03b1\u03c4\u03c3\u03b1\u03be\u03ae",
+    "\u0392\u03b5\u03c1\u03b1\u03bd\u03b6\u03ad\u03c1\u03bf\u03c5",
+    "\u039a\u03b1\u03bc\u03b1\u03c4\u03b5\u03c1\u03bf\u03cd",
+    "\u039a\u03b1\u03c0\u03bf\u03b4\u03b9\u03c3\u03c4\u03c1\u03af\u03bf\u03c5",
+    "\u039a\u03c9\u03c3\u03c4\u03b1\u03bd\u03c4\u03af\u03bd\u03bf\u03c5 \u03a0\u03b1\u03bb\u03b1\u03b9\u03bf\u03bb\u03cc\u03b3\u03bf\u03c5",
+    "\u039b\u03b9\u03bf\u03c3\u03af\u03c9\u03bd",
+    "\u039c\u03ac\u03b3\u03b5\u03c1",
+    "\u039c\u03ac\u03c1\u03bd\u03b7",
+    "\u039c\u03b1\u03b9\u03b6\u03ce\u03bd\u03bf\u03c2",
+    "\u039c\u03b5\u03bd\u03ac\u03bd\u03b4\u03c1\u03bf\u03c5",
+    "\u03a3\u03bf\u03bb\u03c9\u03bc\u03bf\u03cd",
+    "\u03a3\u03c4\u03bf\u03c5\u03c1\u03bd\u03ac\u03c1\u03b7",
+    "\u03a3\u03c9\u03ba\u03c1\u03ac\u03c4\u03bf\u03c5\u03c2",
+    "\u03a3\u03c9\u03bd\u03b9\u03ad\u03c1\u03bf\u03c5",
+    "\u03a4\u03b1\u03c1\u03b5\u03bb\u03bb\u03ac",
+    "\u03a6\u03b1\u03b2\u03b9\u03ad\u03c1\u03bf\u03c5",
+    "\u03a7\u03b1\u03bb\u03ba\u03bf\u03ba\u03bf\u03bd\u03b4\u03cd\u03bb\u03b7"
+   ]
+  },
+  "10": {
+   "edges": 22,
+   "agree": 9,
+   "density_more": 0,
+   "density_fewer": 13,
+   "lanes_density": 48,
+   "lanes_osm": 61,
+   "centre_offset_abs_m_weighted": 1.48,
+   "residual_density_p50_weighted": 0.44,
+   "residual_osm_p50_weighted": 0.86,
+   "lane_spacing_median_m": 3.0,
+   "moto_share_samples_weighted": 0.329,
+   "moto_between_lanes_weighted": 0.521,
+   "moto_share_by_lane_position": {
+    "kerb": 0.257,
+    "median side": 0.225,
+    "middle": 0.182
+   },
+   "moving_samples_on_edges": 0.404,
+   "box": [
+    1318,
+    1435,
+    1755,
+    1704
+   ],
+   "streets": [
+    "3\u03b7\u03c2 \u03a3\u03b5\u03c0\u03c4\u03b5\u03bc\u03b2\u03c1\u03af\u03bf\u03c5",
+    "\u0391\u03b3\u03af\u03bf\u03c5 \u039a\u03c9\u03bd\u03c3\u03c4\u03b1\u03bd\u03c4\u03af\u03bd\u03bf\u03c5",
+    "\u0391\u03b8\u03b7\u03bd\u03ac\u03c2",
+    "\u0391\u03b9\u03cc\u03bb\u03bf\u03c5",
+    "\u039c\u03b5\u03bd\u03ac\u03bd\u03b4\u03c1\u03bf\u03c5",
+    "\u03a0\u03b1\u03bd\u03b1\u03b3\u03ae \u03a4\u03c3\u03b1\u03bb\u03b4\u03ac\u03c1\u03b7",
+    "\u03a0\u03b1\u03bd\u03b5\u03c0\u03b9\u03c3\u03c4\u03b7\u03bc\u03af\u03bf\u03c5",
+    "\u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd",
+    "\u03a0\u03bb\u03b1\u03c4\u03b5\u03af\u03b1 \u039f\u03bc\u03bf\u03bd\u03bf\u03af\u03b1\u03c2",
+    "\u03a3\u03b1\u03c4\u03c9\u03b2\u03c1\u03b9\u03ac\u03bd\u03b4\u03bf\u03c5",
+    "\u03a3\u03c4\u03b1\u03b4\u03af\u03bf\u03c5",
+    "\u03a3\u03c9\u03ba\u03c1\u03ac\u03c4\u03bf\u03c5\u03c2"
+   ]
+  }
+ },
+ "all": {
+  "edges": 314,
+  "agree": 178,
+  "agree_pct": 56.7,
+  "density_more": 28,
+  "density_fewer": 108,
+  "residual_density_p50_median_of_edges": 0.38,
+  "residual_osm_p50_median_of_edges": 0.89,
+  "moto_between_lanes_median_of_edges": 0.514
+ }
+}

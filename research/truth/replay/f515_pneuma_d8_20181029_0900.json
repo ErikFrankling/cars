@@ -1,0 +1,127 @@
+{
+ "0": {
+  "simulated": 1848,
+  "entered": 544,
+  "entered_pct": 29.44,
+  "entry_delay_s": {
+   "p50": 1.75,
+   "p95": 607.33,
+   "max": 683.75
+  },
+  "on_net_at_end": 106,
+  "on_net_at_end_pct": 19.49,
+  "log": [
+   "replay: 1447 tracks, 269101 keys, 0 tracks with no trip",
+   "lane changes 4283, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 12707, items full 0; teleports jam 3 yield 4 wrong lane 1",
+   "replay: applied 212895, ended 1056, shadows_removed 0, lane_jumps 14274, released 74",
+   "physics: collisions 5840 incidents, 59446 contact samples (same lane 4903, neighbour lane 395, junction crossing 40, junction merge 7, junction diverge 54, lane start 160, other 281, crossed without grant 10, lost on a wrong lane 0); teleports 0; certificate floor hits 28097, no-brake 0, dead-end clamps 1056, crossed without grant 10; lost on a wrong lane 0; shadows 4283, refused 0, refused for room 12081; denied bids 24113"
+  ],
+  "sim_cars_meeting_replayed": 405,
+  "overlap_pairs": {
+   "rep_behind_sim": 2948,
+   "sim_behind_rep": 1694,
+   "rep_behind_rep": 1135,
+   "sim_behind_sim": 148
+  }
+ },
+ "1": {
+  "simulated": 1848,
+  "entered": 586,
+  "entered_pct": 31.71,
+  "entry_delay_s": {
+   "p50": 3.35,
+   "p95": 626.65,
+   "max": 793.15
+  },
+  "on_net_at_end": 93,
+  "on_net_at_end_pct": 15.87,
+  "log": [
+   "replay: 1447 tracks, 269101 keys, 0 tracks with no trip",
+   "lane changes 4348, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 9191, items full 0; teleports jam 4 yield 4 wrong lane 2",
+   "replay: applied 212896, ended 1058, shadows_removed 0, lane_jumps 14247, released 74",
+   "physics: collisions 5411 incidents, 52938 contact samples (same lane 4478, neighbour lane 410, junction crossing 48, junction merge 7, junction diverge 54, lane start 146, other 268, crossed without grant 15, lost on a wrong lane 0); teleports 0; certificate floor hits 28699, no-brake 0, dead-end clamps 1056, crossed without grant 15; lost on a wrong lane 0; shadows 4348, refused 0, refused for room 12600; denied bids 25872"
+  ],
+  "sim_cars_meeting_replayed": 433,
+  "overlap_pairs": {
+   "rep_behind_sim": 2763,
+   "sim_behind_rep": 1516,
+   "rep_behind_rep": 1135,
+   "sim_behind_sim": 160
+  }
+ },
+ "2": {
+  "simulated": 1848,
+  "entered": 582,
+  "entered_pct": 31.49,
+  "entry_delay_s": {
+   "p50": 3.05,
+   "p95": 660.33,
+   "max": 748.95
+  },
+  "on_net_at_end": 83,
+  "on_net_at_end_pct": 14.26,
+  "log": [
+   "replay: 1447 tracks, 269101 keys, 0 tracks with no trip",
+   "lane changes 4319, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 6954, items full 0; teleports jam 3 yield 3 wrong lane 1",
+   "replay: applied 212896, ended 1058, shadows_removed 0, lane_jumps 14249, released 74",
+   "physics: collisions 5348 incidents, 48027 contact samples (same lane 4452, neighbour lane 383, junction crossing 52, junction merge 6, junction diverge 53, lane start 149, other 253, crossed without grant 11, lost on a wrong lane 0); teleports 0; certificate floor hits 28981, no-brake 0, dead-end clamps 1056, crossed without grant 12; lost on a wrong lane 0; shadows 4319, refused 0, refused for room 12212; denied bids 24131"
+  ],
+  "sim_cars_meeting_replayed": 430,
+  "overlap_pairs": {
+   "rep_behind_sim": 2746,
+   "sim_behind_rep": 1563,
+   "rep_behind_rep": 1134,
+   "sim_behind_sim": 132
+  }
+ },
+ "3": {
+  "simulated": 1848,
+  "entered": 586,
+  "entered_pct": 31.71,
+  "entry_delay_s": {
+   "p50": 4.25,
+   "p95": 643.1,
+   "max": 793.35
+  },
+  "on_net_at_end": 95,
+  "on_net_at_end_pct": 16.21,
+  "log": [
+   "replay: 1447 tracks, 269101 keys, 0 tracks with no trip",
+   "lane changes 4265, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 8814, items full 0; teleports jam 4 yield 4 wrong lane 1",
+   "replay: applied 212895, ended 1056, shadows_removed 0, lane_jumps 14168, released 74",
+   "physics: collisions 5397 incidents, 50385 contact samples (same lane 4492, neighbour lane 384, junction crossing 44, junction merge 4, junction diverge 52, lane start 151, other 270, crossed without grant 13, lost on a wrong lane 0); teleports 0; certificate floor hits 28787, no-brake 0, dead-end clamps 1056, crossed without grant 13; lost on a wrong lane 0; shadows 4265, refused 0, refused for room 12720; denied bids 25312"
+  ],
+  "sim_cars_meeting_replayed": 437,
+  "overlap_pairs": {
+   "rep_behind_sim": 2796,
+   "sim_behind_rep": 1557,
+   "rep_behind_rep": 1126,
+   "sim_behind_sim": 138
+  }
+ },
+ "4": {
+  "simulated": 1848,
+  "entered": 595,
+  "entered_pct": 32.2,
+  "entry_delay_s": {
+   "p50": 4.15,
+   "p95": 659.81,
+   "max": 788.15
+  },
+  "on_net_at_end": 96,
+  "on_net_at_end_pct": 16.13,
+  "log": [
+   "replay: 1447 tracks, 269101 keys, 0 tracks with no trip",
+   "lane changes 3973, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 10404, items full 0; teleports jam 3 yield 5 wrong lane 0",
+   "replay: applied 212895, ended 1055, shadows_removed 0, lane_jumps 13916, released 74",
+   "physics: collisions 5679 incidents, 54618 contact samples (same lane 4747, neighbour lane 419, junction crossing 52, junction merge 5, junction diverge 54, lane start 146, other 256, crossed without grant 11, lost on a wrong lane 0); teleports 0; certificate floor hits 29020, no-brake 0, dead-end clamps 1056, crossed without grant 11; lost on a wrong lane 0; shadows 3973, refused 0, refused for room 12205; denied bids 25045"
+  ],
+  "sim_cars_meeting_replayed": 442,
+  "overlap_pairs": {
+   "rep_behind_sim": 2967,
+   "sim_behind_rep": 1623,
+   "rep_behind_rep": 1137,
+   "sim_behind_sim": 146
+  }
+ }
+}
