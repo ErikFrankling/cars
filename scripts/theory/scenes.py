@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rung 2: small scenes against hand-computed forecasts. research/truth/PLAN.md, foundations/forecasts.csv.
 
-    python3 -I scripts/theory/scenes.py --driver physical|human [--dt X] [--only L1,S4] [--cars BIN] [--flags "..."]
+    python3 -I scripts/theory/scenes.py --driver measured|physical|human [--dt X] [--only L1,S4] [--cars BIN] [--flags "..."] [--gpu]
 
 Each batch puts all its scenes and seeds as disjoint cells in one world, since starting a process costs more
 than the scene. A seed is one cell: its arrivals are drawn from a logged numpy seed, and the simulator's own seed
@@ -27,8 +27,17 @@ import pandas as pd
 warnings.simplefilter('ignore')
 ROOT = Path(__file__).resolve().parents[2]
 FORECASTS = ROOT / 'research/truth/foundations/forecasts.csv'
-BINS = {'physical': ROOT / 'target/release/cars', 'human': ROOT / 'target/drivers/cars-human-11afb41'}
-FLAGS = {'physical': '', 'human': '--humans'}
+BINS = {'measured': ROOT / 'target/release/cars', 'physical': ROOT / 'target/release/cars', 'human': ROOT / 'target/drivers/cars-human-11afb41'}
+# The measured driver (research/truth/measure/MODEL.md) is the default; the one driver of scenes-log section 3 is --tune measured=0.
+FLAGS = {'measured': '', 'physical': '--tune measured=0', 'human': '--humans'}
+# Lines the measured driver replaces with forecasts from its own equations (F312-F321), and rows it reports as emergent (F322).
+MD_FID = {'F003': 'F312', 'F004': 'F313', 'F008': 'F314', 'F009': 'F315', 'F232': 'F316', 'F234': 'F317', 'F251': 'F318', 'F252': 'F319', 'F253': 'F320', 'F296': 'F321'}
+MD_INFO = {'F001', 'F002', 'F005', 'F231'}
+MD_EF = math.exp((0.27 * math.sqrt(1 - 0.41 ** 2)) ** 2 / 2)
+
+
+def md_tgap(v):
+    return float(np.interp(v, [6.5, 12.5, 17.5, 22.5, 30.0, 40.0], [1.6, 1.4, 1.2, 1.1, 0.95, 0.8]))
 LVP = '/run/opengl-driver/share/vulkan/icd.d/lvp_icd.x86_64.json'
 ENV = dict(os.environ, CARS_ADAPTER='llvmpipe', LP_NUM_THREADS=os.environ.get('LP_NUM_THREADS', '2'), LP_NATIVE_VECTOR_WIDTH='128')
 if Path(LVP).exists():
@@ -261,6 +270,16 @@ class Book:
 
     def check(self, scene, fid, i, vals, quantity=None, seeds='', mode='two', forecast=None, tol=None):
         """Compare the mean over seeds against number i of a forecast line. mode two, low (at least), high (at most)."""
+        if self.driver == 'measured' and fid in MD_INFO:
+            vals = [v for v in np.atleast_1d(vals) if v is not None and np.isfinite(v)]
+            self.info(scene, f'{fid} emergent (F322): {quantity or self.lines[fid]["quantity"]}', float(np.mean(vals)) if vals else float('nan'),
+                      spread=f'{min(vals):.3g}..{max(vals):.3g}' if len(vals) > 1 else '', seeds=seeds)
+            return True
+        if self.driver == 'measured' and fid in MD_FID:
+            fid = MD_FID[fid]
+            mode = 'two'
+            if fid != 'F317':
+                forecast, tol, quantity = None, None, None
         ln = self.lines[fid]
         fn = self.nums(ln['forecast'])
         want = forecast if forecast is not None else fn[i]
@@ -1082,7 +1101,12 @@ class Give:
             if len(z):
                 vt.append(float(z.speed.median()))
         if vt:
-            book.check('G1', 'F234', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: E[T] + s/v_turn, v_turn {np.mean(vt):.2f}', forecast=1.4 * math.exp(0.045) + 7.5 / np.mean(vt), tol='10%', seeds='G1 all')
+            if book.driver == 'measured':
+                vt_ = float(np.mean(vt))
+                book.check('G1', 'F234', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: E[f] T(v) - 0.25 + 5/v_turn, v_turn {vt_:.2f}',
+                           forecast=MD_EF * md_tgap(vt_) - 0.25 + 5.0 / vt_, tol='0.3 s', seeds='G1 all')
+            else:
+                book.check('G1', 'F234', 0, [x for x in tfs[0] if np.isfinite(x)], quantity=f'follow-up from own following: E[T] + s/v_turn, v_turn {np.mean(vt):.2f}', forecast=1.4 * math.exp(0.045) + 7.5 / np.mean(vt), tol='10%', seeds='G1 all')
         for q in Give.QS[1:]:
             got = []
             for r in range(SEEDS):
@@ -2658,7 +2682,11 @@ def run_batch(name, scenes, a, book, st, out):
         args += ['--tune', t]
     args += shlex.split(a.flags)
     t0 = time.time()
-    r = subprocess.run(list(map(str, args)), capture_output=True, text=True, env=ENV, timeout=a.timeout)
+    if a.gpu:
+        env = {k: v for k, v in os.environ.items() if k not in ('CARS_ADAPTER', 'VK_DRIVER_FILES', 'LP_NUM_THREADS', 'LP_NATIVE_VECTOR_WIDTH')}
+        r = subprocess.run(['flock', '/tmp/cars-gpu.lock'] + list(map(str, args)), capture_output=True, text=True, env=env, timeout=a.timeout)
+    else:
+        r = subprocess.run(list(map(str, args)), capture_output=True, text=True, env=ENV, timeout=a.timeout)
     (d / 'log.txt').write_text(r.stdout + r.stderr)
     if r.returncode:
         raise RuntimeError(r.stderr[-1500:])
@@ -2691,7 +2719,8 @@ ORDER = ['lane', 'signal', 'ring', 'wave', 'sringon', 'sringoff', 'signal_long',
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument('--driver', choices=['physical', 'human'], required=True)
+    p.add_argument('--driver', choices=['measured', 'physical', 'human'], required=True)
+    p.add_argument('--gpu', action='store_true', help='run on the GPU under flock /tmp/cars-gpu.lock instead of llvmpipe')
     p.add_argument('--dt', type=float, default=1.0)
     p.add_argument('--only', default='')
     p.add_argument('--skip', default='')
