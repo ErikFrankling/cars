@@ -372,14 +372,16 @@ def approach_tracks(A, tree, e, back=90.0, ahead=15.0):
     return veh
 
 
-def residual_cycles(S, greens):
-    """Per read cycle: cars standing before the line at its onset, and a residual queue (a car standing before the
-    line from 5 s before the end of green until 2 s after the yellow)."""
+def residual_cycles(S, greens, cycle):
+    """Per read cycle: cars standing before the line at its onset, and a residual queue: cars standing before the
+    line from 5 s before the end of green until 2 s after the yellow that then cross the line within the next two
+    cycles (served by a later green: a cycle failure). Parked cars and cars that turn off before the line do not
+    cross, so they do not count."""
     before = (S.kind == 'car') & (S.s < 0) & ~(S.tcross < S.t0)
     out = []
     for g0, g1, *_ in greens:
         q = int((before & (S.t0 <= g0) & (S.t1 >= g0 - 0.5)).sum())
-        r = int((before & (S.t0 <= g1 - 5.0) & (S.t1 >= g1 + YELLOW + 2.0)).sum())
+        r = int((before & (S.t0 <= g1 - 5.0) & (S.t1 >= g1 + YELLOW + 2.0) & (S.tcross > g1 + YELLOW) & (S.tcross < g1 + 2 * cycle + 10)).sum())
         out.append((g0, g1, q, r))
     return out
 
@@ -407,7 +409,7 @@ def signals_file(day, drone, hhmm, E, J, apps):
         if not fx:
             continue
         greens = [g for g in fx['greens']['arc'] if t0 + 30 < g[0] < t1 - 120]
-        rc = residual_cycles(S, greens)
+        rc = residual_cycles(S, greens, fx['cycle'])
         nq = sum(1 for c in rc if c[2] > 0)
         rows.append(dict(day=day, drone=drone, period=hhmm, edge=eid, junction=e['to'], name=e['name'], lanes=len(e['lanes']),
                          line_shift_m=round(shift, 1), heads=nh, cars=int(sum(v['kind'] == 'car' for v in veh)), moto=int(sum(v['kind'] == 'two' for v in veh)),
@@ -433,6 +435,36 @@ def signals_all(drones):
             print(day, dr, hh, 'approaches read', len(r), flush=True)
         pd.DataFrame(rows).to_csv(os.path.join(OUTD, 'signals_approaches.csv'), index=False)
         pd.DataFrame(cyc).to_csv(os.path.join(OUTD, 'signals_cycles.csv'), index=False)
+
+
+def oversaturation():
+    """Per area and approach: read cycles with a residual queue, from signals_approaches.csv / signals_cycles.csv."""
+    import pandas as pd
+    A = pd.read_csv(os.path.join(OUTD, 'signals_approaches.csv'))
+    C = pd.read_csv(os.path.join(OUTD, 'signals_cycles.csv'))
+    good = A[(A.R >= 0.8) & (A.green > 5) & (A.green < A.cycle - 5)]
+    out = dict(approach_files=int(len(A)), fixed_time_fits_kept=int(len(good)),
+               cycle_lengths={str(k): int(v) for k, v in good.cycle.round(0).value_counts().head(8).items()},
+               R_median=round(float(A.R.median()), 3))
+    key = ['drone', 'edge']
+    g = good.groupby(key).agg(street=('name', 'first'), files=('cycles', 'size'), cycles=('cycles', 'sum'), residual=('residual_cycles', 'sum'),
+                              with_queue=('cycles_with_queue', 'sum'), queue_mean=('queue_mean', 'mean'), queue_max=('queue_max', 'max'), lanes=('lanes', 'first'))
+    g['residual_pct'] = (100 * g.residual / g.cycles.clip(lower=1)).round(1)
+    g = g[g.cycles >= 30]
+    out['areas'] = {}
+    for dr, k in g.groupby(level=0):
+        w = k.sort_values('residual_pct', ascending=False)
+        out['areas'][int(dr)] = dict(approaches=int(len(k)), cycles=int(k.cycles.sum()), residual_pct_all=round(float(100 * k.residual.sum() / k.cycles.sum()), 1),
+                                     worst=[dict(edge=e[1], street=r.street, lanes=int(r.lanes), cycles=int(r.cycles), residual_pct=float(r.residual_pct), queue_mean=round(float(r.queue_mean), 1),
+                                                 queue_max=int(r.queue_max)) for e, r in w.head(3).iterrows()])
+    out['areas_ranked'] = sorted(out['areas'], key=lambda d: -out['areas'][d]['worst'][0]['residual_pct'])
+    out['areas_with_worst_over_20pct'] = int(sum(1 for d in out['areas'].values() if d['worst'][0]['residual_pct'] > 20))
+    cc = C.merge(good[['day', 'drone', 'period', 'edge']], on=['day', 'drone', 'period', 'edge'])
+    top = cc.sort_values(['residual', 'queue'], ascending=False).head(25)
+    out['most_oversaturated_cycles'] = [dict(day=int(r.day), drone=int(r.drone), period=str(int(r.period)).zfill(4), edge=r.edge, green_onset_s=float(r.g0), queue_at_green=int(r.queue), residual=int(r.residual)) for r in top.itertuples()]
+    by_period = cc.groupby('period').apply(lambda x: round(float(100 * (x.residual > 0).mean()), 1))
+    out['residual_pct_by_period'] = {str(int(k)).zfill(4): float(v) for k, v in by_period.items()}
+    return out
 
 
 if __name__ == '__main__':
@@ -467,3 +499,8 @@ if __name__ == '__main__':
     elif c == 'signals':
         sys.path.insert(0, HERE)
         signals_all([int(a) for a in sys.argv[2].split(',')])
+
+    elif c == 'oversaturation':
+        r = oversaturation()
+        json.dump(r, open(os.path.join(REPO, 'research/truth/replay/pneuma_oversaturation.json'), 'w'), indent=1)
+        print(json.dumps({k: v for k, v in r.items() if k != 'most_oversaturated_cycles'}, indent=1, ensure_ascii=False)[:5000])
