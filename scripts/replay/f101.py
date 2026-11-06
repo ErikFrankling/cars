@@ -7,6 +7,7 @@ Each window runs on its own one-lane edge, so all 4,955 run side by side in one 
     python3 -I scripts/replay/f101.py score                 # every run in the folder
     F101_SITE=I294L1 python3 -I scripts/replay/f101.py build  # the same windows from another TGSIM site, in f101_I294L1/
     F101_FLAGS='--tune measured=0' ...                      # extra flags for cars run
+    F101_COND=1 ...                                         # desired speed cut below at the release speed (routes_cond.xml)
 """
 import sys, os, json, glob
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -64,6 +65,16 @@ def build():
             for t, tid, vt, i, pos, v in sorted(trips, key=lambda r: (r[0], r[1])):
                 f.write(f'  <trip id="{tid}" type="{vt}" depart="{t:.1f}" from="w{i}" to="w{i}" departLane="0" departPos="{pos:.3f}" departSpeed="{max(v, 0):.3f}"/>\n')
             f.write('</routes>\n')
+    # The follower drew its desired speed from the population, but it is one who drove at its release speed: the measured
+    # spread (DRIVER.md, CV 0.17) cut below at that speed over the lane's. Nothing after the release is used.
+    with open(f'{D}/routes_cond.xml', 'w') as f:
+        f.write('<routes>\n  <vType id="lead" length="5" lcStrategic="-1" lcCooperative="0" lcSpeedGain="0" lcKeepRight="0"/>\n')
+        for i in range(N):
+            lo = min(max(float(b.v[0, i]), 0.0) / vref, 1.3)
+            f.write(f'  <vType id="drv{i}" carFollowModel="Krauss" speedFactor="normc(1,0.17,{lo:.4f},2)"/>\n')
+        for t, tid, vt, i, pos, v in sorted(trips, key=lambda r: (r[0], r[1])):
+            f.write(f'  <trip id="{tid}" type="{vt if vt == "lead" else f"drv{i}"}" depart="{t:.1f}" from="w{i}" to="w{i}" departLane="0" departPos="{pos:.3f}" departSpeed="{max(v, 0):.3f}"/>\n')
+        f.write('</routes>\n')
     np.savez_compressed(f'{D}/windows.npz', s=b.s[:W], v=b.v[:W], vl=b.vl[:W], run=b.meta['run'], t=b.meta['t'], fid=b.meta['fid'], lid=b.meta['lid'], vref=vref)
     print('windows', N, 'vref', vref)
 
@@ -71,7 +82,8 @@ def build():
 def run(tag, seed, gpu=False):
     out = f'{D}/{tag}_s{seed}'
     flags = (['--sumo-compat'] if tag == 'sumo' else []) + os.environ.get('F101_FLAGS', '').split()
-    log = run_cars(['--net', f'{D}/net.xml', '--routes', f'{D}/routes_{"sumo" if tag == "sumo" else "main"}.xml', '--replay', f'{D}/windows.rpl', '--dt', '0.1',
+    routes = 'sumo' if tag == 'sumo' else ('cond' if os.environ.get('F101_COND') else 'main')
+    log = run_cars(['--net', f'{D}/net.xml', '--routes', f'{D}/routes_{routes}.xml', '--replay', f'{D}/windows.rpl', '--dt', '0.1',
                     '--begin', 0, '--end', T0 + W * 0.1, '--seed', seed, '--time-to-teleport', '0', '--fcd', f'{out}.fcd.csv',
                     '--fcd-begin', T0 - 0.05, '--fcd-interval', '0.1'] + flags, gpu=gpu, log=f'{out}.log')
     print(log[-600:])

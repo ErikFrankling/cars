@@ -1,11 +1,11 @@
 {
  "windows": 1000,
  "compared": 1000,
- "speed_rms_diff": 0.003895542633708632,
- "speed_max_diff": 0.20841521275189656,
- "spacing_rms_diff": 0.05054848750811186,
- "spacing_max_diff": 1.9554768718346622,
- "worst_window": 853,
- "certificate_decides_share_of_steps": 0.0029063545150501673,
- "windows_where_it_decides": 0.067
+ "speed_rms_diff": 0.004698016903751638,
+ "speed_max_diff": 0.3383342821738533,
+ "spacing_rms_diff": 0.052391460962902904,
+ "spacing_max_diff": 1.838705414405922,
+ "worst_window": 197,
+ "certificate_decides_share_of_steps": 0.002745819397993311,
+ "windows_where_it_decides": 0.07
 }

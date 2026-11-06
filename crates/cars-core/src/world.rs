@@ -678,12 +678,14 @@ impl SimConfig {
 
 /// The measured driver's numbers, research/truth/measure/model_fit.json: fitted on highD (without location 6), DLR HT
 /// 06-14 UTC and TGSIM I-90/94 stationary, I-294 L1, I-395, frozen before any held-out recording was read.
-pub const MD_K: f32 = 2.835;
-pub const MD_CA: f32 = 0.485;
-pub const MD_KG: f32 = 0.21;
-pub const MD_KP: f32 = 0.0255;
+pub const MD_K: f32 = 2.687;
+pub const MD_CA: f32 = 0.508;
+pub const MD_KG: f32 = 0.284;
+pub const MD_KP: f32 = 0.0253;
 pub const MD_NOISE_SD: f32 = 0.968;
 pub const MD_NOISE_T: f32 = 0.1;
+/// Free driving relaxes to the desired speed with this time, fitted on 30 s rollouts (F311).
+pub const MD_TV: f32 = 1.0;
 /// DRIVER.md: response time constant, standstill gap, gap spread between drivers and its link to free speed, desired speed spread.
 pub const MD_TAU_R: f32 = 0.5;
 pub const MD_S0: f32 = 1.7;
@@ -1207,7 +1209,7 @@ impl World {
                 let avg = (2.0 * (tn / dt).powi(2) * (dt / tn - 1.0 + (-dt / tn).exp())).sqrt();
                 [1.0 - (-cfg.dt / cfg.tune("md_tau_r", MD_TAU_R)).exp(), (-dt / tn).exp(), sd * avg, if cfg.measured() { 1.0 } else { 0.0 }]
             },
-            md_c: [cfg.tune("md_s0", MD_S0), cfg.tune("md_near", 0.5), cfg.tune("md_dv_max", 1.5), 0.0],
+            md_c: [cfg.tune("md_s0", MD_S0), cfg.tune("md_near", 0.5), cfg.tune("md_dv_max", 1.5), cfg.tune("md_tv", MD_TV)],
             md_t: [1.6, 1.4, 1.2, 1.1],
             md_u: [0.95, 0.8, 0.0, 0.0],
         };

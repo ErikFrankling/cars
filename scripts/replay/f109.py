@@ -13,7 +13,9 @@ sys.path.insert(0, HERE)
 from rpl import *
 import numpy as np, pandas as pd
 
-D = os.path.join(OUT, 'f109')
+SITE = os.environ.get('F101_SITE', 'I90mov')
+F101D = os.path.join(OUT, 'f101' if SITE == 'I90mov' else f'f101_{SITE}')
+D = os.path.join(OUT, 'f109' if SITE == 'I90mov' else f'f109_{SITE}')
 T0, X0, W = 1.0, 20.0, 300
 RELEASE = (30, 80, 130, 180, 230)   # samples into the window: 3, 8, 13, 18, 23 s
 H = 10                               # one second ahead
@@ -21,7 +23,7 @@ NW = 1000
 
 
 def load():
-    w = np.load(f'{OUT}/f101/windows.npz')
+    w = np.load(f'{F101D}/windows.npz')
     s, v, vl = w['s'].astype(float), w['v'].astype(float), w['vl'].astype(float)
     xf = np.vstack([np.zeros((1, s.shape[1])), np.cumsum((v[1:] + v[:-1]) * 0.05, 0)])
     return w, s, v, vl, xf
@@ -51,9 +53,12 @@ def build():
     write_rpl(f'{D}/q.rpl', [f'q{c}_0' for c in range(len(q))], tracks)
     with open(f'{D}/routes.xml', 'w') as f:
         f.write('<routes>\n  <vType id="lead" length="5" lcStrategic="-1" lcCooperative="0" lcSpeedGain="0" lcKeepRight="0"/>\n')
-        f.write('  <vType id="drv" carFollowModel="Krauss"/>\n')
+        # The desired speed: the measured spread (CV 0.17) cut below at the speed at release, as f101.py F101_COND.
+        for c, (i, r) in enumerate(q):
+            lo = min(max(float(v[r, i]), 0.0) / float(w['vref']), 1.3)
+            f.write(f'  <vType id="drv{c}" carFollowModel="Krauss" speedFactor="normc(1,0.17,{lo:.4f},2)"/>\n')
         for t, tid, vt, c, pos, sp in sorted(trips, key=lambda r: (r[0], r[1])):
-            f.write(f'  <trip id="{tid}" type="{vt}" depart="{t:.1f}" from="q{c}" to="q{c}" departLane="0" departPos="{pos:.3f}" departSpeed="{max(sp, 0):.3f}"/>\n')
+            f.write(f'  <trip id="{tid}" type="{vt if vt == "lead" else f"drv{c}"}" depart="{t:.1f}" from="q{c}" to="q{c}" departLane="0" departPos="{pos:.3f}" departSpeed="{max(sp, 0):.3f}"/>\n')
         f.write('</routes>\n')
     json.dump(dict(q=[[int(i), int(r)] for i, r in q]), open(f'{D}/q.json', 'w'))
     print('queries', len(q))
@@ -63,7 +68,7 @@ def run(seed, tag='main'):
     out = f'{D}/{tag}_s{seed}'
     end = T0 + (max(RELEASE) + H + 2) * 0.1
     run_cars(['--net', f'{D}/net.xml', '--routes', f'{D}/routes.xml', '--replay', f'{D}/q.rpl', '--dt', '0.1', '--begin', 0, '--end', end,
-              '--seed', seed, '--time-to-teleport', '0', '--fcd', f'{out}.fcd.csv', '--fcd-begin', T0 - 0.05, '--fcd-interval', '0.1'], log=f'{out}.log')
+              '--seed', seed, '--time-to-teleport', '0', '--fcd', f'{out}.fcd.csv', '--fcd-begin', T0 - 0.05, '--fcd-interval', '0.1'] + os.environ.get('F101_FLAGS', '').split(), log=f'{out}.log')
     f = pd.read_csv(f'{out}.fcd.csv', usecols=['time', 'trip', 'speed'])
     f = f[f.trip.str[0] == 'F']
     f['k'] = np.round((f.time - T0) * 10).astype(int); f['c'] = f.trip.str[1:].astype(int)
@@ -125,7 +130,8 @@ def score(tag='main'):
                crps_constant_speed=float(null_c.mean()), crps_null_ci95=ci(null_c), driver_minus_floor_ci95=ci(sim_c - floor),
                recorded_dv_sd=float(np.std(y)), driver_dv_sd=float(np.nanstd(sim)), driver_ensemble_spread_mean=float(np.nanmean(np.nanstd(sim, 1))))
     print(json.dumps(res, indent=1))
-    json.dump(res, open(os.path.join(REPO, 'research/truth/replay', 'f109.json' if tag == 'main' else f'f109_{tag}.json'), 'w'), indent=1)
+    name = ('f109' if tag == 'main' else f'f109_{tag}') + ('' if SITE == 'I90mov' else f'_{SITE}')
+    json.dump(res, open(os.path.join(REPO, 'research/truth/replay', f'{name}.json'), 'w'), indent=1)
 
 
 if __name__ == '__main__':

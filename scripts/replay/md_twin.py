@@ -58,8 +58,8 @@ def twin(w, x0, xl, vl, v0):
     for k in range(W - 1):
         g = xl[k] - L - x
         cmd = FD.command(v, g, vl[k], al[k], P, a_cap=np.full(N, 1e9))
-        r = np.minimum(v, 1.5 * vdes) / vdes
-        free = np.minimum(np.maximum(2.02 - 0.125 * v, 0.7) * np.maximum(1 - r ** 4, -1.0), a_cap(v))
+        # leader within 100 m in every window: no launch law, the desired speed relaxes in T_v (F311)
+        free = np.minimum((vdes - v) / json.load(open(FD.OUTJ))['slow']['T_v'], a_cap(v))
         cmd = np.minimum(cmd, free)
         an = a + beta * (cmd - a)
         vn = np.maximum(v + an * DT, 0.0)

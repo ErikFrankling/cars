@@ -154,7 +154,7 @@ struct Params {
     pad_i: f32,
     md_a: vec4f,      // measured driver, research/truth/measure/MODEL.md: closing gain K, leader share c_a, k_g, k_p
     md_b: vec4f,      // response share per step, noise correlation per step, noise scale per step, on
-    md_c: vec4f,      // standstill gap, braking edge of the band (s), closing response cap (m/s), spare
+    md_c: vec4f,      // standstill gap, braking edge of the band (s), closing response cap (m/s), free relaxation time (s)
     md_t: vec4f,      // time gap at 6.5, 12.5, 17.5, 22.5 m/s
     md_u: vec4f,      // time gap at 30, 40 m/s, spare, spare
 }
@@ -1054,6 +1054,8 @@ var<private> md_beta: f32;
 var<private> md_s0: f32;
 var<private> md_near: f32;
 var<private> md_dvmax: f32;
+var<private> md_tv: f32;
+var<private> md_launch: bool = true;  // no leader within 100 m on the lane: the vehicle's launch law holds the driver
 var<private> md_t: vec4f;
 var<private> md_u: vec2f;
 
@@ -1075,10 +1077,12 @@ fn md_cmd(v: f32, gb: f32, vl: f32, al: f32) -> f32 {
     return md_k * min(vl - v, md_dvmax) / max(gb, 1.0) + md_ca * al + md_kp * max(e, 0.0) - md_kg * max(-e - md_near, 0.0);
 }
 
+// Free driving relaxes to the desired speed. The launch law (a0 - a1 v) holds only a driver with no one close ahead: a
+// follower answers its leader with what the engine gives (F311).
 fn md_free(v: f32) -> f32 {
-    let r = min(v, 1.5 * md_v0) / max(md_v0, 0.1);
-    let r2 = r * r;
-    return min(max(ty.a0 - ty.a1 * v, ty.a_floor) * max(1.0 - r2 * r2, -1.0) - ph_gz, ph_a_cap(v));
+    let a = min((md_v0 - v) / md_tv, ph_a_cap(v));
+    if (md_launch) { return min(a, max(ty.a0 - ty.a1 * v, ty.a_floor) - ph_gz); }
+    return a;
 }
 
 // The first-order response from the acceleration of the last step. Every constraint passes through it from the same

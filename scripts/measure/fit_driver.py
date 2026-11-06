@@ -39,8 +39,9 @@ def command(v, g, vl, al, p, f=1.0, a_cap=None):
     e = (g - gstar) / np.maximum(v, 1.0)
     G = -kg * np.maximum(0.0, -e - E_NEAR) + kp * np.maximum(0.0, e)
     a = K * np.minimum(vl - v, DV_MAX) / np.maximum(g, G_MIN) + ca * al + G
-    cap = np.maximum(A0 - A1 * v, AF) if a_cap is None else a_cap
-    return np.minimum(a, cap)
+    # A follower is held only by its engine: the launch law binds with no leader within 100 m (F311). The tables are
+    # followers within 100 m, and the engine's cap does not bind in them.
+    return a if a_cap is None else np.minimum(a, a_cap)
 
 
 def rollout(v0, a0, g0, VL, AL, p, dt=0.2, tau=TAU_R, noise=None):

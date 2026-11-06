@@ -171,12 +171,19 @@ fn md_setup(e: Veh) {
     md_s0 = P.md_c.x;
     md_near = P.md_c.y;
     md_dvmax = P.md_c.z;
+    md_tv = P.md_c.w;
     md_t = P.md_t;
     md_u = P.md_u.xy;
     md_f = select(1.0, trips[e.trip].gap_f, trips[e.trip].gap_f > 0.0);
     md_v0 = lane_vmax(e.lane, e.sf);
     // Noise moves nobody at a stand.
     md_noise = select(0.0, e.hu_noise * P.md_b.z, e.speed >= 0.5);
+}
+
+// No car within 100 m ahead on this lane: the range the measured following law was fitted on.
+fn md_alone(i: u32, e: Veh) -> bool {
+    if (i + 1u >= G.n_active || cur[i + 1u].lane != e.lane) { return true; }
+    return cur[i + 1u].pos - types[cur[i + 1u].vtype].length - e.pos > 100.0;
 }
 
 fn hu_setup(e: Veh) {
@@ -736,6 +743,7 @@ fn plan(@builtin(global_invocation_id) id: vec3u) {
     }
     apply_script(ego.flags, cur[i].v_next);
     hu_setup(ego);
+    md_launch = md_alone(i, ego);
     ph_cert_bound = 1e9;
     pl_i = i;
     pl_base = i * MAX_ITEMS;
@@ -1840,6 +1848,7 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     apply_script(e.flags, e.v_next);
     ph_setup(e);
     hu_setup(e);
+    md_launch = md_alone(i, e);
     if (mu > 0.0) { ego_acc = e.acc; }
     if (P.trace_len > 0u && (e.flags & F_SCRIPTED) != 0u) { ty.max_speed = speed_trace[min(G.step + 1u, P.trace_len - 1u)]; }
     let base = i * MAX_ITEMS;

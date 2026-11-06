@@ -17,7 +17,7 @@ Each step of length dt, for the speed v, the realised acceleration a of the last
    a_f = K · min(Δv, Δv_max) / max(g, 1 m) + c_a · a_l + k_p · max(e, 0) − k_g · max(−e − 0.5 s, 0),
 
    with Δv = v_l − v. The first term is the inverse time-to-collision: the rate at which the leader's image grows, Δv/g, times a speed K. It makes one gain cover both regimes, since motorway gaps are long and congested gaps short.
-4. **Free driving.** a_free = a_drv(v) · (1 − (v/v_des)⁴), with a_drv the vehicle's launch law a0 − a1 v (floor 0.7 m/s², capped by power and traction) and v_des the lane limit times the driver's speed factor.
+4. **Free driving.** a_free = min((v_des − v)/T_v, engine), with v_des the lane limit times the driver's speed factor. With no car within 100 m ahead on the lane (the range the law was fitted on), also at most the launch law a_drv = a0 − a1 v (floor 0.7 m/s²). A follower answers its leader with what the engine gives. (First draft: a_drv · (1 − (v/v_des)⁴) always. It capped every following command at 0.37-0.7 m/s² above 10 m/s, and followers fell 8-20 m behind in 30 s, F308-F311.)
 5. **The driver's command.** a_cmd = min(a_f over every leader, a_free) + n(t). n is an Ornstein-Uhlenbeck noise with SD σ_n and correlation time τ_n, frozen while standing.
 6. **Response.** a ← a + (1 − e^(−dt/τ_r)) (a_cmd − a), and v' = v + a dt. Because every constraint goes through the same filter from the same state, the lowest of them is the filtered lowest command.
 7. **Bounds, in this order.** The vehicle's power, traction and brakes (`ph_a_cap`, `ph_floor`). Stopping for what stands or for a line: the measured stop law of report 19 (`ph_stop_comfort`, mean 1.3, peak 2.2 m/s²), unchanged. The hard safety bound: the certificate `ph_v_cert`, which keeps a stop possible behind the leader whatever it does, assuming it brakes no harder than this driver can (8.3 m/s² dry). It is a bound, not a behaviour.
@@ -51,8 +51,23 @@ All on the five follower tables of `scripts/measure/follow.py`: highD without lo
 | c_a | share of the leader's acceleration | 0.4-1.1 |
 | k_g | braking per s too close, beyond 0.5 s | 0.2-0.5 m/s² per s |
 | k_p | pull per s too far | 0.005-0.05 m/s² per s |
+| T_v | free relaxation to the desired speed (F311, 30 s rollouts of I-294 L1, I-90/94 stationary, I-395) | 1-4 s |
 | σ_n, τ_n | the command noise left over | σ_n 0.1-0.4 m/s², τ_n 1-6 s |
 | a0, r_1 | launch: SinD Tianjin, Chongqing, Changchun | a0 1.9-2.3 m/s², r_1 0.6-1.2 s |
+
+## Frozen values (model_fit.json)
+
+| Number | Value | 95% CI by follower | Per table (highD, DLR HT, I-90/94 st., I-294 L1, I-395) |
+|---|---|---|---|
+| K | 2.69 m/s | 2.60-2.78 | 3.1, 3.8, 4.2, 2.0, 0.9 |
+| c_a | 0.51 | 0.49-0.52 | 0.48, 0.28, 0.23, 0.74, 0.68 |
+| k_g | 0.28 m/s² per s | 0.23-0.32 | 0.62, 0.07, 0.29, 0.27, 0.19 |
+| k_p | 0.025 m/s² per s | 0.023-0.029 | 0.018, 0.017, 0.049, 0.030, 0.013 |
+| σ_n, τ_n | 0.97 m/s², 0.1 s | median over tables | German tables 0.23-0.34 over 1.5-2 s; TGSIM 0.97-1.29 white (F305) |
+| T_v | 1.0 s | flat from 0.5 to 2 s | |
+| a0, r_1 | 2.025 m/s² (the table's own 2.02), 0.78 s | | |
+
+The law halves the next-second error of constant speed on all five tables (F304). On 30 s rollouts the one-second k_p is weaker than the rollouts want (0.1 would cut the pooled error from 8.4 to 7.0 m) but DRIVER.md measured under 0.05 m/s² at 1.75 s too far, so 0.025 stands; this tension is open.
 
 ## Give-way values
 
