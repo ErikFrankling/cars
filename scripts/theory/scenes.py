@@ -1616,6 +1616,18 @@ class LC5:
         book.check('LC5', 'F026', 0, d5, seeds=seedtag('LC5'))
         book.check('LC5', 'F264', 0, [np.mean(d10) / np.mean(d5)] if np.mean(d5) > 0.002 else [np.nan], seeds=seedtag('LC5'))
 
+        # The same void at the code's own acceleration, max(a0 - a1 v, a_floor) (world.rs physics table), not B's 1.5:
+        # a changer at v - dv catching up to v leaves behind it the integral of (v - u) / a(u) du, times the target
+        # lane's density at its discharge.
+        def void(dv, v=V50):
+            u = np.linspace(v - dv, v, 400)
+            return float(np.trapezoid((v - u) / np.maximum(2.02 - 0.125 * u, 0.7), u))
+        k = base / 3600 / V50
+        f5 = 300 / 3600 * k * void(5.0) / (base / 3600)
+        f10 = 300 / 3600 * k * void(10.0) / (base / 3600)
+        book.check('LC5', 'F403', 0, d5, quantity=f'void loss dv 5 at own a(v): void {void(5.0):.1f} m', forecast=f5, tol='25%', seeds=seedtag('LC5'))
+        book.check('LC5', 'F403', 1, d10, quantity=f'void loss dv 10 at own a(v): void {void(10.0):.1f} m', forecast=f10, tol='25%', seeds=seedtag('LC5'))
+
 
 @scene('LC6', 'drop')
 class LC6:
