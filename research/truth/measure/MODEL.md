@@ -95,3 +95,8 @@ Twin: `fit_driver.command` (MD_LOWGAP=0 gives round 1), `md_platoon.py`, `md_twi
 ## Round 3, 7 November ([STRUCTURE.md](STRUCTURE.md))
 
 The law above is unchanged. Round 3 tested whether another structure reproduces every measured pattern at once: the current law refitted, Newell-anchored, full velocity difference, IDM, two regimes, and a closing gain that saturates at small gaps (K/(g + g_1), from F801) or scales with speed. Each was fitted on the next second, the 30 s windows and the queue launches jointly, then scored on every pattern. None survives. The conflict is the same in every structure: real drivers close up near standstill (1.7-1.9 m) and keep up during a launch, but barely close an open gap at speed (25-41% in 30 s), and each law has one pull for both. Measured on the way: the closing gain decays more slowly than 1/g inside each table, and launches have no leader-acceleration share (F801).
+
+## Round 4, 7 November ([PERSONAL.md](PERSONAL.md))
+
+Nothing changes in the model. The hypothesis was that open gaps are mostly personal preference, so a strong pull towards each driver's own gap would pass every pattern. Read from the past, the personal part is 12-24% of an open gap, and the rest closes with a time constant of 45-60 s (k_p about 0.025-0.06). (e), (f), both with k_p held at 0.084 and 0.139, a metre pull below 5 m/s and an opening-dependent pull were each fitted with past-initialised personal factors. Each misses 7-12 patterns. The next step is a measurement: the desired speed behind open gaps, launches on more sites, and I-395's leader pairing.
+
