@@ -217,5 +217,26 @@ def launch():
     print(res)
 
 
+
+# Round 5 (MODEL.md, F837): the shipped law (j), parameters frozen in ship_jw.json.
+R5 = os.path.join(RES, 'ship_jw.json')
+
+
+def r5_params():
+    p = json.load(open(R5))['fit']['j']['params']
+    return [p[k] for k in ('K', 'g_1', 'c_a', 'k_g', 'k_p', 'K_1')]
+
+
+def command_r5(v, g, vl, al, p, f=1.0):
+    """The kernel's md_cmd, round 5: K min(dv, 1.5)/(g + g_1) + c_a a_l, or K_1 min(dv, 1.5)/(g + g_1) below 6.5 m/s with the
+    leader pulling away; plus the band."""
+    K, g1, ca, kg, kp, K1 = p
+    vt = np.maximum(v, 6.5)
+    gstar = S0 + f * (t_gap(vt) - S0 / vt) * v
+    e = (g - gstar) / np.maximum(v, 1.0)
+    clos = np.minimum(vl - v, DV_MAX) / (np.maximum(g, 0.0) + g1)
+    a = np.where((v < 6.5) & (vl > v), K1 * clos, K * clos + ca * al)
+    return a + kp * np.maximum(e, 0.0) - kg * np.maximum(-e - E_NEAR, 0.0)
+
 if __name__ == '__main__':
     {'fit': fit, 'noise': noise, 'launch': launch}[sys.argv[1]]()

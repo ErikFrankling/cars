@@ -98,7 +98,8 @@ pub struct GpuParams {
     pub md_b: [f32; 4],
     /// Standstill bumper gap (m), braking edge of the band (s), closing response cap (m/s), spare.
     pub md_c: [f32; 4],
-    /// Median steady time gap at 6.5, 12.5, 17.5, 22.5 m/s, then 30 and 40 m/s.
+    /// Median steady time gap at 6.5, 12.5, 17.5, 22.5 m/s, then 30 and 40 m/s, the closing gain's gap offset g_1 (m)
+    /// and the launch closing gain K_1 (m/s).
     pub md_t: [f32; 4],
     pub md_u: [f32; 4],
 }
@@ -677,12 +678,15 @@ impl SimConfig {
     }
 }
 
-/// The measured driver's numbers, research/truth/measure/model_fit.json: fitted on highD (without location 6), DLR HT
-/// 06-14 UTC and TGSIM I-90/94 stationary, I-294 L1, I-395, frozen before any held-out recording was read.
-pub const MD_K: f32 = 2.687;
-pub const MD_CA: f32 = 0.508;
-pub const MD_KG: f32 = 0.284;
-pub const MD_KP: f32 = 0.0253;
+/// The measured driver's numbers, round 5 (research/truth/measure/MODEL.md, ship_jw.json, F837): the law (j), fitted
+/// jointly on the next second of highD (without location 6), DLR HT 06-14 UTC, TGSIM I-90/94 stationary, I-294 L1, I-395
+/// and on queue launches (rounD, inD, SinD Changchun), frozen before any held-out recording was read.
+pub const MD_K: f32 = 4.711;
+pub const MD_G1: f32 = 5.394;
+pub const MD_CA: f32 = 0.452;
+pub const MD_KG: f32 = 0.0789;
+pub const MD_KP: f32 = 0.1516;
+pub const MD_K1: f32 = 10.956;
 /// Command noise: the driver's part of the next-second residual once the trackers' speed error is split off
 /// (research/truth/measure/noise2.json, F615): median of the five tables, sigma 0.24-0.41 m/s2, tau 0.5-2 s.
 pub const MD_NOISE_SD: f32 = 0.38;
@@ -1218,7 +1222,7 @@ impl World {
             },
             md_c: [cfg.tune("md_s0", MD_S0), cfg.tune("md_near", 0.5), cfg.tune("md_dv_max", 1.5), cfg.tune("md_tv", MD_TV)],
             md_t: [1.6, 1.4, 1.2, 1.1],
-            md_u: [0.95, 0.8, 0.0, 0.0],
+            md_u: [0.95, 0.8, cfg.tune("md_g1", MD_G1), cfg.tune("md_k1", MD_K1)],
         };
         w
     }

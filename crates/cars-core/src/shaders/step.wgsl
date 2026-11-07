@@ -175,6 +175,8 @@ fn md_setup(e: Veh) {
     md_tv = P.md_c.w;
     md_t = P.md_t;
     md_u = P.md_u.xy;
+    md_g1 = P.md_u.z;
+    md_k1 = P.md_u.w;
     md_f = select(1.0, trips[e.trip].gap_f, trips[e.trip].gap_f > 0.0);
     md_v0 = lane_vmax(e.lane, e.sf);
     // Noise moves nobody at a stand.
