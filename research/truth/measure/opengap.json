@@ -1201,5 +1201,83 @@
    "aligned": 0.751,
    "certain": 0.75
   }
+ },
+ "shipped_law_P2": {
+  "HT": {
+   "recorded": 0.319,
+   "alone": {
+    "law": 0.795,
+    "within_P2": false
+   },
+   "own free speed": {
+    "law": 0.711,
+    "within_P2": false
+   },
+   "second leader": {
+    "law": 0.71,
+    "within_P2": false
+   },
+   "both": {
+    "law": 0.622,
+    "within_P2": false
+   }
+  },
+  "I90stat": {
+   "recorded": 0.28,
+   "alone": {
+    "law": 0.908,
+    "within_P2": false
+   },
+   "own free speed": {
+    "law": 0.908,
+    "within_P2": false
+   },
+   "second leader": {
+    "law": 0.452,
+    "within_P2": false
+   },
+   "both": {
+    "law": 0.451,
+    "within_P2": false
+   }
+  },
+  "I294L1": {
+   "recorded": 0.248,
+   "alone": {
+    "law": 0.809,
+    "within_P2": false
+   },
+   "own free speed": {
+    "law": 0.788,
+    "within_P2": false
+   },
+   "second leader": {
+    "law": 0.586,
+    "within_P2": false
+   },
+   "both": {
+    "law": 0.554,
+    "within_P2": false
+   }
+  },
+  "I395": {
+   "recorded": 0.405,
+   "alone": {
+    "law": 0.88,
+    "within_P2": false
+   },
+   "own free speed": {
+    "law": 0.88,
+    "within_P2": false
+   },
+   "second leader": {
+    "law": 0.743,
+    "within_P2": false
+   },
+   "both": {
+    "law": 0.743,
+    "within_P2": false
+   }
+  }
  }
 }

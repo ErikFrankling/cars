@@ -564,7 +564,7 @@ def roll2(p, W, vdes, second=False, cand='f', form='full', stats=None):
     distance to its rear, g + 5 + g_2 (centre spacing minus 5 m, the tables' convention), with desired distance
     g*(v) + 5 + g*(v_1). No new number."""
     import structure as ST
-    K, g1, ca, kg, kp = p
+    K, g1, ca, kg, kp = p[:5]
     fn = ST.CANDS[cand]['fn']
     xl = W['g'] + W['xf']; VL, AL = W['vl'], W['al']
     n, S1 = VL.shape
@@ -668,6 +668,23 @@ def explain():
         res[name] = r
         print(name, json.dumps(r), flush=True)
     save('F833_explain', res)
+
+
+def shipped():
+    """Report only: the shipped law (j, F837) on the open windows, alone and with the parameter-free second leader."""
+    import ship  # registers candidate j
+    p = [json.load(open(os.path.join(RES, 'ship_jw.json')))['fit']['j']['params'][k] for k in ('K', 'g_1', 'c_a', 'k_g', 'k_p', 'K_1')]
+    res = {}
+    for name in TABLES:
+        W = load(name); exr = excess(W['g'], W['vf']); rec = closed(exr[:, 0], exr[:, -1]); vd = vdes_own(W)
+        r = dict(recorded=round(float(rec), 3))
+        for lab, (v_, sec) in {'alone': (W['vdes'], False), 'own free speed': (vd, False), 'second leader': (W['vdes'], True), 'both': (vd, True)}.items():
+            gm, V = roll2(p, W, v_, second=sec, cand='j')
+            mod = 1 - np.median(excess(gm[:, -1], V[:, -1])) / np.median(exr[:, 0])
+            r[lab] = dict(law=round(float(mod), 3), within_P2=bool(abs(mod - rec) <= 0.15))
+        res[name] = r
+        print(name, r, flush=True)
+    save('shipped_law_P2', res)
 
 
 def diagnose():
