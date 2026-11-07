@@ -2,6 +2,8 @@
 
 7 November 2026. Branch `md3-structure`. Forecasts F800-F809 in `foundations/forecasts.csv`, each committed before its run. Script `scripts/measure/structure.py`, numbers in [structure.json](structure.json). No held-out recording was read ([HOLDOUT.md](HOLDOUT.md)).
 
+**Round 4 ([PERSONAL.md](PERSONAL.md)) changed two patterns before reuse:** P8 is now measured at the real stop line on signal-head queues (2.55 / 2.25 / 1.90 s; round 3's line 1 m past the head sat inside NGSIM's position error), and P12 at 100 km/h is report only (no motorway queue discharge in the non-held-out recordings). The round 3 fits converged. A strong pull towards each driver's own past gap does not rescue any structure.
+
 **Result: no structure survives.** Seven structures were each fitted on all the non-held-out patterns jointly and scored on every pattern. Every one misses at least seven patterns beyond the intervals written in F800. By the brief's stop rule, nothing went into the kernel, the held-out set stays closed and the measured driver stays off by default.
 
 ## Why this round
