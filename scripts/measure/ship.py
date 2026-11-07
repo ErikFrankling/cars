@@ -85,3 +85,25 @@ def run(cands):
 if __name__ == '__main__':
     if sys.argv[1] == 'fit':
         run(sys.argv[2:] or ['f', 'e', 'j'])
+
+
+def seeds(cand='j', src='ship_jw.json', n=20):
+    """F838: P6 with random personal factors over n draws."""
+    p = [json.load(open(os.path.join(RES, src)))['fit'][cand]['params'][k] for k in ST.CANDS[cand]['names']]
+    FS0 = PS.load4()
+    rows = {}
+    for s in range(n):
+        FS = PS.with_f(FS0, 'random', seed=s)
+        for ds in ST.LAUNCH_SITES:
+            e, _ = ST.w_err(cand, p, FS['launch'][ds])
+            for t in (2, 4, 8):
+                rows.setdefault(f'{ds} {t}s', []).append(float(np.median(-e[:, int(t / DT)])))
+    lim = {2: 0.5, 4: 0.5, 8: 1.0}
+    out = {k: dict(mean=round(float(np.mean(v)), 3), sd=round(float(np.std(v)), 3), share_inside=round(float(np.mean(np.abs(v) <= lim[int(k.split()[-1][:-1])])), 2),
+                   inside_on_mean=bool(abs(np.mean(v)) <= lim[int(k.split()[-1][:-1])])) for k, v in rows.items()}
+    print(json.dumps(out, indent=1))
+    save('F838_random_f_launch_seeds', out)
+
+
+if __name__ == '__main__' and sys.argv[1] == 'seeds':
+    seeds()
