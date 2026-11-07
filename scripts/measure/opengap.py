@@ -559,7 +559,7 @@ def law_f():
     return [p['K'], p['g_1'], p['c_a'], p['k_g'], p['k_p']]
 
 
-def roll2(p, W, vdes, second=False, cand='f'):
+def roll2(p, W, vdes, second=False, cand='f', form='full', stats=None):
     """structure.roll for candidate (f) with an optional second constraint behind the leader's leader: the same law on the
     distance to its rear, g + 5 + g_2 (centre spacing minus 5 m, the tables' convention), with desired distance
     g*(v) + 5 + g*(v_1). No new number."""
@@ -582,8 +582,16 @@ def roll2(p, W, vdes, second=False, cand='f'):
             gst1 = ST.gstar(vl, 1.0)
             ge = g + 5.0 + g2z
             e2 = (g + g2z - gst1 - ST.gstar(v, f)) / np.maximum(v, 1.0)
-            c2 = K * np.minimum(np.nan_to_num(W['v2'][:, k], nan=1e3) - v, FD.DV_MAX) / (np.maximum(ge, 0.0) + g1) + ca * np.nan_to_num(W['a2'][:, k]) \
-                + kp * np.maximum(e2, 0.0) - kg * np.maximum(-e2 - FD.E_NEAR, 0.0)
+            clos = K * np.minimum(np.nan_to_num(W['v2'][:, k], nan=1e3) - v, FD.DV_MAX) / (np.maximum(ge, 0.0) + g1) + ca * np.nan_to_num(W['a2'][:, k])
+            bnd = kp * np.maximum(e2, 0.0) - kg * np.maximum(-e2 - FD.E_NEAR, 0.0)
+            if form == 'full':
+                c2 = clos + bnd
+            elif form == 'closing':
+                c2 = clos
+            else:
+                c2 = ST.c_f(p, v, g, vl, al, ctx) - ST.band(v, g, f, kg, kp) + bnd
+            if stats is not None:
+                stats.append(float(np.mean(has & (c2 < c))))
             c = np.where(has, np.minimum(c, c2), c)
         free_ = np.minimum((vdes - v) / 1.0, ST.MT.a_cap(v, DT))
         c = np.minimum(c, free_)
@@ -660,6 +668,41 @@ def explain():
         res[name] = r
         print(name, json.dumps(r), flush=True)
     save('F833_explain', res)
+
+
+def diagnose():
+    p = law_f()
+    res = {}
+    for name in TABLES:
+        W = load(name)
+        exr = excess(W['g'], W['vf'])
+        e12 = excess(W['g2'][:, 0], W['vl'][:, 0])
+        r = dict(leader_excess_at_start=dict(n=int(np.isfinite(e12).sum()), median=round(float(np.nanmedian(e12)), 3),
+                                             p25_p75=[round(float(np.nanpercentile(e12, 25)), 3), round(float(np.nanpercentile(e12, 75)), 3)],
+                                             share_below_0=round(float(np.nanmean(e12 < 0)), 3)))
+        vd = vdes_own(W)
+        for form in ('full', 'closing', 'band'):
+            st = []
+            gm, V = roll2(p, W, vd, second=True, form=form, stats=st)
+            exm = excess(gm[:, -1], V[:, -1])
+            rec = closed(exr[:, 0], exr[:, -1]); mod = 1 - np.median(exm) / np.median(exr[:, 0])
+            r[f'form {form}'] = dict(recorded=round(float(rec), 3), law_f=round(float(mod), 3), law_minus_recorded=round(float(mod - rec), 3),
+                                     within_P2=bool(abs(mod - rec) <= 0.15), share_of_steps_binding=round(float(np.mean(st)), 3))
+        if name != 'HT':
+            raw = raw_tgsim(name)
+            L2 = _lookup(raw, W['run'][:, None], W['ti'][:, :1], W['lid'][:, None], ['ll_id'])['ll_id'][:, 0]
+            has = (L2 >= 0)
+            Wq = path_checks(dict(v0=W['v0'][has], run=W['run'][has], fid=W['lid'][has], lid=L2[has], ti=W['ti'][has]), raw)
+            c2 = np.zeros(len(L2), bool); c2[np.flatnonzero(has)] = Wq['certain']
+            m = c2 & W['certain']
+            gm, V = roll2(p, {k: (v[m] if isinstance(v, np.ndarray) and v.shape[:1] == (len(m),) else v) for k, v in W.items()}, vd[m], second=True)
+            exm = excess(gm[:, -1], V[:, -1])
+            rec = closed(exr[m, 0], exr[m, -1]); mod = 1 - np.median(exm) / np.median(exr[m, 0])
+            r['both pairs certain'] = dict(n=int(m.sum()), share=round(float(m.mean()), 3), recorded=round(float(rec), 3), law_f_full=round(float(mod), 3),
+                                           law_minus_recorded=round(float(mod - rec), 3))
+        res[name] = r
+        print(name, json.dumps(r), flush=True)
+    save('F835_diagnose', res)
 
 
 if __name__ == '__main__':
