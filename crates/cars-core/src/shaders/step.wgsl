@@ -1941,7 +1941,8 @@ fn exec(@builtin(global_invocation_id) id: vec3u) {
     let old_pos = e.pos;
     if (mu > 0.0) {
         // Bodies do not cross a junction still half in another lane.
-        if (P.lc_carry == 0u && ty.model != MODEL_HUMAN && (e.phys >> 30u) != 0u && !is_internal(e.lane)) {
+        if (P.lc_carry == 0u && ty.model != MODEL_HUMAN && (e.phys >> 30u) != 0u && !is_internal(e.lane)
+            && !(lcm_on(ty) && link_plain(pick_link(e.lane, e.route_i, e.route_end)))) {
             let left = lanes[e.lane].length - e.pos;
             v_safe = min(v_safe, stop_speed(speed, max(left - 0.1, 0.0), ty.decel, true, 1e9));
         }

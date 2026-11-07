@@ -441,5 +441,61 @@
     "p1_ratio_to_round2": 1.0728
    }
   }
+ },
+ "F838_random_f_launch_seeds": {
+  "rounD 2s": {
+   "mean": 0.153,
+   "sd": 0.018,
+   "share_inside": 1.0,
+   "inside_on_mean": true
+  },
+  "rounD 4s": {
+   "mean": 0.436,
+   "sd": 0.047,
+   "share_inside": 0.85,
+   "inside_on_mean": true
+  },
+  "rounD 8s": {
+   "mean": 0.42,
+   "sd": 0.078,
+   "share_inside": 1.0,
+   "inside_on_mean": true
+  },
+  "inD 2s": {
+   "mean": 0.108,
+   "sd": 0.021,
+   "share_inside": 1.0,
+   "inside_on_mean": true
+  },
+  "inD 4s": {
+   "mean": 0.412,
+   "sd": 0.047,
+   "share_inside": 1.0,
+   "inside_on_mean": true
+  },
+  "inD 8s": {
+   "mean": 0.014,
+   "sd": 0.14,
+   "share_inside": 1.0,
+   "inside_on_mean": true
+  },
+  "SinD Changchun 2s": {
+   "mean": -0.157,
+   "sd": 0.025,
+   "share_inside": 1.0,
+   "inside_on_mean": true
+  },
+  "SinD Changchun 4s": {
+   "mean": -0.024,
+   "sd": 0.036,
+   "share_inside": 1.0,
+   "inside_on_mean": true
+  },
+  "SinD Changchun 8s": {
+   "mean": 0.396,
+   "sd": 0.07,
+   "share_inside": 1.0,
+   "inside_on_mean": true
+  }
  }
 }

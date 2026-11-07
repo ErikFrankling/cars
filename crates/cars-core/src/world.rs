@@ -99,9 +99,16 @@ pub struct GpuParams {
     /// Standstill bumper gap (m), braking edge of the band (s), closing response cap (m/s), spare.
     pub md_c: [f32; 4],
     /// Median steady time gap at 6.5, 12.5, 17.5, 22.5 m/s, then 30 and 40 m/s, the closing gain's gap offset g_1 (m)
-    /// and the launch closing gain K_1 (m/s).
+    /// and the launch closing gain K_1 (m/s) in md_u.
     pub md_t: [f32; 4],
     pub md_u: [f32; 4],
+    /// Measured lane changes, research/truth/measure/LANECHANGE.md: start law constant and its slope per 10 s to the
+    /// end of the lane; critical lag time gap, log median and its rise per m/s the follower closes.
+    pub lcm_a: [f32; 4],
+    /// Critical lag log-SD; critical lead time gap log median, rise per m/s ego closes, log-SD.
+    pub lcm_b: [f32; 4],
+    /// Share of target-lane followers who open a gap for a must-change; on (1) or off (0); spare; spare.
+    pub lcm_c: [f32; 4],
 }
 
 #[repr(C)]
@@ -456,6 +463,25 @@ pub const C_HU_LC_URGENT: usize = 36;
 pub const C_HU_GUARD: usize = 37;
 pub const C_HU_STEPS: usize = 39;
 pub const REROUTE_LOG: u64 = 65536;
+/// Measured lane changes (research/truth/measure/LANECHANGE.md, lc_decision.json), frozen before any scene or replay test.
+/// One likelihood over every 0.5 s a must-change car spends beside its target lane (I-80 and US-101 cohorts of report 14,
+/// 959 cars): crossing hazard sigmoid(a0 + AT tte / 10) times the chance both gaps pass. The simulator commits at the start
+/// of the sideways motion, which is 2.0 s before the centre crosses (exiD merges, highD): A0 = a0 - AT * 2.0 / 10.
+pub const LCM_A0: f32 = -0.825 + 1.119 * 0.2;
+pub const LCM_AT: f32 = -1.119;
+/// Critical time gaps, lognormal: ln median, rise of the ln per m/s of closing speed, log-SD. Lag over the follower's
+/// speed, lead over own speed, both floored at 1 m/s. Same fit; drawn afresh every 0.5 s as the fit assumes.
+pub const LCM_LAG: [f32; 3] = [-0.908, 0.551, 1.676];
+pub const LCM_LEAD: [f32; 3] = [-2.004, 0.453, 1.374];
+/// Share of followers who open a gap when a blocked must-changer is alongside: report 14's 0.4, provisional (swept on
+/// I-80). F707 measures something else: per merge, 11.9% of new followers slow 0.3 m/s2 beyond matched ones against
+/// 6.4% (exiD), mostly in free flow where nobody is blocked. Taking 0.055 for the share made lane-end waits three times
+/// I-80's (LC8 p99 187 s against 72.7); 0.4 gives 76.5 s, median 24 against 22.6.
+pub const LCM_COURTESY: f32 = 0.4;
+/// Sideways speed of the physical change (1 s ends): the 1.4 m from 10% of the lane to its marking in the measured
+/// 1.96-2.0 s from the start to the centre crossing, and the 2.3 m to a body clear of the old lane in 3.2-3.3 s
+/// (exiD merges 1,480 at 20-25 m/s, highD 1,124 at 25-30 m/s; both give 0.71). DLR HT gives 0.47-0.52.
+pub const LCM_V_LAT: f32 = 0.71;
 /// Everything on except the rules named.
 pub fn human_flags(off: &[String]) -> u32 {
     let mut flags = HUMAN_RULES.iter().fold(0, |a, r| a | r.1);
@@ -923,7 +949,7 @@ fn physical_type(g: &mut GpuVType, t: &VType, cfg: &SimConfig) {
     g.a0 = num("phys.a0", r.a0);
     g.a1 = num("phys.a1", r.a1);
     g.a_floor = num("phys.a_floor", r.a_floor.min(g.a0));
-    g.v_lat = num("phys.v_lat", cfg.tune("v_lat", 0.6));
+    g.v_lat = num("phys.v_lat", cfg.tune("v_lat", if !cfg.humans && cfg.tune("lc_measured", 0.0) > 0.0 { LCM_V_LAT } else { 0.6 }));
     g.width = t.width;
     // DRIVER.md: real cars stand 1.7 m apart in rounD and inD queues, measured on real box lengths. SUMO's 2.5 had no source.
     if md_type(t, cfg) {
@@ -1223,6 +1249,9 @@ impl World {
             md_c: [cfg.tune("md_s0", MD_S0), cfg.tune("md_near", 0.5), cfg.tune("md_dv_max", 1.5), cfg.tune("md_tv", MD_TV)],
             md_t: [1.6, 1.4, 1.2, 1.1],
             md_u: [0.95, 0.8, cfg.tune("md_g1", MD_G1), cfg.tune("md_k1", MD_K1)],
+            lcm_a: [cfg.tune("lcm_a0", LCM_A0), cfg.tune("lcm_at", LCM_AT), cfg.tune("lcm_lag_mu", LCM_LAG[0]), cfg.tune("lcm_lag_close", LCM_LAG[1])],
+            lcm_b: [cfg.tune("lcm_lag_sd", LCM_LAG[2]), cfg.tune("lcm_lead_mu", LCM_LEAD[0]), cfg.tune("lcm_lead_close", LCM_LEAD[1]), cfg.tune("lcm_lead_sd", LCM_LEAD[2])],
+            lcm_c: [cfg.tune("lcm_courtesy", LCM_COURTESY), if !cfg.humans && cfg.tune("lc_measured", 0.0) > 0.0 { 1.0 } else { 0.0 }, 0.0, 0.0],
         };
         w
     }
