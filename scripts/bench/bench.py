@@ -198,7 +198,7 @@ def main():
     s = p.add_subparsers(required=True)
     s.add_parser('selftest').set_defaults(fn=cmd_selftest)
     r = s.add_parser('run')
-    r.add_argument('--driver', required=True, choices=['main', 'sumo', 'physics', 'human'])
+    r.add_argument('--driver', required=True, choices=['main', 'sumo', 'physics', 'human', 'measured'])
     r.add_argument('--mode', choices=['fast', 'full'], default='fast')
     r.add_argument('--scenes')
     r.add_argument('--gpu', action='store_true', help='run on the real GPU, through the lock')
