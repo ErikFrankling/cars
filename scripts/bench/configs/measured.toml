@@ -1,0 +1,10 @@
+# Main with the measured driver and measured lane changes switched on (research/truth/measure/MODEL.md, LANECHANGE.md).
+name = "measured"
+branch = "main"
+patch = "instrument/sensors-main.patch"
+kind = "physical"
+dt = 0.1
+dt_network = 1.0
+time_to_teleport = 0
+flags = ["--tune", "measured=1", "--tune", "lc_measured=1"]
+vtype = 'carFollowModel="Krauss"'
