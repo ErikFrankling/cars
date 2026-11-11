@@ -50,7 +50,11 @@ Car following and lane changes: highD and exiD (`datasets/levelx/`), TGSIM (5 si
 
 ## Data access
 - highD, exiD, inD, rounD: downloaded 6 November, manifest with checksums and licence in `datasets/levelx/manifest.json`.
-- I-24 MOTION and CIRCLES: account requested 6 November, pending approval; scheduled check 7 November 17:00.
+- I-24 MOTION INCEPTION: approved; all 10 days (21 November to 2 December 2022, 4 miles of I-24 near Nashville, every vehicle) and the auxiliary layers downloaded 9 November to `datasets/i24-motion/` (49 GB, sizes and zips checked against the Box listing, which gives no checksums; `manifest.json`). Terms: no re-identification; cite Gloudemans et al. 2023. CIRCLES (MegaVanderTest) data is not on the I-24 access page.
+
+## Benchmark (`scripts/bench`, fast mode, no level 4 data)
+- Main on 7 November against 2 November: 51 better, 29 worse, 94 same; level statuses unchanged (F950).
+- Round 4's measured driver against main: 53 better, 63 worse. Individual following gets better (level 1: 36 better, 15 worse); junctions, waves and capacity get worse (level 2: 17 better, 42 worse; wave speed 7.9 km/h against real 12-22). It also breaks level 0: 1 collision, 25 cars lost, 8.3% unfinished (F951). Small-scale realism has not yet carried to large scale; that is why round 5 ships by system-scale patterns first.
 
 ## Rules against rabbit holes
 - Driver following law: four rounds spent by 7 November. The next law ships by the fixed rule above, with its misses written down; no fifth open search.
