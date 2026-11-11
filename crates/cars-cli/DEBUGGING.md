@@ -39,7 +39,7 @@ Each tick, `decided by` is the limit that set the car's speed, and `planned by` 
 | `next_limit`, `curve` | slowing for a lower limit on the next road, or for a junction lane |
 | `leader`, `leader_ahead`, `tail` | a car on this lane, on a lane ahead, or the tail of one hanging onto a lane ahead |
 | `signal` | stopping at red or yellow |
-| `yield` | stopping for a link it may not take yet; `link closed` says why and which foe |
+| `yield` | stopping for a link it may not take yet; `link closed` says why and which foe, or `arbiter held it` gives the physical arbiter's reason: a zone taken by a foe lane, the onward zone of a stub, no room past the box, or a bid lost to a zone foe |
 | `exit_full` | no room past the junction, and it names that lane |
 | `junction` | a car inside the junction |
 | `lane_end` | the route needs another lane; `lane change` says who blocks it |
@@ -75,7 +75,7 @@ The buffer is at binding 63, above anything the main layout will reach. Probes o
 | `blame_gap`, `v_safe` | metres to what it blames, the speed the plan allowed |
 | `leader`, `leader_gap`, `leader_speed` | nearest vehicle ahead in its plan |
 | `first_link`, `first_dist` | next link and metres to it |
-| `foe_trip`, `foe_link`, `foe_gap` | the foe that closed the link, its link, seconds it arrives after this car would. With `closed` 0 and no next link, `foe_link` is the edge its route asks for |
+| `foe_trip`, `foe_link`, `foe_gap` | the foe that closed the link, its link, seconds it arrives after this car would. With `closed` 0 and no next link, `foe_link` is the edge its route asks for; with `closed` 0 and a code in its top 3 bits, the arbiter held it (1 zone taken, 2 onward zone, 3 no room past it, 4 bid lost) and the low bits are the lane |
 | `lc_right`, `lc_left`, `lc_chosen` | LCA flags of each side, and the side taken |
 | `*_gap`, `*_leader`, `*_follower` | gaps and cars on each side |
 | `limits` | u16 × 22: value of each kind, m/s × 128, 0xffff for silent |

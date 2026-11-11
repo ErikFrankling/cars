@@ -1777,12 +1777,14 @@ fn ph_bid(@builtin(global_invocation_id) id: vec3u) {
             break;
         }
         // Whoever started goes on: without this a car that won a gap loses it again before it reaches the line.
-        // Also one that won it standing and waits out its start reaction: two standing heads that tie for a zone
-        // otherwise each win it every other step by the hash, a lost step restarts the reaction, and neither goes.
         if (committed) { chain_from = NONE; }
         var rank = 3u;
-        if (committed) { rank = 0u; } else if ((e.flags & F_GRANTED) != 0u) { rank = 1u; } else if (have_priority(link_state(it.link))) { rank = 2u; }
-        let hash = (pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u;
+        if (committed) { rank = 0u; } else if ((e.flags & F_GRANTED) != 0u && v > HALT_SPEED) { rank = 1u; } else if (have_priority(link_state(it.link))) { rank = 2u; }
+        // A tie goes to the one that won last step and still stands waiting out its start reaction. With a fresh hash
+        // each step, two standing heads tied for a zone each win every other step, a lost step restarts the reaction,
+        // and neither ever goes (replay/LOCK.md). Bids that do not tie are ordered as before.
+        var hash = (pcg(e.trip * 2654435761u ^ G.step) >> 16u) | 2u;
+        if ((e.flags & F_GRANTED) != 0u && v <= HALT_SPEED) { hash = 2u; }
         let bid = (rank << 30u) | (min(u32(max(it.arrival, 0.0) * 8.0), 16383u) << 16u) | hash;
         items[base + j].grant = bid;
         atomicMin(&ph_lane[(next) * 5u + 0u], bid);
