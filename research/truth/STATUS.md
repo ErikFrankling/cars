@@ -55,6 +55,7 @@ Car following and lane changes: highD and exiD (`datasets/levelx/`), TGSIM (5 si
 ## Benchmark (`scripts/bench`, fast mode, no level 4 data)
 - Main on 7 November against 2 November: 51 better, 29 worse, 94 same; level statuses unchanged (F950).
 - Round 4's measured driver against main: 53 better, 63 worse. Individual following gets better (level 1: 36 better, 15 worse); junctions, waves and capacity get worse (level 2: 17 better, 42 worse; wave speed 7.9 km/h against real 12-22). It also breaks level 0: 1 collision, 25 cars lost, 8.3% unfinished (F951). Small-scale realism has not yet carried to large scale; that is why round 5 ships by system-scale patterns first.
+- Round 5's law against main: 59 better, 43 worse (F952). Against round 4 it gets back what round 4 broke: no lost cars, wave 12.0 km/h (real 12-22), turning saturation flow and lane-drop flow now better than main, roundabout critical gap off 3.2 s instead of 7.6. Still worse than main: capacity on the corridor (off 403 veh/h against 121), stop-line lost time, step-size dependence (134 veh/h against 7), and 1 engine collision. These four block it as the default along with the two misses in T1.
 
 ## Rules against rabbit holes
 - Driver following law: four rounds spent by 7 November. The next law ships by the fixed rule above, with its misses written down; no fifth open search.
