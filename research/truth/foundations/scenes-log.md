@@ -181,3 +181,20 @@ Branch t3/f0bdfad3, dt 0.25, llvmpipe, 5 seeds unless said. Driver values (T, re
 ## 6. The measured driver, round 2, 7 November
 
 `scenes.py --driver measured` now passes `--tune measured=1`: the merge made the driver off by default and the flag had been left empty. N9's "cars left" line counted FCD rows (about ten per car); it counts cars now, and the measured driver's 95-101 left on offset 0 are backlog from its lower discharge, not a lock (F600, F601). Round 2 driver (noise without the tracker, desired gap s0 + T v from standstill, roundabout critical gap 4.97 s for both physical drivers): 100 pass, 99 fail of 199. L1 is 1,104 / 1,052 veh/h. The part responsible is the follower's acceleration in the first 4 s of a launch. Details: `research/truth/measure/ROUND2.md`.
+## 7. Measured lane changes, 7 November
+
+Branch t3/7c78c015, dt 0.25, GPU, `--tune lc_measured=1` (off by default); `measure/LANECHANGE.md` has the model, F720-F728 the forecasts.
+
+- **Merge shares fixed:** LC3 0.503 and C-S6 0.482 (were 0.715 and 0.708). LC8 waits pass (p99 61 s).
+- **Three rows that passed now fail:**
+  - LC3 F023 554: its floor assumes a deterministic tc; the code's own acceptance is lognormal.
+  - LC5 F264 and F403 dv 5: a changer takes a short lag, and its follower brakes in full where real followers do 0.39-0.68 of it.
+- **Still failing:** LC4 (0.74), LC6 (17.0%, seeds −31 to 42), C-S6 total (1,130).
+- **Diagnosis of the 0.70 share with the old rules:**
+  - Mergers went in 107 m before the end at 6 m/s, in runs: no through car between two mergers in 243 of 321 cases, against I-80's 145 of 558.
+  - Through cars were held at −3 m/s² by lane-change advice for 25-56% of their ticks: courtesy at full urgency and SUMO's secure-gap request to followers.
+  - Courtesy off alone (0.725) and later merging alone (0.82) did not fix it. Dropping the follower holds and the measured acceptance did.
+- **Lane-end waits, two rounds and stopped:**
+  - Capping the acceptance's closing term (F727) did nothing and raised contacts. Reverted.
+  - Courtesy at 0.055 tripled the waits; back to 0.4 (F728).
+- **A fault found on the way:** the one driver could not carry a change over a lane end. On a lane cut into sections (exiD's merged lanelets) every merger at speed was refused for room and stopped at the end of the acceleration lane. Measured rules let a change run on over links with no junction box.
