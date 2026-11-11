@@ -35,7 +35,7 @@ rng = np.random.default_rng(3)
 def lights(path):
     L = pd.read_csv(D + path)
     cols = [c for c in L.columns if 'light' in c.lower() and 'pedestrian' not in c.lower()]
-    ts = L['timestamp(ms)'].to_numpy(float); fr = L['RawFrameID'].to_numpy(float)
+    ts = L['timestamp(ms)'].to_numpy(float).copy(); fr = L['RawFrameID'].to_numpy(float)
     ok = np.isfinite(ts)
     if (~ok).any():
         k = np.polyfit(fr[ok], ts[ok], 1); ts[~ok] = np.polyval(k, fr[~ok])

@@ -1,0 +1,11 @@
+{
+ "windows": 1000,
+ "compared": 1000,
+ "speed_rms_diff": 0.0025729031758582703,
+ "speed_max_diff": 0.24635888830858882,
+ "spacing_rms_diff": 0.019796840640894216,
+ "spacing_max_diff": 0.5613180378268794,
+ "worst_window": 120,
+ "certificate_decides_share_of_steps": 0.009020066889632108,
+ "windows_where_it_decides": 0.113
+}

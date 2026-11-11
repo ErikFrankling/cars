@@ -1,0 +1,28 @@
+{
+ "queries": 5000,
+ "scored": 5000,
+ "seeds": 10,
+ "harness_max_speed_error_at_release": 1.8920898412488896e-06,
+ "crps_driver": 0.2335534963614502,
+ "crps_driver_ci95": [
+  0.22584480365175616,
+  0.2413046628154388
+ ],
+ "crps_real_floor_knn10": 0.1738296754608154,
+ "crps_floor_ci95": [
+  0.1689748716673111,
+  0.17904510850785052
+ ],
+ "crps_constant_speed": 0.34341180953979494,
+ "crps_null_ci95": [
+  0.33368661520028214,
+  0.35439761156612803
+ ],
+ "driver_minus_floor_ci95": [
+  0.05475490533587476,
+  0.06544024784276119
+ ],
+ "recorded_dv_sd": 0.4586029677500252,
+ "driver_dv_sd": 0.2826663516815577,
+ "driver_ensemble_spread_mean": 0.1728099201091073
+}

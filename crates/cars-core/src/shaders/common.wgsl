@@ -156,7 +156,7 @@ struct Params {
     md_b: vec4f,      // response share per step, noise correlation per step, noise scale per step, on
     md_c: vec4f,      // standstill gap, braking edge of the band (s), closing response cap (m/s), free relaxation time (s)
     md_t: vec4f,      // time gap at 6.5, 12.5, 17.5, 22.5 m/s
-    md_u: vec4f,      // time gap at 30, 40 m/s, spare, spare
+    md_u: vec4f,      // time gap at 30, 40 m/s, closing gain's gap offset g_1 (m), launch closing gain K_1 (m/s)
     lcm_a: vec4f,     // measured lane change (measure/LANECHANGE.md): start law constant, per 10 s to the end; critical lag log median, per m/s closing
     lcm_b: vec4f,     // critical lag log-SD; critical lead log median, per m/s closing, log-SD
     lcm_c: vec4f,     // share of followers who open a gap; on; spare; spare
@@ -1061,6 +1061,8 @@ var<private> md_tv: f32;
 var<private> md_launch: bool = true;  // no leader within 100 m on the lane: the vehicle's launch law holds the driver
 var<private> md_t: vec4f;
 var<private> md_u: vec2f;
+var<private> md_g1: f32;
+var<private> md_k1: f32;
 
 // Median steady time gap against speed, DRIVER.md: linear between the speed bands' centres.
 fn md_tgap(v: f32) -> f32 {
@@ -1072,14 +1074,18 @@ fn md_tgap(v: f32) -> f32 {
     return mix(md_u.x, md_u.y, clamp((v - 30.0) / 10.0, 0.0, 1.0));
 }
 
-// What the driver asks for behind a leader at bumper gap gb: closing speed over gap (the inverse time to collision),
-// a share of the leader's acceleration, braking only well too close, and a weak pull from far behind.
+// What the driver asks for behind a leader at bumper gap gb (round 5, measure/MODEL.md): closing speed over gap plus g_1,
+// a share of the leader's acceleration, braking only well too close, and a pull from far behind. Below 6.5 m/s with
+// the leader pulling away (a launch) the closing gain is K_1 and the leader's acceleration is not followed (F801).
 fn md_cmd(v: f32, gb: f32, vl: f32, al: f32) -> f32 {
     // Spacing grows as s0 + T v from standstill (queues.json, F611); above 6.5 m/s it equals DRIVER.md's T(v) v.
     let vt = max(v, 6.5);
     let gs = md_s0 + md_f * (md_tgap(vt) - md_s0 / vt) * v;
     let e = (gb - gs) / max(v, 1.0);
-    return md_k * min(vl - v, md_dvmax) / max(gb, 1.0) + md_ca * al + md_kp * max(e, 0.0) - md_kg * max(-e - md_near, 0.0);
+    let clos = min(vl - v, md_dvmax) / (max(gb, 0.0) + md_g1);
+    var a = md_k * clos + md_ca * al;
+    if (v < 6.5 && vl > v) { a = md_k1 * clos; }
+    return a + md_kp * max(e, 0.0) - md_kg * max(-e - md_near, 0.0);
 }
 
 // Free driving relaxes to the desired speed. The launch law (a0 - a1 v) holds only a driver with no one close ahead: a

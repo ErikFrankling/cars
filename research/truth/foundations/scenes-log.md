@@ -199,6 +199,17 @@ Branch t3/7c78c015, dt 0.25, GPU, `--tune lc_measured=1` (off by default); `meas
   - Courtesy at 0.055 tripled the waits; back to 0.4 (F728).
 - **A fault found on the way:** the one driver could not carry a change over a lane end. On a lane cut into sections (exiD's merged lanelets) every merger at speed was refused for room and stopped at the end of the acceleration lane. Measured rules let a change run on over links with no junction box.
 
-## 8. Junction arbiter after the pNEUMA lock work, 11 November
+## 8. The measured driver, round 5, 7 November
+
+`scenes.py --driver measured --dt 0.25 --gpu --tag measured_0.25_r5` (`results/theory/measured_0.25_measured_0.25_r5.csv`): law (j) of `research/truth/measure/OPENGAP.md`. Its lines F840-F849 replace round 2's F620-F629 (`MD_FID`), with numbers from the platoon twin (`md_platoon.py` -> `md_platoon_r5.json`).
+
+- **Totals:** 126 pass, 74 fail of 200 (round 2 100 / 99; the one driver 142 / 60).
+- **Realism:** L1 1,874 / 1,818 veh/h at 50 / 100 km/h; S1 1.93 s; start wave 24 km/h; W1 damped.
+- **Misses against the twin, not explained (F863):** at 30 km/h and at a signal the kernel discharges faster than the twin, even with noise off. At 50 km/h they agree within 2%.
+- **Own misses:** the ring and congested speeds (weak k_g under noise), and L6 (noise; 665 veh/h without it).
+- **Worse than the one driver:** N4 merge both saturated, N3 storage, S4 F290, G5 F259, C-S8 at b 0.
+- **Lane-change rows with `--tune lc_measured=1`** (`measured_0.25_measured_0.25_r5_lcm.csv`): 24 / 7 of 31.
+
+## 9. Junction arbiter after the pNEUMA lock work, 11 November
 
 Branch t3/pneuma-junction-lock-causes, `replay/LOCK.md`. Two changes to `ph_bid`: keep-clear only on links with foes (as SUMO's checkRewindLinkLanes and our Krauss path), and a tie for a zone goes to the car that won it last step and still stands waiting out its start reaction. Before, the tie-break hash changed every step, each tied head won every other step, a lost step restarted its reaction, and neither went. Junction and signal rows at dt 0.25: 78 pass with main's shaders, 76 with these. N3 and N3b show this livelock (the tie rule alone restores them; not traced in the scene): their bottleneck discharged 60 and 156 veh/h of the 720 and 810 built for, now 590 and 647. Their storage-at-spill rows passed on the blocked bottleneck and now fail (38.2 against 51.2 cars, 86 against 105): a discharging queue spills before it stores 2 lanes x length x kj, so F029 and F271 need restating for a moving queue. N3b's tail speed now passes. Everything else within its spread. The small debug-tools scene of `plain_identical.py` is byte-identical before and after.

@@ -1,0 +1,47 @@
+scene,id,quantity,forecast,measured,spread,tolerance,verdict,seeds,driver,dt
+L7,F007,"lc: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+LC1,F021,mean wait to change q 900 v 10 dv 3 h 3.3 (s),32,3.57,3.21..4.05,<= 20%,pass,"LC1 arrivals 0-4, sim 1",measured,0.25
+LC1,F263,target cars passing a changer q 900 dv 3 (per s),0.075,0.0739,0.0704..0.0774,10%,pass,"LC1 arrivals 0-4, sim 1",measured,0.25
+LC1,,"speed difference actually seen (m/s), forecast 3",,2.94,,,info,,measured,0.25
+LC2,F022,"share changed on the move, block 100 m",0.36,0.794,0.742..0.825,>= .1,pass,"LC2100 arrivals 0-4, sim 1",measured,0.25
+LC2,,"share changed only after stopping, block 100 m",,0.206,,,info,,measured,0.25
+LC2,F022,"share changed on the move, block 300 m",0.74,0.955,0.928..0.99,>= .1,pass,"LC2300 arrivals 0-4, sim 1",measured,0.25
+LC2,,"share changed only after stopping, block 300 m",,0.0454,,,info,,measured,0.25
+L7,F007,"lc2: inserted-arrived-running, contacts 2",exact,0,,1,pass,sim 1,measured,0.25
+LC3,F023,stopped at lane end q 900 tc 4 tf 2.5 (veh/h),724,540,510..579,>= >= 15% below,FAIL,"LC3a arrivals 0-4, sim 1",measured,0.25
+LC3,F024,merge share both saturated,0.5,0.404,0.363..0.472,.1,pass,"LC3b arrivals 0-4, sim 1",measured,0.25
+LC3,,both saturated: total out (veh/h),,1302,,,info,,measured,0.25
+LC8,F028,"wait, closing lane last 100 m: p99 (s)",72.7,61.5,n=467,p99 <= 75,pass,"LC3c arrivals 0-4, sim 1",measured,0.25
+LC8,F028,same: max; a hold over 300 s is a fault,79,67.5,,<= 300,pass,"LC3c arrivals 0-4, sim 1",measured,0.25
+LC8,,"median wait (s), I-80 22.6",,26,,,info,,measured,0.25
+LC4,,two lanes from a released queue: no changes; a third change (veh/h),,"3430, 2307",,,info,,measured,0.25
+LC4,F025,capacity with lane changes eps .10 (share),0.91,0.673,0.614..0.721,5%,FAIL,"LC4b arrivals 0-4, sim 1",measured,0.25
+LC5,,target lane alone from a released queue (veh/h),,1821,,,info,,measured,0.25
+LC5,F026,void loss k 30 dv 5 flow 300 (share),0.039,0.146,0.0445..0.271,25%,FAIL,"LC5 arrivals 0-4, sim 1",measured,0.25
+LC5,F264,void loss dv 10 over dv 5 (ratio),4,2.07,,25%,FAIL,"LC5 arrivals 0-4, sim 1",measured,0.25
+LC5,F403,void loss dv 5 at own a(v): void 16.5 m,0.0992,0.146,0.0445..0.271,25%,FAIL,"LC5 arrivals 0-4, sim 1",measured,0.25
+LC5,F403,void loss dv 10 at own a(v): void 47.0 m,0.282,0.303,0.279..0.33,25%,pass,"LC5 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"drop: inserted-arrived-running, contacts 3",exact,0,,1,pass,sim 1,measured,0.25
+LC6,F027,capacity drop at a lane drop (%),5-15,-9.03,-14.7..-2.41,never negative,FAIL,"LC6 arrivals 0-4, sim 1",measured,0.25
+LC6,,before; after; onset s,,2668; 2904; 594,,,info,,measured,0.25
+L7,F007,"drop_city: inserted-arrived-running, contacts 2",exact,0,,1,pass,sim 1,measured,0.25
+C-S6,F036,lane drop 1300+1300 total (veh/h),1800,1285,1.17e+03..1.46e+03,10%,FAIL,"C-S6 arrivals 0-4, sim 1",measured,0.25
+C-S6,F036,share of the closing lane,0.5,0.403,0.382..0.432,.1,pass,"C-S6 arrivals 0-4, sim 1",measured,0.25
+C-S6,F036,longest wait last 100 m (s),80,80,,<= 0,pass,"C-S6 arrivals 0-4, sim 1",measured,0.25
+C-S4b,F035,give-ups at a real lane drop,0,0,,exact,pass,"C-S6 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"slow: inserted-arrived-running, contacts 8",exact,0,,1,pass,sim 1,measured,0.25
+LC7,,flow per lane ahead of the slow car by speed: 30:713 50:1241 60:1340 70:1485 80:1541,,0,,,info,,measured,0.25
+LC7,F265,flow past the slow car rises with its speed,rises,1241..1541,,3%,pass,"LC7 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"net: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+C-S5,F280,"both heads swapped by (s), worst of 10",30,0.75,,<= 0,pass,"C-S5 arrivals 0-9, sim 1",measured,0.25
+C-S5,,"median swap time (s), I-80 median 22.6",,0.75,,,info,,measured,0.25
+L7,F007,"miss60: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+C-S3,,"lane 0 flow with no wrong-lane car (veh/h), C took 1800",,1687,,,info,,measured,0.25
+C-S3,F033,"lane 0 flow, f 0.05 patience 60: 3600/(h+fT), h 2.13",701,615,398..848,15%,pass,"C-S3 arrivals 0-4, sim 1",measured,0.25
+C-S3,F033,"lane 0 flow, f 0.1 patience 60: 3600/(h+fT), h 2.13",443,467,413..545,15%,pass,"C-S3 arrivals 0-4, sim 1",measured,0.25
+C-S4,,"lane 0 flow with no wrong-lane car (veh/h), C took 1800",,1319,,,info,,measured,0.25
+C-S4,F034,"lane 0 flow, f 0.05 patience 60: 3600/(h+fT), h 2.73",628,669,557..770,15%,pass,"C-S4 arrivals 0-4, sim 1",measured,0.25
+C-S4,F034,"lane 0 flow, f 0.1 patience 60: 3600/(h+fT), h 2.73",412,426,316..570,15%,pass,"C-S4 arrivals 0-4, sim 1",measured,0.25
+C-S3,,wrong-lane heads stand this far before the lane end (m),,56,,,info,,measured,0.25
+C-S4,,wrong-lane heads stand this far before the lane end (m),,40.3,,,info,,measured,0.25
+C-S4,,"patience 60: missed turns asked, rerouted, no way",,"{'asked': 312, 'rerouted': 312, 'no_way': 0}",,,info,,measured,0.25

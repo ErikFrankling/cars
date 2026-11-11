@@ -85,7 +85,7 @@ Signals: two rounds without gain (F907, F908), stopped by rule 9. What the signa
 | N3b F271 tail speed | fail (none) | pass | the tie rule |
 | N5 F273, F404, F275; N6 F276; G5 F259; N10 F049 d | | within their spread, verdicts unchanged | |
 
-Main's N3 and N3b bottlenecks show J69's livelock in a test scene, by every sign though not traced there: the tie rule alone restores them, and before it the bottleneck passed 60 and 156 veh/h of the 720 and 810 it was built for. Their storage and spill rows passed on that. With the bottleneck discharging, the queue spills while it still moves and stores fewer cars than 2 lanes x length x kj; those forecasts assumed a standing queue and need a second look (scenes log section 8).
+Main's N3 and N3b bottlenecks show J69's livelock in a test scene, by every sign though not traced there: the tie rule alone restores them, and before it the bottleneck passed 60 and 156 veh/h of the 720 and 810 it was built for. Their storage and spill rows passed on that. With the bottleneck discharging, the queue spills while it still moves and stores fewer cars than 2 lanes x length x kj; those forecasts assumed a standing queue and need a second look (scenes log section 9).
 
 ## For the other agents
 
