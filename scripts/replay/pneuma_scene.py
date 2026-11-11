@@ -33,8 +33,25 @@ MIN_RUN = 5                       # on/off-path runs shorter than this many samp
 STITCH_MAX_ERR = 15.0             # m: a later piece joins when distance along the net and the speeds agree this well
 
 
-def outdir(dr, day, hh):
-    return os.path.join(PN.OUTD, f'scene-d{dr}-{day}-{hh}')
+# Counterfactual scenes (research/truth/replay/LOCK.md) are built beside the base scene, each in its own folder, with
+# the base scene's signal reads: --variant=lanemap[+...]
+VARIANT = next((x[10:] for x in sys.argv if x.startswith('--variant=')), '')
+# The recorded lane mapping (F901) and lanes opened where recorded cars drive (F905) are the scene's defaults since
+# LOCK.md; 'nolanemap' and 'noopen' build without them.
+LANEMAP = 'nolanemap' not in VARIANT.split('+')
+OPEN = 'noopen' not in VARIANT.split('+')  # lanes closed to cars that recorded cars drive on are opened (F905)
+OPEN_MIN = 20
+IG = 'ig' in VARIANT.split('+')          # crossing greens separated by an intergreen (F908)
+IG_S = 3.5                               # s, yellow 3 s and all-red 0.5 s (SIGNALS.md: intergreens 3.0-4.0 s)
+UNREAD = 'unread' in VARIANT.split('+')  # unread links take the complement of their read foes (F907)
+# T2 isolation (F909): only cars whose route starts on these edges are simulated; the others enter checked and are replayed
+ONLY = next((set(x[5:].split(',')) for x in VARIANT.split('+') if x.startswith('only=')), None)
+CAR_ALLOW = 'passenger taxi hov private bus coach delivery truck trailer motorcycle moped evehicle bicycle emergency authority army vip'
+
+
+def outdir(dr, day, hh, variant=None):
+    v = VARIANT if variant is None else variant
+    return os.path.join(PN.OUTD, f'scene-d{dr}-{day}-{hh}' + (f'-{v}' if v else ''))
 
 
 def offset_line(P, d):
@@ -68,6 +85,10 @@ def build_net(D, dr):
         f.write('</edges>\n')
     subprocess.run(['netconvert', '-s', f'{D}/osm_area.net.xml', '-e', f'{D}/lanes.edg.xml', '-o', f'{D}/net.xml', '--offset.disable-normalization',
                     '--no-warnings', '--no-turnarounds'], check=True, stdout=subprocess.DEVNULL)
+    if OPEN and os.path.exists(f'{D}/opened.edg.xml'):
+        subprocess.run(['netconvert', '-s', f'{D}/net.xml', '-e', f'{D}/opened.edg.xml', '-o', f'{D}/net2.xml', '--offset.disable-normalization',
+                        '--no-warnings', '--no-turnarounds'], check=True, stdout=subprocess.DEVNULL)
+        os.replace(f'{D}/net2.xml', f'{D}/net.xml')
     if os.path.exists(f'{D}/observed.con.xml'):
         # lane-to-lane movements the recorded cars make that netconvert did not guess (observed_connections)
         subprocess.run(['netconvert', '-s', f'{D}/net.xml', '-x', f'{D}/observed.con.xml', '-o', f'{D}/net2.xml', '--offset.disable-normalization',
@@ -92,6 +113,60 @@ def observed_connections(D, df, lanes, conn_lanes, min_cars=3):
         if len(g) >= min_cars and lanes[fl]['car'] and lanes[tl]['car']:
             add.append((a, b, int(fl.rsplit('_', 1)[1]), int(tl.rsplit('_', 1)[1]), len(g)))
     return len(mv), len(bad), add
+
+
+def opened_lanes(df, lanes):
+    """Lanes closed to cars on which OPEN_MIN or more recorded cars, taxis, medium or heavy vehicles drive."""
+    c = df[(~df.internal) & df.type.isin(SIM_TYPES)]
+    n = c.groupby('lane').vid.nunique()
+    return {l: int(k) for l, k in n.items() if k >= OPEN_MIN and l in lanes and not lanes[l]['car']}
+
+
+def lane_map(df, lanes, net_path, min_moves=20, min_cars=3, min_share=0.15, opened=()):
+    """The recorded lane-to-lane mapping between consecutive edges (LOCK.md, F901). netconvert lines up the lanes of
+    two edges from the kerb; real drivers keep their lateral place, so where lane counts change the net sends them to
+    another lane than they took. For every edge pair with `min_moves` recorded car movements: each from-lane gets the
+    to-lanes that `min_cars` cars and `min_share` of its movements took; a to-lane two from-lanes claim stays with the
+    one with more cars unless the other would lose its last; from-lanes the recording does not use keep netconvert's.
+    Returns (deletes, adds, stats) as (from, to, fromLane, toLane[, cars])."""
+    import xml.etree.ElementTree as ET
+    CE = {}
+    for c in ET.parse(net_path).getroot().iter('connection'):
+        if c.get('from', '').startswith(':'):
+            continue
+        CE.setdefault((c.get('from'), c.get('to')), set()).add((int(c.get('fromLane')), int(c.get('toLane'))))
+    ne = df[(~df.internal) & (df.type.isin(SIM_TYPES))].sort_values(['vid', 'ti'])
+    e, v, l = ne.edge.values, ne.vid.values, ne.lane.values
+    k = np.flatnonzero((e[1:] != e[:-1]) & (v[1:] == v[:-1]))
+    mv = pd.DataFrame(dict(frm=e[k], to=e[k + 1], fl=[int(x.rsplit('_', 1)[1]) for x in l[k]], tl=[int(x.rsplit('_', 1)[1]) for x in l[k + 1]]))
+    mv = mv[[(a, b) in CE for a, b in zip(mv.frm, mv.to)]]
+    deletes, adds, pairs, moves, off = [], [], 0, 0, 0
+    for (a, b), g in mv.groupby(['frm', 'to']):
+        if len(g) < min_moves:
+            continue
+        net = CE[(a, b)]
+        cnt = g.groupby(['fl', 'tl']).size()
+        tot = g.groupby('fl').size()
+        want = {}
+        for (fl, tl), n in cnt.items():
+            car = lambda l: lanes.get(l, {}).get('car') or l in opened
+            if n >= min_cars and n >= min_share * tot[fl] and car(f'{a}_{fl}') and car(f'{b}_{tl}'):
+                want.setdefault(fl, {})[tl] = int(n)
+        for tl in {t for d in want.values() for t in d}:
+            claim = sorted((fl for fl in want if tl in want[fl]), key=lambda fl: -want[fl][tl])
+            for fl in claim[1:]:
+                if len(want[fl]) > 1:
+                    del want[fl][tl]
+        new = {(fl, tl) for fl, d in want.items() for tl in d} | {(fl, tl) for fl, tl in net if fl not in want}
+        if new == net:
+            continue
+        pairs += 1
+        moves += len(g)
+        off += int(sum(n for (fl, tl), n in cnt.items() if (fl, tl) not in net))
+        deletes += [(a, b, fl, tl) for fl, tl in sorted(net - new)]
+        adds += [(a, b, fl, tl, want.get(fl, {}).get(tl, 0)) for fl, tl in sorted(new - net)]
+    return deletes, adds, dict(edge_pairs_changed=pairs, their_movements=moves, movements_off_the_net_mapping=off,
+                               connections_deleted=len(deletes), connections_added=len(adds))
 
 
 def net_info(path):
@@ -220,6 +295,44 @@ def link_census(D, df, read_edges):
     return {k: int(v) for k, v in L.status.value_counts().items()}, {k: int(v) for k, v in L.groupby('status').veh.sum().items()}
 
 
+def tl_foes(D):
+    """Per signal: link index -> link indices of the same signal that are its foes in the junction's request table."""
+    import xml.etree.ElementTree as ET
+    r = ET.parse(f'{D}/net.xml').getroot()
+    foes = {(j.get('id'), int(q.get('index'))): q.get('foes')[::-1] for j in r.iter('junction') for q in j.iter('request')}
+    at, idx = {}, {}
+    for c in r.iter('connection'):
+        if c.get('tl') and not c.get('from').startswith(':') and c.get('via'):
+            jid, k = c.get('via')[1:].rsplit('_', 2)[:2]
+            at[(c.get('tl'), int(c.get('linkIndex')))] = (jid, int(k))
+            idx.setdefault((jid, int(k)), set()).add((c.get('tl'), int(c.get('linkIndex'))))
+    out = {}
+    for (tl, i), (jid, k) in at.items():
+        f = foes.get((jid, k), '')
+        out.setdefault(tl, {})[i] = {li for q, ch in enumerate(f) if ch == '1' for (t2, li) in idx.get((jid, q), ()) if t2 == tl}
+    return out
+
+
+def crossing_pairs(D, links):
+    """Per signal: pairs of read-able approach edges with conflicting links whose stop-line headings are 45-135
+    degrees apart (crossing streets; opposing approaches, which may be green together with permissive turns, are not)."""
+    F = tl_foes(D); E = PN.net_lanes(f'{D}/net.xml')
+    def heading(e):
+        P = E[e]['lanes'][0]['shape']; u = P[-1] - P[-2]
+        return np.arctan2(u[1], u[0])
+    out = {}
+    for tl, lk in links.items():
+        for i, a in lk.items():
+            for j in F.get(tl, {}).get(i, ()):
+                b = lk.get(j)
+                if b is None or a == b or a not in E or b not in E:
+                    continue
+                d = abs((np.degrees(heading(a) - heading(b)) + 180) % 360 - 180)
+                if 45 <= d <= 135:
+                    out.setdefault(tl, set()).add((a, b))
+    return out
+
+
 def programs(D, dr, day, hh, links, t0, t1, A=None):
     """One long program per signalised junction from the read approaches of this file."""
     if A is None:
@@ -227,6 +340,7 @@ def programs(D, dr, day, hh, links, t0, t1, A=None):
         A = A[(A.drone == dr) & (A.day.astype(str) == day) & (A.period.astype(str).str.zfill(4) == hh)]
     read = {r.edge: r for r in A.itertuples() if r.R >= 0.8 and 5 < r.green < r.cycle - 5}
     stats = dict(tl=len(links), links=sum(len(v) for v in links.values()), links_read=0)
+    crossing_pairs.cache = crossing_pairs(D, links) if IG else {}
     with open(f'{D}/tls.add.xml', 'w') as f:
         f.write('<additional>\n')
         for tl, lk in links.items():
@@ -235,12 +349,46 @@ def programs(D, dr, day, hh, links, t0, t1, A=None):
             for i, frm in lk.items():
                 if frm in read:
                     r = read[frm]; k0 = int(np.floor((t0 - r.offset) / r.cycle)) - 1; k1 = int(np.ceil((t1 - r.offset) / r.cycle)) + 1
-                    ivals[i] = [(r.offset + k * r.cycle, r.offset + k * r.cycle + r.green) for k in range(k0, k1)]
+                    # bounds rounded before the change points are taken from them: a phase's state is then the same
+                    # over the whole phase (LOCK.md: rounding only the change points left yellows of up to 20 s)
+                    ivals[i] = [(round(r.offset + k * r.cycle, 1), round(r.offset + k * r.cycle + r.green, 1)) for k in range(k0, k1)]
                     stats['links_read'] += 1
-            ch = sorted({t0} | {round(x, 1) for v in ivals.values() for a, b in v for x in (a, b, b + PN.YELLOW) if t0 < x < t1})
+            if IG:
+                # Where two crossing approaches are green together, the green that began first ends one intergreen
+                # before the other begins (F908): onsets are the sure part of a read, ends the unsure one.
+                ev = {}
+                for i, frm in lk.items():
+                    if i in ivals:
+                        ev.setdefault(frm, ivals[i])
+                cut = {}
+                for a_e, b_e in crossing_pairs.cache.get(tl, ()):
+                    if a_e not in ev or b_e not in ev:
+                        continue
+                    new = []
+                    for a0, a1 in cut.get(a_e, ev[a_e]):
+                        for b0, b1 in ev[b_e]:
+                            if a0 + 5.0 < b0 < a1 + PN.YELLOW:
+                                a1 = min(a1, round(max(b0 - IG_S, a0 + 5.0), 1))
+                        new.append((a0, a1))
+                    cut[a_e] = new
+                stats['greens_cut'] = stats.get('greens_cut', 0) + sum(1 for e_ in cut for x, y in zip(cut[e_], ev[e_]) if x != y)
+                stats['green_s_cut'] = round(stats.get('green_s_cut', 0) + sum(y[1] - x[1] for e_ in cut for x, y in zip(cut[e_], ev[e_])), 1)
+                for i, frm in lk.items():
+                    if frm in cut:
+                        ivals[i] = cut[frm]
+            comp = {}
+            if UNREAD:
+                F = tl_foes(D).get(tl, {})
+                comp = {i: sorted(F.get(i, set()) & set(ivals)) for i in range(n) if i not in ivals and F.get(i, set()) & set(ivals)}
+                stats['links_complement'] = stats.get('links_complement', 0) + len(comp)
+            ch = sorted({t0} | {round(x, 1) for v in ivals.values() for a, b in v for x in (a, b, b + PN.YELLOW, a - PN.YELLOW) if t0 < x < t1})
             def state(t):
                 s = []
                 for i in range(n):
+                    if i in comp:
+                        on = any(a <= t < b + PN.YELLOW for f in comp[i] for a, b in ivals[f])
+                        soon = any(a - PN.YELLOW <= t < a for f in comp[i] for a, b in ivals[f])
+                        s.append('r' if on else ('y' if soon else 'G')); continue
                     if i not in ivals:
                         s.append('G'); continue
                     c = 'r'
@@ -254,7 +402,7 @@ def programs(D, dr, day, hh, links, t0, t1, A=None):
             f.write(f'  <tlLogic id="{tl}" type="static" programID="read" offset="{t0}">\n')
             for a, b in zip(ch, ch[1:] + [t1 + 600]):
                 if b - a > 0.05:
-                    f.write(f'    <phase duration="{b - a:.1f}" state="{state(a + 1e-3)}"/>\n')
+                    f.write(f'    <phase duration="{b - a:.1f}" state="{state(0.5 * (a + b))}"/>\n')
             f.write('  </tlLogic>\n')
         f.write('</additional>\n')
     return stats
@@ -449,8 +597,13 @@ def path(conn_next, a, b, hops=3):
 
 def build(dr=DRONE, day=DAY, hh=HH, again=False):
     D = outdir(dr, day, hh); os.makedirs(D, exist_ok=True)
-    if not again and os.path.exists(f'{D}/observed.con.xml'):
-        os.remove(f'{D}/observed.con.xml')
+    if VARIANT and not os.path.exists(f'{D}/signals_scene.csv'):
+        import shutil
+        for fn in ('signals_scene.csv', 'signals_scene_cycles.csv'):
+            shutil.copy(f'{outdir(dr, day, hh, "")}/{fn}', f'{D}/{fn}')
+    for fn in ('observed.con.xml', 'opened.edg.xml'):
+        if not again and os.path.exists(f'{D}/{fn}'):
+            os.remove(f'{D}/{fn}')
     patched, box = build_net(D, dr)
     lanes, conn, links = net_info(f'{D}/net.xml')
     A = PN.samples(day, dr, hh)
@@ -504,11 +657,31 @@ def build(dr=DRONE, day=DAY, hh=HH, again=False):
     step = (~inn) & (prev_real != None) & (ed != prev_real) & ~new
     n_mv, n_bad, add = observed_connections(D, df, lanes, net_info.conn_lanes)
     if not again:
+        opened = opened_lanes(df, lanes) if OPEN else {}
+        if OPEN:
+            with open(f'{D}/opened.edg.xml', 'w') as f:
+                f.write('<edges>\n')
+                for e_, ls in sorted(pd.Series(opened).groupby(lambda l: l.rsplit('_', 1)[0])):
+                    f.write(f'  <edge id="{e_}">\n')
+                    for l_, n_ in ls.items():
+                        f.write(f'    <lane index="{l_.rsplit("_", 1)[1]}" allow="{CAR_ALLOW}"/>  <!-- {n_} recorded vehicles -->\n')
+                    f.write('  </edge>\n')
+                f.write('</edges>\n')
+            print(f'opened to cars: {len(opened)} lanes, {sum(opened.values())} recorded vehicles', flush=True)
+        lm = lane_map(df, lanes, f'{D}/net.xml', opened=opened) if LANEMAP else ([], [], None)
         with open(f'{D}/observed.con.xml', 'w') as f:
             f.write('<connections>\n')
             for a_, b_, fl, tl, n in add:
                 f.write(f'  <connection from="{a_}" to="{b_}" fromLane="{fl}" toLane="{tl}"/>  <!-- {n} cars -->\n')
+            for a_, b_, fl, tl in lm[0]:
+                f.write(f'  <delete from="{a_}" to="{b_}" fromLane="{fl}" toLane="{tl}"/>  <!-- lanemap -->\n')
+            for a_, b_, fl, tl, n in lm[1]:
+                if (a_, b_, fl, tl) not in {(x[0], x[1], x[2], x[3]) for x in add}:
+                    f.write(f'  <connection from="{a_}" to="{b_}" fromLane="{fl}" toLane="{tl}"/>  <!-- lanemap {n} cars -->\n')
             f.write('</connections>\n')
+        if lm[2]:
+            json.dump(lm[2], open(f'{D}/lanemap.json', 'w'), indent=1)
+            print('recorded lane mapping:', lm[2], flush=True)
         print(f'observed connections: {n_bad} of {n_mv} car movements from a lane with no connection; adding {len(add)}', flush=True)
         return build(dr, day, hh, again=True)
     conn_next = {}
@@ -578,7 +751,7 @@ def build(dr=DRONE, day=DAY, hh=HH, again=False):
             is_first = fp is not None and fp['tid'] == pc['tid']
             if name == 'all':
                 tracks.append(key(pc)); trips.append(row(pc, 'rep')); continue
-            sim = pc['type'] in SIM_TYPES and name in ('mix', 'mix_keep2w')
+            sim = pc['type'] in SIM_TYPES and name in ('mix', 'mix_keep2w') and (ONLY is None or (fp is not None and fp['route'][0] in ONLY))
             if sim and not is_first:
                 continue
             if not is_first:
@@ -636,7 +809,7 @@ def build(dr=DRONE, day=DAY, hh=HH, again=False):
     import xml.etree.ElementTree as ET
     json.dump({e.get('id'): e.get('name') for e in ET.parse(f'{D}/net.xml').getroot().iter('edge') if e.get('name')}, open(f'{D}/names.json', 'w'), ensure_ascii=False)
     tls.update(lane_movements=n_mv, lane_movements_without_connection=n_bad, connections_added=sum(1 for _ in open(f'{D}/observed.con.xml')) - 2)
-    meta = dict(drone=dr, day=day, period=hh, begin=float(np.floor(t0)), end=float(np.ceil(t1)), box=box, edges_with_density_lanes=patched, tls=tls,
+    meta = dict(drone=dr, day=day, period=hh, begin=float(np.floor(t0)), end=float(np.ceil(t1)), tls_span=[t0, t1], box=box, edges_with_density_lanes=patched, tls=tls,
                 samples=int(len(A['x'])), off_net_share=round(off_net, 4), fronts_moved_to_next_lane=moved, samples_leaving_dropped=int(leaving.sum()), bridged_through_unseen_edges=len(bridge), cut_not_a_path=int(bad.sum()), vehicles=int(nveh), pieces=len(pieces), pieces_per_vehicle=round(len(pieces) / max(nveh, 1), 2),
                 pieces_skipped=skipped, simulated=len(first_piece), later_pieces_of_simulated=sum(len(v) for v in later.values()),
                 later_pieces_stitched=int(sum(s_['joined'] for s_ in stitched.values())),
@@ -681,7 +854,7 @@ def f100(dr=DRONE, day=DAY, hh=HH, gpu=False, dt=0.2):
                front_2d_m=q(d2), front_2d_m_on_edges=q(d2[~k.internal.values.astype(bool)]), front_2d_m_internal=q(d2[k.internal.values.astype(bool)]),
                lateral_abs_m=meta['lateral_abs_m'], off_net_share=meta['off_net_share'], pieces_per_vehicle=meta['pieces_per_vehicle'])
     print(json.dumps(res, indent=1))
-    json.dump(res, open(os.path.join(REPO, 'research/truth/replay', f'f100_pneuma_d{dr}_{day}_{hh}.json'), 'w'), indent=1)
+    json.dump(res, open(os.path.join(REPO, 'research/truth/replay', f'f100_pneuma_d{dr}_{day}_{hh}' + (f'_{VARIANT}' if VARIANT else '') + '.json'), 'w'), indent=1)
 
 
 def planned(D, name, begin, dt):
@@ -788,6 +961,9 @@ def mix(dr=DRONE, day=DAY, hh=HH, seeds=range(5), gpu=True, dt=0.25, name='mix')
         fcd = f'{D}/{name}_s{sd}.fcd.csv'
         args = ['--net', f'{D}/net.xml', '--additional', f'{D}/tls.add.xml', '--routes', f'{D}/routes_{name}.xml', '--replay', f'{D}/{name}.rpl', '--dt', dt,
                 '--begin', meta['begin'], '--end', meta['end'], '--seed', sd, '--time-to-teleport', 0, '--static-tls', '--fcd', fcd, '--fcd-interval', 1.0]
+        for x in sys.argv:
+            if x.startswith('--tune='):
+                args += ['--tune', x[7:]]
         log = run_cars(args, gpu=gpu, log=f'{D}/{name}_s{sd}.log') if '--score' not in sys.argv else open(f'{D}/{name}_s{sd}.log').read()
         f = pd.read_csv(fcd, usecols=['time', 'trip', 'lane', 'pos', 'speed', 'length', 'depart_step'])
         r = score_run(f, D, meta, name, dt, st, rec, apps, sim_ids, two_w)
@@ -795,7 +971,7 @@ def mix(dr=DRONE, day=DAY, hh=HH, seeds=range(5), gpu=True, dt=0.25, name='mix')
         res[sd] = r
         print(sd, json.dumps({k: v for k, v in r.items() if k not in ('log', 'by_approach')}), flush=True)
     out = dict(scene=os.path.basename(D), variant=name, entry_kinds=meta['entry_kinds'], tls=meta['tls'], runs=res)
-    json.dump(out, open(os.path.join(REPO, 'research/truth/replay', f'f515_{name}_pneuma_d{dr}_{day}_{hh}.json'), 'w'), indent=1)
+    json.dump(out, open(os.path.join(REPO, 'research/truth/replay', f'f515_{name}_pneuma_d{dr}_{day}_{hh}' + (f'_{VARIANT}' if VARIANT else '') + '.json'), 'w'), indent=1)
 
 
 if __name__ == '__main__':
@@ -806,6 +982,14 @@ if __name__ == '__main__':
         build(dr, day, hh)
     elif c == 'f100':
         f100(dr, day, hh, '--gpu' in sys.argv)
+    elif c == 'tls':
+        # rewrite the signal programs of a built scene from its own reads (LOCK.md)
+        D = outdir(dr, day, hh); meta = json.load(open(f'{D}/scene.json'))
+        lanes, conn, links = net_info(f'{D}/net.xml')
+        A = PN.samples(day, dr, hh) if '--exact-span' in sys.argv else None
+        t0, t1 = (float(A['t'].min()), float(A['t'].max())) if A is not None else (meta['tls_span'] if 'tls_span' in meta else (meta['begin'], meta['end']))
+        SA = pd.read_csv(f'{D}/signals_scene.csv')
+        print(programs(D, dr, day, hh, links, t0, t1, SA))
     elif c == 'entry':
         entry(dr, day, hh)
     elif c == 'mix':

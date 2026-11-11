@@ -1,0 +1,1011 @@
+{
+ "scene": "scene-d8-20181029-0900-lanemap+open+keep",
+ "variant": "mix",
+ "entry_kinds": {
+  "boundary": 1441,
+  "off_net": 253,
+  "snapshot": 139,
+  "interior": 10,
+  "boundary_queued": 2
+ },
+ "tls": {
+  "tl": 11,
+  "links": 100,
+  "links_read": 73,
+  "links_by_status": {
+   "read": 73,
+   "unreadable": 13,
+   "no traffic": 11,
+   "no conflicting traffic, nobody stops": 3
+  },
+  "movements_by_status": {
+   "no conflicting traffic, nobody stops": 596,
+   "no traffic": 0,
+   "read": 23893,
+   "unreadable": 6087
+  },
+  "lane_movements": 11675,
+  "lane_movements_without_connection": 40,
+  "connections_added": 55
+ },
+ "runs": {
+  "0": {
+   "checked": 1706,
+   "waiting_at_end": 840,
+   "delay_s": {
+    "n": 866,
+    "p50": 0.25,
+    "p95": 497.94,
+    "max": 805.0
+   },
+   "by_kind": {
+    "boundary": {
+     "n": 730,
+     "p50": 0.5,
+     "p95": 500.15,
+     "max": 713.25
+    },
+    "boundary_queued": {
+     "n": 2,
+     "p50": 0.25,
+     "p95": 0.47,
+     "max": 0.5
+    },
+    "interior": {
+     "n": 5,
+     "p50": 138.5,
+     "p95": 635.5,
+     "max": 673.25
+    },
+    "off_net": {
+     "n": 129,
+     "p50": 0.0,
+     "p95": 385.75,
+     "max": 805.0
+    }
+   },
+   "by_approach": {
+    "10971776#4 \u039d\u03bf\u03c4\u03b1\u03c1\u03ac": {
+     "n": 19,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 0.0
+    },
+    "1447239028#0 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 41,
+     "p50": 0.0,
+     "p95": 397.25,
+     "max": 805.0
+    },
+    "1447459732 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 211,
+     "p50": 300.25,
+     "p95": 617.75,
+     "max": 718.5
+    },
+    "228109849#0 \u039c\u03c0\u03bf\u03c5\u03bc\u03c0\u03bf\u03c5\u03bb\u03af\u03bd\u03b1\u03c2": {
+     "n": 64,
+     "p50": 0.0,
+     "p95": 310.16,
+     "max": 316.75
+    },
+    "243850915 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 94,
+     "p50": 65.12,
+     "p95": 187.15,
+     "max": 213.25
+    },
+    "249697226#1 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 6,
+     "p50": 1.25,
+     "p95": 3.25,
+     "max": 3.25
+    },
+    "31985292#0 \u039c\u03b1\u03c5\u03c1\u03bf\u03bc\u03b1\u03c4\u03b1\u03af\u03c9\u03bd": {
+     "n": 89,
+     "p50": 0.0,
+     "p95": 8.4,
+     "max": 200.5
+    },
+    "50003888#0 \u0393\u03ba\u03c5\u03b9\u03bb\u03c6\u03cc\u03c1\u03b4\u03bf\u03c5": {
+     "n": 20,
+     "p50": 0.0,
+     "p95": 75.7,
+     "max": 89.0
+    },
+    "661184019 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 6,
+     "p50": 0.0,
+     "p95": 36.06,
+     "max": 47.0
+    },
+    "693488162#1 \u039c\u03b5\u03c4\u03c3\u03cc\u03b2\u03bf\u03c5": {
+     "n": 37,
+     "p50": 7.5,
+     "p95": 347.1,
+     "max": 380.5
+    },
+    "712030314#0 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 232,
+     "p50": 0.0,
+     "p95": 340.66,
+     "max": 528.25
+    }
+   },
+   "simulated": 1845,
+   "entered": 1005,
+   "completed": 435,
+   "completed_recording": 1727,
+   "on_net_at_end": 259,
+   "on_net_at_end_recording": 118,
+   "travel_time_error_s": {
+    "n": 272,
+    "mae": 105.26,
+    "bias": 89.06,
+    "p90_abs": 287.49
+   },
+   "travel_time_error_before_overlap_s": {
+    "n": 88,
+    "mae": 24.58,
+    "bias": -11.53,
+    "p90_abs": 54.99
+   },
+   "travel_time_mae_by_bin": {
+    "0": 120.45,
+    "1": 100.06,
+    "2": 66.42,
+    "3": 134.88
+   },
+   "recorded_travel_time_s": 62.87,
+   "approach_delay": {
+    "n_cells": 43,
+    "mae_s": 57.96,
+    "bias_s": 56.23,
+    "mean_delay_a_s": 6.5,
+    "mae_by_bin": {
+     "0": 30.39,
+     "1": 54.73,
+     "2": 97.7,
+     "3": 58.72
+    },
+    "bias_by_approach": {
+     "1050850176#1": 40.29,
+     "1050850177": -5.2,
+     "1447239028#0": 30.33,
+     "1447459732": 56.22,
+     "163711426#2": 10.65,
+     "207979571#0": 1.39,
+     "207979571#1": 191.2,
+     "228109849#0": 220.88,
+     "243850915": 52.88,
+     "249697226#1": -2.78,
+     "249697226#3": 4.41,
+     "259806440#1": 7.36,
+     "299888949#0": 48.47,
+     "299888950": 273.59,
+     "31985292#0": -10.24,
+     "400829834#0": 0.07,
+     "41806625#1": 27.96,
+     "661184019": 33.57,
+     "712030314#0": 48.1,
+     "712030314#1": 16.34,
+     "758432181#1": 48.97
+    }
+   },
+   "approaches": 39,
+   "sim_cars_meeting_replayed": 695,
+   "overlap_pairs": {
+    "rep_behind_sim": 5109,
+    "sim_behind_rep": 2748,
+    "rep_behind_rep": 590,
+    "sim_behind_sim": 166
+   },
+   "held_by_two_wheeler": {
+    "car_seconds_held": 5960.0,
+    "cars_held": 659,
+    "share_of_led_car_seconds": 0.0411
+   },
+   "session_delay": {
+    "n_keys": 9,
+    "vehicles": 181,
+    "mae_s": 69.34,
+    "bias_s": 69.34,
+    "mean_a_s": 5.68
+   },
+   "route_travel_time": {
+    "n_keys": 13,
+    "vehicles": 183,
+    "mae_s": 74.22,
+    "bias_s": 70.8,
+    "mean_a_s": 68.39
+   },
+   "log": [
+    "replay: 4296 tracks, 206023 keys, 0 tracks with no trip, 1706 checked entries",
+    "lane changes 847, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 12779, items full 0; teleports jam 3 yield 3 wrong lane 0",
+    "replay: applied 160618, ended 2200, shadows_removed 0, lane_jumps 8968, released 301",
+    "physics: collisions 11181 incidents, 85862 contact samples (same lane 9619, neighbour lane 626, junction crossing 76, junction merge 19, junction diverge 56, lane start 234, other 551, crossed without grant 20, lost on a wrong lane 0); teleports 0; certificate floor hits 24546, no-brake 0, dead-end clamps 6, crossed without grant 21; lost on a wrong lane 0; shadows 847, refused 0, refused for room 5215; denied bids 26011"
+   ]
+  },
+  "1": {
+   "checked": 1706,
+   "waiting_at_end": 852,
+   "delay_s": {
+    "n": 854,
+    "p50": 0.0,
+    "p95": 572.31,
+    "max": 680.25
+   },
+   "by_kind": {
+    "boundary": {
+     "n": 707,
+     "p50": 0.0,
+     "p95": 567.42,
+     "max": 679.75
+    },
+    "boundary_queued": {
+     "n": 2,
+     "p50": 0.25,
+     "p95": 0.47,
+     "max": 0.5
+    },
+    "interior": {
+     "n": 9,
+     "p50": 525.75,
+     "p95": 578.55,
+     "max": 578.75
+    },
+    "off_net": {
+     "n": 136,
+     "p50": 0.5,
+     "p95": 436.81,
+     "max": 680.25
+    }
+   },
+   "by_approach": {
+    "10971776#4 \u039d\u03bf\u03c4\u03b1\u03c1\u03ac": {
+     "n": 19,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 0.0
+    },
+    "1447239028#0 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 48,
+     "p50": 0.0,
+     "p95": 414.05,
+     "max": 670.25
+    },
+    "1447459732 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 206,
+     "p50": 352.0,
+     "p95": 636.69,
+     "max": 680.25
+    },
+    "228109849#0 \u039c\u03c0\u03bf\u03c5\u03bc\u03c0\u03bf\u03c5\u03bb\u03af\u03bd\u03b1\u03c2": {
+     "n": 45,
+     "p50": 0.0,
+     "p95": 294.7,
+     "max": 375.75
+    },
+    "243850915 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 100,
+     "p50": 0.62,
+     "p95": 100.56,
+     "max": 134.0
+    },
+    "249697226#1 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 6,
+     "p50": 1.25,
+     "p95": 3.19,
+     "max": 3.25
+    },
+    "31985292#0 \u039c\u03b1\u03c5\u03c1\u03bf\u03bc\u03b1\u03c4\u03b1\u03af\u03c9\u03bd": {
+     "n": 86,
+     "p50": 0.0,
+     "p95": 101.31,
+     "max": 197.0
+    },
+    "50003888#0 \u0393\u03ba\u03c5\u03b9\u03bb\u03c6\u03cc\u03c1\u03b4\u03bf\u03c5": {
+     "n": 20,
+     "p50": 0.0,
+     "p95": 0.06,
+     "max": 1.25
+    },
+    "661184019 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 6,
+     "p50": 4.12,
+     "p95": 71.06,
+     "max": 84.0
+    },
+    "693488162#1 \u039c\u03b5\u03c4\u03c3\u03cc\u03b2\u03bf\u03c5": {
+     "n": 37,
+     "p50": 7.5,
+     "p95": 271.55,
+     "max": 298.0
+    },
+    "712030314#0 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 235,
+     "p50": 0.0,
+     "p95": 371.5,
+     "max": 430.25
+    }
+   },
+   "simulated": 1845,
+   "entered": 993,
+   "completed": 441,
+   "completed_recording": 1727,
+   "on_net_at_end": 268,
+   "on_net_at_end_recording": 118,
+   "travel_time_error_s": {
+    "n": 266,
+    "mae": 86.01,
+    "bias": 75.46,
+    "p90_abs": 198.26
+   },
+   "travel_time_error_before_overlap_s": {
+    "n": 93,
+    "mae": 15.82,
+    "bias": -0.4,
+    "p90_abs": 48.91
+   },
+   "travel_time_mae_by_bin": {
+    "0": 108.4,
+    "1": 64.89,
+    "2": 61.03,
+    "3": 49.15
+   },
+   "recorded_travel_time_s": 57.99,
+   "approach_delay": {
+    "n_cells": 35,
+    "mae_s": 55.6,
+    "bias_s": 54.73,
+    "mean_delay_a_s": 7.62,
+    "mae_by_bin": {
+     "0": 30.79,
+     "1": 58.97,
+     "2": 81.03,
+     "3": 17.26
+    },
+    "bias_by_approach": {
+     "1050850176#1": 273.21,
+     "1050850177": 123.73,
+     "1447239028#0": 28.7,
+     "1447239028#2": 4.38,
+     "1447459732": 62.41,
+     "163711425#0": 224.86,
+     "163711426#2": 6.67,
+     "207979571#0": 5.25,
+     "207979571#1": 120.51,
+     "243850915": 31.36,
+     "249697226#3": 0.31,
+     "259806440#1": 10.99,
+     "299888949#0": 39.27,
+     "299888950": 236.78,
+     "31985292#0": -2.61,
+     "400829834#0": 8.79,
+     "661184019": 38.42,
+     "712030314#0": 34.46,
+     "758432181#1": 42.58
+    }
+   },
+   "approaches": 39,
+   "sim_cars_meeting_replayed": 708,
+   "overlap_pairs": {
+    "rep_behind_sim": 5223,
+    "sim_behind_rep": 2897,
+    "rep_behind_rep": 587,
+    "sim_behind_sim": 177
+   },
+   "held_by_two_wheeler": {
+    "car_seconds_held": 6031.0,
+    "cars_held": 667,
+    "share_of_led_car_seconds": 0.0396
+   },
+   "session_delay": {
+    "n_keys": 9,
+    "vehicles": 168,
+    "mae_s": 57.28,
+    "bias_s": 57.28,
+    "mean_a_s": 7.65
+   },
+   "route_travel_time": {
+    "n_keys": 14,
+    "vehicles": 191,
+    "mae_s": 70.57,
+    "bias_s": 69.04,
+    "mean_a_s": 60.06
+   },
+   "log": [
+    "replay: 4296 tracks, 206023 keys, 0 tracks with no trip, 1706 checked entries",
+    "lane changes 858, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 14228, items full 0; teleports jam 11 yield 5 wrong lane 1",
+    "replay: applied 160619, ended 2199, shadows_removed 0, lane_jumps 9007, released 302",
+    "physics: collisions 11577 incidents, 117290 contact samples (same lane 9987, neighbour lane 642, junction crossing 76, junction merge 32, junction diverge 77, lane start 247, other 516, crossed without grant 29, lost on a wrong lane 0); teleports 0; certificate floor hits 23811, no-brake 0, dead-end clamps 6, crossed without grant 30; lost on a wrong lane 0; shadows 858, refused 0, refused for room 5541; denied bids 25583"
+   ]
+  },
+  "2": {
+   "checked": 1706,
+   "waiting_at_end": 901,
+   "delay_s": {
+    "n": 805,
+    "p50": 0.0,
+    "p95": 557.15,
+    "max": 805.75
+   },
+   "by_kind": {
+    "boundary": {
+     "n": 675,
+     "p50": 0.0,
+     "p95": 556.9,
+     "max": 711.5
+    },
+    "boundary_queued": {
+     "n": 2,
+     "p50": 0.25,
+     "p95": 0.47,
+     "max": 0.5
+    },
+    "interior": {
+     "n": 9,
+     "p50": 520.5,
+     "p95": 674.75,
+     "max": 711.75
+    },
+    "off_net": {
+     "n": 119,
+     "p50": 0.0,
+     "p95": 409.9,
+     "max": 805.75
+    }
+   },
+   "by_approach": {
+    "10971776#4 \u039d\u03bf\u03c4\u03b1\u03c1\u03ac": {
+     "n": 19,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 0.0
+    },
+    "1447239028#0 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 41,
+     "p50": 0.0,
+     "p95": 458.5,
+     "max": 805.75
+    },
+    "1447459732 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 191,
+     "p50": 290.75,
+     "p95": 639.0,
+     "max": 711.75
+    },
+    "228109849#0 \u039c\u03c0\u03bf\u03c5\u03bc\u03c0\u03bf\u03c5\u03bb\u03af\u03bd\u03b1\u03c2": {
+     "n": 48,
+     "p50": 0.0,
+     "p95": 131.3,
+     "max": 182.0
+    },
+    "243850915 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 100,
+     "p50": 23.12,
+     "p95": 76.84,
+     "max": 102.75
+    },
+    "249697226#1 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 6,
+     "p50": 1.25,
+     "p95": 3.06,
+     "max": 3.25
+    },
+    "31985292#0 \u039c\u03b1\u03c5\u03c1\u03bf\u03bc\u03b1\u03c4\u03b1\u03af\u03c9\u03bd": {
+     "n": 85,
+     "p50": 0.0,
+     "p95": 195.35,
+     "max": 223.75
+    },
+    "50003888#0 \u0393\u03ba\u03c5\u03b9\u03bb\u03c6\u03cc\u03c1\u03b4\u03bf\u03c5": {
+     "n": 20,
+     "p50": 0.0,
+     "p95": 161.95,
+     "max": 175.25
+    },
+    "661184019 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 6,
+     "p50": 0.0,
+     "p95": 32.88,
+     "max": 42.75
+    },
+    "693488162#1 \u039c\u03b5\u03c4\u03c3\u03cc\u03b2\u03bf\u03c5": {
+     "n": 19,
+     "p50": 0.0,
+     "p95": 2.32,
+     "max": 7.5
+    },
+    "712030314#0 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 225,
+     "p50": 0.0,
+     "p95": 222.55,
+     "max": 432.25
+    }
+   },
+   "simulated": 1845,
+   "entered": 944,
+   "completed": 420,
+   "completed_recording": 1727,
+   "on_net_at_end": 249,
+   "on_net_at_end_recording": 118,
+   "travel_time_error_s": {
+    "n": 250,
+    "mae": 91.36,
+    "bias": 75.59,
+    "p90_abs": 205.02
+   },
+   "travel_time_error_before_overlap_s": {
+    "n": 92,
+    "mae": 15.08,
+    "bias": -4.44,
+    "p90_abs": 45.52
+   },
+   "travel_time_mae_by_bin": {
+    "0": 99.83,
+    "1": 94.98,
+    "2": 54.84,
+    "3": 210.33
+   },
+   "recorded_travel_time_s": 60.73,
+   "approach_delay": {
+    "n_cells": 43,
+    "mae_s": 60.33,
+    "bias_s": 60.09,
+    "mean_delay_a_s": 6.21,
+    "mae_by_bin": {
+     "0": 25.0,
+     "1": 76.21,
+     "2": 94.21,
+     "3": 36.08
+    },
+    "bias_by_approach": {
+     "1050850176#1": 368.49,
+     "1050850177": 24.13,
+     "1445619555": 82.08,
+     "1447239028#0": 31.67,
+     "1447239028#2": 1.8,
+     "1447459732": 41.4,
+     "163711426#2": 3.86,
+     "163711428#0": 30.94,
+     "207979571#0": 9.2,
+     "207979571#1": 184.18,
+     "243850915": 48.18,
+     "299888949#0": 122.07,
+     "299888950": 223.5,
+     "31985292#0": 4.24,
+     "400829834#0": 14.87,
+     "41806625#1": 32.28,
+     "661184019": 39.08,
+     "712030314#0": 62.62,
+     "712030314#1": 29.22,
+     "758432181#1": 34.3
+    }
+   },
+   "approaches": 39,
+   "sim_cars_meeting_replayed": 668,
+   "overlap_pairs": {
+    "rep_behind_sim": 5098,
+    "sim_behind_rep": 2703,
+    "rep_behind_rep": 591,
+    "sim_behind_sim": 165
+   },
+   "held_by_two_wheeler": {
+    "car_seconds_held": 5698.0,
+    "cars_held": 637,
+    "share_of_led_car_seconds": 0.0389
+   },
+   "session_delay": {
+    "n_keys": 13,
+    "vehicles": 224,
+    "mae_s": 70.05,
+    "bias_s": 70.05,
+    "mean_a_s": 6.73
+   },
+   "route_travel_time": {
+    "n_keys": 14,
+    "vehicles": 173,
+    "mae_s": 71.54,
+    "bias_s": 67.59,
+    "mean_a_s": 62.5
+   },
+   "log": [
+    "replay: 4296 tracks, 206023 keys, 0 tracks with no trip, 1706 checked entries",
+    "lane changes 834, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 11480, items full 0; teleports jam 6 yield 3 wrong lane 0",
+    "replay: applied 160619, ended 2199, shadows_removed 0, lane_jumps 8981, released 291",
+    "physics: collisions 11112 incidents, 78446 contact samples (same lane 9543, neighbour lane 640, junction crossing 70, junction merge 17, junction diverge 56, lane start 236, other 550, crossed without grant 21, lost on a wrong lane 0); teleports 0; certificate floor hits 23825, no-brake 0, dead-end clamps 6, crossed without grant 22; lost on a wrong lane 0; shadows 834, refused 0, refused for room 5032; denied bids 25716"
+   ]
+  },
+  "3": {
+   "checked": 1706,
+   "waiting_at_end": 844,
+   "delay_s": {
+    "n": 862,
+    "p50": 1.25,
+    "p95": 575.75,
+    "max": 821.75
+   },
+   "by_kind": {
+    "boundary": {
+     "n": 723,
+     "p50": 3.75,
+     "p95": 567.92,
+     "max": 697.75
+    },
+    "boundary_queued": {
+     "n": 2,
+     "p50": 0.25,
+     "p95": 0.47,
+     "max": 0.5
+    },
+    "interior": {
+     "n": 8,
+     "p50": 587.0,
+     "p95": 595.56,
+     "max": 596.0
+    },
+    "off_net": {
+     "n": 129,
+     "p50": 0.0,
+     "p95": 478.6,
+     "max": 821.75
+    }
+   },
+   "by_approach": {
+    "10971776#4 \u039d\u03bf\u03c4\u03b1\u03c1\u03ac": {
+     "n": 19,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 0.0
+    },
+    "1447239028#0 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 38,
+     "p50": 0.0,
+     "p95": 425.49,
+     "max": 821.75
+    },
+    "1447459732 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 213,
+     "p50": 373.0,
+     "p95": 633.5,
+     "max": 697.75
+    },
+    "228109849#0 \u039c\u03c0\u03bf\u03c5\u03bc\u03c0\u03bf\u03c5\u03bb\u03af\u03bd\u03b1\u03c2": {
+     "n": 55,
+     "p50": 0.0,
+     "p95": 256.38,
+     "max": 336.25
+    },
+    "243850915 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 88,
+     "p50": 26.75,
+     "p95": 240.46,
+     "max": 247.5
+    },
+    "249697226#1 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 6,
+     "p50": 0.88,
+     "p95": 2.75,
+     "max": 3.25
+    },
+    "31985292#0 \u039c\u03b1\u03c5\u03c1\u03bf\u03bc\u03b1\u03c4\u03b1\u03af\u03c9\u03bd": {
+     "n": 88,
+     "p50": 0.0,
+     "p95": 160.82,
+     "max": 180.5
+    },
+    "50003888#0 \u0393\u03ba\u03c5\u03b9\u03bb\u03c6\u03cc\u03c1\u03b4\u03bf\u03c5": {
+     "n": 20,
+     "p50": 0.0,
+     "p95": 10.63,
+     "max": 17.75
+    },
+    "661184019 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 6,
+     "p50": 1.62,
+     "p95": 12.06,
+     "max": 12.75
+    },
+    "693488162#1 \u039c\u03b5\u03c4\u03c3\u03cc\u03b2\u03bf\u03c5": {
+     "n": 42,
+     "p50": 136.88,
+     "p95": 240.25,
+     "max": 246.0
+    },
+    "712030314#0 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 242,
+     "p50": 0.0,
+     "p95": 294.48,
+     "max": 369.5
+    }
+   },
+   "simulated": 1845,
+   "entered": 1001,
+   "completed": 453,
+   "completed_recording": 1727,
+   "on_net_at_end": 267,
+   "on_net_at_end_recording": 118,
+   "travel_time_error_s": {
+    "n": 279,
+    "mae": 111.68,
+    "bias": 98.7,
+    "p90_abs": 294.17
+   },
+   "travel_time_error_before_overlap_s": {
+    "n": 89,
+    "mae": 23.13,
+    "bias": -6.58,
+    "p90_abs": 51.82
+   },
+   "travel_time_mae_by_bin": {
+    "0": 121.26,
+    "1": 118.97,
+    "2": 74.03,
+    "3": 79.96
+   },
+   "recorded_travel_time_s": 63.52,
+   "approach_delay": {
+    "n_cells": 38,
+    "mae_s": 45.91,
+    "bias_s": 45.72,
+    "mean_delay_a_s": 7.42,
+    "mae_by_bin": {
+     "0": 27.38,
+     "1": 33.69,
+     "2": 67.55,
+     "3": 111.13
+    },
+    "bias_by_approach": {
+     "1050850176#1": 170.86,
+     "1050850177": 50.94,
+     "1445619555": 6.38,
+     "1447239028#0": 27.43,
+     "1447459732": 48.44,
+     "163711426#2": 1.34,
+     "207979571#0": 5.88,
+     "207979571#1": 191.5,
+     "243850915": 48.18,
+     "249697226#3": 6.59,
+     "299888950": 153.89,
+     "31985292#0": 18.67,
+     "400829834#0": 19.67,
+     "41806625#1": 46.72,
+     "661184019": 35.21,
+     "712030314#0": 34.83,
+     "758432181#1": 38.4,
+     "878082499": 3.92
+    }
+   },
+   "approaches": 39,
+   "sim_cars_meeting_replayed": 714,
+   "overlap_pairs": {
+    "rep_behind_sim": 4975,
+    "sim_behind_rep": 2713,
+    "rep_behind_rep": 586,
+    "sim_behind_sim": 180
+   },
+   "held_by_two_wheeler": {
+    "car_seconds_held": 5783.0,
+    "cars_held": 677,
+    "share_of_led_car_seconds": 0.0392
+   },
+   "session_delay": {
+    "n_keys": 9,
+    "vehicles": 177,
+    "mae_s": 51.24,
+    "bias_s": 51.24,
+    "mean_a_s": 7.75
+   },
+   "route_travel_time": {
+    "n_keys": 16,
+    "vehicles": 202,
+    "mae_s": 98.55,
+    "bias_s": 96.8,
+    "mean_a_s": 66.92
+   },
+   "log": [
+    "replay: 4296 tracks, 206023 keys, 0 tracks with no trip, 1706 checked entries",
+    "lane changes 862, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 13453, items full 0; teleports jam 5 yield 2 wrong lane 0",
+    "replay: applied 160619, ended 2198, shadows_removed 0, lane_jumps 8986, released 286",
+    "physics: collisions 11199 incidents, 106895 contact samples (same lane 9679, neighbour lane 614, junction crossing 72, junction merge 25, junction diverge 48, lane start 218, other 543, crossed without grant 27, lost on a wrong lane 0); teleports 0; certificate floor hits 24663, no-brake 0, dead-end clamps 6, crossed without grant 29; lost on a wrong lane 0; shadows 862, refused 0, refused for room 5133; denied bids 26445"
+   ]
+  },
+  "4": {
+   "checked": 1706,
+   "waiting_at_end": 871,
+   "delay_s": {
+    "n": 835,
+    "p50": 0.0,
+    "p95": 520.0,
+    "max": 729.75
+   },
+   "by_kind": {
+    "boundary": {
+     "n": 697,
+     "p50": 0.0,
+     "p95": 520.1,
+     "max": 729.75
+    },
+    "boundary_queued": {
+     "n": 2,
+     "p50": 0.25,
+     "p95": 0.47,
+     "max": 0.5
+    },
+    "interior": {
+     "n": 7,
+     "p50": 533.25,
+     "p95": 647.58,
+     "max": 648.25
+    },
+    "off_net": {
+     "n": 129,
+     "p50": 0.0,
+     "p95": 363.65,
+     "max": 668.25
+    }
+   },
+   "by_approach": {
+    "10971776#4 \u039d\u03bf\u03c4\u03b1\u03c1\u03ac": {
+     "n": 19,
+     "p50": 0.0,
+     "p95": 0.0,
+     "max": 0.0
+    },
+    "1447239028#0 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 42,
+     "p50": 0.0,
+     "p95": 374.7,
+     "max": 399.25
+    },
+    "1447459732 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 193,
+     "p50": 293.0,
+     "p95": 650.35,
+     "max": 699.5
+    },
+    "228109849#0 \u039c\u03c0\u03bf\u03c5\u03bc\u03c0\u03bf\u03c5\u03bb\u03af\u03bd\u03b1\u03c2": {
+     "n": 50,
+     "p50": 0.0,
+     "p95": 286.27,
+     "max": 292.5
+    },
+    "243850915 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 95,
+     "p50": 10.5,
+     "p95": 145.88,
+     "max": 175.0
+    },
+    "249697226#1 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 6,
+     "p50": 1.25,
+     "p95": 3.06,
+     "max": 3.25
+    },
+    "31985292#0 \u039c\u03b1\u03c5\u03c1\u03bf\u03bc\u03b1\u03c4\u03b1\u03af\u03c9\u03bd": {
+     "n": 89,
+     "p50": 0.0,
+     "p95": 25.95,
+     "max": 65.5
+    },
+    "50003888#0 \u0393\u03ba\u03c5\u03b9\u03bb\u03c6\u03cc\u03c1\u03b4\u03bf\u03c5": {
+     "n": 20,
+     "p50": 0.0,
+     "p95": 82.06,
+     "max": 83.25
+    },
+    "661184019 \u03a0\u03b1\u03c4\u03b7\u03c3\u03af\u03c9\u03bd": {
+     "n": 6,
+     "p50": 4.0,
+     "p95": 62.5,
+     "max": 75.0
+    },
+    "693488162#1 \u039c\u03b5\u03c4\u03c3\u03cc\u03b2\u03bf\u03c5": {
+     "n": 37,
+     "p50": 7.5,
+     "p95": 270.0,
+     "max": 284.5
+    },
+    "712030314#0 \u0391\u03bb\u03b5\u03be\u03ac\u03bd\u03b4\u03c1\u03b1\u03c2": {
+     "n": 231,
+     "p50": 0.0,
+     "p95": 288.62,
+     "max": 729.75
+    }
+   },
+   "simulated": 1845,
+   "entered": 974,
+   "completed": 428,
+   "completed_recording": 1727,
+   "on_net_at_end": 260,
+   "on_net_at_end_recording": 118,
+   "travel_time_error_s": {
+    "n": 264,
+    "mae": 99.83,
+    "bias": 87.28,
+    "p90_abs": 242.91
+   },
+   "travel_time_error_before_overlap_s": {
+    "n": 94,
+    "mae": 17.38,
+    "bias": -3.06,
+    "p90_abs": 42.46
+   },
+   "travel_time_mae_by_bin": {
+    "0": 119.56,
+    "1": 89.96,
+    "2": 62.34,
+    "3": 15.78
+   },
+   "recorded_travel_time_s": 61.01,
+   "approach_delay": {
+    "n_cells": 40,
+    "mae_s": 52.79,
+    "bias_s": 50.18,
+    "mean_delay_a_s": 7.76,
+    "mae_by_bin": {
+     "0": 32.9,
+     "1": 48.23,
+     "2": 79.47,
+     "3": 45.33
+    },
+    "bias_by_approach": {
+     "1050850176#1": 152.13,
+     "1050850177": -14.86,
+     "1445619555": 3.47,
+     "1447239028#0": 28.29,
+     "1447239028#2": 11.58,
+     "1447459732": 53.84,
+     "163711426#2": 4.43,
+     "207979571#1": 130.11,
+     "243850915": 48.17,
+     "249697226#3": 4.61,
+     "299888949#0": 46.72,
+     "299888950": 184.91,
+     "31985292#0": -17.38,
+     "400829834#0": 27.94,
+     "41806625#1": 14.93,
+     "661184019": 41.83,
+     "712030314#0": 33.27,
+     "712030314#1": 34.58,
+     "758432181#1": 46.16,
+     "878082499": 6.62
+    }
+   },
+   "approaches": 39,
+   "sim_cars_meeting_replayed": 684,
+   "overlap_pairs": {
+    "rep_behind_sim": 4972,
+    "sim_behind_rep": 2714,
+    "rep_behind_rep": 595,
+    "sim_behind_sim": 178
+   },
+   "held_by_two_wheeler": {
+    "car_seconds_held": 5698.0,
+    "cars_held": 634,
+    "share_of_led_car_seconds": 0.0399
+   },
+   "session_delay": {
+    "n_keys": 12,
+    "vehicles": 230,
+    "mae_s": 63.57,
+    "bias_s": 63.57,
+    "mean_a_s": 7.21
+   },
+   "route_travel_time": {
+    "n_keys": 16,
+    "vehicles": 197,
+    "mae_s": 78.62,
+    "bias_s": 75.32,
+    "mean_a_s": 62.42
+   },
+   "log": [
+    "replay: 4296 tracks, 206023 keys, 0 tracks with no trip, 1706 checked entries",
+    "lane changes 852, teleports 0, collisions 0 (lane change 0, junction 0, lane start 0, other 0), overflow 12530, items full 0; teleports jam 3 yield 4 wrong lane 0",
+    "replay: applied 160619, ended 2200, shadows_removed 0, lane_jumps 8968, released 295",
+    "physics: collisions 11081 incidents, 90628 contact samples (same lane 9473, neighbour lane 632, junction crossing 82, junction merge 20, junction diverge 61, lane start 253, other 560, crossed without grant 23, lost on a wrong lane 0); teleports 0; certificate floor hits 24549, no-brake 0, dead-end clamps 6, crossed without grant 24; lost on a wrong lane 0; shadows 852, refused 0, refused for room 5178; denied bids 26338"
+   ]
+  }
+ }
+}

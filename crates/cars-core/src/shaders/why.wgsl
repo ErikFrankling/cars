@@ -186,6 +186,10 @@ fn why_rewind(base: u32, j: u32) {
     why_buf[at + 3u] = why_buf[at + 4u];
 }
 
+fn why_deny(i: u32, code: u32, lane: u32) {
+    why_buf[i * WHY_WORDS + 11u] = (code << 29u) | (lane & 0x1fffffffu);
+}
+
 fn why_exec_begin(i: u32) {
     wy_on = true;
     wy_i = i;
