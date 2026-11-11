@@ -1,0 +1,272 @@
+scene,id,quantity,forecast,measured,spread,tolerance,verdict,seeds,driver,dt
+L7,F007,"lane: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+L1,,F001 emergent (F322): capacity 50 km/h T 1.4 s 7.5 (veh/h),,1874,1.84e+03..1.92e+03,,info,"L1 arrivals 0-4, sim 1",measured,0.25
+L1,,F002 emergent (F322): capacity 100 km/h (veh/h),,1818,1.79e+03..1.86e+03,,info,"L1 arrivals 0-4, sim 1",measured,0.25
+L1,F840,round 5 measured driver: capacity 30 km/h from a released queue at 300 m from car 10 (veh/h),1659,1798,1.78e+03..1.81e+03,3%,FAIL,"L1 arrivals 0-4, sim 1",measured,0.25
+L1,F289,saturation 50 km/h: real read 1750 sweep 1640-1900,1750,1874,,1640-1900,pass,"L1 arrivals 0-4, sim 1",measured,0.25
+L3,F841,round 5 measured driver: jam spacing of a placed queue (cars placed 8 m front to front) (m),6.7,6.77,6.74..6.78,between the bounds,FAIL,"L1 arrivals 0-4, sim 1",measured,0.25
+L4,,F005 emergent (F322): start wave (km/h),,24,23.8..24.2,,info,"L1 arrivals 0-4, sim 1",measured,0.25
+L4,,T from s/w (s),,1.02,,,info,,measured,0.25
+L1,,"F250 Newell consistency 1/(s/w + s/v) = 2396: this driver starts at start_react, not T, so it is no check of the code",,1874,,,info,,measured,0.25
+L7,F007,distance: trajectories against edge counters (rel),exact,0.00877,,1%,pass,"L1 arrivals 0-4, sim 1",measured,0.25
+L5,F006,queue tail qa 600 50 km/h (km/h),4.9,4.49,4.48..4.5,10%,pass,"L5 arrivals 0-4, sim 1",measured,0.25
+L6,F254,"queue tail against the bottleneck it has, qa 900 c 604 (km/h)",2.83,2.65,2.53..2.75,10%,pass,"L6 arrivals 0-4, sim 1",measured,0.25
+L6,F849,"round 5 measured driver: flow on a lane limited to 1.63 m/s, fed from a queue (veh/h)",687,604,597..613,5%,FAIL,"L6 arrivals 0-4, sim 1",measured,0.25
+C-S9,F038,held head median edge q 600: queue reaches upstream line (s),78,78.5,77.5..79.5,15%,pass,"C-S9 arrivals 0-4, sim 1",measured,0.25
+C-S9,,"edge lane length (m), forecast 97",,100,,,info,,measured,0.25
+L7,F007,"signal: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+S1,F842,round 5 measured driver: saturation headway from car 10 (s),2.09,1.93,1.81..2.03,0.09,FAIL,"S1 arrivals 0-4, sim 1",measured,0.25
+S1,,speed at the line from car 11 on (km/h),,29,,,info,,measured,0.25
+S1,,first car stop distance d0 (m),,1.5,,,info,,measured,0.25
+S2,F843,round 5 measured driver: t1 after green then headways of cars 2-9 (s),2.31,2.29,2.27..2.32,0.20,pass,"S1 arrivals 0-4, sim 1",measured,0.25
+S2,F843,round 5 measured driver: t1 after green then headways of cars 2-9 (s),3.05,3.06,2.9..3.35,0.20,pass,"S1 arrivals 0-4, sim 1",measured,0.25
+S2,F843,round 5 measured driver: t1 after green then headways of cars 2-9 (s),2.56,2.53,2.1..3,0.24,pass,"S1 arrivals 0-4, sim 1",measured,0.25
+S2,F843,round 5 measured driver: t1 after green then headways of cars 2-9 (s),2.28,2.09,1.9..2.33,0.20,pass,"S1 arrivals 0-4, sim 1",measured,0.25
+S2,F843,round 5 measured driver: t1 after green then headways of cars 2-9 (s),2.27,2.04,1.67..2.45,0.25,pass,"S1 arrivals 0-4, sim 1",measured,0.25
+S2,F843,round 5 measured driver: t1 after green then headways of cars 2-9 (s),2.21,1.95,1.49..2.27,0.25,FAIL,"S1 arrivals 0-4, sim 1",measured,0.25
+S2,F843,round 5 measured driver: t1 after green then headways of cars 2-9 (s),2.19,2.13,1.89..2.45,0.29,pass,"S1 arrivals 0-4, sim 1",measured,0.25
+S2,F843,round 5 measured driver: t1 after green then headways of cars 2-9 (s),2.11,2.07,1.71..2.32,0.29,pass,"S1 arrivals 0-4, sim 1",measured,0.25
+S2,F843,round 5 measured driver: t1 after green then headways of cars 2-9 (s),2.28,1.93,1.65..2.25,0.33,FAIL,"S1 arrivals 0-4, sim 1",measured,0.25
+S3,F010,start-up lost time first four cars 50 km/h (s),2.74,2.27,1.69..2.63,0.5 s,pass,"S1 arrivals 0-4, sim 1",measured,0.25
+S4,F011,"capacity from own S and lost time, S(G+y-l)/C",845,854,845..867,3%,pass,"S4 arrivals 0-4, sim 1",measured,0.25
+S4,F290,capacity at real saturation,778,854,,729-844,FAIL,"S4 arrivals 0-4, sim 1",measured,0.25
+S5,F012,max queue qa 600 (cars),11,9.8,9.5..10,10%,FAIL,"S5 arrivals 0-4, sim 1",measured,0.25
+S5,F012,max queue qa 600 (m),74.2,67.7,65.6..68.7,10%,pass,"S5 arrivals 0-4, sim 1",measured,0.25
+S5,F012,queue clears after effective green (s),23.3,19.3,18.6..19.8,2 s,FAIL,"S5 arrivals 0-4, sim 1",measured,0.25
+S6,F013,uniform delay qa 600 (s),19.9,24.4,23..24.9,5%,FAIL,"S5 arrivals 0-4, sim 1",measured,0.25
+S8,F285,"delay qa 720 15 min, x 0.85",27.7,35,25.6..46.5,25%,FAIL,"S8720 arrivals 0-9, sim 1",measured,0.25
+S8,F285,"delay qa 900 15 min, x 1.06",74.4,53.4,31.8..84.8,25%,FAIL,"S8900 arrivals 0-9, sim 1",measured,0.25
+S8,,"growth qa 900 at c 854, x 1.05: too near 1 for the fluid count (cars)",,16.7,,,info,,measured,0.25
+L7,F007,"ring: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+L2,,"P of the ring (m), cars placed at N=100",,"999, 100",,,info,,measured,0.25
+L2,,q(k): 15:747 25:1125 33:1546 37:1713 41:1858 50:1886 67:1836 83:1859 100:1531,,0,,,info,,measured,0.25
+L2,F846,round 5 measured driver: critical density 50 km/h (veh/km),48.3,41.9,,18%,pass,"L2 3 per density, sim 1",measured,0.25
+L2,F847,round 5 measured driver: peak ring flow 50 km/h (veh/h),2413,1886,1.87e+03..1.9e+03,18%,FAIL,"L2 3 per density, sim 1",measured,0.25
+L2,F848,round 5 measured driver: congested speed at spacing 10 12 15 20 m (m/s),2.92,4.25,4.16..4.32,0.7,FAIL,"L2 3 per density, sim 1",measured,0.25
+L2,F848,round 5 measured driver: congested speed at spacing 10 12 15 20 m (m/s),4.69,6.22,6.14..6.35,1.1,FAIL,"L2 3 per density, sim 1",measured,0.25
+L2,F848,round 5 measured driver: congested speed at spacing 10 12 15 20 m (m/s),7.33,7.61,7.6..7.62,1.8,pass,"L2 3 per density, sim 1",measured,0.25
+L2,F848,round 5 measured driver: congested speed at spacing 10 12 15 20 m (m/s),12.7,10.5,10.4..10.6,3.2,pass,"L2 3 per density, sim 1",measured,0.25
+L7,F007,"wave: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+W1,,"F231 emergent (F322): disturbance moves upstream at s/E[T] (km/h, ground)",,-15.2,-27.6..5.17,,info,"W1 arrivals 0-4, sim 1",measured,0.25
+W1,F844,round 5 measured driver: car 30 min speed less the leader min speed (m/s),4.04,3.17,2.74..3.51,0.38,FAIL,"W1 arrivals 0-4, sim 1",measured,0.25
+W1,,"lowest speed of car 30 (m/s), leader 3",,5.67,,,info,,measured,0.25
+L7,F007,"sringon: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+C-S2,,"N,P: in ring, flow 36,278:36.0,558 40,300:40.0,428 40,301:40.0,458 40,303:40.0,470",,0,,,info,,measured,0.25
+C-S2,F032,"one hole, N 36 of 277.5 m: flow against w/perimeter",86.6,558,544..585,20%,FAIL,"C-S2 arrivals 0-4, sim 1",measured,0.25
+C-S2,F032,N 40 of 300 m flow,0,428,418..452,0,FAIL,"C-S2 arrivals 0-4, sim 1",measured,0.25
+C-S2,F032,N 40 of 301 m flow,0,458,442..480,18,FAIL,"C-S2 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"sringoff: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+C-S2,F279,"N 40 of 301 m, exit clear off",0,458,442..480,30,FAIL,"C-S2 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"signal_long: inserted-arrived-running, contacts 0",exact,0.0,,1,pass,sim 1,measured,0.25
+S7,F014,"Webster delay qa 304, x 0.36",17.1,19.3,18.2..20.1,15%,pass,"S7304 arrivals 0-4, sim 1",measured,0.25
+S7,F014,"Webster delay qa 448, x 0.53",19.4,21.4,20.7..22.1,15%,pass,"S7448 arrivals 0-4, sim 1",measured,0.25
+S7,F014,"Webster delay qa 600, x 0.71",22.8,26.4,24.7..28,15%,FAIL,"S7600 arrivals 0-4, sim 1",measured,0.25
+S7,F014,"Webster delay qa 720, x 0.85",29.9,32.6,30.7..36.2,15%,pass,"S7720 arrivals 0-4, sim 1",measured,0.25
+N8,F277,x .8: queue second half over first half,1,1.02,0.856..1.18,30%,pass,"N8640 arrivals 0-4, sim 1",measured,0.25
+N8,F277,x 1.2: growth over Q-c,1,1.15,0.692..1.65,25%,pass,"N8960 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"xone: inserted-arrived-running, contacts 0",exact,0.0,,1,pass,sim 1,measured,0.25
+X1,,"qa 726, uniform delay (s)",,26,,,info,,measured,0.25
+X1,F284,"input var/mean, copies 1",1,0.871,0.52..1.33,20%,pass,"X11 arrivals 0-9, sim 1",measured,0.25
+X1,,"F039 sizing: random queue, copies 1 (cars); I x2/2(1-x) - q d3 = 1.2",,1.37,0.879..2.19,,info,,measured,0.25
+X1,F284,"input var/mean, copies 3",3,3.42,1.22..5.56,20%,pass,"X13 arrivals 0-9, sim 1",measured,0.25
+X1,,"F039 sizing: random queue, copies 3 (cars); I x2/2(1-x) - q d3 = 7.4",,6.09,1.37..20.8,,info,,measured,0.25
+X1,F284,"input var/mean, copies 5.6",5.6,5.99,2.44..11.3,20%,pass,"X15.6 arrivals 0-9, sim 1",measured,0.25
+X1,,"F039 sizing: random queue, copies 5.6 (cars); I x2/2(1-x) - q d3 = 13.6",,12.3,2.52..35,,info,,measured,0.25
+L7,F007,"give: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+G1,F016,"HBS right, major 0",1200,1082,1.07e+03..1.09e+03,10%,pass,"G10 arrivals 0-4, sim 1",measured,0.25
+G1,F016,"HBS right, major 400",736,528,502..574,10%,FAIL,"G1400 arrivals 0-4, sim 1",measured,0.25
+G1,F016,"HBS right, major 800",451,280,271..288,10%,FAIL,"G1800 arrivals 0-4, sim 1",measured,0.25
+G1,F016,"HBS right, major 1200",277,141,106..180,10%,FAIL,"G11200 arrivals 0-4, sim 1",measured,0.25
+G1,,capacity at major 0 400 800 1200 (F017 report 23 816 474 279 162; F018 its tf fixed 1200 696 404 234),,1082 528 280 141,,,info,,measured,0.25
+G1,F258,follow-up time logged in one gap (s),3,3.56,3.3..3.94,10%,FAIL,G1 all,measured,0.25
+G1,F233,"Siegloch at own tc 5.9 tf 3.56, major 0",1012,1082,1.07e+03..1.09e+03,10%,pass,"G10 arrivals 0-4, sim 1",measured,0.25
+G1,F233,"Siegloch at own tc 5.9 tf 3.56, major 400",640,528,502..574,10%,FAIL,"G1400 arrivals 0-4, sim 1",measured,0.25
+G1,F233,"Siegloch at own tc 5.9 tf 3.56, major 800",405,280,271..288,10%,FAIL,"G1800 arrivals 0-4, sim 1",measured,0.25
+G1,F233,"Siegloch at own tc 5.9 tf 3.56, major 1200",256,141,106..180,10%,FAIL,"G11200 arrivals 0-4, sim 1",measured,0.25
+G1,F845,"follow-up from own following: (L + s0)/v + E[f] Tc(v) - 0.25, v_turn 3.09",3.29,3.33,3.3..3.37,0.3 s,pass,G1 all,measured,0.25
+G1,F288,"major delivered / offered, major 400",1,0.971,0.9..1.05,5%,pass,"G1400 arrivals 0-4, sim 1",measured,0.25
+G1,F288,"major delivered / offered, major 800",1,0.983,0.957..1.03,5%,pass,"G1800 arrivals 0-4, sim 1",measured,0.25
+G1,F288,"major delivered / offered, major 1200",1,0.972,0.884..1.05,5%,pass,"G11200 arrivals 0-4, sim 1",measured,0.25
+G1,,tf by major flow: 0:3.33 400:3.57 800:3.56 1200:3.77,,0,,,info,,measured,0.25
+G4,F257,critical gap recovered from gaps offered and taken right from minor (s),5.9,6.46,6.16..6.88,0.3 s,FAIL,G1 q 400 800,measured,0.25
+G4,,"critical gap, old estimator: gaps at the line after a taker stretched them, lags read as whole gaps",,6.68,,,info,,measured,0.25
+G2,F255,"Tanner t_m 2, major 400",712,469,422..490,15%,FAIL,"G2400 arrivals 0-4, sim 1",measured,0.25
+G2,F255,"Tanner t_m 2, major 800",384,177,166..202,15%,FAIL,"G2800 arrivals 0-4, sim 1",measured,0.25
+G2,F255,"Tanner t_m 2, major 1200",172,30.7,26.4..33.6,15%,FAIL,"G21200 arrivals 0-4, sim 1",measured,0.25
+G3,,"minor through q 800: one major lane, two (veh/h); HBS 355",,"293, 328",,,info,,measured,0.25
+G3,F256,minor through capacity two major lanes over one major lane q 800 (ratio),1,1.12,0.892..1.28,15%,pass,"G3a arrivals 0-4, sim 1; G3b",measured,0.25
+G5,F259,left minor rank 3 under left major q 150 (veh/h),555,447,389..509,15%,FAIL,"G5 arrivals 0-4, sim 1",measured,0.25
+G5,F260,left minor rank 4 cross p_y .82 (veh/h),564,394,362..420,15%,FAIL,"G5b arrivals 0-4, sim 1",measured,0.25
+G6,F019,shared lane right 50% through 50% (veh/h),674,515,458..571,10%,FAIL,"G6m arrivals 0-4, sim 1",measured,0.25
+G8,F261,"roundabout entry, circulating 0",1380,1103,1.1e+03..1.11e+03,15%,FAIL,"G80 arrivals 0-4, sim 1",measured,0.25
+G8,F261,"roundabout entry, circulating 400",916,688,634..780,15%,FAIL,"G8400 arrivals 0-4, sim 1",measured,0.25
+G8,F261,"roundabout entry, circulating 800",608,404,271..578,15%,FAIL,"G8800 arrivals 0-4, sim 1",measured,0.25
+G8,F261,"roundabout entry, circulating 1200",404,161,0..686,15%,FAIL,"G81200 arrivals 0-4, sim 1",measured,0.25
+G8,F402,"Tanner at own tc 4.97 tf 3.26 tm 3.27, circulating 400 (carried 365)",729,688,634..780,15%,pass,"G8400 arrivals 0-4, sim 1",measured,0.25
+G8,F402,"Tanner at own tc 4.97 tf 3.26 tm 3.27, circulating 800 (carried 695)",395,404,271..578,15%,pass,"G8800 arrivals 0-4, sim 1",measured,0.25
+G8,F402,"Tanner at own tc 4.97 tf 3.26 tm 3.27, circulating 1200 (carried 967)",128,161,0..686,15%,FAIL,"G81200 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"give2: inserted-arrived-running, contacts 0",exact,-20.0,,1,FAIL,sim 1,measured,0.25
+G7,F020,"mean wait, minor 100, own c 280 at major 800",19.8,12.5,6.35..19.6,25%,FAIL,"G7100 arrivals 0-7, sim 1",measured,0.25
+G7,F020,"mean wait, minor 200, own c 280 at major 800",39.5,37.9,14.8..84.8,25%,pass,"G7200 arrivals 0-7, sim 1",measured,0.25
+G7,F020,"mean wait, minor 300, own c 280 at major 800",110,101,33.1..283,25%,pass,"G7300 arrivals 0-7, sim 1",measured,0.25
+G7,F020,"mean wait, minor 400, own c 280 at major 800",242,159,42.5..253,25%,FAIL,"G7400 arrivals 0-7, sim 1",measured,0.25
+G9,F262,right before left four saturated arms per arm (veh/h),230,354,349..360,20%,FAIL,"G9 arrivals 0-4, sim 1",measured,0.25
+C-S7,F281,"minor through, major 1200 (arrival count)",277,148,117..219,20%,FAIL,"CS71200 arrivals 0-4, sim 1",measured,0.25
+C-S7,F282,"longest head wait, major 1200 (s)",300,132,,<= 0,pass,"CS71200 arrivals 0-4, sim 1",measured,0.25
+C-S7,F281,"minor through, major 1800 (arrival count)",133,44.4,39..54,20%,FAIL,"CS71800 arrivals 0-4, sim 1",measured,0.25
+C-S7,F282,"longest head wait, major 1800 (s)",300,209,,<= 0,pass,"CS71800 arrivals 0-4, sim 1",measured,0.25
+C-S7,,"P(head wait>120 s) at 1800, %: table fixed 4.3, falling 0.6 (n=69)",,29,,,info,,measured,0.25
+C-S7,F281,"minor through, major 2400 (arrival count)",64,18,12..27,20%,FAIL,"CS72400 arrivals 0-4, sim 1",measured,0.25
+C-S7,F282,"longest head wait, major 2400 (s)",300,517,,<= 0,FAIL,"CS72400 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"lc: inserted-arrived-running, contacts 1",exact,0,,1,pass,sim 1,measured,0.25
+LC1,F021,mean wait to change q 900 v 10 dv 3 h 3.3 (s),32,7.75,6.71..8.5,<= 20%,pass,"LC1 arrivals 0-4, sim 1",measured,0.25
+LC1,F263,target cars passing a changer q 900 dv 3 (per s),0.075,0.0745,0.0694..0.0854,10%,pass,"LC1 arrivals 0-4, sim 1",measured,0.25
+LC1,,"speed difference actually seen (m/s), forecast 3",,2.95,,,info,,measured,0.25
+LC2,F022,"share changed on the move, block 100 m",0.36,0.99,0.969..1,>= .1,pass,"LC2100 arrivals 0-4, sim 1",measured,0.25
+LC2,,"share changed only after stopping, block 100 m",,0.0103,,,info,,measured,0.25
+LC2,F022,"share changed on the move, block 300 m",0.74,0.992,0.99..1,>= .1,pass,"LC2300 arrivals 0-4, sim 1",measured,0.25
+LC2,,"share changed only after stopping, block 300 m",,0.00825,,,info,,measured,0.25
+L7,F007,"lc2: inserted-arrived-running, contacts 5",exact,0,,1,pass,sim 1,measured,0.25
+LC3,F023,stopped at lane end q 900 tc 4 tf 2.5 (veh/h),724,1147,1.07e+03..1.22e+03,>= >= 15% below,pass,"LC3a arrivals 0-4, sim 1",measured,0.25
+LC3,F024,merge share both saturated,0.5,0.815,0.793..0.831,.1,FAIL,"LC3b arrivals 0-4, sim 1",measured,0.25
+LC3,,both saturated: total out (veh/h),,1417,,,info,,measured,0.25
+LC8,F028,"wait, closing lane last 100 m: p99 (s)",72.7,35.4,n=205,p99 <= 75,pass,"LC3c arrivals 0-4, sim 1",measured,0.25
+LC8,F028,same: max; a hold over 300 s is a fault,79,58.5,,<= 300,pass,"LC3c arrivals 0-4, sim 1",measured,0.25
+LC8,,"median wait (s), I-80 22.6",,13,,,info,,measured,0.25
+LC4,,two lanes from a released queue: no changes; a third change (veh/h),,"3430, 2899",,,info,,measured,0.25
+LC4,F025,capacity with lane changes eps .10 (share),0.91,0.845,0.824..0.873,5%,FAIL,"LC4b arrivals 0-4, sim 1",measured,0.25
+LC5,,target lane alone from a released queue (veh/h),,1821,,,info,,measured,0.25
+LC5,F026,void loss k 30 dv 5 flow 300 (share),0.039,0.135,0.0235..0.19,25%,FAIL,"LC5 arrivals 0-4, sim 1",measured,0.25
+LC5,F264,void loss dv 10 over dv 5 (ratio),4,3.29,,25%,pass,"LC5 arrivals 0-4, sim 1",measured,0.25
+LC5,F403,void loss dv 5 at own a(v): void 16.5 m,0.0992,0.135,0.0235..0.19,25%,FAIL,"LC5 arrivals 0-4, sim 1",measured,0.25
+LC5,F403,void loss dv 10 at own a(v): void 47.0 m,0.282,0.444,0.408..0.474,25%,FAIL,"LC5 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"drop: inserted-arrived-running, contacts 1",exact,0,,1,pass,sim 1,measured,0.25
+LC6,F027,capacity drop at a lane drop (%),5-15,4.44,-12.2..21.6,never negative,FAIL,"LC6 arrivals 0-4, sim 1",measured,0.25
+LC6,,before; after; onset s,,3582; 3366; 948,,,info,,measured,0.25
+L7,F007,"drop_city: inserted-arrived-running, contacts 1",exact,0,,1,pass,sim 1,measured,0.25
+C-S6,F036,lane drop 1300+1300 total (veh/h),1800,1425,1.4e+03..1.46e+03,10%,FAIL,"C-S6 arrivals 0-4, sim 1",measured,0.25
+C-S6,F036,share of the closing lane,0.5,0.792,0.755..0.804,.1,FAIL,"C-S6 arrivals 0-4, sim 1",measured,0.25
+C-S6,F036,longest wait last 100 m (s),80,46,,<= 0,pass,"C-S6 arrivals 0-4, sim 1",measured,0.25
+C-S4b,F035,give-ups at a real lane drop,0,0,,exact,pass,"C-S6 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"slow: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+LC7,,flow per lane ahead of the slow car by speed: 30:757 50:1134 60:1413 70:1529 80:1664,,0,,,info,,measured,0.25
+LC7,F265,flow past the slow car rises with its speed,rises,1134..1664,,3%,pass,"LC7 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"net: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+N4,F030,merge both saturated: arm a (veh/h),928,640,627..661,10%,FAIL,"N4 arrivals 0-4, sim 1",measured,0.25
+N4,F030,merge both saturated: arm b (veh/h),928,641,623..661,10%,FAIL,"N4 arrivals 0-4, sim 1",measured,0.25
+N4,F272,merge one arm at 300: the other takes (veh/h),1556,1455,1.39e+03..1.49e+03,10%,pass,"N4b arrivals 0-4, sim 1",measured,0.25
+N5,F273,diverge exit capacity 300 beta .2 total (veh/h),1500,1216,1.01e+03..1.42e+03,10%,FAIL,"N5a arrivals 0-4, sim 1",measured,0.25
+N5,F404,"exit flow, 5 stored on 42 m + refill 0.93 per cycle (veh/h)",237,242,223..262,10%,pass,"N5a arrivals 0-4, sim 1",measured,0.25
+N5,F404,FIFO: through over exit flow,4,4.04,3.19..5,15%,pass,"N5a arrivals 0-4, sim 1",measured,0.25
+N5,F274,one lane with exit closed total (veh/h),0,0,0..0,30,pass,"N5b arrivals 0-4, sim 1",measured,0.25
+N5,F275,"3 lanes, other two lanes (veh/h)",3712,4157,4.11e+03..4.2e+03,10%,FAIL,"N5c arrivals 0-4, sim 1",measured,0.25
+N5,F275,"3 lanes, closed lane (veh/h)",0,0,0..0,30,pass,"N5c arrivals 0-4, sim 1",measured,0.25
+C-S5,F280,"both heads swapped by (s), worst of 10",30,9.75,,<= 0,pass,"C-S5 arrivals 0-9, sim 1",measured,0.25
+C-S5,,"median swap time (s), I-80 median 22.6",,0.75,,,info,,measured,0.25
+L7,F007,"net_long: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+N1,,q(k): 10:216 20:351 31:507 40:585 48:635 60:648 80:634 100:561 120:372 130:298,,0,,,info,,measured,0.25
+N1,F266,"signal ring top per lane: 0.95 S(G+y-l)/C, own S and l",643,650,641..658,5%,pass,"N1 3 per density, sim 1",measured,0.25
+N1,F267,plateau from (veh/km),44,47.8,,20%,pass,N1,measured,0.25
+N1,F267,plateau to (veh/km),71,80.3,,20%,pass,N1,measured,0.25
+N1,F268,"flow at the densest ring, k 130: at most w(kj-k) + 10% of top",486,298,265..337,<= 0,pass,N1,measured,0.25
+N2,,w q(k): 5:211 20:754 36:859 50:853 70:853 90:820,,0,,,info,,measured,0.25
+N2,,a q(k): 5:80 20:321 36:573 50:799 70:851 90:832,,0,,,info,,measured,0.25
+N2,F269,"free running, wave",45,42.2,,5%,FAIL,N2,measured,0.25
+N2,F269,"free running, anti-wave",16,16,,5%,pass,N2,measured,0.25
+N2,F270,"top flow per lane S(G+y-l)/C, own S and l",856,859,,5%,pass,N2,measured,0.25
+N3,,"discharge c the scene has (veh/h), B took 720",,286,,,info,,measured,0.25
+N3,F029,storage at spill: 2 lanes x 192 m x kj (cars),56.7,38.2,33..45,15%,FAIL,"N3 arrivals 0-4, sim 1",measured,0.25
+N3,F029,"time to spill, storage/(q-c) (min; 50 = not in 50 min)",6.62,8.05,5.83..12.3,15%,FAIL,"N3 arrivals 0-4, sim 1",measured,0.25
+N3b,,"discharge c the scene has (veh/h), B took 810",,608,,,info,,measured,0.25
+N3b,F271,storage at spill: 2 lanes x 392 m x kj (cars),116,96.6,92..104,15%,FAIL,"N3b arrivals 0-4, sim 1",measured,0.25
+N3b,F271,"time to spill, storage/(q-c) (min; 50 = not in 50 min)",11.7,8.58,7.58..9.75,15%,FAIL,"N3b arrivals 0-4, sim 1",measured,0.25
+N3b,F271,tail speed (km/h),2.18,2.13,,15%,pass,"N3b arrivals 0-4, sim 1",measured,0.25
+N6,F276,"predicted dN over measured dN (ratio), 20 min",1,0.811,0.745..0.878,10%,FAIL,"N3r arrivals 0-4, sim 1",measured,0.25
+L7,F007,"n9: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+N9,F047,"offset 0: cars per cycle, own S(g+y-l)",21.1,20.9,20.5..21.1,10%,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F293,offset 0: longest stand on link or approach (s),180,51.4,47..59,<= 0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F294,offset 0: cars left 1090 s after the feed ends,0,0,0..0,0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,,offset 0: flow late over early (1 = no decay); link lane (m),,0.99; 20.0,,,info,,measured,0.25
+N9,,"offset 0: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)",,"500, 500, 0; 0.00",,,info,,measured,0.25
+N9,F047,opposed: cars per cycle,3,3.09,3.09..3.09,10%,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F293,opposed: longest stand on link or approach (s),180,77.6,75..79,<= 0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F294,opposed: cars left 1090 s after the feed ends,0,0,0..0,0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,,opposed: flow late over early (1 = no decay); link lane (m),,1.00; 20.0,,,info,,measured,0.25
+N9,,"opposed: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)",,"90, 90, 0; 0.87",,,info,,measured,0.25
+N9,F291,"Hamburg +2 overlap .65: cars per cycle, own S(g+y-l)",13.9,14.2,14.1..14.4,10%,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F293,Hamburg +2 overlap .65: longest stand on link or approach (s),180,60,59..61,<= 0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F294,Hamburg +2 overlap .65: cars left 1090 s after the feed ends,0,0,0..0,0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,,Hamburg +2 overlap .65: flow late over early (1 = no decay); link lane (m),,1.01; 20.0,,,info,,measured,0.25
+N9,,"Hamburg +2 overlap .65: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)",,"325, 325, 0; 0.00",,,info,,measured,0.25
+N9,F292,"Hamburg +2 end +4: cars per cycle, own S(g+y-l)",21.1,21.4,21.1..21.8,10%,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F293,Hamburg +2 end +4: longest stand on link or approach (s),180,49.2,46..53,<= 0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F294,Hamburg +2 end +4: cars left 1090 s after the feed ends,0,0,0..0,0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,,Hamburg +2 end +4: flow late over early (1 = no decay); link lane (m),,1.02; 20.0,,,info,,measured,0.25
+N9,,"Hamburg +2 end +4: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)",,"500, 500, 0; 0.00",,,info,,measured,0.25
+N9,F295,"Hamburg, 2 lanes, lane wish: cars per cycle",13,16.2,16.1..16.3,>= 0,pass,"N9w arrivals 0-4, sim 1",measured,0.25
+N9,F293,"Hamburg, 2 lanes, lane wish: longest stand on link or approach (s)",180,62.4,58..70,<= 0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F294,"Hamburg, 2 lanes, lane wish: cars left 1090 s after the feed ends",0,0,0..0,0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,,"Hamburg, 2 lanes, lane wish: flow late over early (1 = no decay); link lane (m)",,1.02; 27.7,,,info,,measured,0.25
+N9,,"Hamburg, 2 lanes, lane wish: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)",,"325, 326, 0; 0.00",,,info,,measured,0.25
+N9,F405,"opposed, 2 lanes, lane wish: cars per cycle, storage 2 x 4 on 27.7 m",8,8.28,8.23..8.42,10%,pass,"N9x arrivals 0-4, sim 1",measured,0.25
+N9,F293,"opposed, 2 lanes, lane wish: longest stand on link or approach (s)",180,77.6,77..78,<= 0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,F294,"opposed, 2 lanes, lane wish: cars left 1090 s after the feed ends",0,0,0..0,0,pass,"N9 arrivals 0-4, sim 1",measured,0.25
+N9,,"opposed, 2 lanes, lane wish: flow late over early (1 = no decay); link lane (m)",,1.03; 27.7,,,info,,measured,0.25
+N9,,"opposed, 2 lanes, lane wish: cars fed, arrived by 2,890 s, still on the scene; discharge 2,290-2,890 s over 400-1,800 s (F600 F601)",,"180, 180, 0; 0.01",,,info,,measured,0.25
+L7,F007,"n10: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+N10,F049,"a: longest standing still (s), limit 5 min",300,64.2,55..76,<= 0,pass,"N10a arrivals 0-4, sim 1",measured,0.25
+N10,,a: longest on an internal lane (s),,43,,,info,,measured,0.25
+N10,F287,left across a saturated opposing stream: cars cleared per cycle at the phase end at least,1,1,1..1,>= 0,pass,"N10a arrivals 0-4, sim 1",measured,0.25
+N10,F049,"b: longest standing still (s), limit 5 min",300,69.8,52..76,<= 0,pass,"N10b arrivals 0-4, sim 1",measured,0.25
+N10,,b: longest on an internal lane (s),,43,,,info,,measured,0.25
+N10,F049,"c: longest standing still (s), limit 5 min",300,111,72..192,<= 0,pass,"N10c arrivals 0-4, sim 1",measured,0.25
+N10,,c: longest on an internal lane (s),,45,,,info,,measured,0.25
+N10,F049,"d: longest standing still (s), limit 5 min",300,126,80..141,<= 0,pass,"N10d arrivals 0-4, sim 1",measured,0.25
+N10,,d: longest on an internal lane (s),,45,,,info,,measured,0.25
+L7,F007,"miss60: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+C-S3,,"lane 0 flow with no wrong-lane car (veh/h), C took 1800",,1687,,,info,,measured,0.25
+C-S3,F033,"lane 0 flow, f 0.05 patience 60: 3600/(h+fT), h 2.13",701,615,398..848,15%,pass,"C-S3 arrivals 0-4, sim 1",measured,0.25
+C-S3,F033,"lane 0 flow, f 0.1 patience 60: 3600/(h+fT), h 2.13",443,467,413..545,15%,pass,"C-S3 arrivals 0-4, sim 1",measured,0.25
+C-S4,,"lane 0 flow with no wrong-lane car (veh/h), C took 1800",,1319,,,info,,measured,0.25
+C-S4,F034,"lane 0 flow, f 0.05 patience 60: 3600/(h+fT), h 2.73",628,669,557..770,15%,pass,"C-S4 arrivals 0-4, sim 1",measured,0.25
+C-S4,F034,"lane 0 flow, f 0.1 patience 60: 3600/(h+fT), h 2.73",412,426,316..570,15%,pass,"C-S4 arrivals 0-4, sim 1",measured,0.25
+C-S3,,wrong-lane heads stand this far before the lane end (m),,56,,,info,,measured,0.25
+C-S4,,wrong-lane heads stand this far before the lane end (m),,40.3,,,info,,measured,0.25
+C-S4,,"patience 60: missed turns asked, rerouted, no way",,"{'asked': 312, 'rerouted': 312, 'no_way': 0}",,,info,,measured,0.25
+L7,F007,"miss120: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+C-S3,,"lane 0 flow with no wrong-lane car (veh/h), C took 1800",,1681,,,info,,measured,0.25
+C-S3,F033,"lane 0 flow, f 0.1 patience 120: 3600/(h+fT), h 2.14",255,292,238..369,15%,pass,"C-S3 arrivals 0-4, sim 1",measured,0.25
+C-S4,,"lane 0 flow with no wrong-lane car (veh/h), C took 1800",,1314,,,info,,measured,0.25
+C-S4,F034,"lane 0 flow, f 0.1 patience 120: 3600/(h+fT), h 2.74",244,265,203..319,15%,pass,"C-S4 arrivals 0-4, sim 1",measured,0.25
+C-S3,,wrong-lane heads stand this far before the lane end (m),,63.2,,,info,,measured,0.25
+C-S4,,wrong-lane heads stand this far before the lane end (m),,49.1,,,info,,measured,0.25
+C-S4,,"patience 120: missed turns asked, rerouted, no way",,"{'asked': 101, 'rerouted': 101, 'no_way': 0}",,,info,,measured,0.25
+L7,F007,"miss0: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+C-S3,,"lane 0 flow with no wrong-lane car (veh/h), C took 1800",,1681,,,info,,measured,0.25
+C-S3,F033,"lane 0 flow, f 0.1 patience never: 3600/(h+fT), h 2.14",0,0,0..0,30,pass,"C-S3 arrivals 0-4, sim 1",measured,0.25
+C-S4,,"lane 0 flow with no wrong-lane car (veh/h), C took 1800",,1314,,,info,,measured,0.25
+C-S4,F034,"lane 0 flow, f 0.1 patience never: 3600/(h+fT), h 2.74",0,0,0..0,30,pass,"C-S4 arrivals 0-4, sim 1",measured,0.25
+C-S3,,wrong-lane heads stand this far before the lane end (m),,156,,,info,,measured,0.25
+C-S4,,wrong-lane heads stand this far before the lane end (m),,153,,,info,,measured,0.25
+C-S4,,"patience 0: missed turns asked, rerouted, no way",,"{'asked': 0, 'rerouted': 0, 'no_way': 0}",,,info,,measured,0.25
+L7,F007,"block1: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+C-S8,F283,cross capacity b 0 (exit_comply 1-b),900,958,954..969,5%,FAIL,"C-S8 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"block25: inserted-arrived-running, contacts 1",exact,0,,1,pass,sim 1,measured,0.25
+C-S8,F283,cross capacity b .75 (exit_comply 1-b),675,600,568..622,5%,FAIL,"C-S8 arrivals 0-4, sim 1",measured,0.25
+C-S8,F283,"two lanes b .75, per lane",788,552,513..595,5%,FAIL,"C-S8 arrivals 0-4, sim 1",measured,0.25
+C-S8,F406,"cross capacity b 0.75, own tau 14.6 s (2 stored on 18 m)",571,600,568..622,10%,pass,"C-S8 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"block0: inserted-arrived-running, contacts 0",exact,0,,1,pass,sim 1,measured,0.25
+C-S8,F283,cross capacity b 1 (exit_comply 1-b),600,381,379..385,5%,FAIL,"C-S8 arrivals 0-4, sim 1",measured,0.25
+C-S8,F406,"cross capacity b 1, own tau 14.6 s (2 stored on 18 m)",461,381,379..385,10%,FAIL,"C-S8 arrivals 0-4, sim 1",measured,0.25
+L7,F007,"grid: inserted-arrived-running, contacts 560",exact,-0.0,,1,pass,sim 1,measured,0.25
+C-S0,F031,priority k .10 kj,no lock,6/6 free in 2.0 h; locks at none,,explain,pass,"GU 3 per (k,P_T), sim 1",measured,0.25
+C-S0,F031,priority k .20 kj,no lock,2/6 free in 2.0 h; locks at 0.48 0.62 1.03 1.15,,explain,FAIL,"GU 3 per (k,P_T), sim 1",measured,0.25
+C-S0,,priority k .25 kj: theirs hours,,1/6 free in 2.0 h; locks at 0.42 0.42 0.42 0.43 0.80,,,info,,measured,0.25
+C-S0,F278,priority k .30 kj: lock under 1 h,< 1 h,0/6 free in 2.0 h; locks at 0.23 0.35 0.35 0.47 0.47,,explain,pass,"GU 3 per (k,P_T), sim 1",measured,0.25
+C-S0,F278,priority k .40 kj: lock under 1 h,< 1 h,0/6 free in 2.0 h; locks at 0.15 0.20 0.20 0.22 0.27,,explain,pass,"GU 3 per (k,P_T), sim 1",measured,0.25
+L7,F007,"grid_sig: inserted-arrived-running, contacts 5477",exact,0.0,,1,pass,sim 1,measured,0.25
+C-S0,F031,signals 60 s k .10 kj,no lock,6/6 free in 2.0 h; locks at none,,explain,pass,"GS 3 per (k,P_T), sim 1",measured,0.25
+C-S0,F031,signals 60 s k .20 kj,no lock,6/6 free in 2.0 h; locks at none,,explain,pass,"GS 3 per (k,P_T), sim 1",measured,0.25
+C-S0,,signals 60 s k .25 kj: theirs hours,,6/6 free in 2.0 h; locks at none,,,info,,measured,0.25
+C-S0,F278,signals 60 s k .30 kj: lock under 1 h,< 1 h,5/6 free in 2.0 h; locks at 1.65,,explain,FAIL,"GS 3 per (k,P_T), sim 1",measured,0.25
+C-S0,F278,signals 60 s k .40 kj: lock under 1 h,< 1 h,3/6 free in 2.0 h; locks at 0.75 1.30 1.35,,explain,FAIL,"GS 3 per (k,P_T), sim 1",measured,0.25

@@ -32,7 +32,8 @@ BINS = {'measured': ROOT / 'target/release/cars', 'physical': ROOT / 'target/rel
 FLAGS = {'measured': '--tune measured=1', 'physical': '--tune measured=0', 'human': '--humans'}
 # Lines the measured driver replaces with forecasts from its own equations (F312-F321), and rows it reports as emergent (F322).
 # Round 2 (F620-F629, md_platoon_r2.json) replaces round 1's F312-F321 for the same scene lines.
-MD_FID = {'F003': 'F620', 'F004': 'F621', 'F008': 'F622', 'F009': 'F623', 'F232': 'F624', 'F234': 'F625', 'F251': 'F626', 'F252': 'F627', 'F253': 'F628', 'F296': 'F629'}
+# Round 5 (F840-F849, md_platoon_r5.json) replaces round 2's for the same lines.
+MD_FID = {'F003': 'F840', 'F004': 'F841', 'F008': 'F842', 'F009': 'F843', 'F232': 'F844', 'F234': 'F845', 'F251': 'F846', 'F252': 'F847', 'F253': 'F848', 'F296': 'F849'}
 MD_INFO = {'F001', 'F002', 'F005', 'F231'}
 MD_EF = math.exp((0.27 * math.sqrt(1 - 0.41 ** 2)) ** 2 / 2)
 
@@ -279,7 +280,7 @@ class Book:
         if self.driver == 'measured' and fid in MD_FID:
             fid = MD_FID[fid]
             mode = 'two'
-            if fid != 'F625':
+            if fid != 'F845':
                 forecast, tol, quantity = None, None, None
         ln = self.lines[fid]
         fn = self.nums(ln['forecast'])

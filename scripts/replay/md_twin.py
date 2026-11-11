@@ -15,8 +15,7 @@ from rpl import run_cars
 import numpy as np, pandas as pd
 import fit_driver as FD
 
-J = json.load(open(FD.OUTJ))['pooled']
-P = [J['K'], J['c_a'], J['k_g'], J['k_p']]
+P = FD.r5_params()       # round 5 (MODEL.md); the kernel's md_cmd
 DT, L = 0.1, 5.0
 BIND = []
 
@@ -57,7 +56,7 @@ def twin(w, x0, xl, vl, v0):
     vdes = float(w['vref'])
     for k in range(W - 1):
         g = xl[k] - L - x
-        cmd = FD.command(v, g, vl[k], al[k], P, a_cap=np.full(N, 1e9))
+        cmd = FD.command_r5(v, g, vl[k], al[k], P)
         # leader within 100 m in every window: no launch law, the desired speed relaxes in T_v (F311)
         free = np.minimum((vdes - v) / json.load(open(FD.OUTJ))['slow']['T_v'], a_cap(v))
         cmd = np.minimum(cmd, free)
@@ -115,7 +114,7 @@ def main(gpu=False):
                worst_window=int(np.flatnonzero(ok)[np.argmax(np.abs(dv).max(0))]),
                certificate_decides_share_of_steps=float(np.mean(BIND)), windows_where_it_decides=float(np.mean(np.array(BIND).any(0))))
     print(json.dumps(res, indent=1))
-    json.dump(res, open(os.path.join(REPO, 'research/truth/replay/md_twin.json'), 'w'), indent=1)
+    json.dump(res, open(os.path.join(REPO, 'research/truth/replay/md_twin_r5.json'), 'w'), indent=1)
     np.savez(f'{out}.cmp.npz', V=V, Vt=Vt, S=S, St=St)
 
 

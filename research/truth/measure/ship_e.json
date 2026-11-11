@@ -1,0 +1,468 @@
+{
+ "fit": {
+  "e": {
+   "params": {
+    "K": 3.0143,
+    "c_a": 0.4572,
+    "k_g": 0.6708,
+    "k_p": 0.0942,
+    "K_1": 8.1995
+   },
+   "objective": 3.5927,
+   "status": 3,
+   "past": {
+    "scores": {
+     "P1 highD": {
+      "crps": 0.1419,
+      "null": 0.2823,
+      "rmse": 0.3596
+     },
+     "P1 HT": {
+      "crps": 0.1821,
+      "null": 0.3206,
+      "rmse": 0.451
+     },
+     "P1 I90stat": {
+      "crps": 0.1907,
+      "null": 0.3958,
+      "rmse": 0.3422
+     },
+     "P1 I294L1": {
+      "crps": 0.1976,
+      "null": 0.4386,
+      "rmse": 0.456
+     },
+     "P1 I395": {
+      "crps": 0.1727,
+      "null": 0.3131,
+      "rmse": 0.4204
+     },
+     "P2 HT": {
+      "closed_10s": [
+       0.11,
+       0.194
+      ],
+      "closed_30s": [
+       0.314,
+       0.709
+      ],
+      "closed_30s_with_past": [
+       0.196,
+       0.582,
+       1729
+      ],
+      "rmse_30s": 22.832,
+      "windows_open": 3000
+     },
+     "P2 I90stat": {
+      "closed_10s": [
+       0.12,
+       0.362
+      ],
+      "closed_30s": [
+       0.276,
+       0.864
+      ],
+      "closed_30s_with_past": [
+       0.246,
+       0.802,
+       1756
+      ],
+      "rmse_30s": 6.095,
+      "windows_open": 3000
+     },
+     "P2 I294L1": {
+      "closed_10s": [
+       0.141,
+       0.291
+      ],
+      "closed_30s": [
+       0.248,
+       0.742
+      ],
+      "closed_30s_with_past": [
+       0.212,
+       0.672,
+       926
+      ],
+      "rmse_30s": 16.006,
+      "windows_open": 1190
+     },
+     "P2 I395": {
+      "closed_10s": [
+       0.233,
+       0.501
+      ],
+      "closed_30s": [
+       0.405,
+       0.811
+      ],
+      "closed_30s_with_past": [
+       0.274,
+       0.67,
+       425
+      ],
+      "rmse_30s": 10.277,
+      "windows_open": 1365
+     },
+     "P6 rounD": {
+      "2s": [
+       -0.46,
+       -0.83,
+       -0.08
+      ],
+      "4s": [
+       0.26,
+       -0.59,
+       0.59
+      ],
+      "8s": [
+       0.49,
+       -0.09,
+       0.86
+      ],
+      "n": 42
+     },
+     "P6 inD": {
+      "2s": [
+       -0.55,
+       -0.86,
+       0.15
+      ],
+      "4s": [
+       0.1,
+       -1.86,
+       0.59
+      ],
+      "8s": [
+       0.02,
+       -1.51,
+       0.67
+      ],
+      "n": 23
+     },
+     "P6 SinD Changchun": {
+      "2s": [
+       -0.54,
+       -0.78,
+       -0.28
+      ],
+      "4s": [
+       -0.82,
+       -1.13,
+       -0.15
+      ],
+      "8s": [
+       -0.18,
+       -0.75,
+       0.27
+      ],
+      "n": 168
+     },
+     "P6 Lankershim": {
+      "2s": [
+       -0.7,
+       -0.85,
+       -0.37
+      ],
+      "4s": [
+       -0.32,
+       -0.95,
+       0.35
+      ],
+      "8s": [
+       2.6,
+       0.38,
+       4.7
+      ],
+      "n": 121
+     },
+     "P4_gap_at_1_2_3_5": {
+      "1.0": 2.59,
+      "2.0": 3.62,
+      "3.0": 4.78,
+      "5.0": 6.88
+     },
+     "P5_standstill_gap": 1.98,
+     "P7_start_delay_by_pos": {
+      "2": 0.91,
+      "3": 1.33,
+      "4": 1.2,
+      "5": 1.28,
+      "6": 1.23
+     },
+     "P7_trend_s_per_pos": 0.059,
+     "P8_line_headway_by_pos": {
+      "2": 2.15,
+      "3": 2.58,
+      "4": 2.06,
+      "5": 2.31,
+      "6": 2.04,
+      "7": 2.19,
+      "8": 2.14,
+      "9": 2.17,
+      "10": 2.3
+     },
+     "P9_start_wave_kmh": 19.3,
+     "P12_L1_50": 1623,
+     "P12_L1_100": 1426,
+     "P12_S1_headway": 2.13
+    },
+    "misses": [
+     "P2 HT: closed 0.71 in 30 s against 0.31",
+     "P2 HT: 30 s RMSE 22.832 against round 2 20.834",
+     "P2 I90stat: closed 0.86 in 30 s against 0.28",
+     "P2 I90stat: 30 s RMSE 6.095 against round 2 5.274",
+     "P2 I294L1: closed 0.74 in 30 s against 0.25",
+     "P2 I395: closed 0.81 in 30 s against 0.41",
+     "P2 I395: 30 s RMSE 10.277 against round 2 9.571",
+     "P4 2.0 m/s: gap 3.62 m outside 3.7-5.1",
+     "P4 3.0 m/s: gap 4.78 m outside 4.8-6.2",
+     "P6 inD 2s: gap error -0.55 m",
+     "P6 SinD Changchun 2s: gap error -0.54 m",
+     "P6 SinD Changchun 4s: gap error -0.82 m",
+     "P7 position 2: 0.91 s",
+     "P8 position 2: 2.15 s against 2.55",
+     "P12 L1 50: 1623 veh/h"
+    ],
+    "system_misses": [
+     "P6 inD 2s: gap error -0.55 m",
+     "P6 SinD Changchun 2s: gap error -0.54 m",
+     "P6 SinD Changchun 4s: gap error -0.82 m",
+     "P7 position 2: 0.91 s",
+     "P8 position 2: 2.15 s against 2.55",
+     "P12 L1 50: 1623 veh/h"
+    ],
+    "p1_beats_null": true,
+    "p1_ratio_to_round2": 1.0374
+   },
+   "random": {
+    "scores": {
+     "P1 highD": {
+      "crps": 0.1436,
+      "null": 0.2823,
+      "rmse": 0.3625
+     },
+     "P1 HT": {
+      "crps": 0.184,
+      "null": 0.3206,
+      "rmse": 0.4538
+     },
+     "P1 I90stat": {
+      "crps": 0.1941,
+      "null": 0.3958,
+      "rmse": 0.3465
+     },
+     "P1 I294L1": {
+      "crps": 0.2045,
+      "null": 0.4386,
+      "rmse": 0.4646
+     },
+     "P1 I395": {
+      "crps": 0.1805,
+      "null": 0.3131,
+      "rmse": 0.4302
+     },
+     "P2 HT": {
+      "closed_10s": [
+       0.11,
+       0.216
+      ],
+      "closed_30s": [
+       0.314,
+       0.813
+      ],
+      "closed_30s_with_past": [
+       0.196,
+       0.755,
+       1729
+      ],
+      "rmse_30s": 25.012,
+      "windows_open": 3000
+     },
+     "P2 I90stat": {
+      "closed_10s": [
+       0.12,
+       0.405
+      ],
+      "closed_30s": [
+       0.276,
+       0.925
+      ],
+      "closed_30s_with_past": [
+       0.246,
+       0.924,
+       1756
+      ],
+      "rmse_30s": 6.311,
+      "windows_open": 3000
+     },
+     "P2 I294L1": {
+      "closed_10s": [
+       0.141,
+       0.336
+      ],
+      "closed_30s": [
+       0.248,
+       0.86
+      ],
+      "closed_30s_with_past": [
+       0.212,
+       0.85,
+       926
+      ],
+      "rmse_30s": 17.17,
+      "windows_open": 1190
+     },
+     "P2 I395": {
+      "closed_10s": [
+       0.233,
+       0.522
+      ],
+      "closed_30s": [
+       0.405,
+       0.839
+      ],
+      "closed_30s_with_past": [
+       0.274,
+       0.786,
+       425
+      ],
+      "rmse_30s": 10.584,
+      "windows_open": 1365
+     },
+     "P6 rounD": {
+      "2s": [
+       -0.45,
+       -0.84,
+       -0.17
+      ],
+      "4s": [
+       0.25,
+       -0.52,
+       0.59
+      ],
+      "8s": [
+       0.5,
+       -0.06,
+       0.84
+      ],
+      "n": 42
+     },
+     "P6 inD": {
+      "2s": [
+       -0.55,
+       -0.82,
+       0.12
+      ],
+      "4s": [
+       0.09,
+       -1.95,
+       0.54
+      ],
+      "8s": [
+       -0.15,
+       -1.68,
+       0.6
+      ],
+      "n": 23
+     },
+     "P6 SinD Changchun": {
+      "2s": [
+       -0.54,
+       -0.79,
+       -0.32
+      ],
+      "4s": [
+       -0.83,
+       -1.05,
+       -0.07
+      ],
+      "8s": [
+       -0.03,
+       -0.75,
+       0.22
+      ],
+      "n": 168
+     },
+     "P6 Lankershim": {
+      "2s": [
+       -0.7,
+       -0.83,
+       -0.42
+      ],
+      "4s": [
+       -0.31,
+       -0.96,
+       0.26
+      ],
+      "8s": [
+       2.6,
+       0.82,
+       5.0
+      ],
+      "n": 121
+     },
+     "P4_gap_at_1_2_3_5": {
+      "1.0": 2.59,
+      "2.0": 3.62,
+      "3.0": 4.78,
+      "5.0": 6.88
+     },
+     "P5_standstill_gap": 1.98,
+     "P7_start_delay_by_pos": {
+      "2": 0.91,
+      "3": 1.33,
+      "4": 1.2,
+      "5": 1.28,
+      "6": 1.23
+     },
+     "P7_trend_s_per_pos": 0.059,
+     "P8_line_headway_by_pos": {
+      "2": 2.15,
+      "3": 2.58,
+      "4": 2.06,
+      "5": 2.31,
+      "6": 2.04,
+      "7": 2.19,
+      "8": 2.14,
+      "9": 2.17,
+      "10": 2.3
+     },
+     "P9_start_wave_kmh": 19.3,
+     "P12_L1_50": 1623,
+     "P12_L1_100": 1426,
+     "P12_S1_headway": 2.13
+    },
+    "misses": [
+     "P1 I395: CRPS 0.1805 (round 2 0.1614, null 0.3131)",
+     "P2 HT: closed 0.81 in 30 s against 0.31",
+     "P2 HT: 30 s RMSE 25.012 against round 2 21.319",
+     "P2 I90stat: closed 0.93 in 30 s against 0.28",
+     "P2 I90stat: 30 s RMSE 6.311 against round 2 5.468",
+     "P2 I294L1: closed 0.86 in 30 s against 0.25",
+     "P2 I395: closed 0.84 in 30 s against 0.41",
+     "P2 I395: 30 s RMSE 10.584 against round 2 9.781",
+     "P4 2.0 m/s: gap 3.62 m outside 3.7-5.1",
+     "P4 3.0 m/s: gap 4.78 m outside 4.8-6.2",
+     "P6 inD 2s: gap error -0.55 m",
+     "P6 SinD Changchun 2s: gap error -0.54 m",
+     "P6 SinD Changchun 4s: gap error -0.83 m",
+     "P7 position 2: 0.91 s",
+     "P8 position 2: 2.15 s against 2.55",
+     "P12 L1 50: 1623 veh/h"
+    ],
+    "system_misses": [
+     "P6 inD 2s: gap error -0.55 m",
+     "P6 SinD Changchun 2s: gap error -0.54 m",
+     "P6 SinD Changchun 4s: gap error -0.83 m",
+     "P7 position 2: 0.91 s",
+     "P8 position 2: 2.15 s against 2.55",
+     "P12 L1 50: 1623 veh/h"
+    ],
+    "p1_beats_null": true,
+    "p1_ratio_to_round2": 1.0562
+   }
+  }
+ }
+}

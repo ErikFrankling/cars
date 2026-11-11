@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join(REPO, 'scripts', 'measure'))
 import fit_driver as FD
 
 J = json.load(open(FD.OUTJ))
-K, CA, KG, KP = (J['pooled'][k] for k in ('K', 'c_a', 'k_g', 'k_p'))
+P5 = FD.r5_params()       # round 5 law (MODEL.md, F837): K, g_1, c_a, k_g, k_p, K_1
 TV = J['slow']['T_v']
 SIG, TN = (J['round2']['noise_sigma'], J['round2']['noise_tau']) if 'round2' in J else (J['noise']['sigma'], J['noise']['corr_time_s'])
 R1, START = J['launch']['first_react'], 1.0
@@ -69,10 +69,7 @@ def platoon(x0, v0, vdes, T, dt=0.25, green=0.0, seed=0, noise=True, lead_trace=
         eng = ph_force(v + 0.5 * np.maximum(ph_force(v), 0) * dt)
         free = np.minimum((vd - v) / TV, eng)
         free = np.where(alone, np.minimum(free, np.maximum(2.02 - 0.125 * v, 0.7)), free)
-        vt = np.maximum(v, 6.5)
-        gs = S0 + f * (FD.t_gap(vt) - S0 / vt) * v
-        e = (g - gs) / np.maximum(v, 1.0)
-        af = K * np.minimum(vl - v, FD.DV_MAX) / np.maximum(g, 1.0) + CA * al + KP * np.maximum(e, 0) - KG * np.maximum(-e - 0.5, 0)
+        af = FD.command_r5(v, g, vl, al, P5, f)
         cmd = np.where(lead, np.minimum(af, free), free)
         nz = np.where(v >= 0.5, z * scale, 0.0) if noise else 0.0
         vn = np.maximum(v + (a + beta * (cmd + nz - a)) * dt, 0.0)
@@ -183,7 +180,7 @@ def main():
     out['L6_q_at_1_63'] = 3600 * 1.63 / spacing(1.63); out['L6_band'] = [3600 * 1.63 / spacing(1.63, 0), 3600 * 1.63 / spacing(1.63, -0.5)]
     out['G1_followup_at_v'] = {f'{v:.1f}': round(spacing(v) / v, 3) for v in (2.5, 3.0, 3.5, 4.0)}
     print(json.dumps(out, indent=1))
-    json.dump(out, open(os.path.join(REPO, 'research/truth/foundations/md_platoon' + ('_r2' if 'round2' in J else '') + '.json'), 'w'), indent=1)
+    json.dump(out, open(os.path.join(REPO, 'research/truth/foundations/md_platoon_r5.json'), 'w'), indent=1)
 
 
 if __name__ == '__main__':

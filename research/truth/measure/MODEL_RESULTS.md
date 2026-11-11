@@ -71,3 +71,21 @@ Noise 0.38 m/s² over 0.75 s (the tracker's part removed), desired gap s0 + T v 
 ## Round 3, 7 November ([STRUCTURE.md](STRUCTURE.md))
 
 Seven structures, each fitted on all non-held-out patterns jointly, scored against F800's intervals. None survives (7-33 misses each; round 2's own law misses 13). The best: two regimes, with 7 misses; the saturating closing gain K/(g + g_1), with 9 misses, gives L1 1,776 / 1,639 veh/h at 50 / 100 km/h and S1 2.06 s in the twin, but closes open gaps at speed twice as fast as recorded and stops 2.1 m behind a stopped leader. Nothing went into the kernel; the held-out set was not opened; the measured driver stays off.
+
+## Round 5, 7-11 November ([OPENGAP.md](OPENGAP.md))
+
+Law (j) (MODEL.md, round 5), fitted on the next second and queue launches, P2 a known miss. Kernel against twin 0.0026 m/s (F839). T0 at dt 0.25: 126 pass, 74 fail of 200 (round 2 100 / 99; the one driver 142 / 60); L1 1,874 / 1,818 veh/h at 50 / 100 km/h, S1 1.93 s, W1 damped. Held out (opened once, HOLDOUT.md):
+
+| Recording | Test | Round 5 | Round 1 | One driver | Verdict |
+|---|---|---|---|---|---|
+| TGSIM I-90/94 moving | 30 s spacing (F854) | 6.06 m (5.95-6.15) | 7.33 | 5.80 | pass (6.17) |
+| | next-second CRPS (F855) | 0.226 (0.215-0.238) | 0.211 | 0.648 | pass (null 0.368) |
+| | classifier (F856) | 0.804 (0.798-0.811) | 0.827 | 0.865 | fail (0.70) |
+| DLR HT 14-16 UTC | 30 s spacing (F857) | 16.47 m (16.23-16.82) | 20.06 | 17.10 | fail (16.24) |
+| | next-second CRPS (F858) | 0.234 (0.226-0.241) | 0.234 | 0.871 | pass (null 0.343) |
+| highD location 6 | 10 s spacing (F859) | 4.23 m (4.13-4.27) | 4.33 | 7.94 | pass (6.60) |
+| | next-second CRPS (F860) | 0.158 (0.151-0.166) | 0.156 | 0.895 | pass (null 0.257) |
+| SinD Xi'an | follower launches 2 / 4 / 8 s (F861) | -0.66 / -1.58 / -2.49 m | | | fail (runs ahead) |
+| | first car: 1.5 m/s after green; peak (F862) | 1.8 s, 1.41 m/s² against the law's 2.0 s, 1.77 | | | pass |
+
+Not the default: the stop rule holds it until F861 and F863 are explained.
