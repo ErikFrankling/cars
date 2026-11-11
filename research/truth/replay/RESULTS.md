@@ -264,3 +264,7 @@ Main's binary (26e674d, after the measured driver's round 2) against this branch
 source /home/erikf/projects/personal/cars-data/dev-env.sh; cargo build --release -p cars-cli
 # PNEUMA.md "Rerun", third round: build (with --signals), f100, entry (F520), mix (F524, F521 with --name=mix_keep2w), drone 6 (F525), t3_floor.py (F526)
 ```
+
+# Fourth round, 7-11 November: why the areas lock, F900-F915
+
+`LOCK.md`. Four lock chains traced with new arbiter probes, each starting somewhere else: the net's lane mapping (J54), a replayed vehicle standing where real cars passed it (J60; Omonoia on drone 6), and on Patision south a corridor that cannot carry its flow even alone on an empty net (F913: 62 %). Kept: signal programs written right (a rounding bug gave 9-20 s yellows and lost greens), recorded lane mapping and lanes opened where recorded cars drive, keep-clear only on links with foes, a tie for a zone kept by the standing car that won it. F524 again (F914): 52-55 % enter (was 39-41 %), approach delay MAE 68-78 s (89-112), route travel time MAE 72-100 s (92-142); F525 again (F915): 49 % (43-45 %). Still 30-50 times the floor.

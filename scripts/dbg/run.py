@@ -30,6 +30,15 @@ PLAIN = {
     'brake_limit': 'brake limit: wanted to slow more', 'power': 'engine or power limit', 'committed': 'committed past the point of stopping', 'coordinator': 'junction coordinator',
 }
 CLOSED = ['', 'red', 'stop_sign', 'foe']
+# Word 11 when no foe closed the link: the arbiter's reason, code in the top 3 bits and a lane below (why.wgsl why_deny)
+DENIED = ['', 'zone taken by', 'onward zone taken by', 'no room past it on', 'lost the bid to a zone foe on']
+
+
+def denial(run, w):
+    v = int(w['foe_link'])
+    if w['closed'] or v == NONE32 or (v >> 29) == 0 or (v >> 29) >= len(DENIED):
+        return None
+    return f"{DENIED[v >> 29]} {run.net.lane_name(v & 0x1fffffff)}"
 NONE32 = 0xffffffff
 BLAME_LANE = 0x80000000
 BLAME_LINK = 0x40000000

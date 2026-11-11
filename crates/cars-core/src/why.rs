@@ -153,6 +153,12 @@ const PROBES: &[Probe] = &[
         "if (blocked_by_foe(r, a, l, va, vl, same_target, impatience, decel, wait, foe_state)) { return false; }",
         "if (blocked_by_foe(r, a, l, va, vl, same_target, impatience, decel, wait, foe_state)) { why_closed(3u, foe, r.trip, r.arrival - a); return false; }",
     ),
+    // Why the arbiter held a car at a link with no foe closing it: zone taken (1), the onward zone of a stub (2),
+    // no room past it (3, keep-clear), a better bid on a zone within reach (4). Word 11, code in the top 3 bits.
+    p("ph_bid", "if (zone_taken(zn) && !zone_foe_is_self(zn, e) && !zone_clears(zn, la, it.dist, v)) {\n                    ok = false;", "if (zone_taken(zn) && !zone_foe_is_self(zn, e) && !zone_clears(zn, la, it.dist, v)) {\n                    why_deny(i, 1u, zn.foe_lane); ok = false;"),
+    p("ph_bid", "if (zone_taken(zn) && !zone_clears(zn, onward, it.dist + la.length, v)) {\n                        ok = false;", "if (zone_taken(zn) && !zone_clears(zn, onward, it.dist + la.length, v)) {\n                        why_deny(i, 2u, zn.foe_lane); ok = false;"),
+    p("ph_bid", "if (keeps_clear && wanted > ph_exit_room(to, next_link)) { ok = false; }", "if (keeps_clear && wanted > ph_exit_room(to, next_link)) { why_deny(i, 3u, to); ok = false; }"),
+    p("ph_grant", "items[base + j].grant = 1u;\n                atomicAdd(&C[C_DENIED], 1u);", "items[base + j].grant = 1u; why_deny(i, 4u, zn.foe_lane);\n                atomicAdd(&C[C_DENIED], 1u);"),
     p("lc_evaluate", "state_r = wants_change(-1, e, own, n, b, dest, i);", "state_r = wants_change(-1, e, own, n, b, dest, i); why_lc(0u, i, state_r, n);"),
     p("lc_evaluate", "state_l = wants_change(1, e, own, n, b, dest, i);", "state_l = wants_change(1, e, own, n, b, dest, i); why_lc(1u, i, state_l, n);"),
     p("lc_evaluate", "if (chosen == 0) { return; }", "why_lc_end(i, chosen, state_r, state_l); if (chosen == 0) { return; }"),

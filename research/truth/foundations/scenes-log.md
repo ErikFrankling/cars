@@ -209,3 +209,7 @@ Branch t3/7c78c015, dt 0.25, GPU, `--tune lc_measured=1` (off by default); `meas
 - **Own misses:** the ring and congested speeds (weak k_g under noise), and L6 (noise; 665 veh/h without it).
 - **Worse than the one driver:** N4 merge both saturated, N3 storage, S4 F290, G5 F259, C-S8 at b 0.
 - **Lane-change rows with `--tune lc_measured=1`** (`measured_0.25_measured_0.25_r5_lcm.csv`): 24 / 7 of 31.
+
+## 9. Junction arbiter after the pNEUMA lock work, 11 November
+
+Branch t3/pneuma-junction-lock-causes, `replay/LOCK.md`. Two changes to `ph_bid`: keep-clear only on links with foes (as SUMO's checkRewindLinkLanes and our Krauss path), and a tie for a zone goes to the car that won it last step and still stands waiting out its start reaction. Before, the tie-break hash changed every step, each tied head won every other step, a lost step restarted its reaction, and neither went. Junction and signal rows at dt 0.25: 78 pass with main's shaders, 76 with these. N3 and N3b show this livelock (the tie rule alone restores them; not traced in the scene): their bottleneck discharged 60 and 156 veh/h of the 720 and 810 built for, now 590 and 647. Their storage-at-spill rows passed on the blocked bottleneck and now fail (38.2 against 51.2 cars, 86 against 105): a discharging queue spills before it stores 2 lanes x length x kj, so F029 and F271 need restating for a moving queue. N3b's tail speed now passes. Everything else within its spread. The small debug-tools scene of `plain_identical.py` is byte-identical before and after.

@@ -5,7 +5,7 @@ import os
 
 import numpy as np
 
-from .run import (BLAME_LANE, BLAME_LINK, CLOSED, HALT, K, KINDS, LANE_CHANGED, NONE32, PLAIN, Run, accs_of, blame_text, flags_of, lanes_of, lc_words, limit_value, link_state, pos_of, speeds_of, trips_of,
+from .run import (BLAME_LANE, BLAME_LINK, CLOSED, denial, HALT, K, KINDS, LANE_CHANGED, NONE32, PLAIN, Run, accs_of, blame_text, flags_of, lanes_of, lc_words, limit_value, link_state, pos_of, speeds_of, trips_of,
                   waits_of)
 
 
@@ -74,6 +74,8 @@ def explain(run, i, rec, why, index):
         out['next_link'] = dict(link=None, metres_to_it=round(float(w['first_dist']), 1), note='no link from this lane on its route, or route ends')
         if w['closed'] == 0 and w['foe_link'] != NONE32 and int(w['foe_link']) < len(net.edge_ids) and lane < net.n_lanes:
             out['route_blocked'] = wrong_lane(net, lane, net.edge_ids[int(w['foe_link'])])
+    if denial(run, w):
+        out['denied'] = denial(run, w)
     if w['closed']:
         out['link_closed'] = dict(reason=CLOSED[w['closed']], foe=run.name(w['foe_trip']) if w['foe_trip'] != NONE32 else None, foe_link=net.link_name(w['foe_link']) if w['foe_link'] != NONE32 else None,
                                   foe_arrives_after_s=round(float(w['foe_gap']), 2))
@@ -111,6 +113,8 @@ def print_tick(e):
     if 'route_blocked' in e:
         b = e['route_blocked']
         print(f"  route wants {b['wants_road']}: lanes that go there {b['lanes_that_go_there']}, it is on lane {b['on_lane']} and may change to {b['lanes_it_may_change_to']}. {b['verdict']}")
+    if 'denied' in e:
+        print(f"  arbiter held it: {e['denied']}")
     if 'link_closed' in e:
         c = e['link_closed']
         print(f"  link closed: {c['reason']}" + (f"  foe {c['foe']} on {c['foe_link']}, arrives {c['foe_arrives_after_s']} s after this car would" if c['foe'] else ''))
@@ -176,7 +180,7 @@ def chart(run, rows, path, title):
         lim[lim == 0xffff] = np.nan
         lim /= 128.0
         vmax = max(v.max() * 1.3, 3.0)
-        used = sorted(set(dec.tolist()) | {k for k in range(len(KINDS)) if np.isfinite(lim[:, k]).any() and np.nanmin(lim[:, k]) < vmax})
+        used = sorted(set(dec.tolist()) | {k for k in range(min(len(KINDS), lim.shape[1])) if np.isfinite(lim[:, k]).any() and np.nanmin(lim[:, k]) < vmax})
         for k in used:
             if k == 0 or not np.isfinite(lim[:, k]).any():
                 continue
