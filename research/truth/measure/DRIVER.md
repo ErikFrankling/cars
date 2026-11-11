@@ -68,3 +68,9 @@ Intervals are 95% over vehicles or events. "Report 05" means [05-real-human-driv
 8. **Round 2: from standstill the spacing grows as s0 + T v**, with T about 1.0-1.3 s; cars stop at their standstill gap and rarely creep after. Followers start about 1.1-1.4 s after the car ahead and fall back while they accelerate.
 9. **Round 2: the command noise is about 0.4 m/s² over 0.75 s**; the white part of round 1 was the tracker.
 10. **Round 4: an open gap is mostly not preference.** Read from the driver's past, the personal part is 12-24% of an open gap's excess. The rest closes with a time constant of 45-60 s ([PERSONAL.md](PERSONAL.md)). Lankershim's stop-line headways are 2.55 / 2.25 / 1.90 s at positions 2 / 3 / 5+ for queues with a signal head. No non-held-out motorway recording shows a queue discharging; the busiest sustained lane flow is 2,188 veh/h (highD location 1).
+11. **Round 5: open gaps stay open because drivers watch further ahead, and on free motorways because they are at their own speed** ([OPENGAP.md](OPENGAP.md)). Measured on P2's windows:
+    - A parameter-free second-leader constraint explains 0.6-1.0 of the gap between a strong-pull law and the recordings on DLR HT, I-294 L1 and I-395. On I-90/94 st. it overshoots, unexplained.
+    - Own desired speed, read from each driver's past free driving, sorts DLR HT's open gaps: if the leader is faster than the follower wants, the gap opens (-0.33 in 30 s); if the follower wants 3 m/s more, it closes 0.72 (τ 24 s).
+    - Leaders are paired correctly on every table (median 0.26-0.33 m off the follower's line; I-395 too). I-395's flat closing gain is its own.
+    - After a cut-in, real followers apply about all of the shipped law's asked braking (w 0.88-1.17).
+

@@ -198,3 +198,14 @@ Branch t3/7c78c015, dt 0.25, GPU, `--tune lc_measured=1` (off by default); `meas
   - Capping the acceptance's closing term (F727) did nothing and raised contacts. Reverted.
   - Courtesy at 0.055 tripled the waits; back to 0.4 (F728).
 - **A fault found on the way:** the one driver could not carry a change over a lane end. On a lane cut into sections (exiD's merged lanelets) every merger at speed was refused for room and stopped at the end of the acceleration lane. Measured rules let a change run on over links with no junction box.
+
+## 8. The measured driver, round 5, 7 November
+
+`scenes.py --driver measured --dt 0.25 --gpu --tag measured_0.25_r5` (`results/theory/measured_0.25_measured_0.25_r5.csv`): law (j) of `research/truth/measure/OPENGAP.md`. Its lines F840-F849 replace round 2's F620-F629 (`MD_FID`), with numbers from the platoon twin (`md_platoon.py` -> `md_platoon_r5.json`).
+
+- **Totals:** 126 pass, 74 fail of 200 (round 2 100 / 99; the one driver 142 / 60).
+- **Realism:** L1 1,874 / 1,818 veh/h at 50 / 100 km/h; S1 1.93 s; start wave 24 km/h; W1 damped.
+- **Misses against the twin, not explained (F863):** at 30 km/h and at a signal the kernel discharges faster than the twin, even with noise off. At 50 km/h they agree within 2%.
+- **Own misses:** the ring and congested speeds (weak k_g under noise), and L6 (noise; 665 veh/h without it).
+- **Worse than the one driver:** N4 merge both saturated, N3 storage, S4 F290, G5 F259, C-S8 at b 0.
+- **Lane-change rows with `--tune lc_measured=1`** (`measured_0.25_measured_0.25_r5_lcm.csv`): 24 / 7 of 31.

@@ -100,3 +100,21 @@ The law above is unchanged. Round 3 tested whether another structure reproduces 
 
 Nothing changes in the model. The hypothesis was that open gaps are mostly personal preference, so a strong pull towards each driver's own gap would pass every pattern. Read from the past, the personal part is 12-24% of an open gap, and the rest closes with a time constant of 45-60 s (k_p about 0.025-0.06). (e), (f), both with k_p held at 0.084 and 0.139, a metre pull below 5 m/s and an opening-dependent pull were each fitted with past-initialised personal factors. Each misses 7-12 patterns. The next step is a measurement: the desired speed behind open gaps, launches on more sites, and I-395's leader pairing.
 
+
+## Round 5, 7-11 November ([OPENGAP.md](OPENGAP.md)): the law that ships, behind `--tune measured=1`
+
+Part 1 measured why open gaps stay open. The second car ahead explains 0.6-1.0 of P2's conflict on three tables, and own free speed explains 0.27 on DLR HT; pairing explains nothing. On I-90/94 st. the second leader overshoots, unexplained after two rounds. So the decision rule's second branch applied: the law that passes every system-scale pattern, and among those the best P1. That is (j), fitted on the next second and the queue launches (ship_jw.json, F837, F838):
+
+a = K₁ min(Δv, 1.5)/(g + g₁) below 6.5 m/s while the leader pulls away, otherwise K min(Δv, 1.5)/(g + g₁) + c_a a_l; plus k_p max(e, 0) − k_g max(−e − 0.5 s, 0).
+
+| K | g₁ | c_a | k_g | k_p | K₁ |
+|---|---|---|---|---|---|
+| 4.711 m/s | 5.394 m | 0.452 | 0.0789 m/s² per s | 0.1516 m/s² per s | 10.956 m/s |
+
+Everything else is round 2's: T(v), s0 1.7 m, τ_r 0.5 s, the 1.5 m/s cap, the band edge 0.5 s, noise 0.38 m/s² over 0.75 s, the start rule, r₁ 0.78 s, T_v 1.0 s and the desired gap from standstill.
+
+- **Passes:** the system-scale patterns (P5 1.79 m; P6 inside on rounD, inD, SinD Changchun; P7 1.19-1.25 s; P8 2.80 / 2.40 / 2.16 s; P9 19.3 km/h; L1 1,848 / kernel 1,874 veh/h; S1 2.07 / kernel 1.93 s). Also the held-out next second on I-90/94 moving, DLR HT 14-16 and highD location 6, and the kernel-twin check at 0.0026 m/s.
+- **Known misses, not relaxed:** P2 (open gaps close 0.80-0.91 in 30 s against 0.25-0.41: k_p 0.15 against the measured 0.025-0.044); P1 on I-395 (+14% over round 2); P4 at 2 m/s by 0.04 m; k_g against DRIVER.md's 0.2-0.5; held-out DLR HT 30 s spacing 16.47 against 16.24; classifier 0.80; SinD Xi'an follower launches 1.6 m ahead at 4 s; the platoon twin against the scenes at 30 km/h and at a signal (F863, unexplained).
+- **Not the default:** the stop rule holds it until F861 and F863 are explained.
+
+Kernel `md_cmd` in common.wgsl (g₁, K₁ in `md_u.zw`); twin `fit_driver.command_r5`.
