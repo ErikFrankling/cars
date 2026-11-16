@@ -4,6 +4,10 @@
 
 A traffic simulator where every car is simulated on the GPU, written in Rust and WGSL compute shaders.
 
+https://github.com/user-attachments/assets/c4ce6ed5-ef50-4fe8-8ab1-82fccc325848
+
+*Berlin at 07:45, zooming from the whole city to Ernst-Reuter-Platz. The demand is the BeST scenario, 2.25 million car trips a day, and every car keeps driving while the camera zooms.*
+
 This is completely vibe coded, with coding agents in [T3 Code](https://t3.codes). It's me continuing to experiment after my bachelor thesis, where we used SUMO to study how self-driving cars affect traffic flow ([thesis and code](https://github.com/ErikFrankling/bachelor)). It started as a rewrite of SUMO on the GPU and still reads SUMO's network and demand files. The goal now is drivers that behave like real people and cities that match real traffic data, checked against recordings of real traffic. After that I want to put self-driving cars in and see what they change.
 
 <img src="assets/readme/versus_signal.gif" width="100%" alt="Three junctions side by side">
