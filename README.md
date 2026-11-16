@@ -4,11 +4,7 @@
 
 A traffic simulator where every car is simulated on the GPU, written in Rust and WGSL compute shaders.
 
-
-
 https://github.com/user-attachments/assets/82271383-58a7-4f1e-b812-a85a18b32885
-
-
 
 *Berlin at 07:45, zooming from the whole city to Ernst-Reuter-Platz. The demand is the BeST scenario, 2.25 million car trips a day, and every car keeps driving while the camera zooms.*
 
