@@ -1,5 +1,7 @@
 # SUMO 1.28 junctions, signals, jams: implementation specification
 
+Contains excerpts of the Eclipse SUMO 1.28 source code, Copyright (C) German Aerospace Center (DLR) and others, under the [Eclipse Public License 2.0](https://www.eclipse.org/legal/epl-2.0/).
+
 Source root: `/home/erikf/projects/personal/thesis-src/sumo/src`. Citations below are relative to that root; ranges identify the implementing branch, not documentation paraphrases. Scope: microscopic road vehicles with internal lanes; pedestrian, railway, opposite-driving and sublane exceptions are explicitly identified. **GPU recommendations are proposals/inferences, not SUMO guarantees.** Statistical comparability requires measuring the proposed approximations against the chosen networks and demand.
 
 ## 1. Import and static topology

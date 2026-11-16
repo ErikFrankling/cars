@@ -1,5 +1,7 @@
 # Working in this repo
 
+This repo is public on GitHub. Push `main` to origin after every commit or merge to it; local `main` is never ahead of origin. Recorded data rows, scraped third-party data and account details stay in `cars-data`, never in git: `DATA-LICENSES.md` lists what may be in the repo and under which licence, and `.gitignore` lists files kept out because their terms forbid publishing them. Branches made before 16 November 2026 carry history that was rewritten to remove such files: rebase them onto `main`, never merge them.
+
 A GPU microscopic traffic simulator in Rust and WGSL. Goal: match real measured traffic, at network level, on data the model never saw. Reality and theory are the reference; see `research/truth/VALIDATION-GATE.md`. Human-only traffic must pass that gate before any self-driving work counts. It began as a reimplementation of SUMO and still reads SUMO's file formats. No decision rests on SUMO or `--sumo-compat`.
 
 Work follows the tiers in `research/truth/PLAN.md`: behaviour is tested by replaying recordings that see every vehicle, so demand, routes and signals are recorded facts, before any city with modelled demand. No run without a line in `research/truth/foundations/forecasts.csv`: the number, where it comes from, the tolerance. A behaviour number comes from a recording of that behaviour, never from making a scene pass. `scripts/theory/` holds the static checks, which take seconds and need no simulator.

@@ -12,3 +12,16 @@ research/truth/fig/maps07/
 research/truth/berlin-review/
 research/truth/berlin-snapshot/
 research/truth/*-link-capacity.csv
+
+# third-party data that may not be published (licence terms); kept locally only
+/research/truth/data-hunt/14-data/tomtom_rows_part1.jsonl
+/research/truth/data-hunt/14-data/tomtom_rows_part2.jsonl
+/research/truth/data-hunt/14-data/tomtom_rows_part3.jsonl
+/research/truth/data-hunt/14-data/tomtom_summary.json
+/research/truth/data-hunt/14-data/tomtom_cities.json
+/research/truth/berlin2019/real_jams.csv
+/research/truth/berlin2019/real_accumulation.csv
+/research/truth/berlin2019/real_free_speed.csv
+/research/truth/berlin2019/real_jam_clusters.csv
+/research/truth/berlin2019/real_jams_noise.csv
+/research/truth/data-hunt/24-accounts.md

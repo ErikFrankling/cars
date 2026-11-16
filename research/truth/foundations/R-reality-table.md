@@ -1,6 +1,6 @@
 # R: The reality table (rung 1)
 
-Done 2026-11-02. Real data only: no simulation, no GPU, no locked site opened, nobody contacted. Tables are in `research/truth/berlin2019/real_*.csv`, code in `scripts/reality/`. Definitions were committed before computing (below, and 74ffe81). Changes made after seeing data are listed under "Changed after looking".
+Done 2026-11-02. Real data only: no simulation, no GPU, no locked site opened, nobody contacted. Tables are in `research/truth/berlin2019/real_*.csv`, code in `scripts/reality/`. Definitions were committed before computing (below, and 3455d73). Changes made after seeing data are listed under "Changed after looking".
 
 Grades: **MEASURED** from data I opened, **ESTIMATED** a formula on measured inputs, **MODELLED** MATSim, **INVENTED** no source.
 
@@ -291,7 +291,7 @@ Linking is a daytime thing: at night only 8% of through pairs at 30-50 m hold it
 
 Space-time clusters per day: jam intervals joined when the edge is the same or adjacent and the interval the same or next, at both thresholds. Duration and size (edge-intervals) distributions, with a tail exponent by maximum likelihood. On the same 15-minute bins any later run can use.
 
-### Added after the plan amendment of 890dfc5, before computing these
+### Added after the plan amendment of 94d2b4f, before computing these
 
 **7. `real_signal_pairs.csv`, close-spaced signals (F048).** Hamburg, the 50 recorded lights, motor-vehicle connections only.
 - **Geometry.** Each connection in `static/` has three lines: the ingress lane starting at the stop line, the path through the junction, and the start of the egress. A pair (upstream `c`, downstream `d`) is one where `d`'s stop line lies within 4.5 m sideways of `c`'s path extended straight, heading within 35 degrees. **Link length** runs from where `c`'s egress starts to `d`'s stop line, the same thing as a map edge between junctions. Bands: under 30 m, 30-50 m, and 50-150 m as the control.

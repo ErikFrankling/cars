@@ -68,7 +68,7 @@ pNEUMA's tracks are whole per drone file, so the pieces of a vehicle come from m
 - TGSIM ramps: the one-edge net carries ramp lanes over their whole length. Replay is unaffected; a simulated vehicle on a ramp lane would not see its end. F101 does not use ramp lanes.
 - Tracker fragments: a track that ends inside the area and a new track that starts nearby may be the same vehicle. Replayed, both are kept as recorded; simulated, a fragment's end is an exit that did not happen. Counted per scene.
 
-## After the review (PLAN.md at 7d2065b)
+## After the review (PLAN.md at 04d55fb)
 
 - **Overlaps are a harness artefact.** A replayed vehicle never reacts, so a simulated car that runs into one has met something no real driver meets. Overlaps are counted per run and end that vehicle's comparison; they are never scored as behaviour. Passes are judged at the second and third settings, where every car on the scored part reacts.
 - **Start from the recorded snapshot, discard a warm-up, never re-initialise.** A scene's run starts at `--begin` with every vehicle that is in view at that moment inserted at its recorded state (replayed or simulated), runs without interruption to the end, and is scored only after a warm-up as long as the longest trip in the scene. Error is reported against elapsed time (per half hour on DLR UT). F101's 30 s windows are the one exception, kept on purpose so that F101 compares with report 05; they are re-initialised by design and say nothing about drift past 30 s.

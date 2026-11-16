@@ -52,7 +52,7 @@ Physical motion (Krauss with the physics certificate, `mu > 0`) with decisions o
 | Launch a0 2.02 - 0.125 v | Long 2000, adapted; replay found main launching at 2.6 against DLR UT's 1.8 | SinD: first-car peak acceleration and time to 5 and 10 m/s after green |
 | Corner speed: physical curve limit with lateral median 2.2 m/s2 | report 19's turning set | inD and rounD: speed against radius through the junction |
 
-## Final table, with the measured driver (main aadf8f7, `measure/DRIVER.md`)
+## Final table, with the measured driver (main 4dca491, `measure/DRIVER.md`)
 
 This driver was not moved towards DRIVER.md in this job (orchestrator). The last column is what the next job sets it from.
 

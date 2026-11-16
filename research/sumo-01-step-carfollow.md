@@ -1,5 +1,7 @@
 # SUMO 1.28 microscopic stepping and longitudinal motion
 
+Contains excerpts of the Eclipse SUMO 1.28 source code, Copyright (C) German Aerospace Center (DLR) and others, under the [Eclipse Public License 2.0](https://www.eclipse.org/legal/epl-2.0/).
+
 Source root: `/home/erikf/projects/personal/thesis-src/sumo/src`. All citations below are relative to that root; line numbers refer to this supplied checkout. Units: metres, seconds, m/s, m/s². `dt=TS`; `DELTA_T` is the integer simulation tick duration, not seconds. `ACCEL2SPEED(a)=a*dt`, `SPEED2DIST(v)=v*dt`, `SPEED2ACCEL(v)=v/dt`, `DIST2SPEED(s)=s/dt`, `ACCEL2DIST(a)=a*dt²`. These conversions are normative throughout the algorithms below. [utils/common/SUMOTime.h:38-70]
 
 The numbered sections give equations and GPU scheduling guidance. The final algorithm annex supplies the exact branch-heavy arithmetic and decisions, with diagnostics/comments removed, so the implementer need not open SUMO. Annex code is a specification reference, not WGSL to compile directly: replace pointers by indices, vectors by spans, and getters by the corresponding state fields. Preserve branch order and calls with state side effects. References to omitted rail, sublane, TraCI, parking and pedestrian helpers are feature boundaries, not implied implementations of those subsystems. [microsim/MSVehicle.cpp:2276-3114,3744-3975; microsim/cfmodels/MSCFModel.cpp:87-260]

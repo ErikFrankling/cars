@@ -7,7 +7,7 @@
 | Driver | Pass | Fail | Info rows |
 |---|---:|---:|---:|
 | Main's physical, dt 1 | 117 | 69 | 59 |
-| Human, t3/1b36c9cf 11afb41, dt 1 | 104 | 83 | 59 |
+| Human, t3/1b36c9cf c39a44d, dt 1 | 104 | 83 | 59 |
 
 The first baseline (2 November) read 74/98 and 79/99. Most of the gain is scenes that tested the wrong thing, not drivers getting better.
 
@@ -72,7 +72,7 @@ Reading:
 
 ## 3. One driver and the fixes, 6-7 November
 
-The human branch (t3/1b36c9cf) is merged next to the physical driver (a4640c1); both stay selectable, physical bit-identical, human within seed noise. The one driver is physical motion with these decisions, each from a measurement (table in `parameters.md`, with the value `measure/DRIVER.md` has for each):
+The human branch (t3/1b36c9cf) is merged next to the physical driver (e43f24b); both stay selectable, physical bit-identical, human within seed noise. The one driver is physical motion with these decisions, each from a measurement (table in `parameters.md`, with the value `measure/DRIVER.md` has for each):
 
 - T 1.4 s median, spread 0.3 (B §1); start reaction 1.0 s after the car ahead moves, 1.62 s for the first car at a green (report 05 DLR UT), counted in part-steps so it holds at any dt; no added reaction at a give-way line, a 'g' green or inside a junction, where the critical gap holds it.
 - Critical gaps from HBS S5 by movement (5.9 / 5.5 / 6.7 / 6.5 s), counted from now for a waiting head; zipper links take none.

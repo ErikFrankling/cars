@@ -369,7 +369,7 @@ The audit's fixes 2 and 3, rebuilding junction geometry and smoothing roads, bel
 
 ## Clips, scene geometry, and a correction
 
-**Correction to the numbers since the first merge of main.** The human model's id moved from 4 to 5 when the AV model took 4, and one line in `world.rs` still wrote 4. So every scene run between that merge and `d95e11f` drove as the AV model. Rounds r0 to r3, including a throughput "pass" of 1,316 and 1,536 veh/h reported in passing, are void. The frozen `86f2256` tables above are from before that merge and are not affected. The clue was guard use of exactly zero and cars at exactly constant speed.
+**Correction to the numbers since the first merge of main.** The human model's id moved from 4 to 5 when the AV model took 4, and one line in `world.rs` still wrote 4. So every scene run between that merge and `b00788c` drove as the AV model. Rounds r0 to r3, including a throughput "pass" of 1,316 and 1,536 veh/h reported in passing, are void. The frozen `86f2256` tables above are from before that merge and are not affected. The clue was guard use of exactly zero and cars at exactly constant speed.
 
 **What Erik saw.** Real cars jumped across the merge section in about a frame. `scripts/real_tracks_trace.py` put real positions on `up_0`, `merge_1` and `down_0`, whose ends are about 10 m apart in the drawn scene because netconvert puts a junction box between them, with nothing mapped to the box. Some cars also turned oddly at the taper, because the sideways scale changed when a car's lane label changed.
 
@@ -440,13 +440,13 @@ Kept: T × 0.7, S0 0.4, scene limits. What it did not fix: I-80 still 7% short o
 
 A one-token change inside `hu_target` (`0.85 *` in the gap term) made cars run off the end of their lane on llvmpipe at 128 bits, with `t_scale` giving the same effect cleanly. Kernel edits there need a sanity run; real-GPU confirmation of that edit is outstanding as the lock was busy.
 
-**After the first benchmark of those rounds** (`841a146`, 32 fails against 31 for the old human driver and 32 for main's physical driver), three more changes aimed at its regressions: launch needs the gap opened by 1 m (`JS5`: start wave 42 km/h, real 16-28), s0 scale 1.0 (`M4`, `JS2` turning), and `lc_safety` 0.35 (`JL1`: stopped in the source lane). With `lc_safety` at 0.35, US-101 reaches 1,532 veh/h with .065 stopped first and I-80 1,244 with .45, no contacts. Hard-braking requests go up, cert floor 11 to 32 at US-101.
+**After the first benchmark of those rounds** (`e86a856`, 32 fails against 31 for the old human driver and 32 for main's physical driver), three more changes aimed at its regressions: launch needs the gap opened by 1 m (`JS5`: start wave 42 km/h, real 16-28), s0 scale 1.0 (`M4`, `JS2` turning), and `lc_safety` 0.35 (`JL1`: stopped in the source lane). With `lc_safety` at 0.35, US-101 reaches 1,532 veh/h with .065 stopped first and I-80 1,244 with .45, no contacts. Hard-braking requests go up, cert floor 11 to 32 at US-101.
 
 ## Capacity on the fixed test
 
 `scripts/berlin2019/step3_capacity.py --flags=--humans --dt 1`, three seeds, on the merged base with Berlin's first gate. Measured earlier on this driver at f69d694 plus the merge rule: saturation 1,500, motorway 1,503 per lane.
 
-| | Before | `b1e793c` | Band |
+| | Before | `9f75006` | Band |
 |---|---|---|---|
 | Saturation at 50 km/h, veh/h | 1,500 | **1,800** | 1,800-2,100 |
 | Saturation at 30 km/h | | 1,612 | |
@@ -477,7 +477,7 @@ A one-token change inside `hu_target` (`0.85 *` in the gap term) made cars run o
 
 So followers yielding costs most, and even removing it stays well under the band. One lane on its own carries 1,850 at T × 0.7. Physical is at 1,767 on the benchmark's version. The cause of the remaining gap is not found. The queue's stop-and-go (`M13` swing 7.5 against a floor of 2.5) is the best lead. A real driver asked to yield near a lane end doesn't brake for a merger alongside, so that was taken out as correct in itself: it took 1,025 to 1,212 on one seed.
 
-**Benchmark, fast, `b1e793c`:** 33 fail, 14 at floor. Old human driver (f69d694) 31 and 16, main's physical 32 and 13.
+**Benchmark, fast, `9f75006`:** 33 fail, 14 at floor. Old human driver (f69d694) 31 and 16, main's physical 32 and 13.
 
 | | Better than physical | Worse than physical |
 |---|---|---|

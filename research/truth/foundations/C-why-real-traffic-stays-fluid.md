@@ -199,7 +199,7 @@ R0 at street scale: with k = 2-3 upstream movements, contagion dies if the share
 
 ## 4. Mechanisms, ranked
 
-Rank is by how much I expect a mechanism to affect a lock at 50% and 100%. It is my judgement from section 3 and report 23's rounds, not a measurement. Each row's last column is what `grep` shows on `main` at 97ff609, with branches named.
+Rank is by how much I expect a mechanism to affect a lock at 50% and 100%. It is my judgement from section 3 and report 23's rounds, not a measurement. Each row's last column is what `grep` shows on `main` at 1dfe2c5, with branches named.
 
 | # | Mechanism | Real size, best source | Status | Plausible network effect | In `cars` |
 |---:|---|---|---|---|---|
@@ -236,7 +236,7 @@ Rank is by how much I expect a mechanism to affect a lock at 50% and 100%. It is
 **In our simulator.**
 
 - `main`: `P.lost_after`, default 0 (`world.rs:812`), removes the car (`step.wgsl:1814`). With teleports off, a wrong-lane head waits for ever. `route.wgsl:pick_link` returns only a link to the wanted edge.
-- `t3/1c6fee50` commit 104d433, today 18:15: `ph_reroute`. Patience 60 s × 0.5-1.5 per driver, needs `route_arena > 0`, a green and **`it.dist <= 15`**, no wait on lanes under 15 m. `t3/1b36c9cf`: `hu_reroute`, mean 120 s. No Berlin result yet in `research/physics-rounds.md`.
+- `t3/1c6fee50` commit eb3513c, today 18:15: `ph_reroute`. Patience 60 s × 0.5-1.5 per driver, needs `route_arena > 0`, a green and **`it.dist <= 15`**, no wait on lanes under 15 m. `t3/1b36c9cf`: `hu_reroute`, mean 120 s. No Berlin result yet in `research/physics-rounds.md`.
 - **Check this now.** In the saved top seeds, 16 of 26 lane-change roots, 1,900 of 3,042 vehicle-hours, stand more than 15 m before the lane end. `lc.wgsl:959` keeps a blocker margin of 20 or 40 m (`getExtraReservation`) for cars needing two or more changes, and line 965 a car length for a neighbour. I didn't check which applies to each root. As written, the rule doesn't reach those cars. Those runs predate the rule and the driver has changed since, so this needs one count on a current trace.
 
 **Smallest correct form.** Reuse `ph_reroute`, changing only the trigger: stopped with a lane-change wish as the reason, for longer than patience, anywhere in the last 100 m. Keep it a choice of continuing link, not a removal, and report lost cars per 1,000 trips. Start at 60-120 s because that's the spill time and just above real p99.
@@ -317,7 +317,7 @@ So this behaviour matters less for capacity than for ending the holds that spill
 
 **Network effect.** Report 23 ranks "cars blocked abreast" third. Round 5 on the physical branch: the abreast rule "never fired on my fixtures or the Rahel-Hirsch cut". So it may be rarer now than the single-car lane-change hold. I can't size it further.
 
-**In our simulator.** `lc.wgsl` LC2013: strategic, cooperative, speed-gain, keep-right. No swap on `main`. `t3/1c6fee50` 0cea2c0 `ph_abreast`: the one behind falls back. `check_blocked` and `inform_follower` do the asking. No sideways start before the gap exists on any branch I checked; report 18's B3 specifies it. Report 15 audit: swap and forced yield "have no source"; force-yield is ours alone.
+**In our simulator.** `lc.wgsl` LC2013: strategic, cooperative, speed-gain, keep-right. No swap on `main`. `t3/1c6fee50` a7fa96d `ph_abreast`: the one behind falls back. `check_blocked` and `inform_follower` do the asking. No sideways start before the gap exists on any branch I checked; report 18's B3 specifies it. Report 15 audit: swap and forced yield "have no source"; force-yield is ours alone.
 
 **Smallest correct form.** Report 18's B3 (edge in, commit on anticipated gap) and B7 (follower takes a share, tapered). Nothing new here. Add offset stop points by hash, ≥7 m, as Trafikverket does, before any swap.
 

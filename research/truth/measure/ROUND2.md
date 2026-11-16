@@ -1,6 +1,6 @@
 # The measured driver, round 2: gap closing, low speed, standstill, noise
 
-7 November 2026. Branch `md2-gap-closing`. Forecasts F600-F633 in `foundations/forecasts.csv`, each committed before its run (06e750b for the measurements, 1f4ec7d for the model and T0). No held-out recording was read for any number here ([HOLDOUT.md](HOLDOUT.md)). Scripts: `scripts/measure/gapclose.py`, `queues.py`, `noise2.py`; `scripts/theory/md_queue.py`, `md_platoon.py`. Numbers: [gapclose.json](gapclose.json), [queues.json](queues.json), [noise2.json](noise2.json), [model_fit.json](model_fit.json) key `round2`.
+7 November 2026. Branch `md2-gap-closing`. Forecasts F600-F633 in `foundations/forecasts.csv`, each committed before its run (606b8a7 for the measurements, f1f43ed for the model and T0). No held-out recording was read for any number here ([HOLDOUT.md](HOLDOUT.md)). Scripts: `scripts/measure/gapclose.py`, `queues.py`, `noise2.py`; `scripts/theory/md_queue.py`, `md_platoon.py`. Numbers: [gapclose.json](gapclose.json), [queues.json](queues.json), [noise2.json](noise2.json), [model_fit.json](model_fit.json) key `round2`.
 
 ## 1. The N9 cars left standing (F600, F601): explained, no code fault
 

@@ -1,6 +1,6 @@
 # Driver measurements on recordings: results, F130-F147
 
-6-7 November 2026. No simulator was run. Forecasts were committed before any number was computed (9f98824). The held-out recordings are listed in [HOLDOUT.md](HOLDOUT.md) and were never read. Scripts are in `scripts/measure/`; numbers are in the JSON files next to this one; big intermediates are in `cars-data/measure/`. The summary table is [DRIVER.md](DRIVER.md).
+6-7 November 2026. No simulator was run. Forecasts were committed before any number was computed (f05ec9a). The held-out recordings are listed in [HOLDOUT.md](HOLDOUT.md) and were never read. Scripts are in `scripts/measure/`; numbers are in the JSON files next to this one; big intermediates are in `cars-data/measure/`. The summary table is [DRIVER.md](DRIVER.md).
 
 Intervals are 95% bootstrap intervals over vehicles (or drivers, or queues), never over samples. "n" counts vehicles or events, not drivers: no dataset here follows a driver across trips.
 

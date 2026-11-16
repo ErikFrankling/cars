@@ -2,7 +2,7 @@
 
 Erik, 6 November: the north star is good science. That needs a baseline close to real-world data, so a lot of good real data to test against. Build the simulation from first principles and from what other projects got wrong, until it is true to life: a car you look at behaves like a real human, and at system scale it matches real data. Then build self-driving into it and see what it changes. Rethink every prior, ours included.
 
-The earlier ladder (Berlin first, git history up to 8ee9720) is replaced. What it found still holds and is listed under "Kept".
+The earlier ladder (Berlin first, git history up to 1e4ecd7) is replaced. What it found still holds and is listed under "Kept".
 
 ## The priors we drop
 

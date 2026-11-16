@@ -18,7 +18,7 @@ round,run,step,change,factor,r0600,r0630,r0700,r0730,r0800,ratio_0730,last_time_
 4b,sw_f1_p10,2,physics 10%: and a body half on a lane is not stopped for a change,1.0,689,1419,1938,2948,4466,2.1,8.0,0,,,,,,,,,,,,,,
 4c,sw_f2_p50,2,physics 50%: both fixes,5,4979,12707,22456,31955,43034,4.56,8.0,0,,,,,,,,,,,,,,
 4d,sw_h_10,3,"human driver at f69+merge, 10%, dt 1",1.0,2363,4908,8071,11088,14851,7.9,8.0,0,,,,,,,,,,,,,,
-5a,sw_b0_s0,2,"m12 is the base map (one program per junction), main at 97ff609, --sumo-compat, 50%, seed 0",5,3437,6655,9430,13618,21301,1.94,8.0,0,126,,,,,,,,,,,,,
+5a,sw_b0_s0,2,"m12 is the base map (one program per junction), main at 1dfe2c5, --sumo-compat, 50%, seed 0",5,3437,6655,9430,13618,21301,1.94,8.0,0,126,,,,,,,,,,,,,
 5a,sw_b0_s1,2,"same, seed 1",5,3454,7135,10190,16848,28281,2.4,8.0,0,235,,,,,,,,,,,,,
 5b,sw_bg_s0,2,"boundary: same demand, cut 3 km wider, 04:00-08:00, seed 0. All-net figures; inner 49 km2 at 07:30 is 11,381 against 8,656 on the small cut and 4,651 healthy. Ratio is not comparable",5,7684,15085,24684,40157,61479,,8.0,0,586,,,,,,,,,,,,,
 5b,sw_bg_s1,2,"same, seed 1, killed by the CPU guard at 07:31. Inner at 07:30 is 13,225 against 10,635 on the small cut",5,7708,15114,25506,42132,,,7.52,0,185,,,,,,,,,,,,,

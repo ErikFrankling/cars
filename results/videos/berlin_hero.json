@@ -1,0 +1,9 @@
+{"keyframes":[
+ {"time":27900,"center":[23500,13000],"metres_per_pixel":32},
+ {"time":27910,"center":[13764,14665],"metres_per_pixel":9},
+ {"time":27936,"center":[13764,14665],"metres_per_pixel":0.16},
+ {"time":27960,"center":[13764,14665],"metres_per_pixel":0.15}],
+ "captions":[
+ {"from":27900,"to":27911,"text":"07:45, the whole city at once"},
+ {"from":27913,"to":27934,"text":"Zooming in on Ernst-Reuter-Platz while every car keeps driving"},
+ {"from":27938,"to":27960,"text":"Each car has its own size, brake lights and indicators"}]}

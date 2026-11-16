@@ -1,5 +1,7 @@
 # SUMO 1.28.0: lane changes, insertion, metrics and demand
 
+Contains excerpts of the Eclipse SUMO 1.28 source code, Copyright (C) German Aerospace Center (DLR) and others, under the [Eclipse Public License 2.0](https://www.eclipse.org/legal/epl-2.0/).
+
 Source root `S=/home/erikf/projects/personal/thesis-src/sumo/src`; docs root `D=S/../docs/web/docs`. The checkout reports tag `v1_28_0`. Citations below are relative to S unless prefixed D. Units: metres, seconds, m/s; `TS` is step length in seconds, `DELTA_T` in integer simulation ticks. `STEPS2TIME` converts ticks to seconds. Appendix algorithms are normative, line-numbered extracts: they supply the complete branch ordering and equations rather than requiring the implementer to open SUMO. Debug-only code and standalone comments are omitted; original line numbers are retained. C++ container operations translate directly to indexed arrays; car-following calls are contracts with the separately implemented car-following model, not constants to replace with a fixed gap.
 
 ## A. Lane changes

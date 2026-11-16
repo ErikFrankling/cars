@@ -91,7 +91,7 @@ All runs use `CARS_ADAPTER=llvmpipe` (set by `rpl.run_cars`); pass `--gpu` where
 
 # Second round, 6-7 November: data side and harness, F500-F515
 
-The data side for area tests, and the harness extended so the drivers being rewritten in parallel can go onto whole areas. Forecasts were written before each run. Details: [SIGNALS.md](SIGNALS.md) (signals read from crossings, the error band) and [PNEUMA.md](PNEUMA.md) (inventory, lanes, motorcycles, oversaturation, the drone 8 scene). The driver and the junction and lane-change code are main's, unchanged. Plain runs without `--replay` are bit-identical to main's binary (a8cddaf): FCD md5 equal on the DLR UT approach (llvmpipe) and on exiD 00 all simulated (llvmpipe and GPU).
+The data side for area tests, and the harness extended so the drivers being rewritten in parallel can go onto whole areas. Forecasts were written before each run. Details: [SIGNALS.md](SIGNALS.md) (signals read from crossings, the error band) and [PNEUMA.md](PNEUMA.md) (inventory, lanes, motorcycles, oversaturation, the drone 8 scene). The driver and the junction and lane-change code are main's, unchanged. Plain runs without `--replay` are bit-identical to main's binary (7011773): FCD md5 equal on the DLR UT approach (llvmpipe) and on exiD 00 all simulated (llvmpipe and GPU).
 
 | | Forecast | Result | Verdict |
 |---|---|---|---|
@@ -175,7 +175,7 @@ python3 -I scripts/replay/sind_approach.py run 0..4 mix && python3 -I scripts/re
 
 # Third round, 7 November: area entry, two-wheelers, stitching, signals, F520-F526
 
-The job: make area entry work (F515 had failed it), then check the harness again on whole areas and measure the T3 noise floor. Forecasts F520-F526 were written before each run; results in `foundations/forecasts.csv` and the JSON files next to this one. Design notes are in README.md ("Insertion blocked at the entry", "Vehicles off the car path", "Stitching and lane connections") and the scene changes in PNEUMA.md. The driver, junction and lane-change code are main's (the junction-fault fixes merged at ce55b16 included); plain runs without `--replay` are byte-identical to main's binary (below).
+The job: make area entry work (F515 had failed it), then check the harness again on whole areas and measure the T3 noise floor. Forecasts F520-F526 were written before each run; results in `foundations/forecasts.csv` and the JSON files next to this one. Design notes are in README.md ("Insertion blocked at the entry", "Vehicles off the car path", "Stitching and lane connections") and the scene changes in PNEUMA.md. The driver, junction and lane-change code are main's (the junction-fault fixes merged at 8032353 included); plain runs without `--replay` are byte-identical to main's binary (below).
 
 | | Forecast | Result | Verdict |
 |---|---|---|---|
@@ -250,7 +250,7 @@ Halves are under days on both metrics, as PLAN expects. The approach sections ar
 
 ## Plain runs
 
-Main's binary (26e674d, after the measured driver's round 2) against this branch, no `--replay`: the FCDs are byte-identical on the DLR UT approach (llvmpipe, 900 s) and on exiD 00 all simulated (llvmpipe and GPU). The drone 8 scene run as a plain run on the GPU is not deterministic with either binary. Over four runs each, both binaries gave the same two outputs (`3a36bc…` and `f9020d…`), in different proportions. The area runs above are at main ce55b16; the later merge changed only the measured driver (off by default) and roundabout entries, and these areas have none.
+Main's binary (cb5da5e, after the measured driver's round 2) against this branch, no `--replay`: the FCDs are byte-identical on the DLR UT approach (llvmpipe, 900 s) and on exiD 00 all simulated (llvmpipe and GPU). The drone 8 scene run as a plain run on the GPU is not deterministic with either binary. Over four runs each, both binaries gave the same two outputs (`3a36bc…` and `f9020d…`), in different proportions. The area runs above are at main 8032353; the later merge changed only the measured driver (off by default) and roundabout entries, and these areas have none.
 
 ## What still blocks area scoring
 
